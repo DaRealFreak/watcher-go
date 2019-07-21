@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"watcher/database"
 )
 
@@ -9,9 +8,7 @@ import (
 // logs fatal error if no DatabaseConnection could be established
 func main() {
 	dbCon := database.NewConnection()
-	if dbCon.Connection.Error != nil {
-		log.Fatal(dbCon.Connection.Error)
-	}
-	log.Printf("%q", &dbCon.Connection.Database)
-	log.Printf("%q", &dbCon.Connection.Error)
+	module := "test"
+	dbCon.GetItems(nil)
+	dbCon.GetItems(&module)
 }
