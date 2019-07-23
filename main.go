@@ -10,7 +10,14 @@ import (
 func main() {
 	dbCon := database.NewConnection()
 	module := "test"
-	fmt.Println(dbCon.GetItems(nil))
-	fmt.Println(dbCon.GetItems(&module))
-	dbCon.GetFirstOrCreateItem("test_item", "test_module")
+	fmt.Println("all items regardless of module: ", dbCon.GetTrackedItems(nil))
+	fmt.Println("all items of module: ", dbCon.GetTrackedItems(&module))
+	exampleItem := dbCon.GetFirstOrCreateTrackedItem("test_item", "test_module")
+	fmt.Println("example item persisted: ", exampleItem)
+	dbCon.ChangeTrackedItemCompleteStatus(&exampleItem, true)
+	fmt.Println("update example item completed", exampleItem)
+	dbCon.ChangeTrackedItemCompleteStatus(&exampleItem, false)
+	fmt.Println("update example item uncompleted", exampleItem)
+
+	dbCon.CloseConnection()
 }
