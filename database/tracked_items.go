@@ -61,7 +61,7 @@ func (db dbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedIte
 	} else {
 		// create the item and call the same function again
 		db.CreateTrackedItem(uri, module)
-		return db.GetFirstOrCreateTrackedItem(uri, module)
+		item = db.GetFirstOrCreateTrackedItem(uri, module)
 	}
 	return item
 }
