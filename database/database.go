@@ -40,9 +40,11 @@ func (db dbIO) createDatabase() {
 	sqlStatement := `
 		CREATE TABLE accounts
 		(
-			module   VARCHAR(255) NOT NULL PRIMARY KEY,
+			uid      INTEGER      PRIMARY KEY AUTOINCREMENT,
 			user     VARCHAR(255) DEFAULT '',
-			password VARCHAR(255) DEFAULT ''
+			password VARCHAR(255) DEFAULT '',
+			module   VARCHAR(255) NOT NULL,
+			disabled BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
 	_, err = connection.Exec(sqlStatement)
@@ -55,7 +57,7 @@ func (db dbIO) createDatabase() {
 			uri          VARCHAR(255) DEFAULT '',
 			current_item VARCHAR(255) DEFAULT '',
 			module       VARCHAR(255) DEFAULT '' NOT NULL ,
-			complete     BOOLEAN      default FALSE NOT NULL 
+			complete     BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
 	_, err = connection.Exec(sqlStatement)
