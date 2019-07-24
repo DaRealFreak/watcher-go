@@ -15,7 +15,7 @@ type TrackedItem struct {
 
 // retrieve all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db dbIO) GetTrackedItems(module *string) []TrackedItem {
+func (db DbIO) GetTrackedItems(module *string) []TrackedItem {
 	var items []TrackedItem
 
 	var rows *sql.Rows
@@ -45,7 +45,7 @@ func (db dbIO) GetTrackedItems(module *string) []TrackedItem {
 
 // check if an item exists already, if not create it
 // returns the already persisted or the newly created item
-func (db dbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedItem {
+func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	db.checkErr(err)
 
@@ -67,7 +67,7 @@ func (db dbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedIte
 }
 
 // inserts the passed uri and the module into the tracked_items table
-func (db dbIO) CreateTrackedItem(uri string, module string) {
+func (db DbIO) CreateTrackedItem(uri string, module string) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()
@@ -77,7 +77,7 @@ func (db dbIO) CreateTrackedItem(uri string, module string) {
 }
 
 // update the current item column of the tracked item in the database
-func (db dbIO) UpdateTrackedItem(trackedItem *TrackedItem, currentItem string) {
+func (db DbIO) UpdateTrackedItem(trackedItem *TrackedItem, currentItem string) {
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ? WHERE uid = ?")
 	db.checkErr(err)
 	defer stmt.Close()
@@ -90,7 +90,7 @@ func (db dbIO) UpdateTrackedItem(trackedItem *TrackedItem, currentItem string) {
 }
 
 // change the complete status of the passed tracked item
-func (db dbIO) ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool) {
+func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool) {
 	var completeInt int8
 	if complete {
 		completeInt = 1

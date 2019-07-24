@@ -13,7 +13,7 @@ type Account struct {
 }
 
 // retrieve the first not disabled account of the passed module
-func (db dbIO) GetAccount(module string) *Account {
+func (db DbIO) GetAccount(module string) *Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	db.checkErr(err)
 
@@ -33,7 +33,7 @@ func (db dbIO) GetAccount(module string) *Account {
 
 // check if an account exists already, if not create it
 // returns the already persisted or the newly created account
-func (db dbIO) GetFirstOrCreateAccount(user string, password string, module string) Account {
+func (db DbIO) GetFirstOrCreateAccount(user string, password string, module string) Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	db.checkErr(err)
 
@@ -55,7 +55,7 @@ func (db dbIO) GetFirstOrCreateAccount(user string, password string, module stri
 }
 
 // inserts the passed user and password of the specific module into the database
-func (db dbIO) CreateAccount(user string, password string, module string) {
+func (db DbIO) CreateAccount(user string, password string, module string) {
 	stmt, err := db.connection.Prepare("INSERT INTO accounts (user, password, module) VALUES (?, ?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()

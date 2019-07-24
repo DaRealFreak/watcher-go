@@ -3,18 +3,17 @@ package database
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 	"os"
 )
 
-type dbIO struct {
+type DbIO struct {
 	connection *sql.DB
 }
 
 // initializes the database DatabaseConnection to our sqlite file
 // creates the database if the looked up file doesn't exist yet
-func NewConnection() *dbIO {
-	dbIO := dbIO{}
+func NewConnection() *DbIO {
+	dbIO := DbIO{}
 	if _, err := os.Stat("./watcher.db"); os.IsNotExist(err) {
 		dbIO.createDatabase()
 	}
@@ -25,14 +24,22 @@ func NewConnection() *dbIO {
 	return &dbIO
 }
 
+// remove the whole database file
+func RemoveDatabase() {
+	err := os.Remove("./watcher.db")
+	if err != nil {
+		panic(err)
+	}
+}
+
 // close the connection
-func (db dbIO) CloseConnection() {
+func (db DbIO) CloseConnection() {
 	err := db.connection.Close()
 	db.checkErr(err)
 }
 
 // creates the sqlite file and creates the needed tables
-func (db dbIO) createDatabase() {
+func (db DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", "./watcher.db")
 	db.checkErr(err)
 	defer connection.Close()
@@ -65,8 +72,8 @@ func (db dbIO) createDatabase() {
 }
 
 // extracted function to check for an error, log fatal always on database errors
-func (db dbIO) checkErr(err error) {
+func (db DbIO) checkErr(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
