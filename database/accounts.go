@@ -2,6 +2,7 @@ package database
 
 import (
 	_ "github.com/mattn/go-sqlite3"
+	"watcher-go/modules/template"
 )
 
 type Account struct {
@@ -13,11 +14,11 @@ type Account struct {
 }
 
 // retrieve the first not disabled account of the passed module
-func (db DbIO) GetAccount(module string) *Account {
+func (db DbIO) GetAccount(module *template.Module) *Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(module)
+	rows, err := stmt.Query(module.Module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -33,11 +34,11 @@ func (db DbIO) GetAccount(module string) *Account {
 
 // check if an account exists already, if not create it
 // returns the already persisted or the newly created account
-func (db DbIO) GetFirstOrCreateAccount(user string, password string, module string) Account {
+func (db DbIO) GetFirstOrCreateAccount(user string, password string, module *template.Module) Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(user, module)
+	rows, err := stmt.Query(user, module.Module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -55,11 +56,11 @@ func (db DbIO) GetFirstOrCreateAccount(user string, password string, module stri
 }
 
 // inserts the passed user and password of the specific module into the database
-func (db DbIO) CreateAccount(user string, password string, module string) {
+func (db DbIO) CreateAccount(user string, password string, module *template.Module) {
 	stmt, err := db.connection.Prepare("INSERT INTO accounts (user, password, module) VALUES (?, ?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user, password, module)
+	_, err = stmt.Exec(user, password, module.Module.Key())
 	db.checkErr(err)
 }

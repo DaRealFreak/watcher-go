@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"watcher-go/modules/template"
 )
 
 type TrackedItem struct {
@@ -15,7 +16,7 @@ type TrackedItem struct {
 
 // retrieve all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db DbIO) GetTrackedItems(module *string) []TrackedItem {
+func (db DbIO) GetTrackedItems(module *template.Module) []TrackedItem {
 	var items []TrackedItem
 
 	var rows *sql.Rows
@@ -27,7 +28,7 @@ func (db DbIO) GetTrackedItems(module *string) []TrackedItem {
 		stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
 		db.checkErr(err)
 
-		rows, err = stmt.Query(*module)
+		rows, err = stmt.Query(module.Module.Key())
 		db.checkErr(err)
 	}
 	defer rows.Close()
@@ -45,11 +46,11 @@ func (db DbIO) GetTrackedItems(module *string) []TrackedItem {
 
 // check if an item exists already, if not create it
 // returns the already persisted or the newly created item
-func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedItem {
+func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module *template.Module) TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(uri, module)
+	rows, err := stmt.Query(uri, module.Module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -67,12 +68,12 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module string) TrackedIte
 }
 
 // inserts the passed uri and the module into the tracked_items table
-func (db DbIO) CreateTrackedItem(uri string, module string) {
+func (db DbIO) CreateTrackedItem(uri string, module *template.Module) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(uri, module)
+	_, err = stmt.Exec(uri, module.Module.Key())
 	db.checkErr(err)
 }
 
