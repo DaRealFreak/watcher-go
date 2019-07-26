@@ -8,6 +8,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"time"
 )
 
 type Session struct {
@@ -34,6 +35,7 @@ func (session *Session) Get(url string, tries int) (*goquery.Document, error) {
 		if session.MaxRetries >= tries {
 			return nil, err
 		} else {
+			time.Sleep(time.Duration(tries+1) * time.Second)
 			return session.Get(url, tries+1)
 		}
 	}
@@ -53,6 +55,7 @@ func (session *Session) Post(url string, data url.Values, tries int) (*goquery.D
 		if session.MaxRetries >= tries {
 			return nil, err
 		} else {
+			time.Sleep(time.Duration(tries+1) * time.Second)
 			return session.Post(url, data, tries+1)
 		}
 	}
