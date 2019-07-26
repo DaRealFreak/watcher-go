@@ -1,8 +1,10 @@
 package sankakucomplex
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
+	"watcher-go/database"
 	"watcher-go/http"
 	"watcher-go/modules/template"
 )
@@ -38,17 +40,18 @@ func (m SankakuComplex) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
 
-func (m SankakuComplex) Login(user string, password string) {
+func (m SankakuComplex) Login(account *database.Account) {
 	values := url.Values{
 		"url":            {""},
-		"user[name]":     {user},
-		"user[password]": {password},
+		"user[name]":     {account.Username},
+		"user[password]": {account.Password},
 		"commit":         {"Login"},
 	}
 	// ToDo: validation of login response
 	_, _ = m.session.Post("https://chan.sankakucomplex.com/user/authenticate", values, 0)
 }
 
-func (m SankakuComplex) Parse(uri string, currentItem string) {
+func (m SankakuComplex) Parse(item *database.TrackedItem) {
+	fmt.Println(item.Uri, item.CurrentItem)
 	panic("implement me")
 }
