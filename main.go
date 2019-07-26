@@ -2,17 +2,22 @@ package main
 
 import (
 	"watcher-go/database"
+	"watcher-go/http"
 )
 
 type watcher struct {
-	dbCon *database.DbIO
+	dbCon   *database.DbIO
+	session *http.Session
 }
 
 // main functionality of the database
 // logs fatal error if no DatabaseConnection could be established
 func main() {
-	watcher := watcher{}
-	watcher.dbCon = database.NewConnection()
+	watcher := watcher{
+		dbCon:   database.NewConnection(),
+		session: http.NewSession(),
+	}
+
 	// ToDO: iterate through all active items and run them
 	watcher.dbCon.CloseConnection()
 }
