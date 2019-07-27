@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"watcher-go/database"
+	"watcher-go/cmd/watcher/database"
+	"watcher-go/cmd/watcher/modules"
 )
 
 var app watcher
@@ -15,8 +16,10 @@ var app watcher
 func TestMain(m *testing.M) {
 	// constructor
 	database.RemoveDatabase()
-	app = watcher{}
-	app.dbCon = database.NewConnection()
+	app = watcher{
+		dbCon:         database.NewConnection(),
+		moduleFactory: modules.NewModuleFactory(),
+	}
 
 	// run the unit tests
 	code := m.Run()
@@ -29,9 +32,11 @@ func TestMain(m *testing.M) {
 
 // test the add account function
 func TestAddAccountByUri(t *testing.T) {
-	app.AddAccountByUri("https://www.test.com", "user", "pass")
+	testUri := "https://chan.sankakucomplex.com/"
+	app.AddAccountByUri(testUri, "user", "pass")
 
-	account := app.dbCon.GetFirstOrCreateAccount("user", "different_pass", "https://www.test.com")
+	module, _ := app.moduleFactory.GetModuleFromUri(testUri)
+	account := app.dbCon.GetFirstOrCreateAccount("user", "different_pass", module)
 	if account.Password != "pass" {
 		t.Fatal("password got updated or different user got added")
 	}
@@ -39,18 +44,19 @@ func TestAddAccountByUri(t *testing.T) {
 
 // test the add item by uri function
 func TestAddItemByUri(t *testing.T) {
-	app.AddItemByUri("test_item", "")
-	app.AddItemByUri("test_item_with_current_item", "hi there")
+	testUri := "https://chan.sankakucomplex.com/"
+	app.AddItemByUri(testUri, "")
+	app.AddItemByUri(testUri + "_another", "hi there")
 
 	// ToDo: check generated items
-	module := "test_item"
+	module, _ := app.moduleFactory.GetModuleFromUri(testUri)
 	fmt.Println("all items regardless of module: ", app.dbCon.GetTrackedItems(nil))
-	fmt.Println("all items of module: ", app.dbCon.GetTrackedItems(&module))
+	fmt.Println("all items of module: ", app.dbCon.GetTrackedItems(module))
 
 	exampleItem := app.dbCon.GetFirstOrCreateTrackedItem("test_item", module)
 	fmt.Println("example item persisted: ", exampleItem)
-	app.dbCon.ChangeTrackedItemCompleteStatus(&exampleItem, true)
+	app.dbCon.ChangeTrackedItemCompleteStatus(exampleItem, true)
 	fmt.Println("update example item completed", exampleItem)
-	app.dbCon.ChangeTrackedItemCompleteStatus(&exampleItem, false)
+	app.dbCon.ChangeTrackedItemCompleteStatus(exampleItem, false)
 	fmt.Println("update example item uncompleted", exampleItem)
 }
