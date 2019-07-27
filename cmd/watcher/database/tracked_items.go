@@ -8,8 +8,8 @@ import (
 
 // retrieve all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db DbIO) GetTrackedItems(module *models.Module) []models.TrackedItem {
-	var items []models.TrackedItem
+func (db DbIO) GetTrackedItems(module *models.Module) []*models.TrackedItem {
+	var items []*models.TrackedItem
 
 	var rows *sql.Rows
 	var err error
@@ -30,7 +30,7 @@ func (db DbIO) GetTrackedItems(module *models.Module) []models.TrackedItem {
 		err = rows.Scan(&item.Id, &item.Uri, &item.CurrentItem, &item.Module, &item.Complete)
 		db.checkErr(err)
 
-		items = append(items, item)
+		items = append(items, &item)
 	}
 
 	return items
