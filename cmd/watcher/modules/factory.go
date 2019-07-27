@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"watcher-go/cmd/watcher/models"
-	"watcher-go/modules/sankakucomplex"
+	"watcher-go/cmd/watcher/modules/sankakucomplex"
 )
 
 type ModuleFactory struct {
