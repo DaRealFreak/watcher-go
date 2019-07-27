@@ -26,9 +26,11 @@ func NewConnection() *DbIO {
 
 // remove the whole database file
 func RemoveDatabase() {
-	err := os.Remove("./watcher.db")
-	if err != nil {
-		panic(err)
+	if _, err := os.Stat("./watcher.db"); err == nil {
+		err := os.Remove("./watcher.db")
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
