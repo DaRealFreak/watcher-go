@@ -1,4 +1,4 @@
-package http
+package http_wrapper
 
 import (
 	"github.com/PuerkitoBio/goquery"
@@ -49,23 +49,17 @@ func (session *Session) Get(url string, tries int) (*goquery.Document, error) {
 }
 
 // POST request
-func (session *Session) Post(url string, data url.Values, tries int) (*goquery.Document, error) {
-	response, err := session.Client.PostForm(url, data)
+func (session *Session) Post(uri string, data url.Values, tries int) (*http.Response, error) {
+	response, err := session.Client.PostForm(uri, data)
 	if err != nil {
 		if session.MaxRetries >= tries {
 			return nil, err
 		} else {
 			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.Post(url, data, tries+1)
+			return session.Post(uri, data, tries+1)
 		}
 	}
-	defer response.Body.Close()
-
-	document, err := goquery.NewDocumentFromReader(response.Body)
-	if err != nil {
-		log.Fatal("Error loading HTTP response body. ", err)
-	}
-	return document, err
+	return response, err
 }
 
 // DownloadFile will download a url to a local file. It's efficient because it will
