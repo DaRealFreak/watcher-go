@@ -1,15 +1,14 @@
-package template
+package models
 
 import (
 	"regexp"
-	"watcher-go/database"
 )
 
 type ModuleInterface interface {
 	Key() (key string)
 	RegisterUriSchema(map[string][]*regexp.Regexp)
-	Login(*database.Account)
-	Parse(*database.TrackedItem)
+	Login(account *Account)
+	Parse(item *TrackedItem)
 }
 
 type Module struct {

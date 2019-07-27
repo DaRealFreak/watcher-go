@@ -3,12 +3,12 @@ package modules
 import (
 	"fmt"
 	"regexp"
+	"watcher-go/cmd/watcher/models"
 	"watcher-go/modules/sankakucomplex"
-	"watcher-go/modules/template"
 )
 
 type ModuleFactory struct {
-	modules    []*template.Module
+	modules    []*models.Module
 	uriSchemas map[string][]*regexp.Regexp
 }
 
@@ -22,12 +22,12 @@ func NewModuleFactory() *ModuleFactory {
 }
 
 // retrieve all available modules
-func (f ModuleFactory) GetAllModules() []*template.Module {
+func (f ModuleFactory) GetAllModules() []*models.Module {
 	return f.modules
 }
 
 // retrieve module by it's key
-func (f ModuleFactory) GetModule(moduleName string) *template.Module {
+func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
 		if module.Module.Key() == moduleName {
 			return module
@@ -37,7 +37,7 @@ func (f ModuleFactory) GetModule(moduleName string) *template.Module {
 }
 
 // check the registered uri schemas for a match and return the module
-func (f ModuleFactory) GetModuleFromUri(uri string) (*template.Module, error) {
+func (f ModuleFactory) GetModuleFromUri(uri string) (*models.Module, error) {
 	for key, patternCollection := range f.uriSchemas {
 		for _, pattern := range patternCollection {
 			if pattern.MatchString(uri) {

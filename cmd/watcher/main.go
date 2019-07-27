@@ -38,6 +38,6 @@ func (app watcher) AddItemByUri(uri string, currentItem string) {
 	module, _ := app.moduleFactory.GetModuleFromUri(uri)
 	trackedItem := app.dbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
-		app.dbCon.UpdateTrackedItem(&trackedItem, currentItem)
+		app.dbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}
 }

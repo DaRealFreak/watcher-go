@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"watcher-go/database"
+	"watcher-go/cmd/watcher/models"
 	"watcher-go/http"
-	"watcher-go/modules/template"
 )
 
 type SankakuComplex struct {
@@ -14,12 +13,12 @@ type SankakuComplex struct {
 }
 
 // generate new module and register uri schema
-func NewModule(uriSchemas map[string][]*regexp.Regexp) *template.Module {
-	var templateImplementation template.ModuleInterface = SankakuComplex{
+func NewModule(uriSchemas map[string][]*regexp.Regexp) *models.Module {
+	var templateImplementation models.ModuleInterface = SankakuComplex{
 		session: http.NewSession(),
 	}
 
-	module := template.Module{
+	module := models.Module{
 		Module: templateImplementation,
 	}
 	// register the uri schema
@@ -40,7 +39,7 @@ func (m SankakuComplex) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
 
-func (m SankakuComplex) Login(account *database.Account) {
+func (m SankakuComplex) Login(account *models.Account) {
 	values := url.Values{
 		"url":            {""},
 		"user[name]":     {account.Username},
@@ -51,7 +50,7 @@ func (m SankakuComplex) Login(account *database.Account) {
 	_, _ = m.session.Post("https://chan.sankakucomplex.com/user/authenticate", values, 0)
 }
 
-func (m SankakuComplex) Parse(item *database.TrackedItem) {
+func (m SankakuComplex) Parse(item *models.TrackedItem) {
 	fmt.Println(item.Uri, item.CurrentItem)
 	panic("implement me")
 }
