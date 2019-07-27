@@ -1,8 +1,8 @@
 package main
 
 import (
-	"watcher-go/database"
-	"watcher-go/modules"
+	"watcher-go/cmd/watcher/database"
+	"watcher-go/cmd/watcher/modules"
 )
 
 type watcher struct {
@@ -29,15 +29,25 @@ func main() {
 
 // extract the module based on the uri and add account if not registered already
 func (app watcher) AddAccountByUri(uri string, user string, password string) {
-	module, _ := app.moduleFactory.GetModuleFromUri(uri)
+	module, err := app.moduleFactory.GetModuleFromUri(uri)
+	app.checkError(err)
+
 	app.dbCon.GetFirstOrCreateAccount(user, password, module)
 }
 
 // add item based on the uri and set it to the passed current item if not nil
 func (app watcher) AddItemByUri(uri string, currentItem string) {
-	module, _ := app.moduleFactory.GetModuleFromUri(uri)
+	module, err := app.moduleFactory.GetModuleFromUri(uri)
+	app.checkError(err)
+
 	trackedItem := app.dbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
 		app.dbCon.UpdateTrackedItem(trackedItem, currentItem)
+	}
+}
+
+func (app watcher) checkError(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
