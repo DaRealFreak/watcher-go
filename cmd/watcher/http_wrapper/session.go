@@ -28,15 +28,15 @@ func NewSession() *Session {
 }
 
 // GET request
-func (session *Session) Get(url string, tries int) (*http.Response, error) {
+func (session *Session) Get(uri string, tries int) (*http.Response, error) {
 	// Get the data
-	response, err := session.Client.Get(url)
+	response, err := session.Client.Get(uri)
 	if err != nil {
 		if session.MaxRetries >= tries {
 			return nil, err
 		} else {
 			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.Get(url, tries+1)
+			return session.Get(uri, tries+1)
 		}
 	}
 	return response, err
