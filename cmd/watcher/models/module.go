@@ -1,6 +1,8 @@
 package models
 
 import (
+	"net/url"
+	"path/filepath"
 	"regexp"
 )
 
@@ -33,8 +35,8 @@ func (t *BaseModel) GetFileName(uri string) string {
 }
 
 func (t *BaseModel) GetFileExtension(uri string) string {
-	// ToDo: implement getting the file extension
-	return uri
+	parsedUri, _ := url.Parse(uri)
+	return filepath.Ext(parsedUri.Path)
 }
 
 // reverse the download queue items to get the oldest items first
