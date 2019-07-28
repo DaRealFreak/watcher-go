@@ -20,22 +20,26 @@ type DownloadQueueItem struct {
 }
 
 type Module struct {
+	BaseModel
 	ModuleInterface
 }
 
-func (t *Module) GetFileName(uri string) string {
+type BaseModel struct {
+}
+
+func (t *BaseModel) GetFileName(uri string) string {
 	// ToDo: implement getting the file name
 	return uri
 }
 
-func (t *Module) GetFileExtension(uri string) string {
+func (t *BaseModel) GetFileExtension(uri string) string {
 	// ToDo: implement getting the file extension
 	return uri
 }
 
 // reverse the download queue items to get the oldest items first
 // to be able to interrupt the update process anytime
-func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []DownloadQueueItem {
+func (t *BaseModel) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []DownloadQueueItem {
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
