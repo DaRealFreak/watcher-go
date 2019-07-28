@@ -8,9 +8,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"time"
+	"watcher-go/cmd/watcher/arguments"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/http_wrapper"
 	"watcher-go/cmd/watcher/models"
@@ -151,7 +153,7 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemId:      string(data.Id),
 					DownloadTag: tag,
-					FileName:    m.GetFileName(data.FileUrl),
+					FileName:    string(data.Id) + "_" + m.GetFileName(data.FileUrl),
 					FileUri:     data.FileUrl,
 				})
 			} else {
@@ -175,9 +177,8 @@ func (m *SankakuComplex) ProcessDownloadQueue(downloadQueue []models.DownloadQue
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 
 	for _, data := range downloadQueue {
-		fmt.Println(data)
-		// ToDo: enable later
-		// m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
+		_ = m.session.DownloadFile(path.Join(arguments.GetDownloadDirectory(), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }
 
