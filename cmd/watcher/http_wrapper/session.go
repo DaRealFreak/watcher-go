@@ -1,7 +1,9 @@
 package http_wrapper
 
 import (
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/kubernetes/klog"
 	"io"
 	"log"
 	"net/http"
@@ -30,6 +32,7 @@ func NewSession() *Session {
 // GET request
 func (session *Session) Get(uri string, tries int) (*http.Response, error) {
 	// Get the data
+	klog.Info(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, tries+1))
 	response, err := session.Client.Get(uri)
 	if err != nil {
 		if session.MaxRetries >= tries {
@@ -44,6 +47,7 @@ func (session *Session) Get(uri string, tries int) (*http.Response, error) {
 
 // POST request
 func (session *Session) Post(uri string, data url.Values, tries int) (*http.Response, error) {
+	klog.Info(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, tries+1))
 	response, err := session.Client.PostForm(uri, data)
 	if err != nil {
 		if session.MaxRetries >= tries {
