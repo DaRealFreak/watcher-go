@@ -14,7 +14,7 @@ type ModuleFactory struct {
 }
 
 // generate new module factory and register modules
-func NewModuleFactory(dbIO database.DbIO) *ModuleFactory {
+func NewModuleFactory(dbIO *database.DbIO) *ModuleFactory {
 	factory := ModuleFactory{
 		uriSchemas: make(map[string][]*regexp.Regexp),
 	}

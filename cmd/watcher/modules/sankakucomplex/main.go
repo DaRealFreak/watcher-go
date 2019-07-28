@@ -14,13 +14,13 @@ import (
 )
 
 type SankakuComplex struct {
-	dbCon    database.DbIO
+	dbCon    *database.DbIO
 	session  *http_wrapper.Session
 	loggedIn bool
 }
 
 // generate new module and register uri schema
-func NewModule(dbIO database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
+func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	var subModule = SankakuComplex{
 		dbCon:    dbIO,
 		session:  http_wrapper.NewSession(),
