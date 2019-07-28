@@ -29,11 +29,13 @@ type Module struct {
 type BaseModel struct {
 }
 
+// retrieve the file name of the passed uri
 func (t *BaseModel) GetFileName(uri string) string {
-	// ToDo: implement getting the file name
-	return uri
+	parsedUri, _ := url.Parse(uri)
+	return filepath.Base(parsedUri.Path)
 }
 
+// retrieve the file extension of the passed uri
 func (t *BaseModel) GetFileExtension(uri string) string {
 	parsedUri, _ := url.Parse(uri)
 	return filepath.Ext(parsedUri.Path)
