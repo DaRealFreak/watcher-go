@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -62,13 +63,17 @@ func (session *Session) Post(uri string, data url.Values, tries int) (*http.Resp
 
 // DownloadFile will download a url to a local file. It's efficient because it will
 // write as it downloads and not load the whole file into memory.
-func (session *Session) DownloadFile(filepath string, url string) error {
+func (session *Session) DownloadFile(filepath string, uri string) error {
+	klog.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri))
 	// Get the data
-	resp, err := session.Client.Get(url)
+	resp, err := session.Client.Get(uri)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	// ensure the directory
+	session.ensureDownloadDirectory(filepath)
 
 	// Create the file
 	out, err := os.Create(filepath)
@@ -80,6 +85,16 @@ func (session *Session) DownloadFile(filepath string, url string) error {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func (session *Session) ensureDownloadDirectory(fileName string) {
+	dirName := filepath.Dir(fileName)
+	if _, statError := os.Stat(dirName); statError != nil {
+		mkdirError := os.MkdirAll(dirName, os.ModePerm)
+		if mkdirError != nil {
+			panic(mkdirError)
+		}
+	}
 }
 
 // convert the http response to a goquery document
