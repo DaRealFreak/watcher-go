@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/kubernetes/klog"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/modules"
 )
@@ -14,25 +14,25 @@ type watcher struct {
 
 // main functionality, iterates through all tracked items and parses them
 func main() {
-	databaseConnection := database.NewConnection()
+	dbIO := database.NewConnection()
 	watcher := watcher{
-		dbCon:         databaseConnection,
-		moduleFactory: modules.NewModuleFactory(databaseConnection),
+		dbCon:         dbIO,
+		moduleFactory: modules.NewModuleFactory(dbIO),
 	}
 
 	for _, item := range watcher.dbCon.GetTrackedItems(nil) {
 		module := watcher.moduleFactory.GetModule(item.Module)
 		if !module.IsLoggedIn() {
-			glog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
+			klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
 			account := watcher.dbCon.GetAccount(module)
 			success := module.Login(account)
 			if success {
-				glog.Info("login successful")
+				klog.Info("login successful")
 			} else {
-				glog.Warning("login not successful")
+				klog.Warning("login not successful")
 			}
 		}
-		glog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+		klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
 		module.Parse(item)
 	}
 
