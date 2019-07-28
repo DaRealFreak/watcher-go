@@ -28,7 +28,7 @@ func NewSession() *Session {
 }
 
 // GET request
-func (session *Session) Get(url string, tries int) (*goquery.Document, error) {
+func (session *Session) Get(url string, tries int) (*http.Response, error) {
 	// Get the data
 	response, err := session.Client.Get(url)
 	if err != nil {
@@ -39,13 +39,7 @@ func (session *Session) Get(url string, tries int) (*goquery.Document, error) {
 			return session.Get(url, tries+1)
 		}
 	}
-	defer response.Body.Close()
-
-	document, err := goquery.NewDocumentFromReader(response.Body)
-	if err != nil {
-		log.Fatal("Error loading HTTP response body. ", err)
-	}
-	return document, err
+	return response, err
 }
 
 // POST request
@@ -82,4 +76,14 @@ func (session *Session) DownloadFile(filepath string, url string) error {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// convert the http response to a goquery document
+func (session *Session) GetDocument(response *http.Response) *goquery.Document {
+	defer response.Body.Close()
+	document, err := goquery.NewDocumentFromReader(response.Body)
+	if err != nil {
+		log.Fatal("Error loading HTTP response body. ", err)
+	}
+	return document
 }
