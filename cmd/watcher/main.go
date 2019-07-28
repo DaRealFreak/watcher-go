@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/golang/glog"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/modules"
 )
@@ -10,20 +12,29 @@ type watcher struct {
 	moduleFactory *modules.ModuleFactory
 }
 
-// main functionality of the database
-// logs fatal error if no DatabaseConnection could be established
+// main functionality, iterates through all tracked items and parses them
 func main() {
 	watcher := watcher{
 		dbCon:         database.NewConnection(),
 		moduleFactory: modules.NewModuleFactory(),
 	}
 
-	watcher.AddAccountByUri("https://chan.sankakucomplex.com/", "user", "name")
-	module, _ := watcher.moduleFactory.GetModuleFromUri("https://chan.sankakucomplex.com/")
-	account := watcher.dbCon.GetAccount(module)
-	module.Module.Login(account)
+	for _, item := range watcher.dbCon.GetTrackedItems(nil) {
+		module := watcher.moduleFactory.GetModule(item.Module)
+		if !module.Module.IsLoggedIn() {
+			glog.Info(fmt.Sprintf("logging in for module %s", module.Module.Key()))
+			account := watcher.dbCon.GetAccount(module)
+			success := module.Module.Login(account)
+			if success {
+				glog.Info("login successful")
+			} else {
+				glog.Warning("login not successful")
+			}
+		}
+		glog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+		module.Module.Parse(item)
+	}
 
-	// ToDO: iterate through all active items and run them
 	watcher.dbCon.CloseConnection()
 }
 
