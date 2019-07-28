@@ -17,6 +17,7 @@ import (
 )
 
 type SankakuComplex struct {
+	models.BaseModel
 	dbCon    *database.DbIO
 	session  *http_wrapper.Session
 	loggedIn bool
@@ -164,6 +165,8 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 
 	}
 
+	// reverse queue to get the oldest "new" item first and manually update it
+	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 	fmt.Println(downloadQueue)
 }
 
