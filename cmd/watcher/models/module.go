@@ -13,7 +13,7 @@ type ModuleInterface interface {
 }
 
 type Module struct {
-	Module ModuleInterface
+	ModuleInterface
 }
 
 func (t *Module) GetFileName(uri string) string {
