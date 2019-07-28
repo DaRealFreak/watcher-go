@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/kubernetes/klog"
+	"watcher-go/cmd/watcher/arguments"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/modules"
 )
@@ -14,6 +15,7 @@ type watcher struct {
 
 func init() {
 	klog.InitFlags(nil)
+	arguments.InitFlags()
 }
 
 // main functionality, iterates through all tracked items and parses them
