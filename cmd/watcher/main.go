@@ -12,6 +12,10 @@ type watcher struct {
 	moduleFactory *modules.ModuleFactory
 }
 
+func init() {
+	klog.InitFlags(nil)
+}
+
 // main functionality, iterates through all tracked items and parses them
 func main() {
 	dbIO := database.NewConnection()
