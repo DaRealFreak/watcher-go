@@ -12,6 +12,13 @@ type ModuleInterface interface {
 	Parse(item *TrackedItem)
 }
 
+type DownloadQueueItem struct {
+	ItemId      string
+	DownloadTag string
+	FileName    string
+	FileUri     string
+}
+
 type Module struct {
 	ModuleInterface
 }
@@ -24,4 +31,13 @@ func (t *Module) GetFileName(uri string) string {
 func (t *Module) GetFileExtension(uri string) string {
 	// ToDo: implement getting the file extension
 	return uri
+}
+
+// reverse the download queue items to get the oldest items first
+// to be able to interrupt the update process anytime
+func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []DownloadQueueItem {
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
+	}
+	return downloadQueue
 }
