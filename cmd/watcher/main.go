@@ -22,10 +22,10 @@ func main() {
 
 	for _, item := range watcher.dbCon.GetTrackedItems(nil) {
 		module := watcher.moduleFactory.GetModule(item.Module)
-		if !module.Module.IsLoggedIn() {
-			glog.Info(fmt.Sprintf("logging in for module %s", module.Module.Key()))
+		if !module.IsLoggedIn() {
+			glog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
 			account := watcher.dbCon.GetAccount(module)
-			success := module.Module.Login(account)
+			success := module.Login(account)
 			if success {
 				glog.Info("login successful")
 			} else {
@@ -33,7 +33,7 @@ func main() {
 			}
 		}
 		glog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
-		module.Module.Parse(item)
+		module.Parse(item)
 	}
 
 	watcher.dbCon.CloseConnection()

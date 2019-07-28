@@ -16,9 +16,10 @@ var app watcher
 func TestMain(m *testing.M) {
 	// constructor
 	database.RemoveDatabase()
-	app = watcher{
-		dbCon:         database.NewConnection(),
-		moduleFactory: modules.NewModuleFactory(),
+	databaseConnection := database.NewConnection()
+	app := watcher{
+		dbCon:         databaseConnection,
+		moduleFactory: modules.NewModuleFactory(databaseConnection),
 	}
 
 	// run the unit tests

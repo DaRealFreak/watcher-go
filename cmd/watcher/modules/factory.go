@@ -30,7 +30,7 @@ func (f ModuleFactory) GetAllModules() []*models.Module {
 // retrieve module by it's key
 func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
-		if module.Module.Key() == moduleName {
+		if module.Key() == moduleName {
 			return module
 		}
 	}

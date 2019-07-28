@@ -26,13 +26,10 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 		session:  http_wrapper.NewSession(),
 		loggedIn: false,
 	}
-	var templateImplementation models.ModuleInterface = &subModule
 
-	module := models.Module{
-		Module: templateImplementation,
-	}
+	module := models.Module{ModuleInterface: &subModule}
 	// register the uri schema
-	module.Module.RegisterUriSchema(uriSchemas)
+	module.RegisterUriSchema(uriSchemas)
 	return &module
 }
 

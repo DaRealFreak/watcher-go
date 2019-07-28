@@ -20,7 +20,7 @@ func (db DbIO) GetTrackedItems(module *models.Module) []*models.TrackedItem {
 		stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
 		db.checkErr(err)
 
-		rows, err = stmt.Query(module.Module.Key())
+		rows, err = stmt.Query(module.Key())
 		db.checkErr(err)
 	}
 	defer rows.Close()
@@ -42,7 +42,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module *models.Module) *m
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(uri, module.Module.Key())
+	rows, err := stmt.Query(uri, module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -65,7 +65,7 @@ func (db DbIO) CreateTrackedItem(uri string, module *models.Module) {
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(uri, module.Module.Key())
+	_, err = stmt.Exec(uri, module.Key())
 	db.checkErr(err)
 }
 

@@ -10,7 +10,7 @@ func (db DbIO) GetAccount(module *models.Module) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(module.Module.Key())
+	rows, err := stmt.Query(module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -30,7 +30,7 @@ func (db DbIO) GetFirstOrCreateAccount(user string, password string, module *mod
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	db.checkErr(err)
 
-	rows, err := stmt.Query(user, module.Module.Key())
+	rows, err := stmt.Query(user, module.Key())
 	db.checkErr(err)
 	defer rows.Close()
 
@@ -53,6 +53,6 @@ func (db DbIO) CreateAccount(user string, password string, module *models.Module
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user, password, module.Module.Key())
+	_, err = stmt.Exec(user, password, module.Key())
 	db.checkErr(err)
 }
