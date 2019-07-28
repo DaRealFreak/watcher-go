@@ -3,6 +3,7 @@ package modules
 import (
 	"fmt"
 	"regexp"
+	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/models"
 	"watcher-go/cmd/watcher/modules/sankakucomplex"
 )
@@ -13,11 +14,11 @@ type ModuleFactory struct {
 }
 
 // generate new module factory and register modules
-func NewModuleFactory() *ModuleFactory {
+func NewModuleFactory(dbIO database.DbIO) *ModuleFactory {
 	factory := ModuleFactory{
 		uriSchemas: make(map[string][]*regexp.Regexp),
 	}
-	factory.modules = append(factory.modules, sankakucomplex.NewModule(factory.uriSchemas))
+	factory.modules = append(factory.modules, sankakucomplex.NewModule(dbIO, factory.uriSchemas))
 	return &factory
 }
 

@@ -14,9 +14,10 @@ type watcher struct {
 
 // main functionality, iterates through all tracked items and parses them
 func main() {
+	databaseConnection := database.NewConnection()
 	watcher := watcher{
-		dbCon:         database.NewConnection(),
-		moduleFactory: modules.NewModuleFactory(),
+		dbCon:         databaseConnection,
+		moduleFactory: modules.NewModuleFactory(databaseConnection),
 	}
 
 	for _, item := range watcher.dbCon.GetTrackedItems(nil) {
