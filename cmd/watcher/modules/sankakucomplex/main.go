@@ -24,7 +24,7 @@ type SankakuComplex struct {
 }
 
 type ApiItem struct {
-	Id               int
+	Id               json.Number
 	Rating           string
 	Status           string
 	Author           Author
@@ -94,7 +94,9 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 		loggedIn: false,
 	}
 
-	module := models.Module{ModuleInterface: &subModule}
+	module := models.Module{
+		ModuleInterface: &subModule,
+	}
 	// register the uri schema
 	module.RegisterUriSchema(uriSchemas)
 	return &module
@@ -145,9 +147,9 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 		response, _ := m.Get(apiUri, 0)
 		apiItems := m.ParseApiResponse(response)
 		for _, data := range apiItems {
-			if data.Id != item.Id {
+			if string(data.Id) != item.CurrentItem {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
-					ItemId:      string(item.Id),
+					ItemId:      string(data.Id),
 					DownloadTag: "test",
 					FileName:    "test.png",
 					FileUri:     data.FileUrl,
@@ -165,9 +167,16 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 
 	}
 
+	m.ProcessDownloadQueue(downloadQueue, item)
+}
+
+func (m *SankakuComplex) ProcessDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) {
 	// reverse queue to get the oldest "new" item first and manually update it
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
-	fmt.Println(downloadQueue)
+
+	for _, data := range downloadQueue {
+		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
+	}
 }
 
 // parse the response from the API
