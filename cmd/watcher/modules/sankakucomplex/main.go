@@ -150,8 +150,8 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 			if string(data.Id) != item.CurrentItem {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemId:      string(data.Id),
-					DownloadTag: "test",
-					FileName:    "test.png",
+					DownloadTag: tag,
+					FileName:    m.GetFileName(data.FileUrl),
 					FileUri:     data.FileUrl,
 				})
 			} else {
@@ -175,7 +175,9 @@ func (m *SankakuComplex) ProcessDownloadQueue(downloadQueue []models.DownloadQue
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 
 	for _, data := range downloadQueue {
-		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
+		fmt.Println(data)
+		// ToDo: enable later
+		// m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }
 
