@@ -179,7 +179,7 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue []models.DownloadQue
 
 	for index, data := range downloadQueue {
 		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		_ = m.session.DownloadFile(path.Join(arguments.GetDownloadDirectory(), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		_ = m.session.DownloadFile(path.Join(*arguments.DownloadDirectory, m.Key(), data.DownloadTag, data.FileName), data.FileUri)
 		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }

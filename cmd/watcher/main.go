@@ -15,7 +15,6 @@ type watcher struct {
 
 func init() {
 	klog.InitFlags(nil)
-	arguments.InitFlags()
 }
 
 // main functionality, iterates through all tracked items and parses them
@@ -26,20 +25,27 @@ func main() {
 		moduleFactory: modules.NewModuleFactory(dbIO),
 	}
 
-	for _, item := range watcher.dbCon.GetTrackedItems(nil) {
-		module := watcher.moduleFactory.GetModule(item.Module)
-		if !module.IsLoggedIn() {
-			klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
-			account := watcher.dbCon.GetAccount(module)
-			success := module.Login(account)
-			if success {
-				klog.Info("login successful")
-			} else {
-				klog.Warning("login not successful")
+	if *arguments.Account != "" && *arguments.Password != "" && *arguments.Uri != "" {
+		watcher.AddAccountByUri(*arguments.Uri, *arguments.Account, *arguments.Password)
+		return
+	} else if *arguments.Uri != "" && (*arguments.Account == "" || *arguments.Password == "") {
+		watcher.AddItemByUri(*arguments.Uri, *arguments.CurrentItem)
+	} else {
+		for _, item := range watcher.dbCon.GetTrackedItems(nil) {
+			module := watcher.moduleFactory.GetModule(item.Module)
+			if !module.IsLoggedIn() {
+				klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
+				account := watcher.dbCon.GetAccount(module)
+				success := module.Login(account)
+				if success {
+					klog.Info("login successful")
+				} else {
+					klog.Warning("login not successful")
+				}
 			}
+			klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+			module.Parse(item)
 		}
-		klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
-		module.Parse(item)
 	}
 
 	watcher.dbCon.CloseConnection()
