@@ -19,10 +19,7 @@ import (
 )
 
 type sankakuComplex struct {
-	models.BaseModel
-	dbCon    *database.DbIO
-	session  *http_wrapper.Session
-	loggedIn bool
+	models.Module
 }
 
 type apiItem struct {
@@ -90,15 +87,18 @@ type tag struct {
 
 // generate new module and register uri schema
 func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
-	var subModule = sankakuComplex{
-		dbCon:    dbIO,
-		session:  http_wrapper.NewSession(),
-		loggedIn: false,
-	}
+	// register empty sub module to point to
+	var subModule = sankakuComplex{}
 
+	// initialize the Module with the session/database and login status
 	module := models.Module{
+		DbIO:            dbIO,
+		Session:         http_wrapper.NewSession(),
+		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
+	// set the module implementation for access to the session, database, etc
+	subModule.Module = module
 	// register the uri schema
 	module.RegisterUriSchema(uriSchemas)
 	return &module
@@ -110,8 +110,8 @@ func (m *sankakuComplex) Key() (key string) {
 }
 
 // retrieve the logged in status
-func (m *sankakuComplex) IsLoggedIn() (loggedIn bool) {
-	return m.loggedIn
+func (m *sankakuComplex) IsLoggedIn() (LoggedIn bool) {
+	return m.LoggedIn
 }
 
 // add our pattern to the uri schemas
@@ -132,9 +132,9 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 	}
 
 	res, _ := m.post("https://chan.sankakucomplex.com/user/authenticate", values, 0)
-	htmlResponse, _ := m.session.GetDocument(res).Html()
-	m.loggedIn = strings.Contains(htmlResponse, "You are now logged in")
-	return m.loggedIn
+	htmlResponse, _ := m.Session.GetDocument(res).Html()
+	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
+	return m.LoggedIn
 }
 
 func (m *sankakuComplex) Parse(item *models.TrackedItem) {
@@ -179,8 +179,8 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue []models.DownloadQue
 
 	for index, data := range downloadQueue {
 		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		_ = m.session.DownloadFile(path.Join(*arguments.DownloadDirectory, m.Key(), data.DownloadTag, data.FileName), data.FileUri)
-		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
+		_ = m.Session.DownloadFile(path.Join(*arguments.DownloadDirectory, m.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }
 
@@ -204,7 +204,7 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
 
 // custom POST function to check for specific status codes and messages
 func (m *sankakuComplex) post(uri string, data url.Values, tries int) (*http.Response, error) {
-	res, err := m.session.Post(uri, data, tries)
+	res, err := m.Session.Post(uri, data, tries)
 	if err == nil && res.StatusCode == 429 {
 		klog.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
 		time.Sleep(time.Duration(tries+1*60) * time.Second)
@@ -215,7 +215,7 @@ func (m *sankakuComplex) post(uri string, data url.Values, tries int) (*http.Res
 
 // custom GET function to check for specific status codes and messages
 func (m *sankakuComplex) get(uri string, tries int) (*http.Response, error) {
-	res, err := m.session.Get(uri, tries)
+	res, err := m.Session.Get(uri, tries)
 	if err == nil && res.StatusCode == 429 {
 		klog.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
 		time.Sleep(time.Duration(tries+1*60) * time.Second)
