@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"watcher-go/cmd/watcher/arguments"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/http_wrapper"
 	"watcher-go/cmd/watcher/models"
@@ -152,7 +151,7 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 			if string(data.Id) != item.CurrentItem {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemId:      string(data.Id),
-					DownloadTag: tag,
+					DownloadTag: path.Join(tag, m.getTagSubDirectory(data)),
 					FileName:    string(data.Id) + "_" + m.GetFileName(data.FileUrl),
 					FileUri:     data.FileUrl,
 				})
@@ -169,19 +168,7 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 
 	}
 
-	m.processDownloadQueue(downloadQueue, item)
-}
-
-func (m *sankakuComplex) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) {
-	// reverse queue to get the oldest "new" item first and manually update it
-	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
-	klog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
-
-	for index, data := range downloadQueue {
-		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		_ = m.Session.DownloadFile(path.Join(*arguments.DownloadDirectory, m.Key(), data.DownloadTag, data.FileName), data.FileUri)
-		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
-	}
+	m.ProcessDownloadQueue(downloadQueue, item)
 }
 
 // parse the response from the API
@@ -200,6 +187,15 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
 		log.Fatalf("parsed uri(%s) does not contain any \"tags\" tag", item.Uri)
 	}
 	return q["tags"][0]
+}
+
+func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
+	for _, tag := range item.Tags {
+		if tag.NameEn == "doujinshi" {
+			return "book"
+		}
+	}
+	return ""
 }
 
 // custom POST function to check for specific status codes and messages
