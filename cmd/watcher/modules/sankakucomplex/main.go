@@ -175,8 +175,10 @@ func (m *SankakuComplex) Parse(item *models.TrackedItem) {
 func (m *SankakuComplex) ProcessDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) {
 	// reverse queue to get the oldest "new" item first and manually update it
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
+	klog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
 
-	for _, data := range downloadQueue {
+	for index, data := range downloadQueue {
+		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
 		_ = m.session.DownloadFile(path.Join(arguments.GetDownloadDirectory(), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
 		m.dbCon.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
