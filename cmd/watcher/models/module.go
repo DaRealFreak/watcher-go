@@ -54,7 +54,7 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 	return downloadQueue
 }
 
-func (t *Module) processDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) {
+func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) {
 	// reverse queue to get the oldest "new" item first and manually update it
 	downloadQueue = t.ReverseDownloadQueueItems(downloadQueue)
 	klog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
