@@ -16,10 +16,10 @@ var app watcher
 func TestMain(m *testing.M) {
 	// constructor
 	database.RemoveDatabase()
-	databaseConnection := database.NewConnection()
-	app := watcher{
-		dbCon:         databaseConnection,
-		moduleFactory: modules.NewModuleFactory(databaseConnection),
+	dbIO := database.NewConnection()
+	app = watcher{
+		dbCon:         dbIO,
+		moduleFactory: modules.NewModuleFactory(dbIO),
 	}
 
 	// run the unit tests
@@ -47,7 +47,7 @@ func TestAddAccountByUri(t *testing.T) {
 func TestAddItemByUri(t *testing.T) {
 	testUri := "https://chan.sankakucomplex.com/"
 	app.AddItemByUri(testUri, "")
-	app.AddItemByUri(testUri + "_another", "hi there")
+	app.AddItemByUri(testUri+"_another", "hi there")
 
 	// ToDo: check generated items
 	module, _ := app.moduleFactory.GetModuleFromUri(testUri)
