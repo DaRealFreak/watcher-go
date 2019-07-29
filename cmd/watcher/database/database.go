@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
+	"watcher-go/cmd/watcher/models"
 )
 
 type DbIO struct {
+	models.DatabaseInterface
 	connection *sql.DB
 }
 
