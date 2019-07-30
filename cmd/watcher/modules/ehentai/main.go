@@ -11,12 +11,15 @@ import (
 
 type ehentai struct {
 	models.Module
+	galleryImageIdPattern *regexp.Regexp
 }
 
 // generate new module and register uri schema
 func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
-	var subModule = ehentai{}
+	var subModule = ehentai{
+		galleryImageIdPattern: regexp.MustCompile("(\\w+-\\d+)"),
+	}
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
@@ -68,6 +71,8 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
-	var downloadQueue []models.DownloadQueueItem
+	// ToDo: add gallery list support and not just single gallery
+	downloadQueue := m.ParseGallery(item)
+
 	m.ProcessDownloadQueue(downloadQueue, item)
 }
