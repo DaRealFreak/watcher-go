@@ -35,8 +35,13 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 			}
 		}
 
+		// break outer loop too if the current item got found
+		if foundCurrentItem {
+			break
+		}
+
 		previousPageUrl, exists := m.getPreviousGalleryPageUrl(html)
-		if !exists {
+		if exists == false {
 			// no previous page exists anymore, break here
 			break
 		}
