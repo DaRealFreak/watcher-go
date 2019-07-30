@@ -168,6 +168,8 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 
 	}
 
+	// reverse queue to get the oldest "new" item first and manually update it
+	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 	m.ProcessDownloadQueue(downloadQueue, item)
 }
 
