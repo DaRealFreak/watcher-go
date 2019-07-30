@@ -43,7 +43,12 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 		response, _ = m.Session.Get(previousPageUrl, 0)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
+
+	// reverse download queue to download the oldest items first
+	// and to have a point to start with on the next run (last page -> front page)
+	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 	m.ProcessDownloadQueue(downloadQueue, item)
+	// mark item as complete since update doesn't affect old galleries
 	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 }
 
@@ -89,7 +94,7 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQue
 	return models.DownloadQueueItem{
 		ItemId:      item.id,
 		DownloadTag: item.galleryTitle,
-		FileName:    m.GetFileName(imageUrl),
+		FileName:    m.galleryImageIdPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageUrl),
 		FileUri:     imageUrl,
 	}
 }

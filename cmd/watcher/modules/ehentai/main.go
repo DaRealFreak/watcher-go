@@ -11,14 +11,16 @@ import (
 
 type ehentai struct {
 	models.Module
-	galleryImageIdPattern *regexp.Regexp
+	galleryImageIdPattern     *regexp.Regexp
+	galleryImageNumberPattern *regexp.Regexp
 }
 
 // generate new module and register uri schema
 func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = ehentai{
-		galleryImageIdPattern: regexp.MustCompile("(\\w+-\\d+)"),
+		galleryImageIdPattern:     regexp.MustCompile("(\\w+-\\d+)"),
+		galleryImageNumberPattern: regexp.MustCompile("\\w+-(?P<Number>\\d+)"),
 	}
 
 	// initialize the Module with the session/database and login status
