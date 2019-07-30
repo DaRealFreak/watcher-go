@@ -94,7 +94,7 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQue
 	return models.DownloadQueueItem{
 		ItemId:      item.id,
 		DownloadTag: item.galleryTitle,
-		FileName:    m.galleryImageIdPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageUrl),
+		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageUrl),
 		FileUri:     imageUrl,
 	}
 }
