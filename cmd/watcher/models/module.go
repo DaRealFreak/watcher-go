@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"watcher-go/cmd/watcher/arguments"
 	"watcher-go/cmd/watcher/http_wrapper"
 )
@@ -62,4 +63,21 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 		_ = t.Session.DownloadFile(path.Join(*arguments.DownloadDirectory, t.Key(), data.DownloadTag, data.FileName), data.FileUri)
 		t.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
+}
+
+// replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
+// and trims the result
+func (t *Module) SanitizePath(path string, allowSeparator bool) string {
+	var reservedCharacters *regexp.Regexp
+	if allowSeparator {
+		reservedCharacters = regexp.MustCompile("[:\"*?<>|]+")
+	} else {
+		reservedCharacters = regexp.MustCompile("[\\\\/:\"*?<>|]+")
+	}
+	path = reservedCharacters.ReplaceAllString(path, " ")
+	for strings.Contains(path, "  ") {
+		path = strings.Replace(path, "  ", " ", -1)
+	}
+	path = strings.Trim(path, " ")
+	return path
 }
