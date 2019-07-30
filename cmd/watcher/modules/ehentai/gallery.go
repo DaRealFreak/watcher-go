@@ -13,7 +13,7 @@ type imageGalleryItem struct {
 	galleryTitle string
 }
 
-func (m *ehentai) parseGallery(item *models.TrackedItem) []models.DownloadQueueItem {
+func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	response, _ := m.Session.Get(item.Uri, 0)
 	html, _ := m.Session.GetDocument(response).Html()
 	if strings.Contains(html, "There are newer versions of this gallery available") {
@@ -43,7 +43,8 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) []models.DownloadQueueI
 		response, _ = m.Session.Get(previousPageUrl, 0)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
-	return downloadQueue
+	m.ProcessDownloadQueue(downloadQueue, item)
+	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 }
 
 func (m *ehentai) getPreviousGalleryPageUrl(html string) (uri string, exists bool) {
