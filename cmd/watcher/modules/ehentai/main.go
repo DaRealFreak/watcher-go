@@ -72,7 +72,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
 	// ToDo: add gallery list support and not just single gallery
-	downloadQueue := m.ParseGallery(item)
+	downloadQueue := m.parseGallery(item)
 
 	m.ProcessDownloadQueue(downloadQueue, item)
 }

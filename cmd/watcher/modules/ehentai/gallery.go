@@ -8,24 +8,26 @@ import (
 )
 
 type imageGalleryItem struct {
-	Id  string
-	Uri string
+	id           string
+	uri          string
+	galleryTitle string
 }
 
-func (m *ehentai) ParseGallery(item *models.TrackedItem) []models.DownloadQueueItem {
+func (m *ehentai) parseGallery(item *models.TrackedItem) []models.DownloadQueueItem {
 	response, _ := m.Session.Get(item.Uri, 0)
 	html, _ := m.Session.GetDocument(response).Html()
 	if strings.Contains(html, "There are newer versions of this gallery available") {
 		log.Fatal("newer version available, update tracked item for uri: " + item.Uri)
 	}
+	galleryTitle := m.extractGalleryTitle(html)
 
 	var downloadQueue []models.DownloadQueueItem
 	foundCurrentItem := false
 	response, _ = m.Session.Get(m.getLastGalleryPageUrl(html), 0)
 	html, _ = m.Session.GetDocument(response).Html()
 	for foundCurrentItem == false {
-		for _, galleryItem := range m.getGalleryImageUrls(html) {
-			if galleryItem.Id != item.CurrentItem {
+		for _, galleryItem := range m.getGalleryImageUrls(html, galleryTitle) {
+			if galleryItem.id != item.CurrentItem {
 				downloadQueue = append(downloadQueue, m.getDownloadQueueItem(galleryItem))
 			} else {
 				foundCurrentItem = true
@@ -60,14 +62,15 @@ func (m *ehentai) getLastGalleryPageUrl(html string) string {
 	return lastPageUri
 }
 
-func (m *ehentai) getGalleryImageUrls(html string) []imageGalleryItem {
+func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
 	var imageUrls []imageGalleryItem
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find(".gdtm > div").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Find("a[href]").Attr("href")
 		imageUrls = append(imageUrls, imageGalleryItem{
-			Id:  m.galleryImageIdPattern.FindString(uri),
-			Uri: uri,
+			id:           m.galleryImageIdPattern.FindString(uri),
+			uri:          uri,
+			galleryTitle: galleryTitle,
 		})
 	})
 
@@ -79,13 +82,19 @@ func (m *ehentai) getGalleryImageUrls(html string) []imageGalleryItem {
 }
 
 func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
-	response, _ := m.Session.Get(item.Uri, 0)
+	response, _ := m.Session.Get(item.uri, 0)
 	document := m.Session.GetDocument(response)
 	imageUrl, _ := document.Find("img#img").Attr("src")
 	return models.DownloadQueueItem{
-		ItemId:      item.Id,
-		DownloadTag: "ToDo",
+		ItemId:      item.id,
+		DownloadTag: item.galleryTitle,
 		FileName:    m.GetFileName(imageUrl),
 		FileUri:     imageUrl,
 	}
+}
+
+func (m *ehentai) extractGalleryTitle(html string) (galleryTitle string) {
+	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+	galleryTitle = document.Find("div#gd2 > h1#gn").Text()
+	return m.SanitizePath(galleryTitle, false)
 }
