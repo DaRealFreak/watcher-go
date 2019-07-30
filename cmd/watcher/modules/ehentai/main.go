@@ -13,6 +13,7 @@ type ehentai struct {
 	models.Module
 	galleryImageIdPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
+	searchGalleryIdPattern   *regexp.Regexp
 }
 
 // generate new module and register uri schema
@@ -21,6 +22,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	var subModule = ehentai{
 		galleryImageIdPattern:    regexp.MustCompile("(\\w+-\\d+)"),
 		galleryImageIndexPattern: regexp.MustCompile("\\w+-(?P<Number>\\d+)"),
+		searchGalleryIdPattern:   regexp.MustCompile("(\\d+/\\w+)"),
 	}
 
 	// initialize the Module with the session/database and login status
@@ -39,7 +41,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 
 // retrieve the module key
 func (m *ehentai) Key() (key string) {
-	return "g.e-hentai.com"
+	return "e-hentai.com"
 }
 
 // retrieve the logged in status
@@ -73,6 +75,9 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
-	// ToDo: add gallery list support and not just single gallery
-	m.parseGallery(item)
+	if strings.Contains(item.Uri, "/g/") {
+		m.parseGallery(item)
+	} else if strings.Contains(item.Uri, "/tag/") {
+		m.parseSearch(item)
+	}
 }
