@@ -6,6 +6,7 @@ import (
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/models"
 	"watcher-go/cmd/watcher/modules/ehentai"
+	"watcher-go/cmd/watcher/modules/pixiv"
 	"watcher-go/cmd/watcher/modules/sankakucomplex"
 )
 
@@ -21,6 +22,7 @@ func NewModuleFactory(dbIO *database.DbIO) *ModuleFactory {
 	}
 	factory.modules = append(factory.modules, sankakucomplex.NewModule(dbIO, factory.uriSchemas))
 	factory.modules = append(factory.modules, ehentai.NewModule(dbIO, factory.uriSchemas))
+	factory.modules = append(factory.modules, pixiv.NewModule(dbIO, factory.uriSchemas))
 	return &factory
 }
 
