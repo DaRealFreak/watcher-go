@@ -8,7 +8,6 @@ import (
 
 func init() {
 	RootCmd.AddCommand(getRunCommand())
-
 }
 
 // retrieve the run command
@@ -29,6 +28,5 @@ func getRunCommand() *cobra.Command {
 	}
 	runCmd.PersistentFlags().StringVarP(&downloadDirectory, "directory", "d", "", "Download Directory (required)")
 	_ = viper.BindPFlag("DownloadDirectory", runCmd.PersistentFlags().Lookup("directory"))
-
 	return runCmd
 }
