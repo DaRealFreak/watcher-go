@@ -23,6 +23,18 @@ func NewWatcher() *Watcher {
 	return &watcher
 }
 
+// main functionality, update all tracked items
+func (app *Watcher) Run() {
+	for _, item := range app.DbCon.GetTrackedItems(nil) {
+		module := app.ModuleFactory.GetModule(item.Module)
+		if !module.IsLoggedIn() {
+			app.LoginToModule(module)
+		}
+		klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+		module.Parse(item)
+	}
+}
+
 // extract the module based on the uri and add account if not registered already
 func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
 	module, _ := app.ModuleFactory.GetModuleFromUri(uri)
