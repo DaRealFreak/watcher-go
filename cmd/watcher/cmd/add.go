@@ -17,6 +17,7 @@ func init() {
 	addCmd.AddCommand(getItemCommand())
 }
 
+// retrieve the command for add item
 func getItemCommand() *cobra.Command {
 	var url string
 	var current string
@@ -36,6 +37,7 @@ func getItemCommand() *cobra.Command {
 	return itemCmd
 }
 
+// retrieve the command for add account
 func getAccountCommand() *cobra.Command {
 	var url string
 	var username string

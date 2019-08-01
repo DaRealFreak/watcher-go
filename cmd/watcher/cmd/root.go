@@ -21,7 +21,6 @@ var cfgFile string
 // add arguments for root command
 func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.watcher.yaml)")
-	RootCmd.PersistentFlags().StringP("author", "a", "DaRealFreak", "Author name for copyright attribution")
 }
 
 // main cli functionality
@@ -36,6 +35,7 @@ func Execute() {
 	WatcherApp.DbCon.CloseConnection()
 }
 
+// read config file
 func initConfig() {
 	// Don't forget to read config either from cfgFile or from home directory!
 	if cfgFile != "" {
@@ -54,6 +54,7 @@ func initConfig() {
 	}
 }
 
+// ensure that the default config file exists in case no config file is defined
 func ensureDefaultConfigFile() {
 	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
 		_, _ = os.Create(".watcher.yaml")
