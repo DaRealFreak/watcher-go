@@ -4,7 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"log"
 	"strings"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/models"
 )
 
 type imageGalleryItem struct {

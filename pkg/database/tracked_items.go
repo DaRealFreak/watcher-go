@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/models"
 )
 
 // retrieve all tracked items from the sqlite database

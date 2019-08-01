@@ -3,11 +3,11 @@ package modules
 import (
 	"fmt"
 	"regexp"
-	"watcher-go/cmd/watcher/database"
-	"watcher-go/cmd/watcher/models"
-	"watcher-go/cmd/watcher/modules/ehentai"
-	"watcher-go/cmd/watcher/modules/pixiv"
-	"watcher-go/cmd/watcher/modules/sankakucomplex"
+	"watcher-go/pkg/database"
+	"watcher-go/pkg/models"
+	"watcher-go/pkg/modules/ehentai"
+	"watcher-go/pkg/modules/pixiv"
+	"watcher-go/pkg/modules/sankakucomplex"
 )
 
 type ModuleFactory struct {

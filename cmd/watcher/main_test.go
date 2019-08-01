@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"watcher-go/cmd/watcher/database"
-	"watcher-go/cmd/watcher/modules"
+	"watcher-go/pkg/database"
+	"watcher-go/pkg/modules"
 )
 
 var app watcher

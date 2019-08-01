@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/models"
 )
 
 type DbIO struct {

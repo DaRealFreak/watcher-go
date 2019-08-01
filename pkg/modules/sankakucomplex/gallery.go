@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/models"
 )
 
 type apiItem struct {

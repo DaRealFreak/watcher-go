@@ -3,9 +3,9 @@ package pixiv
 import (
 	"fmt"
 	"regexp"
-	"watcher-go/cmd/watcher/database"
-	"watcher-go/cmd/watcher/http_wrapper"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/database"
+	"watcher-go/pkg/http_wrapper"
+	"watcher-go/pkg/models"
 )
 
 type pixiv struct {

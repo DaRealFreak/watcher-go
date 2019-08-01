@@ -3,7 +3,7 @@ package ehentai
 import (
 	"github.com/PuerkitoBio/goquery"
 	"strings"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/models"
 )
 
 type searchGalleryItem struct {

@@ -4,9 +4,9 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"watcher-go/cmd/watcher/database"
-	"watcher-go/cmd/watcher/http_wrapper"
-	"watcher-go/cmd/watcher/models"
+	"watcher-go/pkg/database"
+	"watcher-go/pkg/http_wrapper"
+	"watcher-go/pkg/models"
 )
 
 type ehentai struct {

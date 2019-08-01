@@ -3,14 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/kubernetes/klog"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
-	"os"
-	"watcher-go/cmd/watcher/arguments"
-	"watcher-go/cmd/watcher/database"
-	"watcher-go/cmd/watcher/models"
-	"watcher-go/cmd/watcher/modules"
+	"watcher-go/cmd/watcher/cmd"
+	"watcher-go/pkg/database"
+	"watcher-go/pkg/models"
+	"watcher-go/pkg/modules"
 )
 
 // ToDo:: lots and lots of cleanup
@@ -24,113 +21,8 @@ func init() {
 	klog.InitFlags(nil)
 }
 
-func ensureDefaultConfigFile() {
-	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
-		os.Create(".watcher.yaml")
-	}
-}
-
-func initConfig() {
-	// Don't forget to read config either from cfgFile or from home directory!
-	if arguments.CfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(arguments.CfgFile)
-	} else {
-		ensureDefaultConfigFile()
-		// Search config in current directory with name ".watcher" (without extension).
-		viper.AddConfigPath("./")
-		viper.SetConfigName(".watcher")
-	}
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Can't read config:", err)
-		os.Exit(1)
-	}
-}
-
 func main() {
-	watcher := NewWatcher()
-
-	cobra.OnInitialize(initConfig)
-	var rootCmd = &cobra.Command{
-		Use:   "app",
-		Short: "Watcher keeps track of all media items you want to track.",
-		Long: "An application written in Go to keep track of items from multiple sources.\n" +
-			"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
-	}
-	rootCmd.PersistentFlags().StringVar(&arguments.CfgFile, "config", "", "config file (default is $HOME/.watcher.yaml)")
-	rootCmd.PersistentFlags().StringP("author", "a", "DaRealFreak", "Author name for copyright attribution")
-
-	// runs the main functionality to update all tracked items
-	runCmd := &cobra.Command{
-		Use:   "run",
-		Short: "update all tracked items",
-		Run: func(cmd *cobra.Command, args []string) {
-			// ToDo: remove arguments package, directly use viper
-			arguments.DownloadDirectory = viper.GetString("directory")
-			viper.WriteConfig()
-			for _, item := range watcher.dbCon.GetTrackedItems(nil) {
-				module := watcher.moduleFactory.GetModule(item.Module)
-				if !module.IsLoggedIn() {
-					watcher.loginToModule(module)
-				}
-				klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
-				module.Parse(item)
-			}
-		},
-	}
-	runCmd.PersistentFlags().StringVarP(&arguments.DownloadDirectory, "directory", "d", "", "Download Directory (required)")
-	viper.BindPFlag("directory", runCmd.PersistentFlags().Lookup("directory"))
-
-	// general add option
-	addCmd := &cobra.Command{
-		Use:   "add",
-		Short: "add an item or account to the database",
-		Long:  "option for the user to add accounts/items to the database for the main usage",
-	}
-
-	var url string
-	var current string
-	// add the item option, requires only the uri
-	itemCmd := &cobra.Command{
-		Use:   "item",
-		Short: "adds an item to the database",
-		Long:  "parses and adds the passed url into the tracked items if not already tracked",
-		Run: func(cmd *cobra.Command, args []string) {
-			watcher.AddItemByUri(url, current)
-		},
-	}
-	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of item you want to track (required)")
-	itemCmd.Flags().StringVarP(&current, "current", "", "", "current item in case you don't want to download older items")
-	_ = itemCmd.MarkFlagRequired("url")
-
-	var username string
-	var password string
-	// add the account option, requires username, password and uri
-	accountCmd := &cobra.Command{
-		Use:   "account",
-		Short: "adds an account to the database",
-		Long:  "checks the passed url to assign the passed account/password to a module and save it to the database",
-		Run: func(cmd *cobra.Command, args []string) {
-			watcher.AddAccountByUri(url, username, password)
-		},
-	}
-	accountCmd.Flags().StringVarP(&username, "username", "u", "", "username you want to add (required)")
-	accountCmd.Flags().StringVarP(&password, "password", "p", "", "password of the user (required)")
-	accountCmd.Flags().StringVarP(&url, "url", "", "", "url for the association of the account (required)")
-	_ = accountCmd.MarkFlagRequired("username")
-	_ = accountCmd.MarkFlagRequired("password")
-	_ = accountCmd.MarkFlagRequired("url")
-
-	rootCmd.AddCommand(runCmd)
-	rootCmd.AddCommand(addCmd)
-	addCmd.AddCommand(itemCmd, accountCmd)
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	watcher.dbCon.CloseConnection()
+	cmd.Execute()
 }
 
 func NewWatcher() *watcher {
