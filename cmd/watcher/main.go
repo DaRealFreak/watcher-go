@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/kubernetes/klog"
+	"log"
 	"watcher-go/cmd/watcher/arguments"
 	"watcher-go/cmd/watcher/database"
+	"watcher-go/cmd/watcher/models"
 	"watcher-go/cmd/watcher/modules"
 )
 
@@ -34,14 +36,7 @@ func main() {
 		for _, item := range watcher.dbCon.GetTrackedItems(nil) {
 			module := watcher.moduleFactory.GetModule(item.Module)
 			if !module.IsLoggedIn() {
-				klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
-				account := watcher.dbCon.GetAccount(module)
-				success := module.Login(account)
-				if success {
-					klog.Info("login successful")
-				} else {
-					klog.Warning("login not successful")
-				}
+				watcher.loginToModule(module)
 			}
 			klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
 			module.Parse(item)
@@ -68,6 +63,30 @@ func (app watcher) AddItemByUri(uri string, currentItem string) {
 	if currentItem != "" {
 		app.dbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}
+}
+
+// login into the module
+func (app watcher) loginToModule(module *models.Module) {
+	klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
+	account := app.dbCon.GetAccount(module)
+
+	// no account available but module requires a login
+	if account == nil && module.RequiresLogin() {
+		log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()))
+	}
+
+	// login into the module
+	success := module.Login(account)
+	if success {
+		klog.Info("login successful")
+	} else {
+		if module.RequiresLogin() {
+			log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but the login failed", module.Key()))
+		} else {
+			klog.Warning("login not successful")
+		}
+	}
+
 }
 
 func (app watcher) checkError(err error) {
