@@ -19,3 +19,4 @@
 
 # Project generated binaries
 watcher.db
+.watcher.yaml
