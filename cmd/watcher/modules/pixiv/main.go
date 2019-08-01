@@ -1,6 +1,7 @@
 package pixiv
 
 import (
+	"fmt"
 	"regexp"
 	"watcher-go/cmd/watcher/database"
 	"watcher-go/cmd/watcher/http_wrapper"
@@ -35,6 +36,11 @@ func (m *pixiv) Key() (key string) {
 	return "pixiv.net"
 }
 
+// check if this module requires a login to work
+func (m *pixiv) RequiresLogin() (requiresLogin bool) {
+	return true
+}
+
 // retrieve the logged in status
 func (m *pixiv) IsLoggedIn() (LoggedIn bool) {
 	return m.LoggedIn
@@ -54,4 +60,5 @@ func (m *pixiv) Login(account *models.Account) bool {
 }
 
 func (m *pixiv) Parse(item *models.TrackedItem) {
+	fmt.Println(item)
 }

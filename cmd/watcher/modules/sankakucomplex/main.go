@@ -108,6 +108,11 @@ func (m *sankakuComplex) Key() (key string) {
 	return "chan.sankakucomplex.com"
 }
 
+// check if this module requires a login to work
+func (m *sankakuComplex) RequiresLogin() (requiresLogin bool) {
+	return false
+}
+
 // retrieve the logged in status
 func (m *sankakuComplex) IsLoggedIn() (LoggedIn bool) {
 	return m.LoggedIn

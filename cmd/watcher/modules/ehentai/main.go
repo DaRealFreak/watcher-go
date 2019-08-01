@@ -44,6 +44,11 @@ func (m *ehentai) Key() (key string) {
 	return "e-hentai.com"
 }
 
+// check if this module requires a login to work
+func (m *ehentai) RequiresLogin() (requiresLogin bool) {
+	return false
+}
+
 // retrieve the logged in status
 func (m *ehentai) IsLoggedIn() (LoggedIn bool) {
 	return m.LoggedIn
