@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kubernetes/klog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"watcher-go/cmd/watcher/arguments"
@@ -11,6 +12,8 @@ import (
 	"watcher-go/cmd/watcher/models"
 	"watcher-go/cmd/watcher/modules"
 )
+
+// ToDo:: lots and lots of cleanup
 
 type watcher struct {
 	dbCon         *database.DbIO
@@ -21,15 +24,41 @@ func init() {
 	klog.InitFlags(nil)
 }
 
+func ensureDefaultConfigFile() {
+	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
+		os.Create(".watcher.yaml")
+	}
+}
+
+func initConfig() {
+	// Don't forget to read config either from cfgFile or from home directory!
+	if arguments.CfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(arguments.CfgFile)
+	} else {
+		ensureDefaultConfigFile()
+		// Search config in current directory with name ".watcher" (without extension).
+		viper.AddConfigPath("./")
+		viper.SetConfigName(".watcher")
+	}
+
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Can't read config:", err)
+		os.Exit(1)
+	}
+}
+
 func main() {
 	watcher := NewWatcher()
 
+	cobra.OnInitialize(initConfig)
 	var rootCmd = &cobra.Command{
 		Use:   "app",
 		Short: "Watcher keeps track of all media items you want to track.",
 		Long: "An application written in Go to keep track of items from multiple sources.\n" +
 			"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
 	}
+	rootCmd.PersistentFlags().StringVar(&arguments.CfgFile, "config", "", "config file (default is $HOME/.watcher.yaml)")
 	rootCmd.PersistentFlags().StringP("author", "a", "DaRealFreak", "Author name for copyright attribution")
 
 	// runs the main functionality to update all tracked items
@@ -37,6 +66,9 @@ func main() {
 		Use:   "run",
 		Short: "update all tracked items",
 		Run: func(cmd *cobra.Command, args []string) {
+			// ToDo: remove arguments package, directly use viper
+			arguments.DownloadDirectory = viper.GetString("directory")
+			viper.WriteConfig()
 			for _, item := range watcher.dbCon.GetTrackedItems(nil) {
 				module := watcher.moduleFactory.GetModule(item.Module)
 				if !module.IsLoggedIn() {
@@ -47,7 +79,8 @@ func main() {
 			}
 		},
 	}
-	runCmd.Flags().StringVarP(&arguments.DownloadDirectory, "directory", "d", "./", "Download Directory (required)")
+	runCmd.PersistentFlags().StringVarP(&arguments.DownloadDirectory, "directory", "d", "", "Download Directory (required)")
+	viper.BindPFlag("directory", runCmd.PersistentFlags().Lookup("directory"))
 
 	// general add option
 	addCmd := &cobra.Command{
