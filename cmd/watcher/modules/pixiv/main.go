@@ -43,7 +43,7 @@ func (m *pixiv) IsLoggedIn() (LoggedIn bool) {
 // add our pattern to the uri schemas
 func (m *pixiv) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleUriSchemas []*regexp.Regexp
-	test, _ := regexp.Compile(".*.sankakucomplex.com")
+	test, _ := regexp.Compile(".*.pixiv.(co.jp|net)")
 	moduleUriSchemas = append(moduleUriSchemas, test)
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
