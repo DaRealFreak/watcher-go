@@ -61,7 +61,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 
 	for index, data := range downloadQueue {
 		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		_ = t.Session.DownloadFile(path.Join(*arguments.DownloadDirectory, t.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		_ = t.Session.DownloadFile(path.Join(arguments.DownloadDirectory, t.Key(), data.DownloadTag, data.FileName), data.FileUri)
 		t.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }
