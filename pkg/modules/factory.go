@@ -2,6 +2,7 @@ package modules
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"watcher-go/pkg/database"
 	"watcher-go/pkg/models"
@@ -42,13 +43,14 @@ func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 }
 
 // check the registered uri schemas for a match and return the module
-func (f ModuleFactory) GetModuleFromUri(uri string) (*models.Module, error) {
+func (f ModuleFactory) GetModuleFromUri(uri string) *models.Module {
 	for key, patternCollection := range f.uriSchemas {
 		for _, pattern := range patternCollection {
 			if pattern.MatchString(uri) {
-				return f.GetModule(key), nil
+				return f.GetModule(key)
 			}
 		}
 	}
-	return nil, fmt.Errorf("no module is registered which can parse based on the url %s", uri)
+	log.Fatal(fmt.Sprintf("no module is registered which can parse based on the url %s", uri))
+	return nil
 }
