@@ -28,7 +28,7 @@ func (app *Watcher) Run() {
 	for _, item := range app.DbCon.GetTrackedItems(nil) {
 		module := app.ModuleFactory.GetModule(item.Module)
 		if !module.IsLoggedIn() {
-			app.LoginToModule(module)
+			app.loginToModule(module)
 		}
 		klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
 		module.Parse(item)
@@ -37,29 +37,31 @@ func (app *Watcher) Run() {
 
 // extract the module based on the uri and add account if not registered already
 func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
-	module, _ := app.ModuleFactory.GetModuleFromUri(uri)
-	if module == nil {
-		log.Fatal(fmt.Sprintf("No module found for url: %s", uri))
-	}
-
+	module := app.ModuleFactory.GetModuleFromUri(uri)
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
 
 // add item based on the uri and set it to the passed current item if not nil
 func (app *Watcher) AddItemByUri(uri string, currentItem string) {
-	module, _ := app.ModuleFactory.GetModuleFromUri(uri)
-	if module == nil {
-		log.Fatal(fmt.Sprintf("No module found for url: %s", uri))
-	}
-
+	module := app.ModuleFactory.GetModuleFromUri(uri)
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}
 }
 
+func (app *Watcher) UpdateAccountDisabledStatusByUri(uri string, user string, disabled bool) {
+	module := app.ModuleFactory.GetModuleFromUri(uri)
+	app.DbCon.UpdateAccountDisabledStatus(user, disabled, module)
+}
+
+func (app *Watcher) UpdateAccountByUri(uri string, user string, password string) {
+	module := app.ModuleFactory.GetModuleFromUri(uri)
+	app.DbCon.UpdateAccount(user, password, module)
+}
+
 // login into the module
-func (app *Watcher) LoginToModule(module *models.Module) {
+func (app *Watcher) loginToModule(module *models.Module) {
 	klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
 	account := app.DbCon.GetAccount(module)
 
