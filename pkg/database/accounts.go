@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"watcher-go/pkg/models"
 )
@@ -22,6 +23,30 @@ func (db DbIO) GetAccount(module *models.Module) *models.Account {
 	} else {
 		return nil
 	}
+}
+
+// retrieve all accounts of only by module if module is not nil
+func (db DbIO) GetAllAccounts(module *models.Module) (accounts []*models.Account) {
+	var rows *sql.Rows
+	var err error
+	if module != nil {
+		stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY module, uid")
+		db.checkErr(err)
+
+		rows, err = stmt.Query(module.Key())
+	} else {
+		rows, err = db.connection.Query("SELECT * FROM accounts WHERE NOT disabled ORDER BY module, uid")
+	}
+	db.checkErr(err)
+
+	for rows.Next() {
+		account := models.Account{}
+		err := rows.Scan(&account.Id, &account.Username, &account.Password, &account.Module, &account.Disabled)
+		db.checkErr(err)
+
+		accounts = append(accounts, &account)
+	}
+	return accounts
 }
 
 // check if an account exists already, if not create it
