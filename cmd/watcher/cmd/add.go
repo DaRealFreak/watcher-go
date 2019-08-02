@@ -13,32 +13,29 @@ func init() {
 	}
 
 	RootCmd.AddCommand(addCmd)
-	addCmd.AddCommand(getAccountCommand())
-	addCmd.AddCommand(getItemCommand())
+	addCmd.AddCommand(getAddAccountCommand())
+	addCmd.AddCommand(getAddItemCommand())
 }
 
 // retrieve the command for add item
-func getItemCommand() *cobra.Command {
-	var url string
-	var current string
-
+func getAddItemCommand() *cobra.Command {
 	// add the item option, requires only the uri
 	itemCmd := &cobra.Command{
-		Use:   "item",
+		Use:   "item [urls of items]",
 		Short: "adds an item to the database",
 		Long:  "parses and adds the passed url into the tracked items if not already tracked",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.AddItemByUri(url, current)
+			for _, url := range args {
+				WatcherApp.AddItemByUri(url, "")
+			}
 		},
 	}
-	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of item you want to track (required)")
-	itemCmd.Flags().StringVarP(&current, "current", "", "", "current item in case you don't want to download older items")
-	_ = itemCmd.MarkFlagRequired("url")
 	return itemCmd
 }
 
 // retrieve the command for add account
-func getAccountCommand() *cobra.Command {
+func getAddAccountCommand() *cobra.Command {
 	var url string
 	var username string
 	var password string
