@@ -56,3 +56,29 @@ func (db DbIO) CreateAccount(user string, password string, module *models.Module
 	_, err = stmt.Exec(user, password, module.Key())
 	db.checkErr(err)
 }
+
+// updates the password of the passed user/module entry
+func (db DbIO) UpdateAccount(user string, password string, module *models.Module) {
+	stmt, err := db.connection.Prepare("UPDATE accounts SET password = ? WHERE user = ? AND module = ?")
+	db.checkErr(err)
+	defer stmt.Close()
+
+	_, err = stmt.Exec(password, user, module.Key())
+	db.checkErr(err)
+}
+
+// disables the account of the passed user/module
+func (db DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module *models.Module) {
+	var disabledInt int8
+	if disabled {
+		disabledInt = 1
+	} else {
+		disabledInt = 0
+	}
+	stmt, err := db.connection.Prepare("UPDATE accounts SET disabled = ? WHERE user = ? AND module = ?")
+	db.checkErr(err)
+	defer stmt.Close()
+
+	_, err = stmt.Exec(disabledInt, user, module.Key())
+	db.checkErr(err)
+}
