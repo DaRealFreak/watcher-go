@@ -20,7 +20,7 @@ var cfgFile string
 
 // add arguments for root command
 func init() {
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.watcher.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.watcher.yaml)")
 }
 
 // main cli functionality
