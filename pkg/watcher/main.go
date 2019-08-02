@@ -38,6 +38,9 @@ func (app *Watcher) Run() {
 // extract the module based on the uri and add account if not registered already
 func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
 	module, _ := app.ModuleFactory.GetModuleFromUri(uri)
+	if module == nil {
+		log.Fatal(fmt.Sprintf("No module found for url: %s", uri))
+	}
 
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
@@ -45,6 +48,9 @@ func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
 // add item based on the uri and set it to the passed current item if not nil
 func (app *Watcher) AddItemByUri(uri string, currentItem string) {
 	module, _ := app.ModuleFactory.GetModuleFromUri(uri)
+	if module == nil {
+		log.Fatal(fmt.Sprintf("No module found for url: %s", uri))
+	}
 
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
