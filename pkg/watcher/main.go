@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/kubernetes/klog"
 	"log"
+	"os"
+	"text/tabwriter"
 	"watcher-go/pkg/database"
 	"watcher-go/pkg/models"
 	"watcher-go/pkg/modules"
@@ -48,6 +50,26 @@ func (app *Watcher) AddItemByUri(uri string, currentItem string) {
 	if currentItem != "" {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}
+}
+
+// list all accounts with the option to limit it to a module
+func (app *Watcher) ListAccounts(uri string) {
+	var accounts []*models.Account
+	if uri == "" {
+		accounts = app.DbCon.GetAllAccounts(nil)
+	} else {
+		module := app.ModuleFactory.GetModuleFromUri(uri)
+		accounts = app.DbCon.GetAllAccounts(module)
+	}
+
+	// initialize tab writer
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
+	_, _ = fmt.Fprintln(w, "Id\tUsername\tPassword\tModule\tDisabled")
+	for _, account := range accounts {
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t", account.Id, account.Username, account.Password, account.Module, account.Disabled)
+	}
+	_ = w.Flush()
 }
 
 func (app *Watcher) UpdateAccountDisabledStatusByUri(uri string, user string, disabled bool) {
