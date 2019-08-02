@@ -58,8 +58,12 @@ func (app *Watcher) LoginToModule(module *models.Module) {
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
-	if account == nil && module.RequiresLogin() {
-		log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()))
+	if account == nil {
+		if module.RequiresLogin() {
+			log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()))
+		} else {
+			return
+		}
 	}
 
 	// login into the module
