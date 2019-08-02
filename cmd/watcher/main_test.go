@@ -32,7 +32,7 @@ func TestAddAccountByUri(t *testing.T) {
 	testUri := "https://chan.sankakucomplex.com/"
 	app.AddAccountByUri(testUri, "user", "pass")
 
-	module, _ := app.ModuleFactory.GetModuleFromUri(testUri)
+	module := app.ModuleFactory.GetModuleFromUri(testUri)
 	account := app.DbCon.GetFirstOrCreateAccount("user", "different_pass", module)
 	if account.Password != "pass" {
 		t.Fatal("password got updated or different user got added")
@@ -46,7 +46,7 @@ func TestAddItemByUri(t *testing.T) {
 	app.AddItemByUri(testUri+"_another", "hi there")
 
 	// ToDo: check generated items
-	module, _ := app.ModuleFactory.GetModuleFromUri(testUri)
+	module := app.ModuleFactory.GetModuleFromUri(testUri)
 	fmt.Println("all items regardless of module: ", app.DbCon.GetTrackedItems(nil))
 	fmt.Println("all items of module: ", app.DbCon.GetTrackedItems(module))
 
