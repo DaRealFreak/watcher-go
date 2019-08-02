@@ -1,0 +1,65 @@
+package cmd
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+func init() {
+	// general add option
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "lists items or accounts from the database",
+		Long:  "option for the user to list all items/accounts from the database",
+	}
+
+	RootCmd.AddCommand(listCmd)
+	listCmd.AddCommand(getListAllCommand())
+	listCmd.AddCommand(getListAccountsCommand())
+	listCmd.AddCommand(getListItemsCommand())
+}
+
+func getListAccountsCommand() *cobra.Command {
+	var url string
+	accountCmd := &cobra.Command{
+		Use:   "accounts",
+		Short: "displays all accounts",
+		Long:  "displays all accounts currently in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			WatcherApp.ListAccounts(url)
+		},
+	}
+	accountCmd.Flags().StringVarP(&url, "url", "", "", "url of module")
+	return accountCmd
+}
+
+func getListItemsCommand() *cobra.Command {
+	var url string
+
+	itemCmd := &cobra.Command{
+		Use:   "items",
+		Short: "displays all items",
+		Long:  "displays all items currently in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			WatcherApp.ListTrackedItems(url)
+		},
+	}
+	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of module")
+	return itemCmd
+}
+
+func getListAllCommand() *cobra.Command {
+	allCmd := &cobra.Command{
+		Use:   "all",
+		Short: "displays accounts and items in the database",
+		Long:  "displays all accounts and items currently in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Accounts:")
+			WatcherApp.ListAccounts("")
+			fmt.Println("\n ")
+			fmt.Println("Tracked Items:")
+			WatcherApp.ListTrackedItems("")
+		},
+	}
+	return allCmd
+}
