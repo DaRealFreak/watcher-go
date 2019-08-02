@@ -43,15 +43,6 @@ func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
 
-// add item based on the uri and set it to the passed current item if not nil
-func (app *Watcher) AddItemByUri(uri string, currentItem string) {
-	module := app.ModuleFactory.GetModuleFromUri(uri)
-	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
-	if currentItem != "" {
-		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
-	}
-}
-
 // list all accounts with the option to limit it to a module
 func (app *Watcher) ListAccounts(uri string) {
 	var accounts []*models.Account
@@ -80,6 +71,35 @@ func (app *Watcher) UpdateAccountDisabledStatusByUri(uri string, user string, di
 func (app *Watcher) UpdateAccountByUri(uri string, user string, password string) {
 	module := app.ModuleFactory.GetModuleFromUri(uri)
 	app.DbCon.UpdateAccount(user, password, module)
+}
+
+// add item based on the uri and set it to the passed current item if not nil
+func (app *Watcher) AddItemByUri(uri string, currentItem string) {
+	module := app.ModuleFactory.GetModuleFromUri(uri)
+	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
+	if currentItem != "" {
+		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
+	}
+}
+
+// list all tracked items with the option to limit it to a module
+func (app *Watcher) ListTrackedItems(uri string) {
+	var trackedItems []*models.TrackedItem
+	if uri == "" {
+		trackedItems = app.DbCon.GetTrackedItems(nil)
+	} else {
+		module := app.ModuleFactory.GetModuleFromUri(uri)
+		trackedItems = app.DbCon.GetTrackedItems(module)
+	}
+
+	// initialize tab writer
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
+	_, _ = fmt.Fprintln(w, "Id\tModule\tUrl\tCurrent Item\tCompleted")
+	for _, item := range trackedItems {
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t", item.Id, item.Module, item.Uri, item.CurrentItem, item.Complete)
+	}
+	_ = w.Flush()
 }
 
 // login into the module
