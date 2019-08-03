@@ -17,6 +17,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	response, _ := m.Session.Get(item.Uri, 0)
 	html, _ := m.Session.GetDocument(response).Html()
 	if m.hasGalleryErrors(item, html) {
+		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return
 	}
 	galleryTitle := m.extractGalleryTitle(html)
@@ -110,7 +111,6 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 		return true
 	}
 	if strings.Contains(html, "This gallery has been removed or is unavailable.") {
-		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return true
 	}
 	return false
