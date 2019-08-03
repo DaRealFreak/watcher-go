@@ -7,7 +7,7 @@ import (
 )
 
 // retrieve the first not disabled account of the passed module
-func (db DbIO) GetAccount(module *models.Module) *models.Account {
+func (db DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	db.checkErr(err)
 
@@ -26,7 +26,7 @@ func (db DbIO) GetAccount(module *models.Module) *models.Account {
 }
 
 // retrieve all accounts of only by module if module is not nil
-func (db DbIO) GetAllAccounts(module *models.Module) (accounts []*models.Account) {
+func (db DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models.Account) {
 	var rows *sql.Rows
 	var err error
 	if module != nil {
@@ -51,7 +51,7 @@ func (db DbIO) GetAllAccounts(module *models.Module) (accounts []*models.Account
 
 // check if an account exists already, if not create it
 // returns the already persisted or the newly created account
-func (db DbIO) GetFirstOrCreateAccount(user string, password string, module *models.Module) *models.Account {
+func (db DbIO) GetFirstOrCreateAccount(user string, password string, module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	db.checkErr(err)
 
@@ -73,7 +73,7 @@ func (db DbIO) GetFirstOrCreateAccount(user string, password string, module *mod
 }
 
 // inserts the passed user and password of the specific module into the database
-func (db DbIO) CreateAccount(user string, password string, module *models.Module) {
+func (db DbIO) CreateAccount(user string, password string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO accounts (user, password, module) VALUES (?, ?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()
@@ -83,7 +83,7 @@ func (db DbIO) CreateAccount(user string, password string, module *models.Module
 }
 
 // updates the password of the passed user/module entry
-func (db DbIO) UpdateAccount(user string, password string, module *models.Module) {
+func (db DbIO) UpdateAccount(user string, password string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("UPDATE accounts SET password = ? WHERE user = ? AND module = ?")
 	db.checkErr(err)
 	defer stmt.Close()
@@ -93,7 +93,7 @@ func (db DbIO) UpdateAccount(user string, password string, module *models.Module
 }
 
 // disables the account of the passed user/module
-func (db DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module *models.Module) {
+func (db DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module models.ModuleInterface) {
 	var disabledInt int8
 	if disabled {
 		disabledInt = 1

@@ -8,7 +8,7 @@ import (
 
 // retrieve all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db DbIO) GetTrackedItems(module *models.Module) []*models.TrackedItem {
+func (db DbIO) GetTrackedItems(module models.ModuleInterface) []*models.TrackedItem {
 	var items []*models.TrackedItem
 
 	var rows *sql.Rows
@@ -38,7 +38,7 @@ func (db DbIO) GetTrackedItems(module *models.Module) []*models.TrackedItem {
 
 // check if an item exists already, if not create it
 // returns the already persisted or the newly created item
-func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module *models.Module) *models.TrackedItem {
+func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInterface) *models.TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	db.checkErr(err)
 
@@ -60,7 +60,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module *models.Module) *m
 }
 
 // inserts the passed uri and the module into the tracked_items table
-func (db DbIO) CreateTrackedItem(uri string, module *models.Module) {
+func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
 	db.checkErr(err)
 	defer stmt.Close()

@@ -2,16 +2,16 @@ package models
 
 type DatabaseInterface interface {
 	// tracked item functions
-	GetTrackedItems(module *Module) []*TrackedItem
-	GetFirstOrCreateTrackedItem(uri string, module *Module) *TrackedItem
-	CreateTrackedItem(uri string, module *Module)
+	GetTrackedItems(module ModuleInterface) []*TrackedItem
+	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
+	CreateTrackedItem(uri string, module ModuleInterface)
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 
 	// account functions
-	CreateAccount(user string, password string, module *Module)
-	GetFirstOrCreateAccount(user string, password string, module *Module) *Account
-	GetAccount(module *Module) *Account
+	CreateAccount(user string, password string, module ModuleInterface)
+	GetFirstOrCreateAccount(user string, password string, module ModuleInterface) *Account
+	GetAccount(module ModuleInterface) *Account
 }
 
 type Account struct {
