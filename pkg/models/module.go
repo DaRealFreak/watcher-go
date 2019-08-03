@@ -5,6 +5,7 @@ import (
 	"github.com/kubernetes/klog"
 	"github.com/spf13/viper"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -61,8 +62,13 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 
 	for index, data := range downloadQueue {
 		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		_ = t.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), t.Key(), data.DownloadTag, data.FileName), data.FileUri)
-		t.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
+		err := t.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), t.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		if err != nil {
+			klog.Fatal(err)
+			os.Exit(1)
+		} else {
+			t.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
+		}
 	}
 }
 
