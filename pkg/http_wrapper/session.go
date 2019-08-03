@@ -33,8 +33,12 @@ func NewSession() *Session {
 }
 
 // GET request
-func (session *Session) Get(uri string, tries int) (*http.Response, error) {
-	// Get the data
+func (session *Session) Get(uri string) (*http.Response, error) {
+	// access the passed url and return the data or the error which persisted multiple retries
+	return session.getRetries(uri, 0)
+}
+
+func (session *Session) getRetries(uri string, tries int) (*http.Response, error) {
 	klog.Info(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, tries+1))
 	response, err := session.Client.Get(uri)
 	if err != nil {
@@ -42,14 +46,19 @@ func (session *Session) Get(uri string, tries int) (*http.Response, error) {
 			return nil, err
 		} else {
 			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.Get(uri, tries+1)
+			return session.getRetries(uri, tries+1)
 		}
 	}
 	return response, err
 }
 
 // POST request
-func (session *Session) Post(uri string, data url.Values, tries int) (*http.Response, error) {
+func (session *Session) Post(uri string, data url.Values) (*http.Response, error) {
+	// post the request with the retries option
+	return session.postRetries(uri, data, 0)
+}
+
+func (session *Session) postRetries(uri string, data url.Values, tries int) (*http.Response, error) {
 	klog.Info(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, tries+1))
 	response, err := session.Client.PostForm(uri, data)
 	if err != nil {
@@ -57,7 +66,7 @@ func (session *Session) Post(uri string, data url.Values, tries int) (*http.Resp
 			return nil, err
 		} else {
 			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.Post(uri, data, tries+1)
+			return session.postRetries(uri, data, tries+1)
 		}
 	}
 	return response, err
@@ -68,7 +77,7 @@ func (session *Session) Post(uri string, data url.Values, tries int) (*http.Resp
 func (session *Session) DownloadFile(filepath string, uri string) error {
 	klog.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri))
 	// Get the data
-	resp, err := session.Client.Get(uri)
+	resp, err := session.Get(uri)
 	if err != nil {
 		return err
 	}

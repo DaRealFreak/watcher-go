@@ -84,7 +84,7 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 
 // custom POST function to check for specific status codes and messages
 func (m *sankakuComplex) post(uri string, data url.Values, tries int) (*http.Response, error) {
-	res, err := m.Session.Post(uri, data, tries)
+	res, err := m.Session.Post(uri, data)
 	if err == nil && res.StatusCode == 429 {
 		klog.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
 		time.Sleep(time.Duration(tries+1*60) * time.Second)
@@ -95,7 +95,7 @@ func (m *sankakuComplex) post(uri string, data url.Values, tries int) (*http.Res
 
 // custom GET function to check for specific status codes and messages
 func (m *sankakuComplex) get(uri string, tries int) (*http.Response, error) {
-	res, err := m.Session.Get(uri, tries)
+	res, err := m.Session.Get(uri)
 	if err == nil && res.StatusCode == 429 {
 		klog.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
 		time.Sleep(time.Duration(tries+1*60) * time.Second)

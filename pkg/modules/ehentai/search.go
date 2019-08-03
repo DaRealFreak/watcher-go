@@ -13,7 +13,7 @@ type searchGalleryItem struct {
 }
 
 func (m *ehentai) parseSearch(item *models.TrackedItem) {
-	response, _ := m.Session.Get(item.Uri, 0)
+	response, _ := m.Session.Get(item.Uri)
 	html, _ := m.Session.GetDocument(response).Html()
 
 	var itemQueue []searchGalleryItem
@@ -38,7 +38,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 			// no next page exists anymore, break here
 			break
 		}
-		response, _ = m.Session.Get(nextPageUrl, 0)
+		response, _ = m.Session.Get(nextPageUrl)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
