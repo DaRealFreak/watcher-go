@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -84,7 +85,12 @@ func (session *Session) DownloadFile(filepath string, uri string) error {
 	defer out.Close()
 
 	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	written, err := io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	err = session.checkDownloadedFileForErrors(written, resp.Header)
 	return err
 }
 
@@ -96,6 +102,22 @@ func (session *Session) ensureDownloadDirectory(fileName string) {
 			panic(mkdirError)
 		}
 	}
+}
+
+func (session *Session) checkDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
+	if val, ok := responseHeader["Content-Length"]; ok {
+		fileSize, err := strconv.Atoi(val[0])
+		if err == nil {
+			if writtenSize != int64(fileSize) {
+				err = fmt.Errorf("written file size doesn't match the header content length value")
+			}
+			fmt.Println(writtenSize, fileSize)
+		}
+	}
+	if writtenSize <= 0 {
+		err = fmt.Errorf("written content has a size of 0 bytes")
+	}
+	return err
 }
 
 // convert the http response to a goquery document
