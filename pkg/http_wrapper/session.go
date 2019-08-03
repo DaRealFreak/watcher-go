@@ -32,51 +32,58 @@ func NewSession() *Session {
 	return &app
 }
 
-// GET request
-func (session *Session) Get(uri string) (*http.Response, error) {
+// sends a GET request, returns the occurred error if something went wrong even after multiple tries
+func (session *Session) Get(uri string) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
-	return session.getRetries(uri, 0)
-}
-
-func (session *Session) getRetries(uri string, tries int) (*http.Response, error) {
-	klog.Info(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, tries+1))
-	response, err := session.Client.Get(uri)
-	if err != nil {
-		if session.MaxRetries >= tries {
-			return nil, err
-		} else {
-			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.getRetries(uri, tries+1)
-		}
-	}
-	return response, err
-}
-
-// POST request
-func (session *Session) Post(uri string, data url.Values) (*http.Response, error) {
 	// post the request with the retries option
-	return session.postRetries(uri, data, 0)
-}
-
-func (session *Session) postRetries(uri string, data url.Values, tries int) (*http.Response, error) {
-	klog.Info(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, tries+1))
-	response, err := session.Client.PostForm(uri, data)
-	if err != nil {
-		if session.MaxRetries >= tries {
-			return nil, err
+	for try := 1; try <= session.MaxRetries; try++ {
+		klog.Info(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		response, err = session.Client.Get(uri)
+		// if no error occurred break out of the loop
+		if err == nil {
+			break
 		} else {
-			time.Sleep(time.Duration(tries+1) * time.Second)
-			return session.postRetries(uri, data, tries+1)
+			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
 	return response, err
 }
 
-// DownloadFile will download a url to a local file. It's efficient because it will
-// write as it downloads and not load the whole file into memory.
-func (session *Session) DownloadFile(filepath string, uri string) error {
-	klog.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri))
-	// Get the data
+// sends a POST request, returns the occurred error if something went wrong even after multiple tries
+func (session *Session) Post(uri string, data url.Values) (response *http.Response, err error) {
+	// post the request with the retries option
+	for try := 1; try <= session.MaxRetries; try++ {
+		klog.Info(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		response, err = session.Client.PostForm(uri, data)
+		// if no error occurred break out of the loop
+		if err == nil {
+			break
+		} else {
+			time.Sleep(time.Duration(try+1) * time.Second)
+		}
+	}
+	return response, err
+}
+
+// try to download the file, returns the occurred error if something went wrong even after multiple tries
+func (session *Session) DownloadFile(filepath string, uri string) (err error) {
+	for try := 1; try <= session.MaxRetries; try++ {
+		klog.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		err = session.tryDownloadFile(filepath, uri)
+		// if no error occurred return nil
+		if err == nil {
+			return
+		} else {
+			time.Sleep(time.Duration(try+1) * time.Second)
+		}
+	}
+	return err
+}
+
+// this function will download a url to a local file.
+// It's efficient because it will write as it downloads and not load the whole file into memory.
+func (session *Session) tryDownloadFile(filepath string, uri string) error {
+	// retrieve the data
 	resp, err := session.Get(uri)
 	if err != nil {
 		return err
@@ -86,23 +93,26 @@ func (session *Session) DownloadFile(filepath string, uri string) error {
 	// ensure the directory
 	session.ensureDownloadDirectory(filepath)
 
-	// Create the file
+	// create the file
 	out, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
-	// Write the body to file
+	// write the body to file
 	written, err := io.Copy(out, resp.Body)
 	if err != nil {
 		return err
 	}
 
+	// additional validation to compare sent headers with the written file
 	err = session.checkDownloadedFileForErrors(written, resp.Header)
 	return err
 }
 
+// function to ensure that the download path already exists or create it if not
+// this function panics when path can't be created
 func (session *Session) ensureDownloadDirectory(fileName string) {
 	dirName := filepath.Dir(fileName)
 	if _, statError := os.Stat(dirName); statError != nil {
@@ -113,6 +123,8 @@ func (session *Session) ensureDownloadDirectory(fileName string) {
 	}
 }
 
+// compare the downloaded file with the content length header of the request if set
+// also checks if the written bytes are more not equal or less than 0 which is definitely an unwanted result
 func (session *Session) checkDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
 	if val, ok := responseHeader["Content-Length"]; ok {
 		fileSize, err := strconv.Atoi(val[0])
@@ -120,7 +132,6 @@ func (session *Session) checkDownloadedFileForErrors(writtenSize int64, response
 			if writtenSize != int64(fileSize) {
 				err = fmt.Errorf("written file size doesn't match the header content length value")
 			}
-			fmt.Println(writtenSize, fileSize)
 		}
 	}
 	if writtenSize <= 0 {
