@@ -75,10 +75,10 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	} else {
 		reservedCharacters = regexp.MustCompile("[\\\\/:\"*?<>|]+")
 	}
-	path = reservedCharacters.ReplaceAllString(path, " ")
-	for strings.Contains(path, "  ") {
-		path = strings.Replace(path, "  ", " ", -1)
+	path = reservedCharacters.ReplaceAllString(path, "_")
+	for strings.Contains(path, "__") {
+		path = strings.Replace(path, "__", "_", -1)
 	}
-	path = strings.Trim(path, " ")
+	path = strings.Trim(path, "_")
 	return path
 }
