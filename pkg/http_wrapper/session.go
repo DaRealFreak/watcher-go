@@ -1,6 +1,7 @@
 package http_wrapper
 
 import (
+	"compress/gzip"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/kubernetes/klog"
@@ -99,8 +100,16 @@ func (session *Session) ensureDownloadDirectory(fileName string) {
 
 // convert the http response to a goquery document
 func (session *Session) GetDocument(response *http.Response) *goquery.Document {
-	defer response.Body.Close()
-	document, err := goquery.NewDocumentFromReader(response.Body)
+	var reader io.ReadCloser
+	switch response.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, _ = gzip.NewReader(response.Body)
+		defer reader.Close()
+	default:
+		reader = response.Body
+		defer response.Body.Close()
+	}
+	document, err := goquery.NewDocumentFromReader(reader)
 	if err != nil {
 		log.Fatal("Error loading HTTP response body. ", err)
 	}
