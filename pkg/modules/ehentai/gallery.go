@@ -2,7 +2,7 @@ package ehentai
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	"log"
+	"github.com/kubernetes/klog"
 	"strings"
 	"watcher-go/pkg/models"
 )
@@ -16,8 +16,8 @@ type imageGalleryItem struct {
 func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	response, _ := m.Session.Get(item.Uri, 0)
 	html, _ := m.Session.GetDocument(response).Html()
-	if strings.Contains(html, "There are newer versions of this gallery available") {
-		log.Fatal("newer version available, update tracked item for uri: " + item.Uri)
+	if m.hasGalleryErrors(item, html) {
+		return
 	}
 	galleryTitle := m.extractGalleryTitle(html)
 
@@ -90,6 +90,30 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 		imageUrls[i], imageUrls[j] = imageUrls[j], imageUrls[i]
 	}
 	return imageUrls
+}
+
+// check if gallery has errors and should be skipped
+func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
+	if strings.Contains(html, "There are newer versions of this gallery available") {
+		klog.Info("newer version of gallery available, updating uri of: " + item.Uri)
+		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+		newGalleryLinks := document.Find("#gnd > a")
+		// slice to retrieve only the latest gallery
+		newGalleryLinks = newGalleryLinks.Slice(newGalleryLinks.Length()-1, newGalleryLinks.Length())
+		newGalleryLinks.Each(func(index int, row *goquery.Selection) {
+			url, exists := row.Attr("href")
+			if exists {
+				m.DbIO.GetFirstOrCreateTrackedItem(url, m)
+				klog.Info("added gallery to tracked items: " + url)
+			}
+		})
+		return true
+	}
+	if strings.Contains(html, "This gallery has been removed or is unavailable.") {
+		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+		return true
+	}
+	return false
 }
 
 func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
