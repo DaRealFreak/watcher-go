@@ -88,7 +88,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 func (m *ehentai) Parse(item *models.TrackedItem) {
 	if strings.Contains(item.Uri, "/g/") {
 		m.parseGallery(item)
-	} else if strings.Contains(item.Uri, "/tag/") {
+	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "/?f_search=") {
 		m.parseSearch(item)
 	}
 }
