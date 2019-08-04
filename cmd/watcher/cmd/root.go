@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
@@ -17,14 +18,17 @@ var RootCmd = &cobra.Command{
 		"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
 }
 var cfgFile string
+var logLevel string
 
 // add arguments for root command
 func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.watcher.yaml)")
+	RootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
 }
 
 // main cli functionality
 func Execute() {
+	initLogger()
 	WatcherApp = watcherApp.NewWatcher()
 	cobra.OnInitialize(initConfig)
 	viper.AutomaticEnv() // read in environment variables that match
@@ -33,6 +37,17 @@ func Execute() {
 		os.Exit(-1)
 	}
 	WatcherApp.DbCon.CloseConnection()
+}
+
+// initialize the logger
+func initLogger() {
+	log.SetOutput(os.Stdout)
+	lvl, err := log.ParseLevel(logLevel)
+	if err != nil {
+		log.Fatal("could not configure logger, exiting")
+		os.Exit(1)
+	}
+	log.SetLevel(lvl)
 }
 
 // read config file
