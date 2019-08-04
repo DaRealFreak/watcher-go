@@ -2,7 +2,7 @@ package ehentai
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	"github.com/kubernetes/klog"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"watcher-go/pkg/models"
 )
@@ -48,7 +48,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 	}
 	// add items
 	for _, gallery := range itemQueue {
-		klog.Info("added gallery to tracked items: " + gallery.uri)
+		log.Info("added gallery to tracked items: " + gallery.uri)
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 	}
 

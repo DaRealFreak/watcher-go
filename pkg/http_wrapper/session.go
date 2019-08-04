@@ -4,9 +4,8 @@ import (
 	"compress/gzip"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/kubernetes/klog"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -37,7 +36,7 @@ func (session *Session) Get(uri string) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
 	for try := 1; try <= session.MaxRetries; try++ {
-		klog.Info(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = session.Client.Get(uri)
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -53,7 +52,7 @@ func (session *Session) Get(uri string) (response *http.Response, err error) {
 func (session *Session) Post(uri string, data url.Values) (response *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= session.MaxRetries; try++ {
-		klog.Info(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = session.Client.PostForm(uri, data)
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -68,7 +67,7 @@ func (session *Session) Post(uri string, data url.Values) (response *http.Respon
 // try to download the file, returns the occurred error if something went wrong even after multiple tries
 func (session *Session) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= session.MaxRetries; try++ {
-		klog.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		log.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
 		err = session.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {

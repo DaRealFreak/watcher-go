@@ -2,7 +2,7 @@ package ehentai
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	"github.com/kubernetes/klog"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"watcher-go/pkg/models"
 )
@@ -96,7 +96,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 // check if gallery has errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		klog.Info("newer version of gallery available, updating uri of: " + item.Uri)
+		log.Info("newer version of gallery available, updating uri of: " + item.Uri)
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
 		// slice to retrieve only the latest gallery
@@ -105,7 +105,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 			url, exists := row.Attr("href")
 			if exists {
 				m.DbIO.GetFirstOrCreateTrackedItem(url, m)
-				klog.Info("added gallery to tracked items: " + url)
+				log.Info("added gallery to tracked items: " + url)
 			}
 		})
 		return true

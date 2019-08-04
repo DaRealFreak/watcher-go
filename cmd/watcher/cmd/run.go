@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/kubernetes/klog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,7 +20,7 @@ func getRunCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			err := viper.WriteConfig()
 			if err != nil {
-				klog.Error("Could not save the configuration")
+				log.Error("could not save the configuration")
 			}
 
 			WatcherApp.Run()

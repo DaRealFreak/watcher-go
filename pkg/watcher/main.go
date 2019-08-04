@@ -2,8 +2,7 @@ package watcher
 
 import (
 	"fmt"
-	"github.com/kubernetes/klog"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"text/tabwriter"
 	"watcher-go/pkg/database"
@@ -32,7 +31,7 @@ func (app *Watcher) Run() {
 		if !module.IsLoggedIn() {
 			app.loginToModule(module)
 		}
-		klog.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+		log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
 		module.Parse(item)
 	}
 }
@@ -104,7 +103,7 @@ func (app *Watcher) ListTrackedItems(uri string) {
 
 // login into the module
 func (app *Watcher) loginToModule(module *models.Module) {
-	klog.Info(fmt.Sprintf("logging in for module %s", module.Key()))
+	log.Info(fmt.Sprintf("logging in for module %s", module.Key()))
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
@@ -119,12 +118,12 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	// login into the module
 	success := module.Login(account)
 	if success {
-		klog.Info("login successful")
+		log.Info("login successful")
 	} else {
 		if module.RequiresLogin() {
 			log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but the login failed", module.Key()))
 		} else {
-			klog.Warning("login not successful")
+			log.Warning("login not successful")
 		}
 	}
 }

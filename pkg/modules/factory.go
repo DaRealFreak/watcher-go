@@ -2,7 +2,7 @@ package modules
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"watcher-go/pkg/database"
 	"watcher-go/pkg/models"

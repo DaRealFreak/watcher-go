@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/kubernetes/klog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net/url"
 	"os"
@@ -58,13 +58,13 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 }
 
 func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) {
-	klog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
+	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
 
 	for index, data := range downloadQueue {
-		klog.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
+		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
 		err := t.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), t.Key(), data.DownloadTag, data.FileName), data.FileUri)
 		if err != nil {
-			klog.Fatal(err)
+			log.Fatal(err)
 			os.Exit(1)
 		} else {
 			t.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
