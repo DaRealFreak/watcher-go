@@ -8,21 +8,28 @@ import (
 
 // retrieve all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db DbIO) GetTrackedItems(module models.ModuleInterface) []*models.TrackedItem {
+func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
 	var items []*models.TrackedItem
-
 	var rows *sql.Rows
 	var err error
-	if module == nil {
-		rows, err = db.connection.Query("SELECT * FROM tracked_items WHERE NOT complete ORDER BY module, uid")
-		db.checkErr(err)
-	} else {
-		stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
-		db.checkErr(err)
 
-		rows, err = stmt.Query(module.Key())
+	if module == nil {
+		if includeCompleted {
+			rows, err = db.connection.Query("SELECT * FROM tracked_items ORDER BY module, uid")
+		} else {
+			rows, err = db.connection.Query("SELECT * FROM tracked_items WHERE NOT complete ORDER BY module, uid")
+		}
+	} else {
+		var stmt *sql.Stmt
+		if includeCompleted {
+			stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE module = ? ORDER BY uid")
+		} else {
+			stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
+		}
 		db.checkErr(err)
+		rows, err = stmt.Query(module.Key())
 	}
+	db.checkErr(err)
 	defer rows.Close()
 
 	for rows.Next() {

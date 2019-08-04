@@ -2,7 +2,7 @@ package models
 
 type DatabaseInterface interface {
 	// tracked item functions
-	GetTrackedItems(module ModuleInterface) []*TrackedItem
+	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
 	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
 	CreateTrackedItem(uri string, module ModuleInterface)
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)

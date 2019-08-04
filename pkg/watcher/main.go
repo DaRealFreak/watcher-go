@@ -26,7 +26,7 @@ func NewWatcher() *Watcher {
 
 // main functionality, update all tracked items
 func (app *Watcher) Run() {
-	for _, item := range app.DbCon.GetTrackedItems(nil) {
+	for _, item := range app.DbCon.GetTrackedItems(nil, false) {
 		module := app.ModuleFactory.GetModule(item.Module)
 		if !module.IsLoggedIn() {
 			app.loginToModule(module)
@@ -85,10 +85,10 @@ func (app *Watcher) AddItemByUri(uri string, currentItem string) {
 func (app *Watcher) ListTrackedItems(uri string) {
 	var trackedItems []*models.TrackedItem
 	if uri == "" {
-		trackedItems = app.DbCon.GetTrackedItems(nil)
+		trackedItems = app.DbCon.GetTrackedItems(nil, true)
 	} else {
 		module := app.ModuleFactory.GetModuleFromUri(uri)
-		trackedItems = app.DbCon.GetTrackedItems(module)
+		trackedItems = app.DbCon.GetTrackedItems(module, true)
 	}
 
 	// initialize tab writer

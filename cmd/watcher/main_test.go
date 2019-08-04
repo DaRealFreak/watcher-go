@@ -47,8 +47,8 @@ func TestAddItemByUri(t *testing.T) {
 
 	// ToDo: check generated items
 	module := app.ModuleFactory.GetModuleFromUri(testUri)
-	fmt.Println("all items regardless of module: ", app.DbCon.GetTrackedItems(nil))
-	fmt.Println("all items of module: ", app.DbCon.GetTrackedItems(module))
+	fmt.Println("all items regardless of module: ", app.DbCon.GetTrackedItems(nil, false))
+	fmt.Println("all items of module: ", app.DbCon.GetTrackedItems(module, false))
 
 	exampleItem := app.DbCon.GetFirstOrCreateTrackedItem("test_item", module)
 	fmt.Println("example item persisted: ", exampleItem)
