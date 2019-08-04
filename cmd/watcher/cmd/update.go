@@ -27,7 +27,7 @@ func getUpdateAccountCommand() *cobra.Command {
 			WatcherApp.UpdateAccountByUri(url, user, password)
 		},
 	}
-	accountCmd.Flags().StringVarP(&url, "url", "", "", "url of module (required)")
+	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	accountCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
 	accountCmd.Flags().StringVarP(&password, "password", "p", "", "new password (required)")
 	_ = accountCmd.MarkFlagRequired("url")
@@ -50,7 +50,7 @@ func getEnableAccountCommand() *cobra.Command {
 			WatcherApp.UpdateAccountDisabledStatusByUri(url, user, false)
 		},
 	}
-	disableCmd.Flags().StringVarP(&url, "url", "", "", "url of module (required)")
+	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("user")
@@ -69,7 +69,7 @@ func getDisableAccountCommand() *cobra.Command {
 			WatcherApp.UpdateAccountDisabledStatusByUri(url, user, true)
 		},
 	}
-	disableCmd.Flags().StringVarP(&url, "url", "", "", "url of module (required)")
+	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("user")
@@ -90,7 +90,7 @@ func getUpdateItemCommand() *cobra.Command {
 			WatcherApp.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
-	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of item you want to track (required)")
+	itemCmd.Flags().StringVar(&url, "url", "", "url of item you want to track (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
 	_ = itemCmd.MarkFlagRequired("url")
 	_ = itemCmd.MarkFlagRequired("current")

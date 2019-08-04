@@ -30,7 +30,7 @@ func getListAccountsCommand() *cobra.Command {
 			WatcherApp.ListAccounts(url)
 		},
 	}
-	accountCmd.Flags().StringVarP(&url, "url", "", "", "url of module")
+	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
 	return accountCmd
 }
 

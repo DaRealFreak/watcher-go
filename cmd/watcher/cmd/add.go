@@ -51,7 +51,7 @@ func getAddAccountCommand() *cobra.Command {
 	}
 	accountCmd.Flags().StringVarP(&username, "username", "u", "", "username you want to add (required)")
 	accountCmd.Flags().StringVarP(&password, "password", "p", "", "password of the user (required)")
-	accountCmd.Flags().StringVarP(&url, "url", "", "", "url for the association of the account (required)")
+	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the account (required)")
 	_ = accountCmd.MarkFlagRequired("username")
 	_ = accountCmd.MarkFlagRequired("password")
 	_ = accountCmd.MarkFlagRequired("url")
