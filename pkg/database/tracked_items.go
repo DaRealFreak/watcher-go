@@ -70,12 +70,13 @@ func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 }
 
 // update the current item column of the tracked item in the database
+// also sets the complete status to false to check it on the next check cycle
 func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem string) {
-	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ? WHERE uid = ?")
+	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ?, complete = ? WHERE uid = ?")
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(currentItem, trackedItem.Id)
+	_, err = stmt.Exec(currentItem, 0, trackedItem.Id)
 	db.checkErr(err)
 
 	// update current item
