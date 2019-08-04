@@ -2,12 +2,12 @@ package watcher
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"text/tabwriter"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/models"
-	"watcher-go/pkg/modules"
 )
 
 type Watcher struct {

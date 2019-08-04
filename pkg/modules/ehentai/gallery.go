@@ -1,10 +1,10 @@
 package ehentai
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
 	"strings"
-	"watcher-go/pkg/models"
 )
 
 type imageGalleryItem struct {

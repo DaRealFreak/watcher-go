@@ -1,7 +1,7 @@
 package main
 
 import (
-	"watcher-go/cmd/watcher/cmd"
+	"github.com/DaRealFreak/watcher-go/cmd/watcher/cmd"
 )
 
 func main() {

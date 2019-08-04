@@ -2,8 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	_ "github.com/mattn/go-sqlite3"
-	"watcher-go/pkg/models"
 )
 
 // retrieve the first not disabled account of the passed module

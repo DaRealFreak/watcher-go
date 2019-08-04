@@ -2,10 +2,10 @@ package pixiv
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"regexp"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/http_wrapper"
-	"watcher-go/pkg/models"
 )
 
 type pixiv struct {

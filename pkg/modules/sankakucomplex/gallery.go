@@ -3,12 +3,12 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
-	"watcher-go/pkg/models"
 )
 
 type apiItem struct {

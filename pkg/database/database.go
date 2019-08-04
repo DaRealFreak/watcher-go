@@ -2,9 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
-	"watcher-go/pkg/models"
 )
 
 type DbIO struct {

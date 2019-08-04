@@ -2,13 +2,13 @@ package modules
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 	log "github.com/sirupsen/logrus"
 	"regexp"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/models"
-	"watcher-go/pkg/modules/ehentai"
-	"watcher-go/pkg/modules/pixiv"
-	"watcher-go/pkg/modules/sankakucomplex"
 )
 
 type ModuleFactory struct {

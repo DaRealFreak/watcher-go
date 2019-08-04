@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net/url"
@@ -10,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"watcher-go/pkg/http_wrapper"
 )
 
 type ModuleInterface interface {

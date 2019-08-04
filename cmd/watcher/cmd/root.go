@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
-	watcherApp "watcher-go/pkg/watcher"
 )
 
 var WatcherApp *watcherApp.Watcher

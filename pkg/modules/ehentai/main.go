@@ -1,12 +1,12 @@
 package ehentai
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"net/url"
 	"regexp"
 	"strings"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/http_wrapper"
-	"watcher-go/pkg/models"
 )
 
 type ehentai struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/watcher"
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/watcher"
 )
 
 var app *watcher.Watcher

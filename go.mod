@@ -1,4 +1,4 @@
-module watcher-go
+module github.com/DaRealFreak/watcher-go
 
 go 1.12
 

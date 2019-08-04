@@ -2,15 +2,15 @@ package sankakucomplex
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/database"
+	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
-	"watcher-go/pkg/database"
-	"watcher-go/pkg/http_wrapper"
-	"watcher-go/pkg/models"
 )
 
 type sankakuComplex struct {
