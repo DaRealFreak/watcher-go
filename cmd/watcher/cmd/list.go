@@ -17,6 +17,7 @@ func init() {
 	listCmd.AddCommand(getListAllCommand())
 	listCmd.AddCommand(getListAccountsCommand())
 	listCmd.AddCommand(getListItemsCommand())
+	listCmd.AddCommand(getListModulesCommand())
 }
 
 func getListAccountsCommand() *cobra.Command {
@@ -54,6 +55,9 @@ func getListAllCommand() *cobra.Command {
 		Short: "displays accounts and items in the database",
 		Long:  "displays all accounts and items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Modules:")
+			WatcherApp.ListRegisteredModules()
+			fmt.Println("\n ")
 			fmt.Println("Accounts:")
 			WatcherApp.ListAccounts("")
 			fmt.Println("\n ")
@@ -62,4 +66,16 @@ func getListAllCommand() *cobra.Command {
 		},
 	}
 	return allCmd
+}
+
+func getListModulesCommand() *cobra.Command {
+	modulesCmd := &cobra.Command{
+		Use:   "modules",
+		Short: "shows all registered modules",
+		Long:  "shows all currently implemented and registered modules",
+		Run: func(cmd *cobra.Command, args []string) {
+			WatcherApp.ListRegisteredModules()
+		},
+	}
+	return modulesCmd
 }
