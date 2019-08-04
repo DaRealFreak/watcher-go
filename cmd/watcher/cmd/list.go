@@ -36,16 +36,19 @@ func getListAccountsCommand() *cobra.Command {
 
 func getListItemsCommand() *cobra.Command {
 	var url string
+	var includeCompleted bool
 
 	itemCmd := &cobra.Command{
 		Use:   "items",
 		Short: "displays all items",
 		Long:  "displays all items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.ListTrackedItems(url)
+			fmt.Println(includeCompleted)
+			WatcherApp.ListTrackedItems(url, includeCompleted)
 		},
 	}
-	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of module")
+	itemCmd.Flags().StringVar(&url, "url", "", "url of module")
+	itemCmd.Flags().BoolVar(&includeCompleted, "include-completed", true, "should completed items be included in the list")
 	return itemCmd
 }
 
@@ -62,7 +65,7 @@ func getListAllCommand() *cobra.Command {
 			WatcherApp.ListAccounts("")
 			fmt.Println("\n ")
 			fmt.Println("Tracked Items:")
-			WatcherApp.ListTrackedItems("")
+			WatcherApp.ListTrackedItems("", true)
 		},
 	}
 	return allCmd

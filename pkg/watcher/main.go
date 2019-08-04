@@ -82,13 +82,13 @@ func (app *Watcher) AddItemByUri(uri string, currentItem string) {
 }
 
 // list all tracked items with the option to limit it to a module
-func (app *Watcher) ListTrackedItems(uri string) {
+func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	var trackedItems []*models.TrackedItem
 	if uri == "" {
-		trackedItems = app.DbCon.GetTrackedItems(nil, true)
+		trackedItems = app.DbCon.GetTrackedItems(nil, includeCompleted)
 	} else {
 		module := app.ModuleFactory.GetModuleFromUri(uri)
-		trackedItems = app.DbCon.GetTrackedItems(module, true)
+		trackedItems = app.DbCon.GetTrackedItems(module, includeCompleted)
 	}
 
 	// initialize tab writer
