@@ -50,8 +50,8 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 	for _, gallery := range itemQueue {
 		log.Info("added gallery to tracked items: " + gallery.uri)
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
+		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}
-
 }
 
 func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
