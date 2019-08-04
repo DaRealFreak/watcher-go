@@ -57,7 +57,7 @@ func (app *Watcher) ListAccounts(uri string) {
 	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
 	_, _ = fmt.Fprintln(w, "Id\tUsername\tPassword\tModule\tDisabled")
 	for _, account := range accounts {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t", account.Id, account.Username, account.Password, account.Module, account.Disabled)
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t\n", account.Id, account.Username, account.Password, account.Module, account.Disabled)
 	}
 	_ = w.Flush()
 }
@@ -96,7 +96,18 @@ func (app *Watcher) ListTrackedItems(uri string) {
 	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
 	_, _ = fmt.Fprintln(w, "Id\tModule\tUrl\tCurrent Item\tCompleted")
 	for _, item := range trackedItems {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t", item.Id, item.Module, item.Uri, item.CurrentItem, item.Complete)
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t\n", item.Id, item.Module, item.Uri, item.CurrentItem, item.Complete)
+	}
+	_ = w.Flush()
+}
+
+// list all registered modules
+func (app *Watcher) ListRegisteredModules() {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
+	_, _ = fmt.Fprintln(w, "Id\tModule Key\tRequires Login")
+	for index, module := range app.ModuleFactory.GetAllModules() {
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%t\n", index, module.Key(), module.RequiresLogin())
 	}
 	_ = w.Flush()
 }
