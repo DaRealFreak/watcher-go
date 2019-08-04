@@ -85,7 +85,9 @@ func getUpdateItemCommand() *cobra.Command {
 		Short: "updates the saved current item",
 		Long:  "updates the saved current item of an item in the database, creates an entry if it doesn't exist yet",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.AddItemByUri(url, current)
+			module := WatcherApp.ModuleFactory.GetModuleFromUri(url)
+			trackedItem := WatcherApp.DbCon.GetFirstOrCreateTrackedItem(url, module)
+			WatcherApp.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
 	itemCmd.Flags().StringVarP(&url, "url", "", "", "url of item you want to track (required)")
