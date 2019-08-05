@@ -25,8 +25,15 @@ func NewWatcher() *Watcher {
 }
 
 // main functionality, update all tracked items
-func (app *Watcher) Run() {
-	for _, item := range app.DbCon.GetTrackedItems(nil, false) {
+func (app *Watcher) Run(moduleUrl string) {
+	var trackedItems []*models.TrackedItem
+	if moduleUrl != "" {
+		module := app.ModuleFactory.GetModuleFromUri(moduleUrl)
+		trackedItems = app.DbCon.GetTrackedItems(module, false)
+	} else {
+		trackedItems = app.DbCon.GetTrackedItems(nil, false)
+	}
+	for _, item := range trackedItems {
 		module := app.ModuleFactory.GetModule(item.Module)
 		if !module.IsLoggedIn() {
 			app.loginToModule(module)
