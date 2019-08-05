@@ -29,6 +29,14 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	for foundCurrentItem == false {
 		for _, galleryItem := range m.getGalleryImageUrls(html, galleryTitle) {
 			if galleryItem.id != item.CurrentItem {
+				downloadQueueItem := m.getDownloadQueueItem(galleryItem)
+				// check for limit
+				if downloadQueueItem.FileUri == "https://exhentai.org/img/509.gif" ||
+					downloadQueueItem.FileUri == "https://e-hentai.org/img/509.gif" {
+					log.Info("download limit reached, skipping galleries from now on")
+					m.downloadLimitReached = true
+					return
+				}
 				downloadQueue = append(downloadQueue, m.getDownloadQueueItem(galleryItem))
 			} else {
 				foundCurrentItem = true

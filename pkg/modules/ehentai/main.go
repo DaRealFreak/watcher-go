@@ -11,6 +11,7 @@ import (
 
 type ehentai struct {
 	models.Module
+	downloadLimitReached     bool
 	galleryImageIdPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIdPattern   *regexp.Regexp
@@ -86,9 +87,9 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
-	if strings.Contains(item.Uri, "/g/") {
+	if strings.Contains(item.Uri, "/g/") && m.downloadLimitReached == false {
 		m.parseGallery(item)
-	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "/?f_search=") {
+	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "f_search=") {
 		m.parseSearch(item)
 	}
 }
