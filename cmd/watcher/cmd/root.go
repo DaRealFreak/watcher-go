@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/update"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -28,14 +29,24 @@ func init() {
 
 // main cli functionality
 func Execute() {
+	// initialize logger as the very first
 	initLogger()
+	// check for available updates
+	err := update.NewUpdateChecker().CheckForAvailableUpdates()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// define the main application
 	WatcherApp = watcherApp.NewWatcher()
+	// parse all configurations before executing the main command
 	cobra.OnInitialize(initConfig)
-	viper.AutomaticEnv() // read in environment variables that match
+	// read in environment variables that match
+	viper.AutomaticEnv()
 
 	if err := RootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
+	// close the database to prevent any dangling data
 	WatcherApp.DbCon.CloseConnection()
 }
 
