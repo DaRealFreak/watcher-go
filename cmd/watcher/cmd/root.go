@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/update"
+	"github.com/DaRealFreak/watcher-go/pkg/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -13,10 +14,11 @@ import (
 var WatcherApp *watcherApp.Watcher
 
 var RootCmd = &cobra.Command{
-	Use:   "app",
+	Use:   "watcher",
 	Short: "Watcher keeps track of all media items you want to track.",
 	Long: "An application written in Go to keep track of items from multiple sources.\n" +
 		"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
+	Version: version.VERSION,
 }
 var cfgFile string
 var logLevel string
@@ -24,7 +26,7 @@ var logLevel string
 // add arguments for root command
 func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.watcher.yaml)")
-	RootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
+	RootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
 }
 
 // main cli functionality
