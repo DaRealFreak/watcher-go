@@ -27,7 +27,7 @@ func (u *updateChecker) CheckForAvailableUpdates() (err error) {
 
 	v := semver.MustParse(version.VERSION)
 	if !found || latest.Version.LTE(v) {
-		log.Info("current version is the latest")
+		log.Trace("current version is the latest")
 		return nil
 	}
 
