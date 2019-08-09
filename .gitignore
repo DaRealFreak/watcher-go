@@ -20,3 +20,8 @@
 # Project generated binaries
 watcher.db
 .watcher.yaml
+
+# Build Pipeline files
+dist/
+.gh-release.yaml
+gh_release.exe
