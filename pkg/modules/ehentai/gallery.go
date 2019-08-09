@@ -35,7 +35,8 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 					downloadQueueItem.FileUri == "https://e-hentai.org/img/509.gif" {
 					log.Info("download limit reached, skipping galleries from now on")
 					m.downloadLimitReached = true
-					return
+					foundCurrentItem = true
+					break
 				}
 				downloadQueue = append(downloadQueue, m.getDownloadQueueItem(galleryItem))
 			} else {
@@ -62,8 +63,11 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	// and to have a point to start with on the next run (last page -> front page)
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 	m.ProcessDownloadQueue(downloadQueue, item)
-	// mark item as complete since update doesn't affect old galleries
-	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+	if m.downloadLimitReached == false {
+		// mark item as complete since update doesn't affect old galleries
+		// if download limit got reached we didn't reach the final image and don't set the gallery as complete
+		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+	}
 }
 
 func (m *ehentai) getPreviousGalleryPageUrl(html string) (uri string, exists bool) {
