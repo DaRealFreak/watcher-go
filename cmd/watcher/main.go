@@ -48,7 +48,7 @@ func NewApp() *CliApplication {
 // add arguments for root command
 func (cli *CliApplication) addGeneralArguments() {
 	cli.rootCmd.PersistentFlags().StringVar(&cli.configuration.configurationFile, "config", "", "config file (default is ./.watcher.yaml)")
-	cli.rootCmd.PersistentFlags().StringVarP(&cli.configuration.logLevel, "verbosity", "", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
+	cli.rootCmd.PersistentFlags().StringVarP(&cli.configuration.logLevel, "verbosity", "v", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
 }
 
 // main cli functionality
