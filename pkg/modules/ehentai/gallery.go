@@ -23,45 +23,36 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	galleryTitle := m.extractGalleryTitle(html)
 
 	var downloadQueue []models.DownloadQueueItem
-	foundCurrentItem := false
-	response, _ = m.Session.Get(m.getLastGalleryPageUrl(html))
-	html, _ = m.Session.GetDocument(response).Html()
-	for foundCurrentItem == false {
+	foundCurrentItem := item.CurrentItem == ""
+
+	for true {
 		for _, galleryItem := range m.getGalleryImageUrls(html, galleryTitle) {
-			if galleryItem.id != item.CurrentItem {
+			if foundCurrentItem == true {
 				downloadQueueItem := m.getDownloadQueueItem(galleryItem)
 				// check for limit
 				if downloadQueueItem.FileUri == "https://exhentai.org/img/509.gif" ||
 					downloadQueueItem.FileUri == "https://e-hentai.org/img/509.gif" {
 					log.Info("download limit reached, skipping galleries from now on")
 					m.downloadLimitReached = true
-					foundCurrentItem = true
 					break
 				}
 				downloadQueue = append(downloadQueue, m.getDownloadQueueItem(galleryItem))
-			} else {
+			}
+			// check if we reached the current item already
+			if galleryItem.id == item.CurrentItem {
 				foundCurrentItem = true
-				break
 			}
 		}
 
-		// break outer loop too if the current item got found
-		if foundCurrentItem {
-			break
-		}
-
-		previousPageUrl, exists := m.getPreviousGalleryPageUrl(html)
+		nextPageUrl, exists := m.getNextGalleryPageUrl(html)
 		if exists == false {
 			// no previous page exists anymore, break here
 			break
 		}
-		response, _ = m.Session.Get(previousPageUrl)
+		response, _ = m.Session.Get(nextPageUrl)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	// reverse download queue to download the oldest items first
-	// and to have a point to start with on the next run (last page -> front page)
-	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
 	m.ProcessDownloadQueue(downloadQueue, item)
 	if m.downloadLimitReached == false {
 		// mark item as complete since update doesn't affect old galleries
@@ -70,22 +61,15 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	}
 }
 
-func (m *ehentai) getPreviousGalleryPageUrl(html string) (uri string, exists bool) {
-	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	test := document.Find("table.ptb td").Slice(0, 1)
-	return test.Find("a[href]").Attr("href")
-}
-
-// retrieve the last page since we have a limited amount of requests we can do
-// so instead of extracting the start and not being able to extract file uris at the end, start at the end
-func (m *ehentai) getLastGalleryPageUrl(html string) string {
+// retrieve url of the next page if it exists
+func (m *ehentai) getNextGalleryPageUrl(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
-	lastPage := pages.Slice(pages.Length()-2, pages.Length()-1)
-	lastPageUri, _ := lastPage.Find("a[href]").Attr("href")
-	return lastPageUri
+	nextPageElement := pages.Slice(pages.Length()-1, pages.Length())
+	return nextPageElement.Find("a[href]").Attr("href")
 }
 
+// extract the gallery image urls from the passed html
 func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
 	var imageUrls []imageGalleryItem
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
@@ -97,11 +81,6 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 			galleryTitle: galleryTitle,
 		})
 	})
-
-	// reverse so we check the oldest item first
-	for i, j := 0, len(imageUrls)-1; i < j; i, j = i+1, j-1 {
-		imageUrls[i], imageUrls[j] = imageUrls[j], imageUrls[i]
-	}
 	return imageUrls
 }
 
