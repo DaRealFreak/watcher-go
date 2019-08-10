@@ -2,7 +2,7 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-func init() {
+func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "update",
@@ -10,12 +10,12 @@ func init() {
 		Long:  "option for the user to update accounts/items in the database",
 	}
 
-	RootCmd.AddCommand(addCmd)
-	addCmd.AddCommand(getUpdateAccountCommand())
-	addCmd.AddCommand(getUpdateItemCommand())
+	cli.rootCmd.AddCommand(addCmd)
+	addCmd.AddCommand(cli.getUpdateAccountCommand())
+	addCmd.AddCommand(cli.getUpdateItemCommand())
 }
 
-func getUpdateAccountCommand() *cobra.Command {
+func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 	var url string
 	var user string
 	var password string
@@ -24,7 +24,7 @@ func getUpdateAccountCommand() *cobra.Command {
 		Short: "updates the saved current item",
 		Long:  "updates the saved current item of an item in the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.UpdateAccountByUri(url, user, password)
+			cli.watcher.UpdateAccountByUri(url, user, password)
 		},
 	}
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
@@ -33,12 +33,12 @@ func getUpdateAccountCommand() *cobra.Command {
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
-	accountCmd.AddCommand(getEnableAccountCommand())
-	accountCmd.AddCommand(getDisableAccountCommand())
+	accountCmd.AddCommand(cli.getEnableAccountCommand())
+	accountCmd.AddCommand(cli.getDisableAccountCommand())
 	return accountCmd
 }
 
-func getEnableAccountCommand() *cobra.Command {
+func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 	var url string
 	var user string
 
@@ -47,7 +47,7 @@ func getEnableAccountCommand() *cobra.Command {
 		Short: "enables an account based on the username",
 		Long:  "update the database to set the user of the module to enabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.UpdateAccountDisabledStatusByUri(url, user, false)
+			cli.watcher.UpdateAccountDisabledStatusByUri(url, user, false)
 		},
 	}
 	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
@@ -57,7 +57,7 @@ func getEnableAccountCommand() *cobra.Command {
 	return disableCmd
 }
 
-func getDisableAccountCommand() *cobra.Command {
+func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 	var url string
 	var user string
 
@@ -66,7 +66,7 @@ func getDisableAccountCommand() *cobra.Command {
 		Short: "disable an account based on the username",
 		Long:  "update the database to set the user of the module to disabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.UpdateAccountDisabledStatusByUri(url, user, true)
+			cli.watcher.UpdateAccountDisabledStatusByUri(url, user, true)
 		},
 	}
 	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
@@ -76,7 +76,7 @@ func getDisableAccountCommand() *cobra.Command {
 	return disableCmd
 }
 
-func getUpdateItemCommand() *cobra.Command {
+func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	var url string
 	var current string
 
@@ -85,9 +85,9 @@ func getUpdateItemCommand() *cobra.Command {
 		Short: "updates the saved current item",
 		Long:  "updates the saved current item of an item in the database, creates an entry if it doesn't exist yet",
 		Run: func(cmd *cobra.Command, args []string) {
-			module := WatcherApp.ModuleFactory.GetModuleFromUri(url)
-			trackedItem := WatcherApp.DbCon.GetFirstOrCreateTrackedItem(url, module)
-			WatcherApp.DbCon.UpdateTrackedItem(trackedItem, current)
+			module := cli.watcher.ModuleFactory.GetModuleFromUri(url)
+			trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+			cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
 	itemCmd.Flags().StringVar(&url, "url", "", "url of item you want to track (required)")

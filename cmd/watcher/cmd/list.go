@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func (cli *CliApplication) addListCommand() {
 	// general add option
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -13,28 +13,28 @@ func init() {
 		Long:  "option for the user to list all items/accounts from the database",
 	}
 
-	RootCmd.AddCommand(listCmd)
-	listCmd.AddCommand(getListAllCommand())
-	listCmd.AddCommand(getListAccountsCommand())
-	listCmd.AddCommand(getListItemsCommand())
-	listCmd.AddCommand(getListModulesCommand())
+	cli.rootCmd.AddCommand(listCmd)
+	listCmd.AddCommand(cli.getListAccountsCommand())
+	listCmd.AddCommand(cli.getListItemsCommand())
+	listCmd.AddCommand(cli.getListModulesCommand())
+	listCmd.AddCommand(cli.getListAllCommand())
 }
 
-func getListAccountsCommand() *cobra.Command {
+func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 	var url string
 	accountCmd := &cobra.Command{
 		Use:   "accounts",
 		Short: "displays all accounts",
 		Long:  "displays all accounts currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.ListAccounts(url)
+			cli.watcher.ListAccounts(url)
 		},
 	}
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
 	return accountCmd
 }
 
-func getListItemsCommand() *cobra.Command {
+func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 	var url string
 	var includeCompleted bool
 
@@ -44,7 +44,7 @@ func getListItemsCommand() *cobra.Command {
 		Long:  "displays all items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(includeCompleted)
-			WatcherApp.ListTrackedItems(url, includeCompleted)
+			cli.watcher.ListTrackedItems(url, includeCompleted)
 		},
 	}
 	itemCmd.Flags().StringVar(&url, "url", "", "url of module")
@@ -52,32 +52,32 @@ func getListItemsCommand() *cobra.Command {
 	return itemCmd
 }
 
-func getListAllCommand() *cobra.Command {
+func (cli *CliApplication) getListAllCommand() *cobra.Command {
 	allCmd := &cobra.Command{
 		Use:   "all",
 		Short: "displays accounts and items in the database",
 		Long:  "displays all accounts and items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Modules:")
-			WatcherApp.ListRegisteredModules()
+			cli.watcher.ListRegisteredModules()
 			fmt.Println("\n ")
 			fmt.Println("Accounts:")
-			WatcherApp.ListAccounts("")
+			cli.watcher.ListAccounts("")
 			fmt.Println("\n ")
 			fmt.Println("Tracked Items:")
-			WatcherApp.ListTrackedItems("", true)
+			cli.watcher.ListTrackedItems("", true)
 		},
 	}
 	return allCmd
 }
 
-func getListModulesCommand() *cobra.Command {
+func (cli *CliApplication) getListModulesCommand() *cobra.Command {
 	modulesCmd := &cobra.Command{
 		Use:   "modules",
 		Short: "shows all registered modules",
 		Long:  "shows all currently implemented and registered modules",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.ListRegisteredModules()
+			cli.watcher.ListRegisteredModules()
 		},
 	}
 	return modulesCmd

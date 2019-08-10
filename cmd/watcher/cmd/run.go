@@ -6,12 +6,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	RootCmd.AddCommand(getRunCommand())
+func (cli *CliApplication) addRunCommand() {
+	cli.rootCmd.AddCommand(cli.getRunCommand())
 }
 
 // retrieve the run command
-func getRunCommand() *cobra.Command {
+func (cli *CliApplication) getRunCommand() *cobra.Command {
 	var downloadDirectory string
 	var moduleUrl string
 	// runs the main functionality to update all tracked items
@@ -23,8 +23,7 @@ func getRunCommand() *cobra.Command {
 			if err != nil {
 				log.Error("could not save the configuration")
 			}
-
-			WatcherApp.Run(moduleUrl)
+			cli.watcher.Run(moduleUrl)
 		},
 	}
 	runCmd.PersistentFlags().StringVarP(&downloadDirectory, "directory", "d", "", "download Directory (required)")

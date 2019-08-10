@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func (cli *CliApplication) addAddCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -12,13 +12,13 @@ func init() {
 		Long:  "option for the user to add accounts/items to the database for the main usage",
 	}
 
-	RootCmd.AddCommand(addCmd)
-	addCmd.AddCommand(getAddAccountCommand())
-	addCmd.AddCommand(getAddItemCommand())
+	cli.rootCmd.AddCommand(addCmd)
+	addCmd.AddCommand(cli.getAddAccountCommand())
+	addCmd.AddCommand(cli.getAddItemCommand())
 }
 
 // retrieve the command for add item
-func getAddItemCommand() *cobra.Command {
+func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 	// add the item option, requires only the uri
 	itemCmd := &cobra.Command{
 		Use:   "item [urls of items]",
@@ -27,7 +27,7 @@ func getAddItemCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
-				WatcherApp.AddItemByUri(url, "")
+				cli.watcher.AddItemByUri(url, "")
 			}
 		},
 	}
@@ -35,7 +35,7 @@ func getAddItemCommand() *cobra.Command {
 }
 
 // retrieve the command for add account
-func getAddAccountCommand() *cobra.Command {
+func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 	var url string
 	var username string
 	var password string
@@ -46,7 +46,7 @@ func getAddAccountCommand() *cobra.Command {
 		Short: "adds an account to the database",
 		Long:  "checks the passed url to assign the passed account/password to a module and save it to the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			WatcherApp.AddAccountByUri(url, username, password)
+			cli.watcher.AddAccountByUri(url, username, password)
 		},
 	}
 	accountCmd.Flags().StringVarP(&username, "username", "u", "", "username you want to add (required)")
