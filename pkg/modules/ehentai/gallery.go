@@ -36,7 +36,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 					m.downloadLimitReached = true
 					break
 				}
-				downloadQueue = append(downloadQueue, m.getDownloadQueueItem(galleryItem))
+				downloadQueue = append(downloadQueue, downloadQueueItem)
 			}
 			// check if we reached the current item already
 			if galleryItem.id == item.CurrentItem {
