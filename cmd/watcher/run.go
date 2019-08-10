@@ -1,4 +1,4 @@
-package cmd
+package watcher
 
 import (
 	log "github.com/sirupsen/logrus"

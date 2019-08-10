@@ -1,4 +1,4 @@
-package cmd
+package watcher
 
 import "github.com/spf13/cobra"
 
