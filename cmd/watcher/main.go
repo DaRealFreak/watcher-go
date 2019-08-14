@@ -57,9 +57,12 @@ func (cli *CliApplication) Execute() {
 	cli.initLogger()
 
 	// check for available updates
-	_, err := update.NewUpdateChecker().CheckForAvailableUpdates()
+	updateAvailable, err := update.NewUpdateChecker().CheckForAvailableUpdates()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if updateAvailable {
+		fmt.Println("new version detected, run \"watcher update\" to update your application.")
 	}
 
 	// parse all configurations before executing the main command
