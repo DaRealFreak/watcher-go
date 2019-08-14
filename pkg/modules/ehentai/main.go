@@ -4,10 +4,20 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	log "github.com/sirupsen/logrus"
+	"math/rand"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
+
+type timer struct {
+	lastRequest time.Time
+	minWaitTime time.Duration
+	maxWaitTime time.Duration
+}
 
 type ehentai struct {
 	models.Module
@@ -15,6 +25,7 @@ type ehentai struct {
 	galleryImageIdPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIdPattern   *regexp.Regexp
+	timer                    *timer
 }
 
 // generate new module and register uri schema
@@ -24,6 +35,11 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 		galleryImageIdPattern:    regexp.MustCompile("(\\w+-\\d+)"),
 		galleryImageIndexPattern: regexp.MustCompile("\\w+-(?P<Number>\\d+)"),
 		searchGalleryIdPattern:   regexp.MustCompile("(\\d+/\\w+)"),
+		timer: &timer{
+			lastRequest: time.Now().Add(-1.5 * 1000 * time.Millisecond),
+			minWaitTime: 1.5 * 1000 * time.Millisecond,
+			maxWaitTime: 2.5 * 1000 * time.Millisecond,
+		},
 	}
 
 	// initialize the Module with the session/database and login status
@@ -74,7 +90,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 		"ipb_login_submit": {"Login!"},
 	}
 
-	res, _ := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+	res, _ := m.post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
 
@@ -91,5 +107,30 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 		m.parseGallery(item)
 	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "f_search=") {
 		m.parseSearch(item)
+	}
+}
+
+// custom POST function to check for specific status codes and messages
+func (m *ehentai) post(uri string, data url.Values) (*http.Response, error) {
+	m.checkPassedDuration()
+	res, err := m.post(uri, data)
+	return res, err
+}
+
+// custom GET function to check for specific status codes and messages
+func (m *ehentai) get(uri string) (*http.Response, error) {
+	m.checkPassedDuration()
+	res, err := m.get(uri)
+	return res, err
+}
+
+// function to add a random delay before sending another request
+// to prevent getting detected as harvesting software
+func (m *ehentai) checkPassedDuration() {
+	randomWaitTime := time.Duration(float64(m.timer.minWaitTime) + rand.Float64()*(float64(m.timer.maxWaitTime)-float64(m.timer.minWaitTime)))
+	if !time.Now().After(time.Now().Add(randomWaitTime)) {
+		sleepTime := time.Now().Add(randomWaitTime).Sub(time.Now())
+		log.Debugf("sleeping for %s seconds", sleepTime.String())
+		time.Sleep(sleepTime)
 	}
 }
