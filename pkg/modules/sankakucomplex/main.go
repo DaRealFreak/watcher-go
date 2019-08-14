@@ -54,7 +54,7 @@ func (m *sankakuComplex) IsLoggedIn() (LoggedIn bool) {
 // add our pattern to the uri schemas
 func (m *sankakuComplex) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleUriSchemas []*regexp.Regexp
-	test, _ := regexp.Compile(".*.sankakucomplex.com")
+	test, _ := regexp.Compile(".*sankakucomplex.com")
 	moduleUriSchemas = append(moduleUriSchemas, test)
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
@@ -76,7 +76,7 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 
 // main functionality to parse and process the passed item
 func (m *sankakuComplex) Parse(item *models.TrackedItem) {
-	// ToDo: acc book support
+	// ToDo: add book support
 	downloadQueue := m.parseGallery(item)
 
 	m.ProcessDownloadQueue(downloadQueue, item)
