@@ -6,6 +6,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	log "github.com/sirupsen/logrus"
+	"github.com/tcnksm/go-gitconfig"
 	"os"
 )
 
@@ -40,9 +41,23 @@ func (u *updateChecker) UpdateApplication() (err error) {
 		return nil
 	}
 
+	// check for github token in environment or in git config if not set in environment
+	// required for updates when repository is private
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		token, _ = gitconfig.GithubToken()
+	}
+
+	up, err := selfupdate.NewUpdater(selfupdate.Config{
+		APIToken: token,
+	})
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("new version detected, updating...")
 	// retrieve latest asset url again
-	latest, _, err := selfupdate.DetectLatest(version.RepositoryUrl)
+	latest, _, err := up.DetectLatest(version.RepositoryUrl)
 	if err != nil {
 		log.Warning("error occurred while retrieving latest asset URLs: ", err)
 		return err
@@ -52,7 +67,7 @@ func (u *updateChecker) UpdateApplication() (err error) {
 	if err != nil {
 		return fmt.Errorf("could not locate executable path")
 	}
-	if err := selfupdate.UpdateTo(latest.AssetURL, exe); err != nil {
+	if err := up.UpdateTo(latest, exe); err != nil {
 		return err
 	}
 	log.Info("successfully updated to version " + latest.Version.String())
