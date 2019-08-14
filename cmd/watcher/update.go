@@ -1,13 +1,23 @@
 package watcher
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/DaRealFreak/watcher-go/pkg/update"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+)
 
 func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "update",
-		Short: "update an item or account in the database",
-		Long:  "option for the user to update accounts/items in the database",
+		Short: "update the application or an item/account in the database",
+		Long:  "option for the user to update the application or items/accounts in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			err := update.NewUpdateChecker().UpdateApplication()
+			if err != nil {
+				log.Error(err)
+			}
+		},
 	}
 
 	cli.rootCmd.AddCommand(addCmd)

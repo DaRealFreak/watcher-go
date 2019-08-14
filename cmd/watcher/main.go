@@ -55,8 +55,9 @@ func (cli *CliApplication) addGeneralArguments() {
 func (cli *CliApplication) Execute() {
 	// initialize logger as the very first
 	cli.initLogger()
+
 	// check for available updates
-	err := update.NewUpdateChecker().CheckForAvailableUpdates()
+	_, err := update.NewUpdateChecker().CheckForAvailableUpdates()
 	if err != nil {
 		log.Fatal(err)
 	}
