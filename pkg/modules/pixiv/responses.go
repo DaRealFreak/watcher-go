@@ -45,6 +45,16 @@ type illustration struct {
 	TotalComments  json.Number                    `json:"total_comments"`
 }
 
+type ugoiraMetadata struct {
+	ZipUrls map[string]string `json:"zip_urls"`
+	Frames  []*frame
+}
+
+type frame struct {
+	File  string      `json:"file"`
+	Delay json.Number `json:"delay"`
+}
+
 type tag struct {
 	Name           string `json:"name"`
 	TranslatedName string `json:"translated_name"`
@@ -140,4 +150,8 @@ type userDetailResponse struct {
 type userWorkResponse struct {
 	Illustrations []*illustration `json:"illusts"`
 	NextUrl       string          `json:"next_url"`
+}
+
+type ugoiraResponse struct {
+	UgoiraMetadata *ugoiraMetadata `json:"ugoira_metadata"`
 }
