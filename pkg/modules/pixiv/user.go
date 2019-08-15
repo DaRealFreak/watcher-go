@@ -23,13 +23,15 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	apiUrl := m.getUserIllustsUrl(userId, SearchFilterAll, 0)
 
 	for !foundCurrentItem {
-		fmt.Println(apiUrl)
 		response := m.getUserIllusts(apiUrl)
 		apiUrl = response.NextUrl
-		for _, userIllustration := range response.Illustrations {
+		for i := len(response.Illustrations) - 1; i >= 0; i-- {
+			userIllustration := response.Illustrations[i]
 			if string(userIllustration.Id) == item.CurrentItem {
 				foundCurrentItem = true
+				break
 			}
+			m.parseWork(userIllustration, &downloadQueue)
 		}
 
 		// break if we don't have another page
@@ -41,6 +43,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	fmt.Println(downloadQueue)
 }
 
+// extract the user ID from the passed url
 func (m *pixiv) getUserIdFromUrl(uri string) string {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
@@ -50,6 +53,7 @@ func (m *pixiv) getUserIdFromUrl(uri string) string {
 	return q["id"][0]
 }
 
+// retrieve the user details from the API
 func (m *pixiv) getUserDetail(userId string) *userDetailResponse {
 	apiUrl, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
 	data := url.Values{
@@ -100,4 +104,33 @@ func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
 	err = json.Unmarshal(response, &userWorks)
 	m.CheckError(err)
 	return &userWorks
+}
+
+// differentiate the work types (illustration/manga/ugoira/novels)
+func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+	if userIllustration.Type == SearchFilterIllustration || userIllustration.Type == SearchFilterManga {
+		m.addMetaPages(userIllustration, downloadQueue)
+	}
+}
+
+// add illustration/manga images to the passed download queue
+func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+	for _, image := range userIllustration.MetaPages {
+		downloadQueueItem := models.DownloadQueueItem{
+			ItemId:      string(userIllustration.Id),
+			DownloadTag: "test",
+			FileName:    m.GetFileName(image["image_urls"]["original"]),
+			FileUri:     image["image_urls"]["original"],
+		}
+		*downloadQueue = append(*downloadQueue, downloadQueueItem)
+	}
+	if len(userIllustration.MetaSinglePage) > 0 {
+		downloadQueueItem := models.DownloadQueueItem{
+			ItemId:      string(userIllustration.Id),
+			DownloadTag: "test",
+			FileName:    m.GetFileName(userIllustration.MetaSinglePage["original_image_url"]),
+			FileUri:     userIllustration.MetaSinglePage["original_image_url"],
+		}
+		*downloadQueue = append(*downloadQueue, downloadQueueItem)
+	}
 }
