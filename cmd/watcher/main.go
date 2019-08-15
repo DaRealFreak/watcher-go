@@ -22,7 +22,7 @@ type CliApplication struct {
 	configuration *configuration
 }
 
-func NewApp() *CliApplication {
+func NewWatcherApplication() *CliApplication {
 	app := &CliApplication{
 		watcher: watcherApp.NewWatcher(),
 		configuration: &configuration{
@@ -35,6 +35,12 @@ func NewApp() *CliApplication {
 			Long: "An application written in Go to keep track of items from multiple sources.\n" +
 				"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
 			Version: version.VERSION,
+			Run: func(cmd *cobra.Command, args []string) {
+				// display the help as the root command since we require a root command run function
+				// the persistent flags won't get initialized
+				// if we don't have a run function in the root command making them unusable
+				_ = cmd.Help()
+			},
 		},
 	}
 	app.addGeneralArguments()
@@ -42,7 +48,7 @@ func NewApp() *CliApplication {
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
-	app.initLogger()
+	app.initWatcher()
 	return app
 }
 
@@ -57,16 +63,21 @@ func (cli *CliApplication) Execute() {
 	// check for available updates
 	update.NewUpdateChecker().CheckForAvailableUpdates()
 
-	// parse all configurations before executing the main command
-	cobra.OnInitialize(cli.initConfig)
-	// read in environment variables that match
-	viper.AutomaticEnv()
-
 	if err := cli.rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
 	// close the database to prevent any dangling data
 	cli.watcher.DbCon.CloseConnection()
+}
+
+// initialize everything the app needs
+func (cli *CliApplication) initWatcher() {
+	// read in environment variables that match
+	viper.AutomaticEnv()
+	// initialize the logger
+	cli.initLogger()
+	// parse all configurations before executing the main command
+	cobra.OnInitialize(cli.initConfig)
 }
 
 // initialize the logger

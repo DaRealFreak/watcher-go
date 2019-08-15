@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	watcher.NewApp().Execute()
+	watcher.NewWatcherApplication().Execute()
 }
