@@ -99,7 +99,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 		data.Set("refresh_token", m.mobileClient.refreshToken)
 	} else {
 		data.Set("grant_type", "password")
-		data.Set("username", account.Username+"nope")
+		data.Set("username", account.Username)
 		data.Set("password", account.Password)
 	}
 
