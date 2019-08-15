@@ -117,14 +117,14 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 // custom POST function to check for specific status codes and messages
 func (m *ehentai) post(uri string, data url.Values) (*http.Response, error) {
 	m.checkPassedDuration()
-	res, err := m.post(uri, data)
+	res, err := m.Session.Post(uri, data)
 	return res, err
 }
 
 // custom GET function to check for specific status codes and messages
 func (m *ehentai) get(uri string) (*http.Response, error) {
 	m.checkPassedDuration()
-	res, err := m.get(uri)
+	res, err := m.Session.Get(uri)
 	return res, err
 }
 
