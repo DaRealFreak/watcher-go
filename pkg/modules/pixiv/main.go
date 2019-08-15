@@ -42,7 +42,7 @@ const (
 	// multiple images concatenated by javascript in the frontend looking like an animation
 	SearchFilterUgoira = "ugoira"
 	// novels/text
-	SearchFilterText = "novels"
+	SearchFilterNovel = "novels"
 	// everything
 	SearchFilterAll = ""
 

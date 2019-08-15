@@ -1,6 +1,8 @@
 package pixiv
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -110,6 +112,13 @@ func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
 func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
 	if userIllustration.Type == SearchFilterIllustration || userIllustration.Type == SearchFilterManga {
 		m.addMetaPages(userIllustration, downloadQueue)
+	} else if userIllustration.Type == SearchFilterUgoira {
+		m.addUgoiraWork(userIllustration, downloadQueue)
+	} else if userIllustration.Type == SearchFilterNovel {
+		// ToDo: parse novel types
+		return
+	} else {
+		log.Fatal("unknown illustration type: " + userIllustration.Type)
 	}
 }
 
@@ -118,7 +127,7 @@ func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]mo
 	for _, image := range userIllustration.MetaPages {
 		downloadQueueItem := models.DownloadQueueItem{
 			ItemId:      string(userIllustration.Id),
-			DownloadTag: "test",
+			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
 			FileName:    m.GetFileName(image["image_urls"]["original"]),
 			FileUri:     image["image_urls"]["original"],
 		}
@@ -127,10 +136,35 @@ func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]mo
 	if len(userIllustration.MetaSinglePage) > 0 {
 		downloadQueueItem := models.DownloadQueueItem{
 			ItemId:      string(userIllustration.Id),
-			DownloadTag: "test",
+			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
 			FileName:    m.GetFileName(userIllustration.MetaSinglePage["original_image_url"]),
 			FileUri:     userIllustration.MetaSinglePage["original_image_url"],
 		}
 		*downloadQueue = append(*downloadQueue, downloadQueueItem)
+	}
+}
+
+// add illustration/manga images to the passed download queue
+func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+	metadata := m.getUgoiraMetaData(string(userIllustration.Id)).UgoiraMetadata
+	resp, err := m.get(metadata.ZipUrls["medium"])
+	m.CheckError(err)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	m.CheckError(err)
+
+	for _, zipFile := range zipReader.File {
+		fmt.Println("Reading file:", zipFile.Name)
+		unzippedFileBytes, err := m.readZipFile(zipFile)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		fmt.Println(len(unzippedFileBytes))
 	}
 }
