@@ -18,8 +18,20 @@ func NewUpdateChecker() *updateChecker {
 	return &updateChecker{}
 }
 
-// check if any new releases exist
-func (u *updateChecker) CheckForAvailableUpdates() (updateAvailable bool, err error) {
+// check if any new releases exist and print information if there is a new release
+func (u *updateChecker) CheckForAvailableUpdates() {
+	// check for available updates
+	updateAvailable, err := u.isUpdateAvailable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if updateAvailable {
+		fmt.Println("new version detected, run \"watcher update\" to update your application.")
+	}
+}
+
+// check latest release and compare the version
+func (u *updateChecker) isUpdateAvailable() (updateAvailable bool, err error) {
 	latest, found, err := selfupdate.DetectLatest(version.RepositoryUrl)
 	if err != nil {
 		log.Warning("error occurred while detecting version: ", err)
@@ -35,7 +47,7 @@ func (u *updateChecker) CheckForAvailableUpdates() (updateAvailable bool, err er
 
 // update the application
 func (u *updateChecker) UpdateApplication() (err error) {
-	updateAvailable, err := u.CheckForAvailableUpdates()
+	updateAvailable, err := u.isUpdateAvailable()
 	if !updateAvailable {
 		fmt.Println("current version is the latest")
 		return nil

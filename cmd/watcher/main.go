@@ -42,6 +42,7 @@ func NewApp() *CliApplication {
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
+	app.initLogger()
 	return app
 }
 
@@ -53,17 +54,8 @@ func (cli *CliApplication) addGeneralArguments() {
 
 // main cli functionality
 func (cli *CliApplication) Execute() {
-	// initialize logger as the very first
-	cli.initLogger()
-
 	// check for available updates
-	updateAvailable, err := update.NewUpdateChecker().CheckForAvailableUpdates()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if updateAvailable {
-		fmt.Println("new version detected, run \"watcher update\" to update your application.")
-	}
+	update.NewUpdateChecker().CheckForAvailableUpdates()
 
 	// parse all configurations before executing the main command
 	cobra.OnInitialize(cli.initConfig)
