@@ -53,7 +53,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	m.ProcessDownloadQueue(downloadQueue, item)
+	m.processDownloadQueue(downloadQueue, item)
 	if m.downloadLimitReached == false {
 		// mark item as complete since update doesn't affect old galleries
 		// if download limit got reached we didn't reach the final image and don't set the gallery as complete

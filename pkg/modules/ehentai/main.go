@@ -1,13 +1,17 @@
 package ehentai
 
 import (
+	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -132,5 +136,21 @@ func (m *ehentai) checkPassedDuration() {
 		sleepTime := time.Now().Add(randomWaitTime).Sub(time.Now())
 		log.Debugf("sleeping for %s seconds", sleepTime.String())
 		time.Sleep(sleepTime)
+	}
+}
+
+func (m *ehentai) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) {
+	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
+
+	for index, data := range downloadQueue {
+		m.checkPassedDuration()
+		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
+		err := m.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		} else {
+			m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
+		}
 	}
 }
