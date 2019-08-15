@@ -88,3 +88,10 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	path = strings.Trim(path, "_")
 	return path
 }
+
+// the default handling of errors in modules
+func (t *Module) CheckError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}

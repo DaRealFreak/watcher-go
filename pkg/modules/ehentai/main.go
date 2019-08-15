@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -146,11 +145,8 @@ func (m *ehentai) processDownloadQueue(downloadQueue []models.DownloadQueueItem,
 		m.checkPassedDuration()
 		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
 		err := m.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
-		if err != nil {
-			log.Fatal(err)
-			os.Exit(1)
-		} else {
-			m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
-		}
+		m.CheckError(err)
+		// if no error occurred update the tracked item
+		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }

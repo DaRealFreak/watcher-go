@@ -104,14 +104,10 @@ func (m *pixiv) Login(account *models.Account) bool {
 	}
 
 	res, err := m.post(m.mobileClient.oauthUrl, data)
-	if err != nil {
-		log.Fatal(err)
-	}
+	m.CheckError(err)
 
 	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	m.CheckError(err)
 
 	var response loginResponse
 	_ = json.Unmarshal(body, &response)
