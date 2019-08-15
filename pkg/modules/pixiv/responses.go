@@ -1,6 +1,9 @@
 package pixiv
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type user struct {
 	ProfileImageUrls map[string]string `json:"profile_image_urls"`
@@ -13,6 +16,38 @@ type user struct {
 	IsMailAuthorized bool              `json:"is_mail_authorized"`
 	Comment          string            `json:"comment"`
 	IsFollowed       bool              `json:"is_followed"`
+}
+
+type illustration struct {
+	Id             json.Number                    `json:"id"`
+	Title          string                         `json:"title"`
+	Type           string                         `json:"type"`
+	ImageUrls      map[string]string              `json:"image_urls"`
+	Caption        string                         `json:"caption"`
+	Restrict       json.Number                    `json:"restrict"`
+	User           *user                          `json:"user"`
+	Tags           []*tag                         `json:"tags"`
+	Tools          []string                       `json:"tools"`
+	CreateDate     time.Time                      `json:"create_date"`
+	PageCount      json.Number                    `json:"page_count"`
+	Width          json.Number                    `json:"width"`
+	Height         json.Number                    `json:"height"`
+	SanityLevel    json.Number                    `json:"sanity_level"`
+	XRestrict      json.Number                    `json:"x_restrict"`
+	Series         *string                        `json:"series"`
+	MetaSinglePage map[string]string              `json:"meta_single_page"`
+	MetaPages      []map[string]map[string]string `json:"meta_pages"`
+	TotalView      json.Number                    `json:"total_view"`
+	TotalBookmarks json.Number                    `json:"total_bookmarks"`
+	IsBookmarked   bool                           `json:"is_bookmarked"`
+	Visible        bool                           `json:"visible"`
+	IsMuted        bool                           `json:"is_muted"`
+	TotalComments  json.Number                    `json:"total_comments"`
+}
+
+type tag struct {
+	Name           string `json:"name"`
+	TranslatedName string `json:"translated_name"`
 }
 
 type profile struct {
@@ -100,4 +135,9 @@ type userDetailResponse struct {
 	Profile          *profile          `json:"profile"`
 	ProfilePublicity *profilePublicity `json:"profile_publicity"`
 	Workspace        *workspace        `json:"workspace"`
+}
+
+type userWorkResponse struct {
+	Illustrations []*illustration `json:"illusts"`
+	NextUrl       string          `json:"next_url"`
 }
