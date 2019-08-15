@@ -11,4 +11,5 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	github.com/tcnksm/go-gitconfig v0.1.2
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )

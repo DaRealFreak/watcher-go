@@ -1,16 +1,20 @@
 package pixiv
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type mobileClient struct {
@@ -25,7 +29,28 @@ type mobileClient struct {
 type pixiv struct {
 	models.Module
 	mobileClient *mobileClient
+	rateLimiter  *rate.Limiter
+	ctx          context.Context
 }
+
+// search options
+//noinspection GoUnusedConst
+const (
+	// single image
+	SearchFilterIllustration = "illust"
+	// multiple images
+	SearchFilterManga = "manga"
+	// multiple images concatenated by javascript in the frontend looking like an animation
+	SearchFilterUgoira = "ugoira"
+	// novels/text
+	SearchFilterText = "novels"
+	// everything
+	SearchFilterAll = ""
+
+	// order of the search results
+	SearchOrderAscending  = "asc"
+	SearchOrderDescending = "desc"
+)
 
 // generate new module and register uri schema
 func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
@@ -46,6 +71,9 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 			accessToken:  "",
 			refreshToken: "",
 		},
+		ctx: context.Background(),
+		// rate limiter bucket with burst of 1 free request on initialization, refills by 1 each second
+		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
 	}
 
 	// initialize the Module with the session/database and login status
@@ -136,6 +164,8 @@ func (m *pixiv) Parse(item *models.TrackedItem) {
 
 // custom GET function to set headers like the mobile app
 func (m *pixiv) get(uri string) (*http.Response, error) {
+	m.checkWaitLimit()
+
 	req, _ := http.NewRequest("GET", uri, nil)
 	for headerKey, headerValue := range m.mobileClient.headers {
 		req.Header.Add(headerKey, headerValue)
@@ -149,6 +179,8 @@ func (m *pixiv) get(uri string) (*http.Response, error) {
 
 // custom GET function to set headers like the mobile app
 func (m *pixiv) post(uri string, data url.Values) (*http.Response, error) {
+	m.checkWaitLimit()
+
 	req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 	for headerKey, headerValue := range m.mobileClient.headers {
 		req.Header.Add(headerKey, headerValue)
@@ -158,4 +190,11 @@ func (m *pixiv) post(uri string, data url.Values) (*http.Response, error) {
 	}
 	res, err := m.Session.Client.Do(req)
 	return res, err
+}
+
+func (m *pixiv) checkWaitLimit() {
+	fmt.Println(time.Now().Unix())
+	// wait for request to stay within the rate limit
+	err := m.rateLimiter.Wait(m.ctx)
+	m.CheckError(err)
 }
