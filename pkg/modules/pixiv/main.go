@@ -3,7 +3,6 @@ package pixiv
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -164,7 +163,7 @@ func (m *pixiv) Parse(item *models.TrackedItem) {
 
 // custom GET function to set headers like the mobile app
 func (m *pixiv) get(uri string) (*http.Response, error) {
-	m.checkWaitLimit()
+	m.applyRateLimit()
 
 	req, _ := http.NewRequest("GET", uri, nil)
 	for headerKey, headerValue := range m.mobileClient.headers {
@@ -179,7 +178,7 @@ func (m *pixiv) get(uri string) (*http.Response, error) {
 
 // custom GET function to set headers like the mobile app
 func (m *pixiv) post(uri string, data url.Values) (*http.Response, error) {
-	m.checkWaitLimit()
+	m.applyRateLimit()
 
 	req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 	for headerKey, headerValue := range m.mobileClient.headers {
@@ -192,8 +191,7 @@ func (m *pixiv) post(uri string, data url.Values) (*http.Response, error) {
 	return res, err
 }
 
-func (m *pixiv) checkWaitLimit() {
-	fmt.Println(time.Now().Unix())
+func (m *pixiv) applyRateLimit() {
 	// wait for request to stay within the rate limit
 	err := m.rateLimiter.Wait(m.ctx)
 	m.CheckError(err)
