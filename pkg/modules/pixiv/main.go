@@ -2,7 +2,6 @@ package pixiv
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -130,7 +129,9 @@ func (m *pixiv) Login(account *models.Account) bool {
 }
 
 func (m *pixiv) Parse(item *models.TrackedItem) {
-	fmt.Println(item)
+	if strings.Contains(item.Uri, "/member.php") || strings.Contains(item.Uri, "/member_illust.php") {
+		m.parseUserIllustrations(item)
+	}
 }
 
 // custom GET function to set headers like the mobile app
