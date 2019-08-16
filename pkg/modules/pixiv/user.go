@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -157,14 +158,32 @@ func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]m
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	m.CheckError(err)
 
+	animationData := animation.FileData{}
 	for _, zipFile := range zipReader.File {
-		fmt.Println("Reading file:", zipFile.Name)
-		unzippedFileBytes, err := m.readZipFile(zipFile)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+		frame, err := m.getUgoiraFrame(zipFile.Name, metadata)
+		m.CheckError(err)
 
-		fmt.Println(len(unzippedFileBytes))
+		unzippedFileBytes, err := m.readZipFile(zipFile)
+		m.CheckError(err)
+
+		delay, err := frame.Delay.Int64()
+		m.CheckError(err)
+
+		animationData.Frames = append(animationData.Frames, unzippedFileBytes)
+		animationData.MsDelays = append(animationData.MsDelays, int(delay))
 	}
+
+	_, err = animation.CreateWebpAnimation(&animationData)
+	m.CheckError(err)
+
+}
+
+// retrieve corresponding frame for the passed file name from the ugoira metadata
+func (m *pixiv) getUgoiraFrame(fileName string, metadata *ugoiraMetadata) (*frame, error) {
+	for _, frame := range metadata.Frames {
+		if frame.File == fileName {
+			return frame, nil
+		}
+	}
+	return nil, fmt.Errorf("no frame found for file: %s", fileName)
 }
