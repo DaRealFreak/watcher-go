@@ -48,7 +48,11 @@ func NewWatcherApplication() *CliApplication {
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
-	app.initWatcher()
+
+	// read in environment variables that match
+	viper.AutomaticEnv()
+	// parse all configurations before executing the main command
+	cobra.OnInitialize(app.initWatcher)
 	return app
 }
 
@@ -72,12 +76,11 @@ func (cli *CliApplication) Execute() {
 
 // initialize everything the app needs
 func (cli *CliApplication) initWatcher() {
-	// read in environment variables that match
-	viper.AutomaticEnv()
 	// initialize the logger
 	cli.initLogger()
-	// parse all configurations before executing the main command
-	cobra.OnInitialize(cli.initConfig)
+
+	// read and parse the configuration
+	cli.initConfig()
 }
 
 // initialize the logger
