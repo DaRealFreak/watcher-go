@@ -14,7 +14,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 )
 
 type FileData struct {
@@ -30,29 +33,41 @@ func CreateWebpAnimation(fileData *FileData) ([]byte, error) {
 	}
 	dumpFramesForImageMagick(fileData)
 
-	args := []string{"convert"}
-	for i := 0; i <= len(fileData.Frames)-1; i++ {
-		args = append(args, fmt.Sprintf("-delay %d %s", fileData.MsDelays[i]/10, fileData.FilePaths[i]))
+	var executable string
+	var args []string
+	if runtime.GOOS == "windows" {
+		executable = "magick"
+		args = append(args, "convert")
+	} else {
+		executable = "convert"
 	}
-	args = append(args, "-loop 0", filepath.Join(fileData.WorkPath, "output.mkv"))
+	for i := 0; i <= len(fileData.Frames)-1; i++ {
+		args = append(args, "-delay", strconv.Itoa(fileData.MsDelays[i]/10), fileData.FilePaths[i])
+	}
+	args = append(args, "-loop", "0", filepath.Join(fileData.WorkPath, "output.mkv"))
 
-	// windows:
-	// magick.exe convert -delay X image1 -delay Y image2 -delay Z image3 -loop 0 output.mkv
-	// darwin/linux
-	// convert -delay X image1 -delay Y image2 -delay Z image3 -loop 0 output.mkv
-	// ToDo: implement ImageMagick conversion
+	// ToDo: fallback to imaging library of golang of error
+	if err := exec.Command(executable, args...).Run(); err != nil {
+		log.Fatal(err)
+	}
 
-	args = []string{"-y", "-i " + filepath.Join(fileData.WorkPath, "output.mkv"), "-lossless 1", "-loop 0", filepath.Join(fileData.WorkPath, "output.webp")}
-	// ToDo: ffmpeg conversion
+	// convert from mkv to webp due to ImageMagick not supporting animated webp yet
+	args = []string{"-y", "-i", filepath.Join(fileData.WorkPath, "output.mkv"), "-lossless", "1", "-loop", "0", filepath.Join(fileData.WorkPath, "output.webp")}
+	if err := exec.Command("ffmpeg", args...).Run(); err != nil {
+		log.Fatal(err)
+	}
 
-	// ToDo: read created webp and return it
-
-	// clean up the created folder/files
-	err := os.RemoveAll(fileData.WorkPath)
+	// read file content to return it
+	content, err := ioutil.ReadFile(filepath.Join(fileData.WorkPath, "output.webp"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	return nil, nil
+
+	// clean up the created folder/files
+	if err := os.RemoveAll(fileData.WorkPath); err != nil {
+		log.Fatal(err)
+	}
+	return content, nil
 }
 
 // dump all frames into a unique folder for the ImageMagick conversion
