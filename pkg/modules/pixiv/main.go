@@ -3,6 +3,7 @@ package pixiv
 import (
 	"context"
 	"encoding/json"
+	"github.com/DaRealFreak/watcher-go/pkg/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -27,9 +28,10 @@ type mobileClient struct {
 
 type pixiv struct {
 	models.Module
-	mobileClient *mobileClient
-	rateLimiter  *rate.Limiter
-	ctx          context.Context
+	mobileClient    *mobileClient
+	animationHelper *animation.Helper
+	rateLimiter     *rate.Limiter
+	ctx             context.Context
 }
 
 // search options
@@ -70,9 +72,9 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 			accessToken:  "",
 			refreshToken: "",
 		},
-		ctx: context.Background(),
-		// rate limiter bucket with burst of 1 free request on initialization, refills by 1 each second
-		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
+		animationHelper: animation.NewAnimationHelper(),
+		ctx:             context.Background(),
+		rateLimiter:     rate.NewLimiter(rate.Every(1*time.Second), 1),
 	}
 
 	// initialize the Module with the session/database and login status

@@ -173,9 +173,7 @@ func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]m
 		animationData.MsDelays = append(animationData.MsDelays, int(delay))
 	}
 
-	_, err = animation.CreateWebpAnimation(&animationData)
-	m.CheckError(err)
-
+	_, err = m.animationHelper.CreateAnimationWebp(&animationData)
 }
 
 // retrieve corresponding frame for the passed file name from the ugoira metadata
