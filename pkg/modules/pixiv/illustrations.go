@@ -14,7 +14,7 @@ func (m *pixiv) getUgoiraMetaData(illustrationId string) *ugoiraResponse {
 		"illust_id": {illustrationId},
 	}
 	apiUrl.RawQuery = data.Encode()
-	res, err := m.get(apiUrl.String())
+	res, err := m.Session.Get(apiUrl.String())
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)

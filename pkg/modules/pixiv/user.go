@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
+	"strings"
 )
 
 // parse illustrations of artists
@@ -21,7 +22,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 		return
 	}
 
-	var downloadQueue []models.DownloadQueueItem
+	var downloadQueue []*downloadQueueItem
 	foundCurrentItem := false
 	apiUrl := m.getUserIllustsUrl(userId, SearchFilterAll, 0)
 
@@ -43,7 +44,43 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 		}
 	}
 
-	fmt.Println(downloadQueue)
+	m.processDownloadQueue(downloadQueue)
+}
+
+func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem) {
+	for _, data := range downloadQueue {
+		if data.Type == SearchFilterIllustration {
+			fmt.Println("ToDo...")
+			// ToDo: implement
+		} else if data.Type == SearchFilterUgoira {
+			resp, err := m.Session.Get(data.FileUri)
+			m.CheckError(err)
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+			m.CheckError(err)
+
+			animationData := animation.FileData{}
+			for _, zipFile := range zipReader.File {
+				frame, err := m.getUgoiraFrame(zipFile.Name, data.Metadata)
+				m.CheckError(err)
+
+				unzippedFileBytes, err := m.readZipFile(zipFile)
+				m.CheckError(err)
+
+				delay, err := frame.Delay.Int64()
+				m.CheckError(err)
+
+				animationData.Frames = append(animationData.Frames, unzippedFileBytes)
+				animationData.MsDelays = append(animationData.MsDelays, int(delay))
+			}
+
+			_, err = m.animationHelper.CreateAnimationWebp(&animationData)
+		}
+	}
 }
 
 // extract the user ID from the passed url
@@ -64,7 +101,7 @@ func (m *pixiv) getUserDetail(userId string) *userDetailResponse {
 		"filter":  {"for_ios"},
 	}
 	apiUrl.RawQuery = data.Encode()
-	res, err := m.get(apiUrl.String())
+	res, err := m.Session.Get(apiUrl.String())
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
@@ -98,7 +135,7 @@ func (m *pixiv) getUserIllustsUrl(userId string, filter string, offset int) stri
 // retrieve user illustrations directly by url since the API response returns the next page url directly
 func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
 	var userWorks userWorkResponse
-	res, err := m.get(apiUrl)
+	res, err := m.Session.Get(apiUrl)
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
@@ -110,7 +147,7 @@ func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
 }
 
 // differentiate the work types (illustration/manga/ugoira/novels)
-func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	if userIllustration.Type == SearchFilterIllustration || userIllustration.Type == SearchFilterManga {
 		m.addMetaPages(userIllustration, downloadQueue)
 	} else if userIllustration.Type == SearchFilterUgoira {
@@ -124,56 +161,40 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]model
 }
 
 // add illustration/manga images to the passed download queue
-func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	for _, image := range userIllustration.MetaPages {
-		downloadQueueItem := models.DownloadQueueItem{
+		downloadQueueItem := downloadQueueItem{
 			ItemId:      string(userIllustration.Id),
 			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
 			FileName:    m.GetFileName(image["image_urls"]["original"]),
 			FileUri:     image["image_urls"]["original"],
+			Type:        userIllustration.Type,
 		}
-		*downloadQueue = append(*downloadQueue, downloadQueueItem)
+		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 	}
 	if len(userIllustration.MetaSinglePage) > 0 {
-		downloadQueueItem := models.DownloadQueueItem{
+		downloadQueueItem := downloadQueueItem{
 			ItemId:      string(userIllustration.Id),
 			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
 			FileName:    m.GetFileName(userIllustration.MetaSinglePage["original_image_url"]),
 			FileUri:     userIllustration.MetaSinglePage["original_image_url"],
+			Type:        userIllustration.Type,
 		}
-		*downloadQueue = append(*downloadQueue, downloadQueueItem)
+		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 	}
 }
 
 // add illustration/manga images to the passed download queue
-func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]models.DownloadQueueItem) {
+func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	metadata := m.getUgoiraMetaData(string(userIllustration.Id)).UgoiraMetadata
-	resp, err := m.get(metadata.ZipUrls["medium"])
-	m.CheckError(err)
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
+	downloadQueueItem := downloadQueueItem{
+		ItemId:      string(userIllustration.Id),
+		DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
+		FileName:    strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp",
+		FileUri:     metadata.ZipUrls["medium"],
+		Type:        userIllustration.Type,
 	}
-	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-	m.CheckError(err)
-
-	animationData := animation.FileData{}
-	for _, zipFile := range zipReader.File {
-		frame, err := m.getUgoiraFrame(zipFile.Name, metadata)
-		m.CheckError(err)
-
-		unzippedFileBytes, err := m.readZipFile(zipFile)
-		m.CheckError(err)
-
-		delay, err := frame.Delay.Int64()
-		m.CheckError(err)
-
-		animationData.Frames = append(animationData.Frames, unzippedFileBytes)
-		animationData.MsDelays = append(animationData.MsDelays, int(delay))
-	}
-
-	_, err = m.animationHelper.CreateAnimationWebp(&animationData)
+	*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 }
 
 // retrieve corresponding frame for the passed file name from the ugoira metadata
