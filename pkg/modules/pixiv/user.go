@@ -29,8 +29,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	for !foundCurrentItem {
 		response := m.getUserIllusts(apiUrl)
 		apiUrl = response.NextUrl
-		for i := len(response.Illustrations) - 1; i >= 0; i-- {
-			userIllustration := response.Illustrations[i]
+		for _, userIllustration := range response.Illustrations {
 			if string(userIllustration.Id) == item.CurrentItem {
 				foundCurrentItem = true
 				break
@@ -44,11 +43,14 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 		}
 	}
 
-	m.processDownloadQueue(downloadQueue)
+	m.processDownloadQueue(downloadQueue, item)
 }
 
-func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem) {
-	for _, data := range downloadQueue {
+func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
+	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
+
+	for index, data := range downloadQueue {
+		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
 		if data.Type == SearchFilterIllustration {
 			fmt.Println("ToDo...")
 			// ToDo: implement
