@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/http"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net/url"
@@ -32,7 +32,7 @@ type DownloadQueueItem struct {
 type Module struct {
 	ModuleInterface
 	DbIO     DatabaseInterface
-	Session  *http_wrapper.Session
+	Session  http.SessionInterface
 	LoggedIn bool
 }
 

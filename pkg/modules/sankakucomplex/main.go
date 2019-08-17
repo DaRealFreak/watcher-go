@@ -3,7 +3,7 @@ package sankakucomplex
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
-	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -25,7 +25,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         http_wrapper.NewSession(),
+		Session:         session.NewSession(),
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}

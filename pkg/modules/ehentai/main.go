@@ -3,7 +3,7 @@ package ehentai
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
-	"github.com/DaRealFreak/watcher-go/pkg/http_wrapper"
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -48,7 +48,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         http_wrapper.NewSession(),
+		Session:         session.NewSession(),
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
@@ -100,7 +100,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	// copy the cookies for e-hentai to exhentai
 	ehUrl, _ := url.Parse("https://e-hentai.org")
 	exUrl, _ := url.Parse("https://exhentai.org")
-	m.Session.Client.Jar.SetCookies(exUrl, m.Session.Client.Jar.Cookies(ehUrl))
+	m.Session.GetClient().Jar.SetCookies(exUrl, m.Session.GetClient().Jar.Cookies(ehUrl))
 
 	return m.LoggedIn
 }
