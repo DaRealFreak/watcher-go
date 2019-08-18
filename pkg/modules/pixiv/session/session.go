@@ -1,14 +1,18 @@
 package session
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -61,6 +65,7 @@ func NewSession() *PixivSession {
 func (s *PixivSession) Get(uri string) (*http.Response, error) {
 	s.applyRateLimit()
 
+	log.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, 1))
 	req, _ := http.NewRequest("GET", uri, nil)
 	for headerKey, headerValue := range s.MobileClient.headers {
 		req.Header.Add(headerKey, headerValue)
@@ -76,6 +81,7 @@ func (s *PixivSession) Get(uri string) (*http.Response, error) {
 func (s *PixivSession) Post(uri string, data url.Values) (*http.Response, error) {
 	s.applyRateLimit()
 
+	log.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, 1))
 	req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 	for headerKey, headerValue := range s.MobileClient.headers {
 		req.Header.Add(headerKey, headerValue)
@@ -90,9 +96,8 @@ func (s *PixivSession) Post(uri string, data url.Values) (*http.Response, error)
 // try to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.maxRetries; try++ {
-		log.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
-		// ToDo: implement again
-		// err = s.tryDownloadFile(filepath, uri)
+		log.Info(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
+		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
 			return
@@ -101,6 +106,48 @@ func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 		}
 	}
 	return err
+}
+
+// this function will download a url to a local file.
+// It's efficient because it will write as it downloads and not load the whole file into memory.
+func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
+	// retrieve the data
+	resp, err := s.Get(uri)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	written, err := s.WriteToFile(filepath, content)
+
+	// additional validation to compare sent headers with the written file
+	err = s.CheckDownloadedFileForErrors(written, resp.Header)
+	return err
+}
+
+// write content to file and return written amount of bytes and possible occurred errors
+func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int64, err error) {
+	// ensure the directory
+	s.EnsureDownloadDirectory(filepath)
+
+	// create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return 0, err
+	}
+	defer out.Close()
+
+	// write the body to file
+	written, err = io.Copy(out, bytes.NewReader(content))
+	if err != nil {
+		return 0, err
+	}
+	return
 }
 
 // wait for the leaky bucket to fill again
