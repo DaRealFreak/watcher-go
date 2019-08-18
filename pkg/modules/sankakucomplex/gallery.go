@@ -83,7 +83,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	for foundCurrentItem == false {
 		page += 1
 		apiUri := fmt.Sprintf("https://capi-v2.sankakucomplex.com/posts?lang=english&page=%d&limit=100&tags=%s", page, url.QueryEscape(tag))
-		response, _ := m.get(apiUri, 0)
+		response, _ := m.Session.Get(apiUri)
 		apiItems := m.parseApiResponse(response)
 		for _, data := range apiItems {
 			if string(data.Id) > item.CurrentItem || item.CurrentItem == "" {

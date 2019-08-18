@@ -1,16 +1,12 @@
 package sankakucomplex
 
 import (
-	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 )
 
 type sankakuComplex struct {
@@ -68,7 +64,7 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 		"commit":         {"Login"},
 	}
 
-	res, _ := m.post("https://chan.sankakucomplex.com/user/authenticate", values, 0)
+	res, _ := m.Session.Post("https://chan.sankakucomplex.com/user/authenticate", values)
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
 	return m.LoggedIn
@@ -80,26 +76,4 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 	downloadQueue := m.parseGallery(item)
 
 	m.ProcessDownloadQueue(downloadQueue, item)
-}
-
-// custom POST function to check for specific status codes and messages
-func (m *sankakuComplex) post(uri string, data url.Values, tries int) (*http.Response, error) {
-	res, err := m.Session.Post(uri, data)
-	if err == nil && res.StatusCode == 429 {
-		log.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
-		time.Sleep(time.Duration(tries+1*60) * time.Second)
-		return m.post(uri, data, tries+1)
-	}
-	return res, err
-}
-
-// custom GET function to check for specific status codes and messages
-func (m *sankakuComplex) get(uri string, tries int) (*http.Response, error) {
-	res, err := m.Session.Get(uri)
-	if err == nil && res.StatusCode == 429 {
-		log.Info(fmt.Sprintf("too many requests, sleeping '%d' seconds", tries+1*60))
-		time.Sleep(time.Duration(tries+1*60) * time.Second)
-		return m.get(uri, tries+1)
-	}
-	return res, err
 }
