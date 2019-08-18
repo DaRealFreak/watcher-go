@@ -34,7 +34,7 @@ type illustration struct {
 	Height         json.Number                    `json:"height"`
 	SanityLevel    json.Number                    `json:"sanity_level"`
 	XRestrict      json.Number                    `json:"x_restrict"`
-	Series         *string                        `json:"series"`
+	Series         *series                        `json:"series"`
 	MetaSinglePage map[string]string              `json:"meta_single_page"`
 	MetaPages      []map[string]map[string]string `json:"meta_pages"`
 	TotalView      json.Number                    `json:"total_view"`
@@ -43,6 +43,11 @@ type illustration struct {
 	Visible        bool                           `json:"visible"`
 	IsMuted        bool                           `json:"is_muted"`
 	TotalComments  json.Number                    `json:"total_comments"`
+}
+
+type series struct {
+	Id    json.Number `json:"id"`
+	Title string      `json:"title"`
 }
 
 type ugoiraMetadata struct {
