@@ -57,7 +57,13 @@ func (h *Helper) createAnimationImageMagick(fileData *FileData, fileExtension st
 
 	executable, args := h.getImageMagickEnv()
 	for i := 0; i <= len(fileData.Frames)-1; i++ {
-		args = append(args, "-delay", strconv.Itoa(fileData.MsDelays[i]/10), fileData.FilePaths[i])
+		args = append(args,
+			"-delay",
+			// don't ask me about the conversion rate, was the result of trying to approach
+			// the best length on multiple long ugoira works
+			fmt.Sprintf("%0.2f", float64(fileData.MsDelays[i])/13),
+			fileData.FilePaths[i],
+		)
 	}
 	args = append(args, "-loop", "0", filepath.Join(fileData.WorkPath, h.outputFileName+"."+fileExtension))
 
