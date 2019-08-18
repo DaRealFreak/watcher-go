@@ -3,8 +3,10 @@ package session
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	"io"
@@ -19,11 +21,12 @@ import (
 
 type PixivSession struct {
 	watcherHttp.Session
+	Module       models.ModuleInterface
 	HttpClient   *http.Client
 	MobileClient *mobileClient
 	rateLimiter  *rate.Limiter
 	ctx          context.Context
-	maxRetries   int
+	MaxRetries   int
 }
 
 type mobileClient struct {
@@ -33,6 +36,17 @@ type mobileClient struct {
 	ClientSecret string
 	AccessToken  string
 	RefreshToken string
+}
+
+type errorMessage struct {
+	UserMessage        string            `json:"user_message"`
+	Message            string            `json:"message"`
+	Reason             string            `json:"reason"`
+	UserMessageDetails map[string]string `json:"user_message_details"`
+}
+
+type errorResponse struct {
+	Error *errorMessage `json:"error"`
 }
 
 // initialize a new session and set all the required headers etc
@@ -57,45 +71,95 @@ func NewSession() *PixivSession {
 		},
 		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
 		ctx:         context.Background(),
-		maxRetries:  5,
+		MaxRetries:  5,
 	}
 }
 
 // custom GET function to set headers like the mobile app
-func (s *PixivSession) Get(uri string) (*http.Response, error) {
-	s.applyRateLimit()
+func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
+	// access the passed url and return the data or the error which persisted multiple retries
+	// post the request with the retries option
+	for try := 1; try <= s.MaxRetries; try++ {
+		s.applyRateLimit()
 
-	log.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, 1))
-	req, _ := http.NewRequest("GET", uri, nil)
-	for headerKey, headerValue := range s.MobileClient.headers {
-		req.Header.Add(headerKey, headerValue)
+		log.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
+		req, _ := http.NewRequest("GET", uri, nil)
+		for headerKey, headerValue := range s.MobileClient.headers {
+			req.Header.Add(headerKey, headerValue)
+		}
+		if s.MobileClient.AccessToken != "" {
+			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
+		}
+		res, err = s.HttpClient.Do(req)
+		if err == nil {
+			bodyBytes, _ := ioutil.ReadAll(res.Body)
+
+			// check for API errors
+			if s.containsApiError(bodyBytes) {
+				retry, err := s.handleApiError(bodyBytes)
+				if retry {
+					return s.Get(uri)
+				} else {
+					return nil, err
+				}
+			}
+
+			// reset the response body to the original unread state
+			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			// break if we didn't reach any error state until the end of the loop
+			break
+		} else {
+			// sleep if an error occurred
+			time.Sleep(time.Duration(try+1) * time.Second)
+		}
 	}
-	if s.MobileClient.AccessToken != "" {
-		req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
-	}
-	res, err := s.HttpClient.Do(req)
+
 	return res, err
 }
 
 // custom GET function to set headers like the mobile app
-func (s *PixivSession) Post(uri string, data url.Values) (*http.Response, error) {
-	s.applyRateLimit()
+func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, err error) {
+	// post the request with the retries option
+	for try := 1; try <= s.MaxRetries; try++ {
+		s.applyRateLimit()
 
-	log.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, 1))
-	req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
-	for headerKey, headerValue := range s.MobileClient.headers {
-		req.Header.Add(headerKey, headerValue)
+		log.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
+		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
+		for headerKey, headerValue := range s.MobileClient.headers {
+			req.Header.Add(headerKey, headerValue)
+		}
+		if s.MobileClient.AccessToken != "" {
+			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
+		}
+		res, err = s.HttpClient.Do(req)
+		if err == nil {
+			bodyBytes, _ := ioutil.ReadAll(res.Body)
+
+			// check for API errors
+			if s.containsApiError(bodyBytes) {
+				retry, err := s.handleApiError(bodyBytes)
+				if retry {
+					return s.Post(uri, data)
+				} else {
+					return nil, err
+				}
+			}
+
+			// reset the response body to the original unread state
+			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			// break if we didn't reach any error state until the end of the loop
+			break
+		} else {
+			// sleep if an error occurred
+			time.Sleep(time.Duration(try+1) * time.Second)
+		}
 	}
-	if s.MobileClient.AccessToken != "" {
-		req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
-	}
-	res, err := s.HttpClient.Do(req)
 	return res, err
 }
 
 // try to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
-	for try := 1; try <= s.maxRetries; try++ {
+	for try := 1; try <= s.MaxRetries; try++ {
 		log.Info(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
@@ -156,4 +220,36 @@ func (s *PixivSession) applyRateLimit() {
 	if err := s.rateLimiter.Wait(s.ctx); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// check if the returned value contains an error object
+func (s *PixivSession) containsApiError(response []byte) bool {
+	var errorResponse errorResponse
+	err := json.Unmarshal(response, &errorResponse)
+	if err == nil && errorResponse.Error != nil && errorResponse.Error.Message != "" {
+		return true
+	}
+	return false
+}
+
+// handle possible API errors and return if the function should retry
+func (s *PixivSession) handleApiError(response []byte) (retry bool, err error) {
+	var errorResponse errorResponse
+	_ = json.Unmarshal(response, &errorResponse)
+	if errorResponse.Error.Message == "Error occurred at the OAuth process. "+
+		"Please check your Access Token to fix this. "+
+		"Error Message: invalid_grant" {
+		log.Info("access token expired, using refresh token to generate new token...")
+		s.Module.Login(nil)
+		return true, nil
+	} else if errorResponse.Error.Message == "Rate Limit" {
+		log.Info("rate limit got exceeded, sleeping for 60 seconds...")
+		time.Sleep(60 * time.Second)
+		return true, nil
+	} else if errorResponse.Error.UserMessage == "該当作品は削除されたか、存在しない作品IDです。" {
+		return false, fmt.Errorf("requested art got removed or restricted")
+	} else if errorResponse.Error.UserMessage == "アクセスが制限されています。" {
+		return false, fmt.Errorf("requested user got restricted")
+	}
+	return
 }
