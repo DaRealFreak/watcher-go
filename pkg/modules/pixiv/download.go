@@ -3,7 +3,9 @@ package pixiv
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"github.com/DaRealFreak/watcher-go/pkg/animation"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"path"
@@ -62,7 +64,9 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
-	if _, err := m.pixivSession.WriteToFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName), fileContent); err != nil {
+	filepath := path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName)
+	log.Info(fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)))
+	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
 		return err
 	}
 	return nil
