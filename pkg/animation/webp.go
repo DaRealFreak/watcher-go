@@ -1,10 +1,12 @@
 package animation
 
 import (
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // create webp animated picture from the passed FileData
@@ -25,6 +27,7 @@ func (h *Helper) CreateAnimationWebp(fileData *FileData) (content []byte, err er
 		"-loop", "0",
 		filepath.Join(fileData.WorkPath, h.outputFileName+".webp"),
 	}
+	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
 	if err := exec.Command("ffmpeg", args...).Run(); err != nil {
 		return nil, err
 	}

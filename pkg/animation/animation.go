@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	_ "golang.org/x/image/webp"
 	"image"
 	_ "image/gif"
@@ -16,13 +17,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 type FileData struct {
-	Frames    [][]byte
-	MsDelays  []int
-	FilePaths []string
-	WorkPath  string
+	Frames          [][]byte
+	MsDelays        []int
+	FilePaths       []string
+	WorkPath        string
+	ConvertedFrames bool
 }
 
 type Helper struct {
@@ -46,26 +49,28 @@ func (h *Helper) createAnimationImageMagick(fileData *FileData, fileExtension st
 		return nil, fmt.Errorf("delays don't match the frame count")
 	}
 
-	if err := h.dumpFramesForImageMagick(fileData); err != nil {
-		return nil, err
+	if len(fileData.FilePaths) == 0 {
+		if err := h.dumpFramesForImageMagick(fileData); err != nil {
+			return nil, err
+		}
 	}
 
-	var executable string
-	var args []string
-	if runtime.GOOS == "windows" {
-		executable = "magick"
-		args = append(args, "convert")
-	} else {
-		executable = "convert"
-	}
+	executable, args := h.getImageMagickEnv()
 	for i := 0; i <= len(fileData.Frames)-1; i++ {
 		args = append(args, "-delay", strconv.Itoa(fileData.MsDelays[i]/10), fileData.FilePaths[i])
 	}
 	args = append(args, "-loop", "0", filepath.Join(fileData.WorkPath, h.outputFileName+"."+fileExtension))
 
+	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 	if err := exec.Command(executable, args...).Run(); err != nil {
-		fmt.Println("wat")
-		return nil, err
+		if fileData.ConvertedFrames {
+			// fallback failed, return the error
+			return nil, err
+		} else {
+			// force convert frames from the source format with ImageMagick to PNG
+			// since FFmpeg had problems to convert some image formats into video formats
+			return h.imageFormatFallback(fileData, fileExtension, deleteAfterConversion)
+		}
 	}
 
 	// read file content to return it
@@ -119,5 +124,33 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 // guess image format from gif/jpeg/png/webp
 func (h *Helper) guessImageFormat(r io.Reader) (format string, err error) {
 	_, format, err = image.DecodeConfig(r)
+	return
+}
+
+// FFmpeg has sometimes problems to convert images to videos from different image formats
+// so convert frames to PNG with ImageMagick
+func (h *Helper) imageFormatFallback(fData *FileData, fileExtension string, deleteAfterConversion bool) ([]byte, error) {
+	log.Debug("using image format fallback to PNG")
+	for i := 0; i <= len(fData.Frames)-1; i++ {
+		executable, args := h.getImageMagickEnv()
+		newFilePath := filepath.Join(fData.WorkPath, strconv.Itoa(i)+".png")
+		args = append(args, fData.FilePaths[i], newFilePath)
+		fData.FilePaths[i] = newFilePath
+		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+		if err := exec.Command(executable, args...).Run(); err != nil {
+			return nil, err
+		}
+	}
+	fData.ConvertedFrames = true
+	return h.createAnimationImageMagick(fData, fileExtension, deleteAfterConversion)
+}
+
+func (h *Helper) getImageMagickEnv() (executable string, args []string) {
+	if runtime.GOOS == "windows" {
+		executable = "magick"
+		args = append(args, "convert")
+	} else {
+		executable = "convert"
+	}
 	return
 }
