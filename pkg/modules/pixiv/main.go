@@ -25,7 +25,6 @@ type downloadQueueItem struct {
 	FileName    string
 	FileUri     string
 	Type        string
-	Metadata    *ugoiraMetadata
 }
 
 // search options

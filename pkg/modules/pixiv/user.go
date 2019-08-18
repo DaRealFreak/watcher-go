@@ -1,16 +1,12 @@
 package pixiv
 
 import (
-	"archive/zip"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
-	"strings"
 )
 
 // parse illustrations of artists
@@ -43,45 +39,27 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 		}
 	}
 
+	// reverse download queue to download old items first
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
+	}
 	m.processDownloadQueue(downloadQueue, item)
 }
 
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
+	log.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.Uri))
 
 	for index, data := range downloadQueue {
-		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
+		var err error
+		log.Info(fmt.Sprintf("downloading updates for uri: %s (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
 		if data.Type == SearchFilterIllustration {
-			fmt.Println("ToDo...")
-			// ToDo: implement
+			err = m.downloadIllustration(data)
 		} else if data.Type == SearchFilterUgoira {
-			resp, err := m.Session.Get(data.FileUri)
-			m.CheckError(err)
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-			zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-			m.CheckError(err)
-
-			animationData := animation.FileData{}
-			for _, zipFile := range zipReader.File {
-				frame, err := m.getUgoiraFrame(zipFile.Name, data.Metadata)
-				m.CheckError(err)
-
-				unzippedFileBytes, err := m.readZipFile(zipFile)
-				m.CheckError(err)
-
-				delay, err := frame.Delay.Int64()
-				m.CheckError(err)
-
-				animationData.Frames = append(animationData.Frames, unzippedFileBytes)
-				animationData.MsDelays = append(animationData.MsDelays, int(delay))
-			}
-
-			_, err = m.animationHelper.CreateAnimationWebp(&animationData)
+			err = m.downloadUgoira(data)
 		}
+
+		m.CheckError(err)
+		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
 	}
 }
 
@@ -167,7 +145,7 @@ func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]*d
 	for _, image := range userIllustration.MetaPages {
 		downloadQueueItem := downloadQueueItem{
 			ItemId:      string(userIllustration.Id),
-			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
+			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
 			FileName:    m.GetFileName(image["image_urls"]["original"]),
 			FileUri:     image["image_urls"]["original"],
 			Type:        userIllustration.Type,
@@ -177,7 +155,7 @@ func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]*d
 	if len(userIllustration.MetaSinglePage) > 0 {
 		downloadQueueItem := downloadQueueItem{
 			ItemId:      string(userIllustration.Id),
-			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
+			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
 			FileName:    m.GetFileName(userIllustration.MetaSinglePage["original_image_url"]),
 			FileUri:     userIllustration.MetaSinglePage["original_image_url"],
 			Type:        userIllustration.Type,
@@ -186,14 +164,14 @@ func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]*d
 	}
 }
 
-// add illustration/manga images to the passed download queue
+// add ugoira works to the passed download queue
 func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
-	metadata := m.getUgoiraMetaData(string(userIllustration.Id)).UgoiraMetadata
+	// retrieve metadata later on download to prevent getting detected as harvesting software
 	downloadQueueItem := downloadQueueItem{
 		ItemId:      string(userIllustration.Id),
-		DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, userIllustration.User.Name),
-		FileName:    strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp",
-		FileUri:     metadata.ZipUrls["medium"],
+		DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+		FileName:    "",
+		FileUri:     "",
 		Type:        userIllustration.Type,
 	}
 	*downloadQueue = append(*downloadQueue, &downloadQueueItem)
