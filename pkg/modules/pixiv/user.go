@@ -52,11 +52,12 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	for index, data := range downloadQueue {
 		var err error
 		log.Info(fmt.Sprintf("downloading updates for uri: %s (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		if data.Type == SearchFilterIllustration {
+		if data.Type == SearchFilterIllustration || data.Type == SearchFilterManga {
 			err = m.downloadIllustration(data)
 		} else if data.Type == SearchFilterUgoira {
 			err = m.downloadUgoira(data)
 		}
+		// ToDo: download novels as .txt
 
 		m.CheckError(err)
 		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
