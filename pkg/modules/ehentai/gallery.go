@@ -27,7 +27,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 
 	for true {
 		for _, galleryItem := range m.getGalleryImageUrls(html, galleryTitle) {
-			if foundCurrentItem == true {
+			if foundCurrentItem {
 				downloadQueue = append(downloadQueue, galleryItem)
 			}
 			// check if we reached the current item already
@@ -37,7 +37,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 		}
 
 		nextPageUrl, exists := m.getNextGalleryPageUrl(html)
-		if exists == false {
+		if !exists {
 			// no previous page exists anymore, break here
 			break
 		}
@@ -46,7 +46,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	}
 
 	m.processDownloadQueue(downloadQueue, item)
-	if m.downloadLimitReached == false {
+	if !m.downloadLimitReached {
 		// mark item as complete since update doesn't affect old galleries
 		// if download limit got reached we didn't reach the final image and don't set the gallery as complete
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)

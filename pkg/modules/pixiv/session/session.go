@@ -188,6 +188,9 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	}
 
 	written, err := s.WriteToFile(filepath, content)
+	if err != nil {
+		return err
+	}
 
 	// additional validation to compare sent headers with the written file
 	err = s.CheckDownloadedFileForErrors(written, resp.Header)

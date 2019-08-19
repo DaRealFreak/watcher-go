@@ -27,9 +27,9 @@ type ehentai struct {
 func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = ehentai{
-		galleryImageIdPattern:    regexp.MustCompile("(\\w+-\\d+)"),
-		galleryImageIndexPattern: regexp.MustCompile("\\w+-(?P<Number>\\d+)"),
-		searchGalleryIdPattern:   regexp.MustCompile("(\\d+/\\w+)"),
+		galleryImageIdPattern:    regexp.MustCompile(`(\w+-\d+)`),
+		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
+		searchGalleryIdPattern:   regexp.MustCompile(`(\d+/\w+)`),
 	}
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
@@ -69,7 +69,7 @@ func (m *ehentai) IsLoggedIn() (LoggedIn bool) {
 // add our pattern to the uri schemas
 func (m *ehentai) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleUriSchemas []*regexp.Regexp
-	schema, _ := regexp.Compile(".*e[\\-x]hentai.org")
+	schema, _ := regexp.Compile(`.*e[\-x]hentai.org`)
 	moduleUriSchemas = append(moduleUriSchemas, schema)
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
@@ -98,7 +98,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
-	if strings.Contains(item.Uri, "/g/") && m.downloadLimitReached == false {
+	if strings.Contains(item.Uri, "/g/") && !m.downloadLimitReached {
 		m.parseGallery(item)
 	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "f_search=") {
 		m.parseSearch(item)

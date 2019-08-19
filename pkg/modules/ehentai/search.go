@@ -18,7 +18,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 
 	var itemQueue []searchGalleryItem
 	foundCurrentItem := false
-	for foundCurrentItem == false {
+	for !foundCurrentItem {
 		for _, galleryItem := range m.getSearchGalleryUrls(html) {
 			if galleryItem.id != item.CurrentItem {
 				itemQueue = append(itemQueue, galleryItem)
@@ -34,7 +34,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 		}
 
 		nextPageUrl, exists := m.getNextSearchPageUrl(html)
-		if exists == false {
+		if !exists {
 			// no next page exists anymore, break here
 			break
 		}

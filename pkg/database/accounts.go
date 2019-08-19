@@ -34,6 +34,7 @@ func (db DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models
 		db.checkErr(err)
 
 		rows, err = stmt.Query(module.Key())
+		db.checkErr(err)
 	} else {
 		rows, err = db.connection.Query("SELECT * FROM accounts WHERE NOT disabled ORDER BY module, uid")
 	}

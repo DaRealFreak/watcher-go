@@ -46,7 +46,7 @@ func (session *Session) CheckDownloadedFileForErrors(writtenSize int64, response
 		fileSize, err := strconv.Atoi(val[0])
 		if err == nil {
 			if writtenSize != int64(fileSize) {
-				err = fmt.Errorf("written file size doesn't match the header content length value")
+				return fmt.Errorf("written file size doesn't match the header content length value")
 			}
 		}
 	}

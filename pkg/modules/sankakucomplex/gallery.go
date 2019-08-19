@@ -80,7 +80,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	page := 0
 	foundCurrentItem := false
 
-	for foundCurrentItem == false {
+	for !foundCurrentItem {
 		page += 1
 		apiUri := fmt.Sprintf("https://capi-v2.sankakucomplex.com/posts?lang=english&page=%d&limit=100&tags=%s", page, url.QueryEscape(tag))
 		response, _ := m.Session.Get(apiUri)

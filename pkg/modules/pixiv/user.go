@@ -153,17 +153,6 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 	}
 }
 
-// add ugoira works to the passed download queue
-func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
-	// retrieve metadata later on download to prevent getting detected as harvesting software
-	downloadQueueItem := downloadQueueItem{
-		ItemId:       string(userIllustration.Id),
-		DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
-		Illustration: userIllustration,
-	}
-	*downloadQueue = append(*downloadQueue, &downloadQueueItem)
-}
-
 // retrieve corresponding frame for the passed file name from the ugoira metadata
 func (m *pixiv) getUgoiraFrame(fileName string, metadata *ugoiraMetadata) (*frame, error) {
 	for _, frame := range metadata.Frames {

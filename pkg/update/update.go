@@ -48,6 +48,9 @@ func (u *updateChecker) isUpdateAvailable() (updateAvailable bool, err error) {
 // update the application
 func (u *updateChecker) UpdateApplication() (err error) {
 	updateAvailable, err := u.isUpdateAvailable()
+	if err != nil {
+		return err
+	}
 	if !updateAvailable {
 		fmt.Println("current version is the latest")
 		return nil
