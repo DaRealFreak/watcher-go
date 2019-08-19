@@ -138,15 +138,25 @@ func (m *ehentai) checkPassedDuration() {
 	}
 }
 
-func (m *ehentai) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) {
+func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
 	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
 
 	for index, data := range downloadQueue {
 		m.checkPassedDuration()
+
+		downloadQueueItem := m.getDownloadQueueItem(data)
+		// check for limit
+		if downloadQueueItem.FileUri == "https://exhentai.org/img/509.gif" ||
+			downloadQueueItem.FileUri == "https://e-hentai.org/img/509.gif" {
+			log.Info("download limit reached, skipping galleries from now on")
+			m.downloadLimitReached = true
+			break
+		}
+
 		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		err := m.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), data.DownloadTag, data.FileName), data.FileUri)
+		err := m.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName), downloadQueueItem.FileUri)
 		m.CheckError(err)
 		// if no error occurred update the tracked item
-		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemId)
 	}
 }
