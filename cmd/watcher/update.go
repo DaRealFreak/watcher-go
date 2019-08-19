@@ -52,7 +52,7 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 	var url string
 	var user string
 
-	disableCmd := &cobra.Command{
+	enableCmd := &cobra.Command{
 		Use:   "enable",
 		Short: "enables an account based on the username",
 		Long:  "update the database to set the user of the module to enabled",
@@ -60,11 +60,11 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 			cli.watcher.UpdateAccountDisabledStatusByUri(url, user, false)
 		},
 	}
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
-	_ = disableCmd.MarkFlagRequired("url")
-	_ = disableCmd.MarkFlagRequired("user")
-	return disableCmd
+	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+	_ = enableCmd.MarkFlagRequired("url")
+	_ = enableCmd.MarkFlagRequired("user")
+	return enableCmd
 }
 
 func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
@@ -104,5 +104,41 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
 	_ = itemCmd.MarkFlagRequired("url")
 	_ = itemCmd.MarkFlagRequired("current")
+	itemCmd.AddCommand(cli.getEnableItemCommand())
+	itemCmd.AddCommand(cli.getDisableItemCommand())
 	return itemCmd
+}
+
+func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
+	enableCmd := &cobra.Command{
+		Use:   "enable [urls]",
+		Short: "enables passed items based on the passed urls",
+		Long:  "changes the completion status on the passed items to false, causing them to get checked again",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, url := range args {
+				module := cli.watcher.ModuleFactory.GetModuleFromUri(url)
+				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, false)
+			}
+		},
+	}
+	return enableCmd
+}
+
+func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
+	enableCmd := &cobra.Command{
+		Use:   "disable [urls]",
+		Short: "disables passed items based on the passed urls",
+		Long:  "changes the completion status on the passed items to true, causing them to not get checked again",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, url := range args {
+				module := cli.watcher.ModuleFactory.GetModuleFromUri(url)
+				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, true)
+			}
+		},
+	}
+	return enableCmd
 }

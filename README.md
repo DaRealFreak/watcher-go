@@ -72,14 +72,13 @@ Available Commands:
   item        updates the saved current item
 ```
 
-accounts got the following flags (password is not required on enable/disable sub command):
+accounts got the following flags:
 ```
 Available Commands:
   disable     disable an account based on the username
   enable      enables an account based on the username
 
 Flags:
-  -h, --help              help for account
   -p, --password string   new password (required)
       --url string        url of module (required)
   -u, --user string       username (required)
@@ -91,7 +90,23 @@ items got the following flags:
       --url string       url of tracked item you want to update (required)
 ```
 
-enabling/disabling items will come in later versions
+### Enabling/Disabling Accounts/Items
+You can also enable/disable accounts and items individually with the update sub command.  
+To enable accounts run `watcher update account enable`, to disable accounts `watcher update account disable`.  
+
+Accounts need the following flags:
+```
+Flags:
+      --url string    url of module (required)
+  -u, --user string   username (required)
+```
+
+Similar to the accounts is the command for enabling items:  
+`watcher update items enable [url1] [url2] [url3] ...`  
+and the command for disabling items:  
+`watcher update items disable [url1] [url2] [url3] ...`.
+
+No flags are required for to enable/disable items.
 
 
 ## Development
