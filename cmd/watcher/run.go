@@ -26,7 +26,7 @@ func (cli *CliApplication) getRunCommand() *cobra.Command {
 			cli.watcher.Run(moduleUrl)
 		},
 	}
-	runCmd.PersistentFlags().StringVarP(&downloadDirectory, "directory", "d", "", "download Directory (required)")
+	runCmd.PersistentFlags().StringVarP(&downloadDirectory, "directory", "d", "", "download directory (will be saved in config file)")
 	runCmd.PersistentFlags().StringVarP(&moduleUrl, "url", "u", "", "url of module you want to run")
 	_ = viper.BindPFlag("DownloadDirectory", runCmd.PersistentFlags().Lookup("directory"))
 	return runCmd

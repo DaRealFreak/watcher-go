@@ -100,7 +100,7 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 			cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
-	itemCmd.Flags().StringVar(&url, "url", "", "url of item you want to track (required)")
+	itemCmd.Flags().StringVar(&url, "url", "", "url of tracked item you want to update (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
 	_ = itemCmd.MarkFlagRequired("url")
 	_ = itemCmd.MarkFlagRequired("current")
