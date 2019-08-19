@@ -9,10 +9,20 @@ It will download any detected item and update the index in the database on compl
 There are currently 4 available root commands with following functionality:
 ```  
 Available Commands:
-  add         add an item or account to the database
-  list        lists items or accounts from the database
-  run         update all tracked items
-  update      update the application or an item/account in the database
+  add                   add an item or account to the database
+  list                  lists items or accounts from the database
+  run                   update all tracked items
+  update                update the application or an item/account in the database
+  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
+```
+
+### Global Flags
+These flags are available for all commands and sub commands:
+```
+Flags:
+      --config string      config file (default is ./.watcher.yaml)
+  -v, --verbosity string   log level (debug, info, warn, error, fatal, panic (default "info")
+      --version            version for watcher
 ```
 
 ### Running the application
@@ -107,6 +117,18 @@ and the command for disabling items:
 `watcher update items disable [url1] [url2] [url3] ...`.
 
 No flags are required for to enable/disable items.
+
+### Enabling Auto Completion
+Auto Completion can be generated for the terminals bash, powershell and zsh.
+Simply run `watcher generate-autocomplete` with the following sub commands
+to generate a script in `~/.watcher/completion` and printing you the command to active it.
+
+```
+Available Commands:
+  bash        generates auto completion for Bash
+  powershell  generates auto completion for PowerShell
+  zsh         generates auto completion for Zsh
+```
 
 
 ## Development
