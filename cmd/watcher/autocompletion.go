@@ -44,7 +44,7 @@ func (cli *CliApplication) getGenerateAutoCompletionCommandPowerShell() *cobra.C
 				fmt.Println(
 					fmt.Sprintf(
 						"run the following command to add the auto completion to your profile: \n%s",
-						"printf '\\nImport-Module -Name \""+filePath+"\"' >> $PROFILE",
+						"echo 'Import-Module -Name \""+filePath+"\"' >> $PROFILE",
 					),
 				)
 			} else {
