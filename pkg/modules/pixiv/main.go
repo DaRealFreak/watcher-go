@@ -20,11 +20,9 @@ type pixiv struct {
 }
 
 type downloadQueueItem struct {
-	ItemId      string
-	DownloadTag string
-	FileName    string
-	FileUri     string
-	Type        string
+	ItemId       string
+	DownloadTag  string
+	Illustration *illustration
 }
 
 // search options

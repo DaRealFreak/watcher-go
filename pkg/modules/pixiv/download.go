@@ -13,18 +13,36 @@ import (
 )
 
 func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err error) {
-	return m.Session.DownloadFile(
-		path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName),
-		downloadQueueItem.FileUri,
-	)
+	for i := len(downloadQueueItem.Illustration.MetaPages) - 1; i >= 0; i-- {
+		image := downloadQueueItem.Illustration.MetaPages[i]
+		fileName := m.GetFileName(image["image_urls"]["original"])
+		fileUri := image["image_urls"]["original"]
+		if err := m.Session.DownloadFile(
+			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			fileUri,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
+	if len(downloadQueueItem.Illustration.MetaSinglePage) > 0 {
+		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
+		fileUri := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
+		return m.Session.DownloadFile(
+			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			fileUri,
+		)
+	}
+	return nil
 }
 
 func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
 	metadata := m.getUgoiraMetaData(downloadQueueItem.ItemId).UgoiraMetadata
-	downloadQueueItem.FileName = strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp"
-	downloadQueueItem.FileUri = metadata.ZipUrls["medium"]
+	fileName := strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp"
+	fileUri := metadata.ZipUrls["medium"]
 
-	resp, err := m.Session.Get(downloadQueueItem.FileUri)
+	resp, err := m.Session.Get(fileUri)
 	if err != nil {
 		return err
 	}
@@ -64,7 +82,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
-	filepath := path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName)
+	filepath := path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName)
 	log.Info(fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)))
 	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
 		return err

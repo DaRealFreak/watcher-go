@@ -52,9 +52,9 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	for index, data := range downloadQueue {
 		var err error
 		log.Info(fmt.Sprintf("downloading updates for uri: %s (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		if data.Type == SearchFilterIllustration || data.Type == SearchFilterManga {
+		if data.Illustration.Type == SearchFilterIllustration || data.Illustration.Type == SearchFilterManga {
 			err = m.downloadIllustration(data)
-		} else if data.Type == SearchFilterUgoira {
+		} else if data.Illustration.Type == SearchFilterUgoira {
 			err = m.downloadUgoira(data)
 		}
 		// ToDo: download novels as .txt
@@ -130,10 +130,22 @@ func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
 // differentiate the work types (illustration/manga/ugoira/novels)
 func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	if userIllustration.Type == SearchFilterIllustration || userIllustration.Type == SearchFilterManga {
-		m.addMetaPages(userIllustration, downloadQueue)
+		downloadQueueItem := downloadQueueItem{
+			ItemId:       string(userIllustration.Id),
+			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+			Illustration: userIllustration,
+		}
+		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 	} else if userIllustration.Type == SearchFilterUgoira {
-		m.addUgoiraWork(userIllustration, downloadQueue)
+		// retrieve metadata later on download to prevent getting detected as harvesting software
+		downloadQueueItem := downloadQueueItem{
+			ItemId:       string(userIllustration.Id),
+			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+			Illustration: userIllustration,
+		}
+		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 	} else if userIllustration.Type == SearchFilterNovel {
+		fmt.Println(userIllustration)
 		// ToDo: parse novel types
 		return
 	} else {
@@ -141,39 +153,13 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 	}
 }
 
-// add illustration/manga images to the passed download queue
-func (m *pixiv) addMetaPages(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
-	for _, image := range userIllustration.MetaPages {
-		downloadQueueItem := downloadQueueItem{
-			ItemId:      string(userIllustration.Id),
-			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
-			FileName:    m.GetFileName(image["image_urls"]["original"]),
-			FileUri:     image["image_urls"]["original"],
-			Type:        userIllustration.Type,
-		}
-		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
-	}
-	if len(userIllustration.MetaSinglePage) > 0 {
-		downloadQueueItem := downloadQueueItem{
-			ItemId:      string(userIllustration.Id),
-			DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
-			FileName:    m.GetFileName(userIllustration.MetaSinglePage["original_image_url"]),
-			FileUri:     userIllustration.MetaSinglePage["original_image_url"],
-			Type:        userIllustration.Type,
-		}
-		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
-	}
-}
-
 // add ugoira works to the passed download queue
 func (m *pixiv) addUgoiraWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	// retrieve metadata later on download to prevent getting detected as harvesting software
 	downloadQueueItem := downloadQueueItem{
-		ItemId:      string(userIllustration.Id),
-		DownloadTag: fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
-		FileName:    "",
-		FileUri:     "",
-		Type:        userIllustration.Type,
+		ItemId:       string(userIllustration.Id),
+		DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+		Illustration: userIllustration,
 	}
 	*downloadQueue = append(*downloadQueue, &downloadQueueItem)
 }
