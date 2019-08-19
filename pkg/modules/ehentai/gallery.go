@@ -14,7 +14,7 @@ type imageGalleryItem struct {
 }
 
 func (m *ehentai) parseGallery(item *models.TrackedItem) {
-	response, _ := m.get(item.Uri)
+	response, _ := m.Session.Get(item.Uri)
 	html, _ := m.Session.GetDocument(response).Html()
 	if m.hasGalleryErrors(item, html) {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
@@ -41,7 +41,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 			// no previous page exists anymore, break here
 			break
 		}
-		response, _ = m.get(nextPageUrl)
+		response, _ = m.Session.Get(nextPageUrl)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -100,7 +100,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 }
 
 func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
-	response, _ := m.get(item.uri)
+	response, _ := m.Session.Get(item.uri)
 	document := m.Session.GetDocument(response)
 	imageUrl, _ := document.Find("img#img").Attr("src")
 	return models.DownloadQueueItem{

@@ -7,8 +7,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"math/rand"
-	"net/http"
+	"golang.org/x/time/rate"
 	"net/url"
 	"path"
 	"regexp"
@@ -16,19 +15,12 @@ import (
 	"time"
 )
 
-type timer struct {
-	lastRequest time.Time
-	minWaitTime time.Duration
-	maxWaitTime time.Duration
-}
-
 type ehentai struct {
 	models.Module
 	downloadLimitReached     bool
 	galleryImageIdPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIdPattern   *regexp.Regexp
-	timer                    *timer
 }
 
 // generate new module and register uri schema
@@ -38,22 +30,22 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 		galleryImageIdPattern:    regexp.MustCompile("(\\w+-\\d+)"),
 		galleryImageIndexPattern: regexp.MustCompile("\\w+-(?P<Number>\\d+)"),
 		searchGalleryIdPattern:   regexp.MustCompile("(\\d+/\\w+)"),
-		timer: &timer{
-			lastRequest: time.Now().Add(-1.5 * 1000 * time.Millisecond),
-			minWaitTime: 1.5 * 1000 * time.Millisecond,
-			maxWaitTime: 2.5 * 1000 * time.Millisecond,
-		},
 	}
+
+	// set rate limiter on 1.5 seconds with burst limit of 1
+	ehSession := session.NewSession()
+	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         session.NewSession(),
+		Session:         ehSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+
 	// register the uri schema
 	module.RegisterUriSchema(uriSchemas)
 	return &module
@@ -93,7 +85,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 		"ipb_login_submit": {"Login!"},
 	}
 
-	res, _ := m.post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+	res, _ := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
 
@@ -113,37 +105,10 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 	}
 }
 
-// custom POST function to check for specific status codes and messages
-func (m *ehentai) post(uri string, data url.Values) (*http.Response, error) {
-	m.checkPassedDuration()
-	res, err := m.Session.Post(uri, data)
-	return res, err
-}
-
-// custom GET function to check for specific status codes and messages
-func (m *ehentai) get(uri string) (*http.Response, error) {
-	m.checkPassedDuration()
-	res, err := m.Session.Get(uri)
-	return res, err
-}
-
-// function to add a random delay before sending another request
-// to prevent getting detected as harvesting software
-func (m *ehentai) checkPassedDuration() {
-	randomWaitTime := time.Duration(float64(m.timer.minWaitTime) + rand.Float64()*(float64(m.timer.maxWaitTime)-float64(m.timer.minWaitTime)))
-	if !time.Now().After(time.Now().Add(randomWaitTime)) {
-		sleepTime := time.Now().Add(randomWaitTime).Sub(time.Now())
-		log.Debugf("sleeping for %s seconds", sleepTime.String())
-		time.Sleep(sleepTime)
-	}
-}
-
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
 	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
 
 	for index, data := range downloadQueue {
-		m.checkPassedDuration()
-
 		downloadQueueItem := m.getDownloadQueueItem(data)
 		// check for limit
 		if downloadQueueItem.FileUri == "https://exhentai.org/img/509.gif" ||
