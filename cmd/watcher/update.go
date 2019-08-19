@@ -31,8 +31,8 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 	var password string
 	accountCmd := &cobra.Command{
 		Use:   "account",
-		Short: "updates the saved current item",
-		Long:  "updates the saved current item of an item in the database",
+		Short: "updates the saved account",
+		Long:  "updates the saved account in the database(new password, enable/disable)",
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.watcher.UpdateAccountByUri(url, user, password)
 		},

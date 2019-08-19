@@ -6,7 +6,7 @@ It will download any detected item and update the index in the database on compl
 
 
 ## Usage
-There are currently 5 available root commands with following functionality:
+There are currently 4 available root commands with following functionality:
 ```  
 Available Commands:
   add         add an item or account to the database
@@ -54,7 +54,7 @@ Items can be added by executing following command:
 To see what accounts, items and modules are available you can add following sub commands to the list command
 ```
 Available Commands:
-  all         displays accounts and items in the database
+  all         displays modules, accounts and items in the database
   accounts    displays all accounts
   items       displays all items
   modules     shows all registered modules
@@ -68,7 +68,7 @@ In case you want to update an account or tracked item you can add the following 
 ```
 Available Commands:
   -           updates the application
-  account     updates the saved current item
+  account     updates the saved account
   item        updates the saved current item
 ```
 

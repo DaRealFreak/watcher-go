@@ -55,8 +55,8 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 func (cli *CliApplication) getListAllCommand() *cobra.Command {
 	allCmd := &cobra.Command{
 		Use:   "all",
-		Short: "displays accounts and items in the database",
-		Long:  "displays all accounts and items currently in the database",
+		Short: "displays modules, accounts and items in the database",
+		Long:  "displays all modules, accounts and items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Modules:")
 			cli.watcher.ListRegisteredModules()
