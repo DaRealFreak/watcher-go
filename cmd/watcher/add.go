@@ -21,7 +21,7 @@ func (cli *CliApplication) addAddCommand() {
 func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 	// add the item option, requires only the uri
 	itemCmd := &cobra.Command{
-		Use:   "item [urls of items]",
+		Use:   "item [urls]",
 		Short: "adds an item to the database",
 		Long:  "parses and adds the passed url into the tracked items if not already tracked",
 		Args:  cobra.MinimumNArgs(1),

@@ -48,6 +48,7 @@ func NewWatcherApplication() *CliApplication {
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
+	app.addGenerateAutoCompletionCommand()
 
 	// read in environment variables that match
 	viper.AutomaticEnv()
