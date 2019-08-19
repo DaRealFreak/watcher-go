@@ -1,4 +1,5 @@
 # Watcher-go
+[![Go Report Card](https://goreportcard.com/badge/github.com/DaRealFreak/watcher-go)](https://goreportcard.com/report/github.com/DaRealFreak/watcher-go?style=flat-square)  ![GitHub](https://img.shields.io/github/license/DaRealFreak/watcher-go?style=flat-square)
 
 Application to keep track of items from multiple sources with a local database. 
 It will download any detected item and update the index in the database on completion of the download.
@@ -15,7 +16,7 @@ Available Commands:
 ```
 
 ### Running the application
-just running the command `watcher run` will run the main functionality of the application:  
+Just running the command `watcher run` will run the main functionality of the application:  
 checking all active sources and downloading updates  
 
 Options for this command are:
@@ -30,7 +31,7 @@ so you don't have to pass the argument every time.
 You can also specify which module to run by passing an example url to retrieve the module from.
 
 ### Adding Accounts/Items
-accounts and tracked items be added by attaching to the add command (f.e. `watcher add item`)
+Accounts and tracked items be added by attaching to the add command (f.e. `watcher add item`)
 ```
 Available Commands:
   account     adds an account to the database
@@ -50,7 +51,7 @@ Items can be added by executing following command:
 `watcher add item [url1] [url2] [url3] ...`
 
 ### List Accounts/Items/Modules 
-to see what accounts, items and modules are available you can add following sub commands to the list command
+To see what accounts, items and modules are available you can add following sub commands to the list command
 ```
 Available Commands:
   all         displays accounts and items in the database
