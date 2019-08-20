@@ -13,7 +13,7 @@ func (cli *CliApplication) addRunCommand() {
 // retrieve the run command
 func (cli *CliApplication) getRunCommand() *cobra.Command {
 	var downloadDirectory string
-	var moduleUrl string
+	var moduleURL string
 	// runs the main functionality to update all tracked items
 	var runCmd = &cobra.Command{
 		Use:   "run",
@@ -23,11 +23,23 @@ func (cli *CliApplication) getRunCommand() *cobra.Command {
 			if err != nil {
 				log.Error("could not save the configuration")
 			}
-			cli.watcher.Run(moduleUrl)
+			cli.watcher.Run(moduleURL)
 		},
 	}
-	runCmd.PersistentFlags().StringVarP(&downloadDirectory, "directory", "d", "", "download directory (will be saved in config file)")
-	runCmd.PersistentFlags().StringVarP(&moduleUrl, "url", "u", "", "url of module you want to run")
+	runCmd.PersistentFlags().StringVarP(
+		&downloadDirectory,
+		"directory",
+		"d",
+		"",
+		"download directory (will be saved in config file)",
+	)
+	runCmd.PersistentFlags().StringVarP(
+		&moduleURL,
+		"url",
+		"u",
+		"",
+		"url of module you want to run",
+	)
 	_ = viper.BindPFlag("DownloadDirectory", runCmd.PersistentFlags().Lookup("directory"))
 	return runCmd
 }

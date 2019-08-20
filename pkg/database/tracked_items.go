@@ -2,7 +2,10 @@ package database
 
 import (
 	"database/sql"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+
+	// import for side effects
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -34,7 +37,7 @@ func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted b
 
 	for rows.Next() {
 		item := models.TrackedItem{}
-		err = rows.Scan(&item.Id, &item.Uri, &item.CurrentItem, &item.Module, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.CurrentItem, &item.Module, &item.Complete)
 		db.checkErr(err)
 
 		items = append(items, &item)
@@ -56,7 +59,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInter
 	item := models.TrackedItem{}
 	if rows.Next() {
 		// item already persisted
-		err = rows.Scan(&item.Id, &item.Uri, &item.CurrentItem, &item.Module, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.CurrentItem, &item.Module, &item.Complete)
 		db.checkErr(err)
 	} else {
 		// create the item and call the same function again
@@ -83,7 +86,7 @@ func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem st
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(currentItem, 0, trackedItem.Id)
+	_, err = stmt.Exec(currentItem, 0, trackedItem.ID)
 	db.checkErr(err)
 
 	// update current item
@@ -102,7 +105,7 @@ func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, 
 	db.checkErr(err)
 	defer stmt.Close()
 
-	_, err = stmt.Exec(completeInt, trackedItem.Id)
+	_, err = stmt.Exec(completeInt, trackedItem.ID)
 	db.checkErr(err)
 
 	trackedItem.Complete = complete

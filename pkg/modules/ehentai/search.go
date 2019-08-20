@@ -1,10 +1,11 @@
 package ehentai
 
 import (
+	"strings"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 type searchGalleryItem struct {
@@ -13,7 +14,7 @@ type searchGalleryItem struct {
 }
 
 func (m *ehentai) parseSearch(item *models.TrackedItem) {
-	response, _ := m.Session.Get(item.Uri)
+	response, _ := m.Session.Get(item.URI)
 	html, _ := m.Session.GetDocument(response).Html()
 
 	var itemQueue []searchGalleryItem

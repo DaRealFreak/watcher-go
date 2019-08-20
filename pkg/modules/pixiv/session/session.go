@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +13,11 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 type PixivSession struct {

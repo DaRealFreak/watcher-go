@@ -3,12 +3,13 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 type apiItem struct {
@@ -92,10 +93,10 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		for _, data := range apiItems {
 			if string(data.ID) > item.CurrentItem || item.CurrentItem == "" {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
-					ItemId:      string(data.ID),
+					ItemID:      string(data.ID),
 					DownloadTag: path.Join(m.SanitizePath(tag, false), m.getTagSubDirectory(data)),
 					FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
-					FileUri:     data.FileURL,
+					FileURI:     data.FileURL,
 				})
 			} else {
 				foundCurrentItem = true
@@ -125,10 +126,10 @@ func (m *sankakuComplex) parseAPIResponse(response *http.Response) []apiItem {
 
 // extract the tag from the passed item to use in the API request
 func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
-	u, _ := url.Parse(item.Uri)
+	u, _ := url.Parse(item.URI)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["tags"]) == 0 {
-		log.Fatalf("parsed uri(%s) does not contain any \"tags\" tag", item.Uri)
+		log.Fatalf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)
 	}
 	return q["tags"][0]
 }

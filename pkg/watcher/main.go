@@ -2,12 +2,13 @@ package watcher
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
+
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"text/tabwriter"
 )
 
 type Watcher struct {
@@ -25,10 +26,10 @@ func NewWatcher() *Watcher {
 }
 
 // main functionality, update all tracked items
-func (app *Watcher) Run(moduleUrl string) {
+func (app *Watcher) Run(moduleURL string) {
 	var trackedItems []*models.TrackedItem
-	if moduleUrl != "" {
-		module := app.ModuleFactory.GetModuleFromURI(moduleUrl)
+	if moduleURL != "" {
+		module := app.ModuleFactory.GetModuleFromURI(moduleURL)
 		trackedItems = app.DbCon.GetTrackedItems(module, false)
 	} else {
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
@@ -38,13 +39,13 @@ func (app *Watcher) Run(moduleUrl string) {
 		if !module.IsLoggedIn() {
 			app.loginToModule(module)
 		}
-		log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.Uri, item.CurrentItem))
+		log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem))
 		module.Parse(item)
 	}
 }
 
 // extract the module based on the uri and add account if not registered already
-func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
+func (app *Watcher) AddAccountByURI(uri string, user string, password string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
@@ -62,25 +63,33 @@ func (app *Watcher) ListAccounts(uri string) {
 	// initialize tab writer
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "Id\tUsername\tPassword\tModule\tDisabled")
+	_, _ = fmt.Fprintln(w, "ID\tUsername\tPassword\tModule\tDisabled")
 	for _, account := range accounts {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t\n", account.Id, account.Username, account.Password, account.Module, account.Disabled)
+		_, _ = fmt.Fprintf(
+			w,
+			"%d\t%s\t%s\t%s\t%t\n",
+			account.ID,
+			account.Username,
+			account.Password,
+			account.Module,
+			account.Disabled,
+		)
 	}
 	_ = w.Flush()
 }
 
-func (app *Watcher) UpdateAccountDisabledStatusByUri(uri string, user string, disabled bool) {
+func (app *Watcher) UpdateAccountDisabledStatusByURI(uri string, user string, disabled bool) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccountDisabledStatus(user, disabled, module)
 }
 
-func (app *Watcher) UpdateAccountByUri(uri string, user string, password string) {
+func (app *Watcher) UpdateAccountByURI(uri string, user string, password string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccount(user, password, module)
 }
 
 // add item based on the uri and set it to the passed current item if not nil
-func (app *Watcher) AddItemByUri(uri string, currentItem string) {
+func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
@@ -101,9 +110,17 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	// initialize tab writer
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "Id\tModule\tUrl\tCurrent Item\tCompleted")
+	_, _ = fmt.Fprintln(w, "ID\tModule\tUrl\tCurrent Item\tCompleted")
 	for _, item := range trackedItems {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t\n", item.Id, item.Module, item.Uri, item.CurrentItem, item.Complete)
+		_, _ = fmt.Fprintf(
+			w,
+			"%d\t%s\t%s\t%s\t%t\n",
+			item.ID,
+			item.Module,
+			item.URI,
+			item.CurrentItem,
+			item.Complete,
+		)
 	}
 	_ = w.Flush()
 }
@@ -112,9 +129,15 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 func (app *Watcher) ListRegisteredModules() {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "Id\tModule Key\tRequires Login")
+	_, _ = fmt.Fprintln(w, "ID\tModule Key\tRequires Login")
 	for index, module := range app.ModuleFactory.GetAllModules() {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%t\n", index, module.Key(), module.RequiresLogin())
+		_, _ = fmt.Fprintf(
+			w,
+			"%d\t%s\t%t\n",
+			index,
+			module.Key(),
+			module.RequiresLogin(),
+		)
 	}
 	_ = w.Flush()
 }

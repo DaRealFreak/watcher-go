@@ -14,5 +14,7 @@ require (
 	github.com/spf13/viper v1.3.2
 	github.com/tcnksm/go-gitconfig v0.1.2
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )

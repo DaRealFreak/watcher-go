@@ -2,7 +2,10 @@ package database
 
 import (
 	"database/sql"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+
+	// import for side effects
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -17,12 +20,11 @@ func (db DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 
 	if rows.Next() {
 		account := models.Account{}
-		err = rows.Scan(&account.Id, &account.Username, &account.Password, &account.Module, &account.Disabled)
+		err = rows.Scan(&account.ID, &account.Username, &account.Password, &account.Module, &account.Disabled)
 		db.checkErr(err)
 		return &account
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // retrieve all accounts of only by module if module is not nil
@@ -42,7 +44,7 @@ func (db DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models
 
 	for rows.Next() {
 		account := models.Account{}
-		err := rows.Scan(&account.Id, &account.Username, &account.Password, &account.Module, &account.Disabled)
+		err := rows.Scan(&account.ID, &account.Username, &account.Password, &account.Module, &account.Disabled)
 		db.checkErr(err)
 
 		accounts = append(accounts, &account)
@@ -63,14 +65,13 @@ func (db DbIO) GetFirstOrCreateAccount(user string, password string, module mode
 	if rows.Next() {
 		account := models.Account{}
 		// item already persisted
-		err = rows.Scan(&account.Id, &account.Username, &account.Password, &account.Module, &account.Disabled)
+		err = rows.Scan(&account.ID, &account.Username, &account.Password, &account.Module, &account.Disabled)
 		db.checkErr(err)
 		return &account
-	} else {
-		// create the item and call the same function again
-		db.CreateAccount(user, password, module)
-		return db.GetFirstOrCreateAccount(user, password, module)
 	}
+	// create the item and call the same function again
+	db.CreateAccount(user, password, module)
+	return db.GetFirstOrCreateAccount(user, password, module)
 }
 
 // inserts the passed user and password of the specific module into the database

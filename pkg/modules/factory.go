@@ -2,12 +2,13 @@ package modules
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 	log "github.com/sirupsen/logrus"
-	"regexp"
 )
 
 type ModuleFactory struct {

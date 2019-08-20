@@ -2,14 +2,15 @@ package pixiv
 
 import (
 	"encoding/json"
-	"github.com/DaRealFreak/watcher-go/pkg/animation"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/animation"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
+	log "github.com/sirupsen/logrus"
 )
 
 type pixiv struct {
@@ -133,7 +134,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 }
 
 func (m *pixiv) Parse(item *models.TrackedItem) {
-	if strings.Contains(item.Uri, "/member.php") || strings.Contains(item.Uri, "/member_illust.php") {
+	if strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php") {
 		m.parseUserIllustrations(item)
 	}
 }

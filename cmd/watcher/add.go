@@ -27,7 +27,7 @@ func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
-				cli.watcher.AddItemByUri(url, "")
+				cli.watcher.AddItemByURI(url, "")
 			}
 		},
 	}
@@ -46,7 +46,7 @@ func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 		Short: "adds an account to the database",
 		Long:  "checks the passed url to assign the passed account/password to a module and save it to the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.AddAccountByUri(url, username, password)
+			cli.watcher.AddAccountByURI(url, username, password)
 		},
 	}
 	accountCmd.Flags().StringVarP(&username, "username", "u", "", "username you want to add (required)")

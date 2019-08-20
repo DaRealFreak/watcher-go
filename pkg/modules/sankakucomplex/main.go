@@ -1,11 +1,12 @@
 package sankakucomplex
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
 type sankakuComplex struct {

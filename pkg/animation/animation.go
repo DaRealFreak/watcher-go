@@ -3,12 +3,23 @@ package animation
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	_ "golang.org/x/image/webp"
+
 	"image"
+
+	// import for registering bmp format to image decoder
+	_ "golang.org/x/image/bmp"
+
+	// import for registering webp format to image decoder
+	_ "golang.org/x/image/webp"
+
+	// import for registering gif format to image decoder
 	_ "image/gif"
+	// import for registering jpeg format to image decoder
 	_ "image/jpeg"
+	// import for registering png format to image decoder
 	_ "image/png"
 	"io"
 	"io/ioutil"
@@ -44,51 +55,50 @@ func NewAnimationHelper() *Helper {
 // internal function to create mkv video from the passed frames with the option
 // to not remove the temporary folder for further conversions from mkv to another format
 // (useful for webp/fliff animated image formats which are not directly supported by ImageMagick yet)
-func (h *Helper) createAnimationImageMagick(fileData *FileData, fileExtension string, deleteAfterConversion bool) (content []byte, err error) {
-	if len(fileData.Frames) != len(fileData.MsDelays) {
+func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bool) (content []byte, err error) {
+	if len(fData.Frames) != len(fData.MsDelays) {
 		return nil, fmt.Errorf("delays don't match the frame count")
 	}
 
-	if len(fileData.FilePaths) == 0 {
-		if err := h.dumpFramesForImageMagick(fileData); err != nil {
+	if len(fData.FilePaths) == 0 {
+		if err := h.dumpFramesForImageMagick(fData); err != nil {
 			return nil, err
 		}
 	}
 
 	executable, args := h.getImageMagickEnv()
-	for i := 0; i <= len(fileData.Frames)-1; i++ {
+	for i := 0; i <= len(fData.Frames)-1; i++ {
 		args = append(args,
 			"-delay",
 			// don't ask me about the conversion rate, was the result of trying to approach
 			// the best length on multiple long ugoira works
-			fmt.Sprintf("%0.2f", float64(fileData.MsDelays[i])/13),
-			fileData.FilePaths[i],
+			fmt.Sprintf("%0.2f", float64(fData.MsDelays[i])/13),
+			fData.FilePaths[i],
 		)
 	}
-	args = append(args, "-loop", "0", filepath.Join(fileData.WorkPath, h.outputFileName+"."+fileExtension))
+	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 	if err := exec.Command(executable, args...).Run(); err != nil {
-		if fileData.ConvertedFrames {
+		if fData.ConvertedFrames {
 			// fallback failed, return the error
 			return nil, err
-		} else {
-			// force convert frames from the source format with ImageMagick to PNG
-			// since FFmpeg had problems to convert some image formats into video formats
-			return h.imageFormatFallback(fileData, fileExtension, deleteAfterConversion)
 		}
+		// force convert frames from the source format with ImageMagick to PNG
+		// since FFmpeg had problems to convert some image formats into video formats
+		return h.imageFormatFallback(fData, fExt, del)
 	}
 
 	// read file content to return it
-	content, err = ioutil.ReadFile(filepath.Join(fileData.WorkPath, h.outputFileName+"."+fileExtension))
+	content, err = ioutil.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 	if err != nil {
 		return nil, err
 	}
 
 	// option to keep converted mkv for further conversions
-	if deleteAfterConversion {
+	if del {
 		// clean up the created folder/files
-		err = os.RemoveAll(fileData.WorkPath)
+		err = os.RemoveAll(fData.WorkPath)
 	}
 	return content, err
 }
@@ -135,7 +145,7 @@ func (h *Helper) guessImageFormat(r io.Reader) (format string, err error) {
 
 // FFmpeg has sometimes problems to convert images to videos from different image formats
 // so convert frames to PNG with ImageMagick
-func (h *Helper) imageFormatFallback(fData *FileData, fileExtension string, deleteAfterConversion bool) ([]byte, error) {
+func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]byte, error) {
 	log.Debug("using image format fallback to PNG")
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		executable, args := h.getImageMagickEnv()
@@ -148,7 +158,7 @@ func (h *Helper) imageFormatFallback(fData *FileData, fileExtension string, dele
 		}
 	}
 	fData.ConvertedFrames = true
-	return h.createAnimationImageMagick(fData, fileExtension, deleteAfterConversion)
+	return h.createAnimationImageMagick(fData, fExt, del)
 }
 
 func (h *Helper) getImageMagickEnv() (executable string, args []string) {

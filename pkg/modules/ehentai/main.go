@@ -2,16 +2,17 @@ package ehentai
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	"golang.org/x/time/rate"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 type ehentai struct {
@@ -97,21 +98,21 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 func (m *ehentai) Parse(item *models.TrackedItem) {
-	if strings.Contains(item.Uri, "/g/") && !m.downloadLimitReached {
+	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
 		m.parseGallery(item)
-	} else if strings.Contains(item.Uri, "/tag/") || strings.Contains(item.Uri, "f_search=") {
+	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
 		m.parseSearch(item)
 	}
 }
 
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.Uri))
+	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
 
 	for index, data := range downloadQueue {
 		downloadQueueItem := m.getDownloadQueueItem(data)
 		// check for limit
-		if downloadQueueItem.FileUri == "https://exhentai.org/img/509.gif" ||
-			downloadQueueItem.FileUri == "https://e-hentai.org/img/509.gif" {
+		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
+			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 			log.Info("download limit reached, skipping galleries from now on")
 			m.downloadLimitReached = true
 			break
@@ -120,7 +121,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		log.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.Uri,
+				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
@@ -131,10 +132,10 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 					m.Key(),
 					downloadQueueItem.DownloadTag, downloadQueueItem.FileName,
 				),
-				downloadQueueItem.FileUri,
+				downloadQueueItem.FileURI,
 			),
 		)
 		// if no error occurred update the tracked item
-		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemId)
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
 }

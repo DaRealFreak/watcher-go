@@ -3,15 +3,16 @@ package session
 import (
 	"context"
 	"fmt"
-	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"time"
+
+	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 type DefaultSession struct {
@@ -79,9 +80,8 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 		// if no error occurred return nil
 		if err == nil {
 			return
-		} else {
-			time.Sleep(time.Duration(try+1) * time.Second)
 		}
+		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return err
 }

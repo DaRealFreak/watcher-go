@@ -1,10 +1,11 @@
 package ehentai
 
 import (
+	"strings"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 type imageGalleryItem struct {
@@ -14,7 +15,7 @@ type imageGalleryItem struct {
 }
 
 func (m *ehentai) parseGallery(item *models.TrackedItem) {
-	response, _ := m.Session.Get(item.Uri)
+	response, _ := m.Session.Get(item.URI)
 	html, _ := m.Session.GetDocument(response).Html()
 	if m.hasGalleryErrors(item, html) {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
@@ -25,7 +26,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	var downloadQueue []imageGalleryItem
 	foundCurrentItem := item.CurrentItem == ""
 
-	for true {
+	for {
 		for _, galleryItem := range m.getGalleryImageUrls(html, galleryTitle) {
 			if foundCurrentItem {
 				downloadQueue = append(downloadQueue, galleryItem)
@@ -79,7 +80,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 // check if gallery has errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		log.Info("newer version of gallery available, updating uri of: " + item.Uri)
+		log.Info("newer version of gallery available, updating uri of: " + item.URI)
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
 		// slice to retrieve only the latest gallery
@@ -104,10 +105,10 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQue
 	document := m.Session.GetDocument(response)
 	imageURL, _ := document.Find("img#img").Attr("src")
 	return models.DownloadQueueItem{
-		ItemId:      item.id,
+		ItemID:      item.id,
 		DownloadTag: item.galleryTitle,
 		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
-		FileUri:     imageURL,
+		FileURI:     imageURL,
 	}
 }
 

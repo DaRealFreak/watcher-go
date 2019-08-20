@@ -4,12 +4,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/animation"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"path"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/animation"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err error) {

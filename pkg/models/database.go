@@ -15,7 +15,7 @@ type DatabaseInterface interface {
 }
 
 type Account struct {
-	Id       int
+	ID       int
 	Module   string
 	Username string
 	Password string
@@ -23,8 +23,8 @@ type Account struct {
 }
 
 type TrackedItem struct {
-	Id          int
-	Uri         string
+	ID          int
+	URI         string
 	CurrentItem string
 	Module      string
 	Complete    bool

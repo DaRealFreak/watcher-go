@@ -3,15 +3,16 @@ package pixiv
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // parse illustrations of artists
 func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
-	userID := m.getUserIDFromURL(item.Uri)
+	userID := m.getUserIDFromURL(item.URI)
 	if m.getUserDetail(userID) == nil {
 		log.Info("couldn't retrieve user details, changing artist to complete")
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
@@ -47,14 +48,14 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 }
 
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.Uri))
+	log.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI))
 
 	for index, data := range downloadQueue {
 		var err error
 		log.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: %s (%0.2f%%)",
-				trackedItem.Uri,
+				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)

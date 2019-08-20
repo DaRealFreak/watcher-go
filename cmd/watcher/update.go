@@ -34,7 +34,7 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 		Short: "updates the saved account",
 		Long:  "updates the saved account in the database(new password, enable/disable)",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountByUri(url, user, password)
+			cli.watcher.UpdateAccountByURI(url, user, password)
 		},
 	}
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
@@ -57,7 +57,7 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 		Short: "enables an account based on the username",
 		Long:  "update the database to set the user of the module to enabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountDisabledStatusByUri(url, user, false)
+			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, false)
 		},
 	}
 	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
@@ -76,7 +76,7 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 		Short: "disable an account based on the username",
 		Long:  "update the database to set the user of the module to disabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountDisabledStatusByUri(url, user, true)
+			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, true)
 		},
 	}
 	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")

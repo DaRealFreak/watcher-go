@@ -2,24 +2,25 @@ package update
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/DaRealFreak/watcher-go/pkg/version"
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	log "github.com/sirupsen/logrus"
 	"github.com/tcnksm/go-gitconfig"
-	"os"
 )
 
-type updateChecker struct {
+type Checker struct {
 }
 
 // returns a new update checker
-func NewUpdateChecker() *updateChecker {
-	return &updateChecker{}
+func NewUpdateChecker() *Checker {
+	return &Checker{}
 }
 
 // check if any new releases exist and print information if there is a new release
-func (u *updateChecker) CheckForAvailableUpdates() {
+func (u *Checker) CheckForAvailableUpdates() {
 	// check for available updates
 	updateAvailable, err := u.isUpdateAvailable()
 	if err != nil {
@@ -31,7 +32,7 @@ func (u *updateChecker) CheckForAvailableUpdates() {
 }
 
 // check latest release and compare the version
-func (u *updateChecker) isUpdateAvailable() (updateAvailable bool, err error) {
+func (u *Checker) isUpdateAvailable() (updateAvailable bool, err error) {
 	latest, found, err := selfupdate.DetectLatest(version.RepositoryURL)
 	if err != nil {
 		log.Warning("error occurred while detecting version: ", err)
@@ -46,7 +47,7 @@ func (u *updateChecker) isUpdateAvailable() (updateAvailable bool, err error) {
 }
 
 // update the application
-func (u *updateChecker) UpdateApplication() (err error) {
+func (u *Checker) UpdateApplication() (err error) {
 	updateAvailable, err := u.isUpdateAvailable()
 	if err != nil {
 		return err

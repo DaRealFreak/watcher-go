@@ -2,13 +2,14 @@ package watcher
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
 )
 
 type configuration struct {
@@ -59,8 +60,19 @@ func NewWatcherApplication() *CliApplication {
 
 // add arguments for root command
 func (cli *CliApplication) addGeneralArguments() {
-	cli.rootCmd.PersistentFlags().StringVar(&cli.configuration.configurationFile, "config", "", "config file (default is ./.watcher.yaml)")
-	cli.rootCmd.PersistentFlags().StringVarP(&cli.configuration.logLevel, "verbosity", "v", log.InfoLevel.String(), "log level (debug, info, warn, error, fatal, panic")
+	cli.rootCmd.PersistentFlags().StringVar(
+		&cli.configuration.configurationFile,
+		"config",
+		"",
+		"config file (default is ./.watcher.yaml)",
+	)
+	cli.rootCmd.PersistentFlags().StringVarP(
+		&cli.configuration.logLevel,
+		"verbosity",
+		"v",
+		log.InfoLevel.String(),
+		"log level (debug, info, warn, error, fatal, panic",
+	)
 }
 
 // main cli functionality
