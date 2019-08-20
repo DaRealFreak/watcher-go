@@ -3,14 +3,22 @@ package raven
 import (
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
 )
 
 // SetupSentry initializes the sentry
 func SetupSentry() {
+	sentryDsn := ""
+	// only set DSN if user opted in for that
+	if viper.GetBool("watcher.sentry") {
+		sentryDsn = "https://3ad96038aedf4d859c95f8ae755617ec@sentry.io/1535770"
+	}
+
 	if err := sentry.Init(sentry.ClientOptions{
-		Dsn: "https://3ad96038aedf4d859c95f8ae755617ec@sentry.io/1535770",
+		Dsn: sentryDsn,
 	}); err != nil {
 		log.Fatal(err)
 	}

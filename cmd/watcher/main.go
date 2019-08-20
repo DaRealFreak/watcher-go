@@ -18,6 +18,8 @@ import (
 type configuration struct {
 	configurationFile string
 	logLevel          string
+	enableSentry      bool
+	disableSentry     bool
 }
 
 // CliApplication contains the structure for the Watcher application for the CLI interface
@@ -78,6 +80,18 @@ func (cli *CliApplication) addPersistentFlags() {
 		log.InfoLevel.String(),
 		"log level (debug, info, warn, error, fatal, panic",
 	)
+	cli.rootCmd.PersistentFlags().BoolVar(
+		&cli.configuration.enableSentry,
+		"enable-sentry",
+		false,
+		"use sentry to send usage statistics/errors to the developer",
+	)
+	cli.rootCmd.PersistentFlags().BoolVar(
+		&cli.configuration.disableSentry,
+		"disable-sentry",
+		false,
+		"disable sentry and don't send usage statistics/errors to the developer",
+	)
 }
 
 // Execute executes the root command, entry point for the CLI application
@@ -94,14 +108,25 @@ func (cli *CliApplication) Execute() {
 
 // initWatcher initializes everything the CLI application needs
 func (cli *CliApplication) initWatcher() {
-	// setup sentry for error logging
-	raven.SetupSentry()
-
 	// initialize the logger
 	cli.initLogger()
 
 	// read and parse the configuration
 	cli.initConfig()
+
+	// sentry toggle
+	if cli.configuration.enableSentry {
+		viper.Set("watcher.sentry", true)
+	}
+	if cli.configuration.disableSentry {
+		viper.Set("watcher.sentry", false)
+	}
+	// setup sentry for error logging
+	raven.SetupSentry()
+
+	// save the configuration and check for errors
+	err := viper.WriteConfig()
+	raven.CheckError(err)
 }
 
 // initLogger initializes the logger
