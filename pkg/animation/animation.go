@@ -31,6 +31,8 @@ import (
 	"strings"
 )
 
+// FileData is the object to create and handle possible steps during the animation creation process
+// f.e. in case frames have to get converted to a different file format
 type FileData struct {
 	Frames          [][]byte
 	MsDelays        []int
@@ -39,12 +41,13 @@ type FileData struct {
 	ConvertedFrames bool
 }
 
+// Helper contains the output settings and encapsulates the animation creation functions
 type Helper struct {
 	outputDirectory string
 	outputFileName  string
 }
 
-// retrieve animation helper with standard settings
+// NewAnimationHelper returns a Helper struct with the default settings
 func NewAnimationHelper() *Helper {
 	return &Helper{
 		outputFileName:  "output",
@@ -52,9 +55,9 @@ func NewAnimationHelper() *Helper {
 	}
 }
 
-// internal function to create mkv video from the passed frames with the option
+// createAnimationImageMagick is an internal function to create an mkv video from the passed frames with the option
 // to not remove the temporary folder for further conversions from mkv to another format
-// (useful for webp/fliff animated image formats which are not directly supported by ImageMagick yet)
+// This option is useful for webp/fliff animated image formats which are not directly supported by ImageMagick yet
 func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bool) (content []byte, err error) {
 	if len(fData.Frames) != len(fData.MsDelays) {
 		return nil, fmt.Errorf("delays don't match the frame count")
@@ -103,7 +106,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	return content, err
 }
 
-// dump all frames into a unique folder for the ImageMagick conversion
+// dumpFramesForImageMagick dumps all frames into a unique folder for the ImageMagick conversion
 func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 	uuid4, err := uuid.NewUUID()
 	if err != nil {
@@ -137,14 +140,15 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 	return nil
 }
 
-// guess image format from gif/jpeg/png/webp
+// guessImageFormat returns the guessed image format from the registered image encodings
 func (h *Helper) guessImageFormat(r io.Reader) (format string, err error) {
 	_, format, err = image.DecodeConfig(r)
 	return
 }
 
-// FFmpeg has sometimes problems to convert images to videos from different image formats
-// so convert frames to PNG with ImageMagick
+// imageFormatFallback implements a fallback method for FFmpeg, since it sometimes has problems
+// to convert images to videos from different image formats.
+// So we convert frames to PNG with ImageMagick and try to create the video again
 func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]byte, error) {
 	log.Debug("using image format fallback to PNG")
 	for i := 0; i <= len(fData.Frames)-1; i++ {
@@ -161,6 +165,8 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 	return h.createAnimationImageMagick(fData, fExt, del)
 }
 
+// getImageMagickEnv retrieves the executable path and possible arguments for ImageMagick
+// based on the OS it is running on
 func (h *Helper) getImageMagickEnv() (executable string, args []string) {
 	if runtime.GOOS == "windows" {
 		executable = "magick"

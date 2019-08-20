@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/getsentry/sentry-go v0.2.1
 	github.com/google/uuid v1.1.1
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/mitchellh/go-homedir v1.1.0

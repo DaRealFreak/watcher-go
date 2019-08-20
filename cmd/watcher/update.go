@@ -1,11 +1,12 @@
 package watcher
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/update"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
+// addListCommand adds the update sub command
 func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
@@ -14,9 +15,7 @@ func (cli *CliApplication) addUpdateCommand() {
 		Long:  "option for the user to update the application or items/accounts in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := update.NewUpdateChecker().UpdateApplication()
-			if err != nil {
-				log.Error(err)
-			}
+			raven.CheckError(err)
 		},
 	}
 
@@ -25,6 +24,7 @@ func (cli *CliApplication) addUpdateCommand() {
 	addCmd.AddCommand(cli.getUpdateItemCommand())
 }
 
+// getUpdateAccountCommand returns the command for the update account sub command
 func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 	var url string
 	var user string
@@ -48,6 +48,7 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 	return accountCmd
 }
 
+// getEnableAccountCommand returns the command for the update account enable sub command
 func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 	var url string
 	var user string
@@ -67,6 +68,7 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 	return enableCmd
 }
 
+// getDisableAccountCommand returns the command for the update account disable sub command
 func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 	var url string
 	var user string
@@ -86,6 +88,7 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 	return disableCmd
 }
 
+// getUpdateItemCommand returns the command for the update item sub command
 func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	var url string
 	var current string
@@ -109,6 +112,7 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	return itemCmd
 }
 
+// getEnableItemCommand returns the command for the update item enable sub command
 func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 	enableCmd := &cobra.Command{
 		Use:   "enable [urls]",
@@ -126,6 +130,7 @@ func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 	return enableCmd
 }
 
+// getDisableItemCommand returns the command for the update item disable sub command
 func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 	enableCmd := &cobra.Command{
 		Use:   "disable [urls]",

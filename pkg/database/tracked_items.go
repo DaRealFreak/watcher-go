@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 
@@ -9,7 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// retrieve all tracked items from the sqlite database
+// GetTrackedItems retrieves all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
 func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
 	var items []*models.TrackedItem
@@ -29,16 +30,16 @@ func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted b
 		} else {
 			stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
 		}
-		db.checkErr(err)
+		raven.CheckError(err)
 		rows, err = stmt.Query(module.Key())
 	}
-	db.checkErr(err)
-	defer rows.Close()
+	raven.CheckError(err)
+	defer raven.CheckError(rows.Close())
 
 	for rows.Next() {
 		item := models.TrackedItem{}
 		err = rows.Scan(&item.ID, &item.URI, &item.CurrentItem, &item.Module, &item.Complete)
-		db.checkErr(err)
+		raven.CheckError(err)
 
 		items = append(items, &item)
 	}
@@ -46,21 +47,21 @@ func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted b
 	return items
 }
 
-// check if an item exists already, if not create it
+// GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
 func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInterface) *models.TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
-	db.checkErr(err)
+	raven.CheckError(err)
 
 	rows, err := stmt.Query(uri, module.Key())
-	db.checkErr(err)
-	defer rows.Close()
+	raven.CheckError(err)
+	defer raven.CheckError(rows.Close())
 
 	item := models.TrackedItem{}
 	if rows.Next() {
 		// item already persisted
 		err = rows.Scan(&item.ID, &item.URI, &item.CurrentItem, &item.Module, &item.Complete)
-		db.checkErr(err)
+		raven.CheckError(err)
 	} else {
 		// create the item and call the same function again
 		db.CreateTrackedItem(uri, module)
@@ -69,31 +70,31 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInter
 	return &item
 }
 
-// inserts the passed uri and the module into the tracked_items table
+// CreateTrackedItem inserts the passed uri and the module into the tracked_items table
 func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
-	db.checkErr(err)
-	defer stmt.Close()
+	raven.CheckError(err)
+	defer raven.CheckError(stmt.Close())
 
 	_, err = stmt.Exec(uri, module.Key())
-	db.checkErr(err)
+	raven.CheckError(err)
 }
 
-// update the current item column of the tracked item in the database
+// UpdateTrackedItem updates the current item column of the tracked item in the database
 // also sets the complete status to false to check it on the next check cycle
 func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem string) {
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ?, complete = ? WHERE uid = ?")
-	db.checkErr(err)
-	defer stmt.Close()
+	raven.CheckError(err)
+	defer raven.CheckError(stmt.Close())
 
 	_, err = stmt.Exec(currentItem, 0, trackedItem.ID)
-	db.checkErr(err)
+	raven.CheckError(err)
 
 	// update current item
 	trackedItem.CurrentItem = currentItem
 }
 
-// change the complete status of the passed tracked item
+// ChangeTrackedItemCompleteStatus changes the complete status of the passed tracked item in the database
 func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, complete bool) {
 	var completeInt int8
 	if complete {
@@ -102,11 +103,11 @@ func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, 
 		completeInt = 0
 	}
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET complete = ? WHERE uid = ?")
-	db.checkErr(err)
-	defer stmt.Close()
+	raven.CheckError(err)
+	defer raven.CheckError(stmt.Close())
 
 	_, err = stmt.Exec(completeInt, trackedItem.ID)
-	db.checkErr(err)
+	raven.CheckError(err)
 
 	trackedItem.Complete = complete
 }

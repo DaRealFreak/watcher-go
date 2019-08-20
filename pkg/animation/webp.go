@@ -10,12 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// create webp animated picture from the passed FileData
-// ToDo: fallback to imaging library of golang of error
-func (h *Helper) CreateAnimationWebp(fileData *FileData) (content []byte, err error) {
+// CreateAnimationWebp tries create a .webp animated picture from the passed file data
+func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error) {
 	// create mkv video from the file data first
 	// since ImageMagick doesn't support animated webp pictures
-	if _, err := h.createAnimationImageMagick(fileData, "mkv", false); err != nil {
+	if _, err := h.createAnimationImageMagick(fData, "mkv", false); err != nil {
 		return nil, err
 	}
 
@@ -23,10 +22,10 @@ func (h *Helper) CreateAnimationWebp(fileData *FileData) (content []byte, err er
 	args := []string{
 		"-y",
 		"-loglevel", "0",
-		"-i", filepath.Join(fileData.WorkPath, h.outputFileName+".mkv"),
+		"-i", filepath.Join(fData.WorkPath, h.outputFileName+".mkv"),
 		"-lossless", "1",
 		"-loop", "0",
-		filepath.Join(fileData.WorkPath, h.outputFileName+".webp"),
+		filepath.Join(fData.WorkPath, h.outputFileName+".webp"),
 	}
 	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
 	if err := exec.Command("ffmpeg", args...).Run(); err != nil {
@@ -34,12 +33,12 @@ func (h *Helper) CreateAnimationWebp(fileData *FileData) (content []byte, err er
 	}
 
 	// read file content to return it
-	content, err = ioutil.ReadFile(filepath.Join(fileData.WorkPath, h.outputFileName+".webp"))
+	content, err = ioutil.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+".webp"))
 	if err != nil {
 		return
 	}
 
 	// clean up the created folder/files
-	err = os.RemoveAll(fileData.WorkPath)
+	err = os.RemoveAll(fData.WorkPath)
 	return
 }

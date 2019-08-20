@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// addAddCommand adds the add sub command
 func (cli *CliApplication) addAddCommand() {
 	// general add option
 	addCmd := &cobra.Command{
@@ -17,7 +18,7 @@ func (cli *CliApplication) addAddCommand() {
 	addCmd.AddCommand(cli.getAddItemCommand())
 }
 
-// retrieve the command for add item
+// getAddItemCommand returns the command for the add item sub command
 func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 	// add the item option, requires only the uri
 	itemCmd := &cobra.Command{
@@ -34,7 +35,7 @@ func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 	return itemCmd
 }
 
-// retrieve the command for add account
+// getAddAccountCommand returns the command for the add account sub command
 func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 	var url string
 	var username string

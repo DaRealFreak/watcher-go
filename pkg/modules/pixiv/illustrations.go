@@ -2,6 +2,7 @@ package pixiv
 
 import (
 	"encoding/json"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
 )
@@ -15,12 +16,12 @@ func (m *pixiv) getUgoiraMetaData(illustrationID string) *ugoiraResponse {
 	}
 	apiURL.RawQuery = data.Encode()
 	res, err := m.Session.Get(apiURL.String())
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	err = json.Unmarshal(response, &ugoiraMetadataResponse)
-	m.CheckError(err)
+	raven.CheckError(err)
 	return &ugoiraMetadataResponse
 }

@@ -1,6 +1,6 @@
 package animation
 
-// create mkv video from the passed frames
-func (h *Helper) CreateAnimationMkv(fileData *FileData) (content []byte, err error) {
-	return h.createAnimationImageMagick(fileData, "mkv", true)
+// CreateAnimationMkv tries to create an .mkv video with the passed file data using ImageMagick
+func (h *Helper) CreateAnimationMkv(fData *FileData) (content []byte, err error) {
+	return h.createAnimationImageMagick(fData, "mkv", true)
 }

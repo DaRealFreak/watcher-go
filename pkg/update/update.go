@@ -2,6 +2,7 @@ package update
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
 
 	"github.com/DaRealFreak/watcher-go/pkg/version"
@@ -11,27 +12,26 @@ import (
 	"github.com/tcnksm/go-gitconfig"
 )
 
+// Checker is a struct solely to prevent expose functions without setting up first
 type Checker struct {
 }
 
-// returns a new update checker
+// NewUpdateChecker returns a new update checker
 func NewUpdateChecker() *Checker {
 	return &Checker{}
 }
 
-// check if any new releases exist and print information if there is a new release
+// CheckForAvailableUpdates checks if any new releases exist and prints a notification if there is a new release
 func (u *Checker) CheckForAvailableUpdates() {
 	// check for available updates
 	updateAvailable, err := u.isUpdateAvailable()
-	if err != nil {
-		log.Fatal(err)
-	}
+	raven.CheckError(err)
 	if updateAvailable {
 		fmt.Println("new version detected, run \"watcher update\" to update your application.")
 	}
 }
 
-// check latest release and compare the version
+// isUpdateAvailable checks the latest release and compares it with the version of the run application
 func (u *Checker) isUpdateAvailable() (updateAvailable bool, err error) {
 	latest, found, err := selfupdate.DetectLatest(version.RepositoryURL)
 	if err != nil {
@@ -46,7 +46,7 @@ func (u *Checker) isUpdateAvailable() (updateAvailable bool, err error) {
 	return true, nil
 }
 
-// update the application
+// UpdateApplication downloads the update and directly updates the application
 func (u *Checker) UpdateApplication() (err error) {
 	updateAvailable, err := u.isUpdateAvailable()
 	if err != nil {

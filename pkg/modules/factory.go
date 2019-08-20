@@ -1,14 +1,15 @@
 package modules
 
 import (
+	"errors"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"regexp"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
-	log "github.com/sirupsen/logrus"
 )
 
 type ModuleFactory struct {
@@ -51,6 +52,6 @@ func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 			}
 		}
 	}
-	log.Fatal(fmt.Sprintf("no module is registered which can parse based on the url %s", uri))
+	raven.CheckError(errors.New(fmt.Sprintf("no module is registered which can parse based on the url %s", uri)))
 	return nil
 }

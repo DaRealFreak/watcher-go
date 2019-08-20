@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// addListCommand adds the list sub command
 func (cli *CliApplication) addListCommand() {
 	// general add option
 	listCmd := &cobra.Command{
@@ -21,6 +22,7 @@ func (cli *CliApplication) addListCommand() {
 	listCmd.AddCommand(cli.getListAllCommand())
 }
 
+// getListAccountsCommand returns the command for the list accounts sub command
 func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 	var url string
 	accountCmd := &cobra.Command{
@@ -35,6 +37,7 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 	return accountCmd
 }
 
+// getListItemsCommand returns the command for the list items sub command
 func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 	var url string
 	var includeCompleted bool
@@ -53,6 +56,7 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 	return itemCmd
 }
 
+// getListAllCommand returns the command for the list all sub command
 func (cli *CliApplication) getListAllCommand() *cobra.Command {
 	allCmd := &cobra.Command{
 		Use:   "all",
@@ -72,6 +76,7 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 	return allCmd
 }
 
+// getListModulesCommand returns the command for the list modules sub command
 func (cli *CliApplication) getListModulesCommand() *cobra.Command {
 	modulesCmd := &cobra.Command{
 		Use:   "modules",

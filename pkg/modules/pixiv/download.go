@@ -78,6 +78,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		animationData.MsDelays = append(animationData.MsDelays, int(delay))
 	}
 
+	// ToDo: fallback to imaging library of golang of error
 	fileContent, err := m.animationHelper.CreateAnimationWebp(&animationData)
 	if err != nil {
 		return err

@@ -1,7 +1,9 @@
 package watcher
 
 import (
+	"errors"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
 	"text/tabwriter"
 
@@ -11,11 +13,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Watcher contains the database connection and module factory of the main application
 type Watcher struct {
 	DbCon         *database.DbIO
 	ModuleFactory *modules.ModuleFactory
 }
 
+// NewWatcher initializes a new Watcher with the default settings
 func NewWatcher() *Watcher {
 	dbIO := database.NewConnection()
 	watcher := Watcher{
@@ -25,7 +29,7 @@ func NewWatcher() *Watcher {
 	return &watcher
 }
 
-// main functionality, update all tracked items
+// Run is the main functionality, updates all tracked items
 func (app *Watcher) Run(moduleURL string) {
 	var trackedItems []*models.TrackedItem
 	if moduleURL != "" {
@@ -44,13 +48,13 @@ func (app *Watcher) Run(moduleURL string) {
 	}
 }
 
-// extract the module based on the uri and add account if not registered already
+// AddAccountByURI extracts the module based on the uri and adds an account if not registered already
 func (app *Watcher) AddAccountByURI(uri string, user string, password string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
 
-// list all accounts with the option to limit it to a module
+// ListAccounts lists all accounts with the option to limit it to a module
 func (app *Watcher) ListAccounts(uri string) {
 	var accounts []*models.Account
 	if uri == "" {
@@ -78,17 +82,19 @@ func (app *Watcher) ListAccounts(uri string) {
 	_ = w.Flush()
 }
 
+// UpdateAccountDisabledStatusByURI updates an account of the passed uri and changes the disabled status
 func (app *Watcher) UpdateAccountDisabledStatusByURI(uri string, user string, disabled bool) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccountDisabledStatus(user, disabled, module)
 }
 
+// UpdateAccountByURI updates the password of an account of the passed uri
 func (app *Watcher) UpdateAccountByURI(uri string, user string, password string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccount(user, password, module)
 }
 
-// add item based on the uri and set it to the passed current item if not nil
+// AddItemByURI adds an item based on the uri and sets it to the passed current item if not nil
 func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
@@ -97,7 +103,7 @@ func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	}
 }
 
-// list all tracked items with the option to limit it to a module
+// ListTrackedItems lists all tracked items with the option to limit it to a module
 func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	var trackedItems []*models.TrackedItem
 	if uri == "" {
@@ -125,7 +131,7 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	_ = w.Flush()
 }
 
-// list all registered modules
+// ListRegisteredModules lists all registered modules
 func (app *Watcher) ListRegisteredModules() {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
@@ -142,7 +148,7 @@ func (app *Watcher) ListRegisteredModules() {
 	_ = w.Flush()
 }
 
-// login into the module
+// loginToModule handles the login for modules, if an account exists: login
 func (app *Watcher) loginToModule(module *models.Module) {
 	log.Info(fmt.Sprintf("logging in for module %s", module.Key()))
 	account := app.DbCon.GetAccount(module)
@@ -150,7 +156,11 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	// no account available but module requires a login
 	if account == nil {
 		if module.RequiresLogin() {
-			log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()))
+			raven.CheckError(
+				errors.New(
+					fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()),
+				),
+			)
 		} else {
 			return
 		}
@@ -162,7 +172,13 @@ func (app *Watcher) loginToModule(module *models.Module) {
 		log.Info("login successful")
 	} else {
 		if module.RequiresLogin() {
-			log.Fatal(fmt.Sprintf("Module \"%s\" requires a login, but the login failed", module.Key()))
+			raven.CheckError(
+				errors.New(
+					fmt.Sprintf(
+						"Module \"%s\" requires a login, but the login failed", module.Key(),
+					),
+				),
+			)
 		} else {
 			log.Warning("login not successful")
 		}

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
 
 	"github.com/DaRealFreak/watcher-go/pkg/update"
@@ -12,17 +13,20 @@ import (
 	"github.com/spf13/viper"
 )
 
+// configuration contains the persistent configurations across all commands
 type configuration struct {
 	configurationFile string
 	logLevel          string
 }
 
+// CliApplication contains the structure for the Watcher application for the CLI interface
 type CliApplication struct {
 	watcher       *watcherApp.Watcher
 	rootCmd       *cobra.Command
 	configuration *configuration
 }
 
+// NewWatcherApplication returns the main command using cobra
 func NewWatcherApplication() *CliApplication {
 	app := &CliApplication{
 		watcher: watcherApp.NewWatcher(),
@@ -44,7 +48,7 @@ func NewWatcherApplication() *CliApplication {
 			},
 		},
 	}
-	app.addGeneralArguments()
+	app.addPersistentFlags()
 	app.addAddCommand()
 	app.addListCommand()
 	app.addRunCommand()
@@ -58,8 +62,8 @@ func NewWatcherApplication() *CliApplication {
 	return app
 }
 
-// add arguments for root command
-func (cli *CliApplication) addGeneralArguments() {
+// addPersistentFlags adds persistent flags to root command
+func (cli *CliApplication) addPersistentFlags() {
 	cli.rootCmd.PersistentFlags().StringVar(
 		&cli.configuration.configurationFile,
 		"config",
@@ -75,7 +79,7 @@ func (cli *CliApplication) addGeneralArguments() {
 	)
 }
 
-// main cli functionality
+// Execute executes the root command, entry point for the CLI application
 func (cli *CliApplication) Execute() {
 	// check for available updates
 	update.NewUpdateChecker().CheckForAvailableUpdates()
@@ -87,8 +91,11 @@ func (cli *CliApplication) Execute() {
 	cli.watcher.DbCon.CloseConnection()
 }
 
-// initialize everything the app needs
+// initWatcher initializes everything the CLI application needs
 func (cli *CliApplication) initWatcher() {
+	// setup sentry for error logging
+	raven.SetupSentry()
+
 	// initialize the logger
 	cli.initLogger()
 
@@ -96,18 +103,15 @@ func (cli *CliApplication) initWatcher() {
 	cli.initConfig()
 }
 
-// initialize the logger
+// initLogger initializes the logger
 func (cli *CliApplication) initLogger() {
 	log.SetOutput(os.Stdout)
 	lvl, err := log.ParseLevel(cli.configuration.logLevel)
-	if err != nil {
-		log.Fatal("could not configure logger, exiting")
-		os.Exit(1)
-	}
+	raven.CheckError(err)
 	log.SetLevel(lvl)
 }
 
-// read config file
+// initConfig reads the set configuration file
 func (cli *CliApplication) initConfig() {
 	// Don't forget to read config either from cfgFile or from home directory!
 	if cli.configuration.configurationFile != "" {
@@ -126,7 +130,7 @@ func (cli *CliApplication) initConfig() {
 	}
 }
 
-// ensure that the default config file exists in case no config file is defined
+// ensureDefaultConfigFile ensures that the default config file exists in case no config file is defined
 func (cli *CliApplication) ensureDefaultConfigFile() {
 	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
 		_, _ = os.Create(".watcher.yaml")

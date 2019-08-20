@@ -2,6 +2,7 @@ package ehentai
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"path"
 	"regexp"
@@ -125,7 +126,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
-		m.CheckError(
+		raven.CheckError(
 			m.Session.DownloadFile(
 				path.Join(
 					viper.GetString("downloadDirectory"),

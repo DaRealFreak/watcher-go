@@ -3,6 +3,7 @@ package http
 import (
 	"compress/gzip"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,9 +12,9 @@ import (
 	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
 
+// SessionInterface of used functions from the application to eventually change the underlying library
 type SessionInterface interface {
 	Get(uri string) (response *http.Response, err error)
 	Post(uri string, data url.Values) (response *http.Response, err error)
@@ -24,13 +25,14 @@ type SessionInterface interface {
 	GetClient() *http.Client
 }
 
+// Session is an implementation to the SessionInterface to provide basic functions
 type Session struct {
 	SessionInterface
 }
 
-// function to ensure that the download path already exists or create it if not
+// EnsureDownloadDirectory ensures that the download path already exists or creates it if not
 // this function panics when path can't be created
-func (session *Session) EnsureDownloadDirectory(fileName string) {
+func (s *Session) EnsureDownloadDirectory(fileName string) {
 	dirName := filepath.Dir(fileName)
 	if _, statError := os.Stat(dirName); statError != nil {
 		mkdirError := os.MkdirAll(dirName, os.ModePerm)
@@ -40,9 +42,9 @@ func (session *Session) EnsureDownloadDirectory(fileName string) {
 	}
 }
 
-// compare the downloaded file with the content length header of the request if set
+// CheckDownloadedFileForErrors compares the downloaded file with the content length header of the request if set
 // also checks if the written bytes are more not equal or less than 0 which is definitely an unwanted result
-func (session *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
+func (s *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
 	if val, ok := responseHeader["Content-Length"]; ok {
 		fileSize, err := strconv.Atoi(val[0])
 		if err == nil {
@@ -57,20 +59,18 @@ func (session *Session) CheckDownloadedFileForErrors(writtenSize int64, response
 	return err
 }
 
-// convert the http response to a goquery document
-func (session *Session) GetDocument(response *http.Response) *goquery.Document {
+// GetDocument converts the http response to a *goquery.Document
+func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	var reader io.ReadCloser
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, _ = gzip.NewReader(response.Body)
-		defer reader.Close()
+		defer raven.CheckError(reader.Close())
 	default:
 		reader = response.Body
-		defer response.Body.Close()
+		defer raven.CheckError(response.Body.Close())
 	}
 	document, err := goquery.NewDocumentFromReader(reader)
-	if err != nil {
-		log.Fatal("Error loading HTTP response body. ", err)
-	}
+	raven.CheckError(err)
 	return document
 }

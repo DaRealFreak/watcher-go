@@ -1,5 +1,6 @@
 package models
 
+// DatabaseInterface of used functions from the application to eventually change the underlying library
 type DatabaseInterface interface {
 	// tracked item functions
 	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
@@ -14,6 +15,7 @@ type DatabaseInterface interface {
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 }
 
+// Account contains all required data from accounts in the application
 type Account struct {
 	ID       int
 	Module   string
@@ -22,6 +24,7 @@ type Account struct {
 	Disabled bool
 }
 
+// TrackedItem contains all required data from tracked items in the application
 type TrackedItem struct {
 	ID          int
 	URI         string

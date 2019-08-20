@@ -1,17 +1,13 @@
 package watcher
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// addRunCommand adds the run sub command
 func (cli *CliApplication) addRunCommand() {
-	cli.rootCmd.AddCommand(cli.getRunCommand())
-}
-
-// retrieve the run command
-func (cli *CliApplication) getRunCommand() *cobra.Command {
 	var downloadDirectory string
 	var moduleURL string
 	// runs the main functionality to update all tracked items
@@ -20,9 +16,7 @@ func (cli *CliApplication) getRunCommand() *cobra.Command {
 		Short: "update all tracked items",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := viper.WriteConfig()
-			if err != nil {
-				log.Error("could not save the configuration")
-			}
+			raven.CheckError(err)
 			cli.watcher.Run(moduleURL)
 		},
 	}
@@ -41,5 +35,5 @@ func (cli *CliApplication) getRunCommand() *cobra.Command {
 		"url of module you want to run",
 	)
 	_ = viper.BindPFlag("DownloadDirectory", runCmd.PersistentFlags().Lookup("directory"))
-	return runCmd
+	cli.rootCmd.AddCommand(runCmd)
 }

@@ -77,7 +77,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 	return imageUrls
 }
 
-// check if gallery has errors and should be skipped
+// check if gallery has raven and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
 		log.Info("newer version of gallery available, updating uri of: " + item.URI)

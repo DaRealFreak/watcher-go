@@ -2,7 +2,9 @@ package pixiv
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
 
@@ -66,7 +68,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		}
 		// ToDo: download novels as .txt
 
-		m.CheckError(err)
+		raven.CheckError(err)
 		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
 }
@@ -76,7 +78,7 @@ func (m *pixiv) getUserIDFromURL(uri string) string {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["id"]) == 0 {
-		log.Fatalf("parsed uri(%s) does not contain any \"id\" tag", uri)
+		raven.CheckError(errors.New(fmt.Sprintf("parsed uri(%s) does not contain any \"id\" tag", uri)))
 	}
 	return q["id"][0]
 }
@@ -90,14 +92,14 @@ func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	}
 	apiURL.RawQuery = data.Encode()
 	res, err := m.Session.Get(apiURL.String())
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	var details userDetailResponse
 	err = json.Unmarshal(response, &details)
-	m.CheckError(err)
+	raven.CheckError(err)
 	return &details
 }
 
@@ -124,12 +126,12 @@ func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) stri
 func (m *pixiv) getUserIllusts(apiURL string) *userWorkResponse {
 	var userWorks userWorkResponse
 	res, err := m.Session.Get(apiURL)
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
-	m.CheckError(err)
+	raven.CheckError(err)
 
-	m.CheckError(json.Unmarshal(response, &userWorks))
+	raven.CheckError(json.Unmarshal(response, &userWorks))
 	return &userWorks
 }
 
@@ -155,7 +157,7 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 		// ToDo: parse novel types
 		fmt.Println(userIllustration)
 	default:
-		log.Fatal("unknown illustration type: " + userIllustration.Type)
+		raven.CheckError(errors.New(fmt.Sprintf("unknown illustration type: %s", userIllustration.Type)))
 	}
 }
 

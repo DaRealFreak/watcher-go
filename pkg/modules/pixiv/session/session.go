@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -95,7 +96,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
-			// check for API errors
+			// check for API raven
 			if s.containsAPIError(bodyBytes) {
 				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
@@ -135,7 +136,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
-			// check for API errors
+			// check for API raven
 			if s.containsAPIError(bodyBytes) {
 				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
@@ -195,7 +196,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	return err
 }
 
-// write content to file and return written amount of bytes and possible occurred errors
+// write content to file and return written amount of bytes and possible occurred raven
 func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int64, err error) {
 	// ensure the directory
 	s.EnsureDownloadDirectory(filepath)
@@ -218,9 +219,8 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 // wait for the leaky bucket to fill again
 func (s *PixivSession) applyRateLimit() {
 	// wait for request to stay within the rate limit
-	if err := s.rateLimiter.Wait(s.ctx); err != nil {
-		log.Fatal(err)
-	}
+	err := s.rateLimiter.Wait(s.ctx)
+	raven.CheckError(err)
 }
 
 // check if the returned value contains an error object
@@ -233,7 +233,7 @@ func (s *PixivSession) containsAPIError(response []byte) bool {
 	return false
 }
 
-// handle possible API errors and return if the function should retry
+// handle possible API raven and return if the function should retry
 func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	var errorResponse errorResponse
 	_ = json.Unmarshal(response, &errorResponse)

@@ -2,14 +2,15 @@ package sankakucomplex
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	log "github.com/sirupsen/logrus"
 )
 
 type apiItem struct {
@@ -129,7 +130,7 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
 	u, _ := url.Parse(item.URI)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["tags"]) == 0 {
-		log.Fatalf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)
+		raven.CheckError(errors.New(fmt.Sprintf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)))
 	}
 	return q["tags"][0]
 }

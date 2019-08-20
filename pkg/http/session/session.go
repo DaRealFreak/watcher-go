@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,6 +16,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// DefaultSession is an extension to the implemented SessionInterface for HTTP sessions
 type DefaultSession struct {
 	watcherHttp.Session
 	Client      *http.Client
@@ -23,7 +25,7 @@ type DefaultSession struct {
 	ctx         context.Context
 }
 
-// initialize a new session and set all the required headers etc
+// NewSession initializes a new session and sets all the required headers etc
 func NewSession() *DefaultSession {
 	jar, _ := cookiejar.New(nil)
 
@@ -35,7 +37,7 @@ func NewSession() *DefaultSession {
 	return &app
 }
 
-// sends a GET request, returns the occurred error if something went wrong even after multiple tries
+// Get sends a GET request, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
@@ -54,7 +56,7 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	return response, err
 }
 
-// sends a POST request, returns the occurred error if something went wrong even after multiple tries
+// Post sends a POST request, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
@@ -72,7 +74,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 	return response, err
 }
 
-// try to download the file, returns the occurred error if something went wrong even after multiple tries
+// DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		log.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
@@ -86,7 +88,7 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	return err
 }
 
-// this function will download a url to a local file.
+// tryDownloadFile will try download a url to a local file.
 // It's efficient because it will write as it downloads and not load the whole file into memory.
 func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	// retrieve the data
@@ -117,18 +119,17 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	return err
 }
 
-// retrieve the client
+// GetClient returns the used *http.Client, required f.e. to manually set cookies
 func (s *DefaultSession) GetClient() *http.Client {
 	return s.Client
 }
 
-// wait for the leaky bucket to fill again
+// applyRateLimit waits for the leaky bucket to fill again
 func (s *DefaultSession) applyRateLimit() {
 	// if no rate limiter is defined we don't have to wait
 	if s.RateLimiter != nil {
 		// wait for request to stay within the rate limit
-		if err := s.RateLimiter.Wait(s.ctx); err != nil {
-			log.Fatal(err)
-		}
+		err := s.RateLimiter.Wait(s.ctx)
+		raven.CheckError(err)
 	}
 }

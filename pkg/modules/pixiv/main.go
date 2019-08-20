@@ -2,6 +2,9 @@ package pixiv
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
 	"regexp"
@@ -108,10 +111,10 @@ func (m *pixiv) Login(account *models.Account) bool {
 	}
 
 	res, err := m.Session.Post(m.pixivSession.MobileClient.OauthURL, data)
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	body, err := ioutil.ReadAll(res.Body)
-	m.CheckError(err)
+	raven.CheckError(err)
 
 	var response loginResponse
 	_ = json.Unmarshal(body, &response)
@@ -125,9 +128,11 @@ func (m *pixiv) Login(account *models.Account) bool {
 		var response errorResponse
 		_ = json.Unmarshal(body, &response)
 		log.Warning("login not successful.")
-		log.Fatalf("message: %s (code: %s)",
-			response.Errors.System.Message,
-			response.Errors.System.Code.String(),
+		raven.CheckError(
+			errors.New(fmt.Sprintf("message: %s (code: %s)",
+				response.Errors.System.Message,
+				response.Errors.System.Code.String(),
+			)),
 		)
 	}
 	return m.LoggedIn
