@@ -1,6 +1,8 @@
 package raven
 
 import (
+	"database/sql"
+	"io"
 	"time"
 
 	"github.com/spf13/viper"
@@ -33,4 +35,24 @@ func CheckError(err error) {
 		sentry.Flush(time.Second * 5)
 		log.Fatal(err)
 	}
+}
+
+// CheckDbClosure checks for errors on deferred DB connections
+func CheckDbClosure(db *sql.DB) {
+	CheckError(db.Close())
+}
+
+// CheckRowClosure checks for errors on deferred Rows
+func CheckRowClosure(row *sql.Rows) {
+	CheckError(row.Close())
+}
+
+// CheckRowClosure checks for errors on deferred Statements
+func CheckStatementClosure(stmt *sql.Stmt) {
+	CheckError(stmt.Close())
+}
+
+// CheckRowClosure checks for errors on deferred ReadCloser objects
+func CheckReadCloser(closer io.ReadCloser) {
+	CheckError(closer.Close())
 }

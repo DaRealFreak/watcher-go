@@ -97,7 +97,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer raven.CheckError(resp.Body.Close())
+	defer raven.CheckReadCloser(resp.Body)
 
 	// ensure the directory
 	s.EnsureDownloadDirectory(filepath)
@@ -107,7 +107,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer raven.CheckError(out.Close())
+	defer raven.CheckReadCloser(out)
 
 	// write the body to file
 	written, err := io.Copy(out, resp.Body)

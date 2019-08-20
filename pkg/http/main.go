@@ -66,11 +66,10 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, _ = gzip.NewReader(response.Body)
-		defer raven.CheckError(reader.Close())
 	default:
 		reader = response.Body
-		defer raven.CheckError(response.Body.Close())
 	}
+	defer raven.CheckReadCloser(reader)
 	document, err := goquery.NewDocumentFromReader(reader)
 	raven.CheckError(err)
 	return document

@@ -53,7 +53,7 @@ func (db DbIO) CloseConnection() {
 func (db DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", "./watcher.db")
 	raven.CheckError(err)
-	defer raven.CheckError(connection.Close())
+	defer raven.CheckDbClosure(connection)
 
 	sqlStatement := `
 		CREATE TABLE accounts

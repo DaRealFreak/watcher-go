@@ -184,7 +184,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer raven.CheckError(resp.Body.Close())
+	defer raven.CheckReadCloser(resp.Body)
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -211,7 +211,7 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	if err != nil {
 		return 0, err
 	}
-	defer raven.CheckError(out.Close())
+	defer raven.CheckReadCloser(out)
 
 	// write the body to file
 	written, err = io.Copy(out, bytes.NewReader(content))

@@ -35,7 +35,7 @@ func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted b
 		rows, err = stmt.Query(module.Key())
 	}
 	raven.CheckError(err)
-	defer raven.CheckError(rows.Close())
+	defer raven.CheckRowClosure(rows)
 
 	for rows.Next() {
 		item := models.TrackedItem{}
@@ -56,7 +56,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInter
 
 	rows, err := stmt.Query(uri, module.Key())
 	raven.CheckError(err)
-	defer raven.CheckError(rows.Close())
+	defer raven.CheckRowClosure(rows)
 
 	item := models.TrackedItem{}
 	if rows.Next() {
@@ -75,7 +75,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInter
 func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
 	raven.CheckError(err)
-	defer raven.CheckError(stmt.Close())
+	defer raven.CheckStatementClosure(stmt)
 
 	_, err = stmt.Exec(uri, module.Key())
 	raven.CheckError(err)
@@ -86,7 +86,7 @@ func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem string) {
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ?, complete = ? WHERE uid = ?")
 	raven.CheckError(err)
-	defer raven.CheckError(stmt.Close())
+	defer raven.CheckStatementClosure(stmt)
 
 	_, err = stmt.Exec(currentItem, 0, trackedItem.ID)
 	raven.CheckError(err)
@@ -105,7 +105,7 @@ func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, 
 	}
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET complete = ? WHERE uid = ?")
 	raven.CheckError(err)
-	defer raven.CheckError(stmt.Close())
+	defer raven.CheckStatementClosure(stmt)
 
 	_, err = stmt.Exec(completeInt, trackedItem.ID)
 	raven.CheckError(err)
