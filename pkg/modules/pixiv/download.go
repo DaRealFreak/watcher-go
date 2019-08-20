@@ -20,7 +20,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 		fileName := m.GetFileName(image["image_urls"]["original"])
 		fileURI := image["image_urls"]["original"]
 		if err := m.Session.DownloadFile(
-			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
 			fileURI,
 		); err != nil {
 			// if download was not successful return the occurred error here
@@ -32,7 +32,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
 		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
 		return m.Session.DownloadFile(
-			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
 			fileURI,
 		)
 	}
@@ -86,7 +86,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
-	filepath := path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName)
+	filepath := path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName)
 	log.Info(fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)))
 	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
 		return err

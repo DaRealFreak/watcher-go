@@ -133,7 +133,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		raven.CheckError(
 			m.Session.DownloadFile(
 				path.Join(
-					viper.GetString("downloadDirectory"),
+					viper.GetString("download.directory"),
 					m.Key(),
 					downloadQueueItem.DownloadTag, downloadQueueItem.FileName,
 				),

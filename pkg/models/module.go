@@ -81,7 +81,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 			),
 		)
 		err := t.Session.DownloadFile(
-			path.Join(viper.GetString("downloadDirectory"), t.Key(), data.DownloadTag, data.FileName),
+			path.Join(viper.GetString("download.directory"), t.Key(), data.DownloadTag, data.FileName),
 			data.FileURI,
 		)
 		raven.CheckError(err)
