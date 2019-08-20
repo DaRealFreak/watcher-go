@@ -93,7 +93,7 @@ func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 func (m *pixiv) Login(account *models.Account) bool {
 	data := url.Values{
 		"get_secure_url": {"1"},
-		"client_id":      {m.pixivSession.MobileClient.ClientId},
+		"client_id":      {m.pixivSession.MobileClient.ClientID},
 		"client_secret":  {m.pixivSession.MobileClient.ClientSecret},
 	}
 
@@ -106,7 +106,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 		data.Set("password", account.Password)
 	}
 
-	res, err := m.Session.Post(m.pixivSession.MobileClient.OauthUrl, data)
+	res, err := m.Session.Post(m.pixivSession.MobileClient.OauthURL, data)
 	m.CheckError(err)
 
 	body, err := ioutil.ReadAll(res.Body)

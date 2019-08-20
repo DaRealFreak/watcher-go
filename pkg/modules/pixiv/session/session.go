@@ -22,7 +22,7 @@ import (
 type PixivSession struct {
 	watcherHttp.Session
 	Module       models.ModuleInterface
-	HttpClient   *http.Client
+	HTTPClient   *http.Client
 	MobileClient *mobileClient
 	rateLimiter  *rate.Limiter
 	ctx          context.Context
@@ -30,9 +30,9 @@ type PixivSession struct {
 }
 
 type mobileClient struct {
-	OauthUrl     string
+	OauthURL     string
 	headers      map[string]string
-	ClientId     string
+	ClientID     string
 	ClientSecret string
 	AccessToken  string
 	RefreshToken string
@@ -53,9 +53,9 @@ type errorResponse struct {
 func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	return &PixivSession{
-		HttpClient: &http.Client{Jar: jar},
+		HTTPClient: &http.Client{Jar: jar},
 		MobileClient: &mobileClient{
-			OauthUrl: "https://oauth.secure.pixiv.net/auth/token",
+			OauthURL: "https://oauth.secure.pixiv.net/auth/token",
 			headers: map[string]string{
 				"App-OS":         "ios",
 				"App-OS-Version": "10.3.1",
@@ -64,7 +64,7 @@ func NewSession() *PixivSession {
 				"Referer":        "https://app-api.pixiv.net/",
 				"Content-Type":   "application/x-www-form-urlencoded",
 			},
-			ClientId:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
+			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
 			AccessToken:  "",
 			RefreshToken: "",
@@ -90,18 +90,17 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		if s.MobileClient.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
 		}
-		res, err = s.HttpClient.Do(req)
+		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
 			// check for API errors
-			if s.containsApiError(bodyBytes) {
-				retry, err := s.handleApiError(bodyBytes)
+			if s.containsAPIError(bodyBytes) {
+				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
 					return s.Get(uri)
-				} else {
-					return nil, err
 				}
+				return nil, err
 			}
 
 			// reset the response body to the original unread state
@@ -131,18 +130,17 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		if s.MobileClient.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
 		}
-		res, err = s.HttpClient.Do(req)
+		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
 			// check for API errors
-			if s.containsApiError(bodyBytes) {
-				retry, err := s.handleApiError(bodyBytes)
+			if s.containsAPIError(bodyBytes) {
+				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
 					return s.Post(uri, data)
-				} else {
-					return nil, err
 				}
+				return nil, err
 			}
 
 			// reset the response body to the original unread state
@@ -165,9 +163,8 @@ func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 		// if no error occurred return nil
 		if err == nil {
 			return
-		} else {
-			time.Sleep(time.Duration(try+1) * time.Second)
 		}
+		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return err
 }
@@ -226,7 +223,7 @@ func (s *PixivSession) applyRateLimit() {
 }
 
 // check if the returned value contains an error object
-func (s *PixivSession) containsApiError(response []byte) bool {
+func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
 	err := json.Unmarshal(response, &errorResponse)
 	if err == nil && errorResponse.Error != nil && errorResponse.Error.Message != "" {
@@ -236,22 +233,26 @@ func (s *PixivSession) containsApiError(response []byte) bool {
 }
 
 // handle possible API errors and return if the function should retry
-func (s *PixivSession) handleApiError(response []byte) (retry bool, err error) {
+func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	var errorResponse errorResponse
 	_ = json.Unmarshal(response, &errorResponse)
-	if errorResponse.Error.Message == "Error occurred at the OAuth process. "+
-		"Please check your Access Token to fix this. "+
-		"Error Message: invalid_grant" {
+	switch errorResponse.Error.Message {
+	case "Error occurred at the OAuth process. " +
+		"Please check your Access Token to fix this. " +
+		"Error Message: invalid_grant":
 		log.Info("access token expired, using refresh token to generate new token...")
 		s.Module.Login(nil)
 		return true, nil
-	} else if errorResponse.Error.Message == "Rate Limit" {
+	case "Rate Limit":
 		log.Info("rate limit got exceeded, sleeping for 60 seconds...")
 		time.Sleep(60 * time.Second)
 		return true, nil
-	} else if errorResponse.Error.UserMessage == "該当作品は削除されたか、存在しない作品IDです。" {
+	}
+
+	switch errorResponse.Error.UserMessage {
+	case "該当作品は削除されたか、存在しない作品IDです。":
 		return false, fmt.Errorf("requested art got removed or restricted")
-	} else if errorResponse.Error.UserMessage == "アクセスが制限されています。" {
+	case "アクセスが制限されています。":
 		return false, fmt.Errorf("requested user got restricted")
 	}
 	return

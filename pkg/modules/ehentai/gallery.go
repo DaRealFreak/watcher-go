@@ -36,12 +36,12 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 			}
 		}
 
-		nextPageUrl, exists := m.getNextGalleryPageUrl(html)
+		nextPageURL, exists := m.getNextGalleryPageURL(html)
 		if !exists {
 			// no previous page exists anymore, break here
 			break
 		}
-		response, _ = m.Session.Get(nextPageUrl)
+		response, _ = m.Session.Get(nextPageURL)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -54,7 +54,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 }
 
 // retrieve url of the next page if it exists
-func (m *ehentai) getNextGalleryPageUrl(html string) (url string, exists bool) {
+func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
 	nextPageElement := pages.Slice(pages.Length()-1, pages.Length())
@@ -68,7 +68,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 	document.Find(".gdtm > div").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Find("a[href]").Attr("href")
 		imageUrls = append(imageUrls, imageGalleryItem{
-			id:           m.galleryImageIdPattern.FindString(uri),
+			id:           m.galleryImageIDPattern.FindString(uri),
 			uri:          uri,
 			galleryTitle: galleryTitle,
 		})
@@ -102,12 +102,12 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
 	response, _ := m.Session.Get(item.uri)
 	document := m.Session.GetDocument(response)
-	imageUrl, _ := document.Find("img#img").Attr("src")
+	imageURL, _ := document.Find("img#img").Attr("src")
 	return models.DownloadQueueItem{
 		ItemId:      item.id,
 		DownloadTag: item.galleryTitle,
-		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageUrl),
-		FileUri:     imageUrl,
+		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
+		FileUri:     imageURL,
 	}
 }
 

@@ -17,18 +17,18 @@ import (
 type ehentai struct {
 	models.Module
 	downloadLimitReached     bool
-	galleryImageIdPattern    *regexp.Regexp
+	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
-	searchGalleryIdPattern   *regexp.Regexp
+	searchGalleryIDPattern   *regexp.Regexp
 }
 
 // generate new module and register uri schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = ehentai{
-		galleryImageIdPattern:    regexp.MustCompile(`(\w+-\d+)`),
+		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
-		searchGalleryIdPattern:   regexp.MustCompile(`(\d+/\w+)`),
+		searchGalleryIDPattern:   regexp.MustCompile(`(\d+/\w+)`),
 	}
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
@@ -67,10 +67,10 @@ func (m *ehentai) IsLoggedIn() bool {
 
 // add our pattern to the uri schemas
 func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	var moduleUriSchemas []*regexp.Regexp
-	moduleUriSchema := regexp.MustCompile(`.*e[\-x]hentai.org`)
-	moduleUriSchemas = append(moduleUriSchemas, moduleUriSchema)
-	uriSchemas[m.Key()] = moduleUriSchemas
+	var moduleURISchemas []*regexp.Regexp
+	moduleURISchema := regexp.MustCompile(`.*e[\-x]hentai.org`)
+	moduleURISchemas = append(moduleURISchemas, moduleURISchema)
+	uriSchemas[m.Key()] = moduleURISchemas
 }
 
 // login function
@@ -89,9 +89,9 @@ func (m *ehentai) Login(account *models.Account) bool {
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
 
 	// copy the cookies for e-hentai to exhentai
-	ehUrl, _ := url.Parse("https://e-hentai.org")
-	exUrl, _ := url.Parse("https://exhentai.org")
-	m.Session.GetClient().Jar.SetCookies(exUrl, m.Session.GetClient().Jar.Cookies(ehUrl))
+	ehURL, _ := url.Parse("https://e-hentai.org")
+	exURL, _ := url.Parse("https://exhentai.org")
+	m.Session.GetClient().Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
 
 	return m.LoggedIn
 }
@@ -117,9 +117,23 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 			break
 		}
 
-		log.Info(fmt.Sprintf("downloading updates for uri: \"%s\" (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
-		err := m.Session.DownloadFile(path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, downloadQueueItem.FileName), downloadQueueItem.FileUri)
-		m.CheckError(err)
+		log.Info(
+			fmt.Sprintf(
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				trackedItem.Uri,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			),
+		)
+		m.CheckError(
+			m.Session.DownloadFile(
+				path.Join(
+					viper.GetString("downloadDirectory"),
+					m.Key(),
+					downloadQueueItem.DownloadTag, downloadQueueItem.FileName,
+				),
+				downloadQueueItem.FileUri,
+			),
+		)
 		// if no error occurred update the tracked item
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemId)
 	}

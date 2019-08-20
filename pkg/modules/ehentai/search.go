@@ -33,12 +33,12 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 			break
 		}
 
-		nextPageUrl, exists := m.getNextSearchPageUrl(html)
+		nextPageURL, exists := m.getNextSearchPageURL(html)
 		if !exists {
 			// no next page exists anymore, break here
 			break
 		}
-		response, _ = m.Session.Get(nextPageUrl)
+		response, _ = m.Session.Get(nextPageURL)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -61,7 +61,7 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	document.Find("table.itg td.gl3c a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		items = append(items, searchGalleryItem{
-			id:  m.searchGalleryIdPattern.FindString(uri),
+			id:  m.searchGalleryIDPattern.FindString(uri),
 			uri: uri,
 		})
 	})
@@ -69,7 +69,7 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	return items
 }
 
-func (m *ehentai) getNextSearchPageUrl(html string) (url string, exists bool) {
+func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
 	pages = pages.Slice(pages.Length()-1, pages.Length())

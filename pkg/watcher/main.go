@@ -28,7 +28,7 @@ func NewWatcher() *Watcher {
 func (app *Watcher) Run(moduleUrl string) {
 	var trackedItems []*models.TrackedItem
 	if moduleUrl != "" {
-		module := app.ModuleFactory.GetModuleFromUri(moduleUrl)
+		module := app.ModuleFactory.GetModuleFromURI(moduleUrl)
 		trackedItems = app.DbCon.GetTrackedItems(module, false)
 	} else {
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
@@ -45,7 +45,7 @@ func (app *Watcher) Run(moduleUrl string) {
 
 // extract the module based on the uri and add account if not registered already
 func (app *Watcher) AddAccountByUri(uri string, user string, password string) {
-	module := app.ModuleFactory.GetModuleFromUri(uri)
+	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.GetFirstOrCreateAccount(user, password, module)
 }
 
@@ -55,7 +55,7 @@ func (app *Watcher) ListAccounts(uri string) {
 	if uri == "" {
 		accounts = app.DbCon.GetAllAccounts(nil)
 	} else {
-		module := app.ModuleFactory.GetModuleFromUri(uri)
+		module := app.ModuleFactory.GetModuleFromURI(uri)
 		accounts = app.DbCon.GetAllAccounts(module)
 	}
 
@@ -70,18 +70,18 @@ func (app *Watcher) ListAccounts(uri string) {
 }
 
 func (app *Watcher) UpdateAccountDisabledStatusByUri(uri string, user string, disabled bool) {
-	module := app.ModuleFactory.GetModuleFromUri(uri)
+	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccountDisabledStatus(user, disabled, module)
 }
 
 func (app *Watcher) UpdateAccountByUri(uri string, user string, password string) {
-	module := app.ModuleFactory.GetModuleFromUri(uri)
+	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.UpdateAccount(user, password, module)
 }
 
 // add item based on the uri and set it to the passed current item if not nil
 func (app *Watcher) AddItemByUri(uri string, currentItem string) {
-	module := app.ModuleFactory.GetModuleFromUri(uri)
+	module := app.ModuleFactory.GetModuleFromURI(uri)
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
 	if currentItem != "" {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
@@ -94,7 +94,7 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	if uri == "" {
 		trackedItems = app.DbCon.GetTrackedItems(nil, includeCompleted)
 	} else {
-		module := app.ModuleFactory.GetModuleFromUri(uri)
+		module := app.ModuleFactory.GetModuleFromURI(uri)
 		trackedItems = app.DbCon.GetTrackedItems(module, includeCompleted)
 	}
 

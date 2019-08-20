@@ -12,18 +12,18 @@ import (
 )
 
 type apiItem struct {
-	Id               json.Number
-	Rating           string
-	Status           string
-	Author           author
-	SampleUrl        string `json:"sample_url"`
-	SampleWidth      int    `json:"sample_width"`
-	SampleHeight     int    `json:"sample_height"`
-	PreviewUrl       string `json:"preview_url"`
-	PreviewWidth     int    `json:"preview_width"`
-	FileUrl          string `json:"file_url"`
-	Width            int
-	Height           int
+	ID               json.Number `json:"id"`
+	Rating           string      `json:"rating"`
+	Status           string      `json:"status"`
+	Author           author      `json:"author"`
+	SampleURL        string      `json:"sample_url"`
+	SampleWidth      int         `json:"sample_width"`
+	SampleHeight     int         `json:"sample_height"`
+	PreviewURL       string      `json:"preview_url"`
+	PreviewWidth     int         `json:"preview_width"`
+	FileURL          string      `json:"file_url"`
+	Width            int         `json:"width"`
+	Height           int         `json:"height"`
 	FileSize         int         `json:"file_size"`
 	FileType         string      `json:"file_type"`
 	CreatedAt        created     `json:"created_at"`
@@ -31,47 +31,47 @@ type apiItem struct {
 	HasComments      bool        `json:"has_comments"`
 	HasNotes         bool        `json:"has_notes"`
 	IsFavorite       bool        `json:"is_favorited"`
+	InVisiblePool    bool        `json:"in_visible_pool"`
+	IsPremium        bool        `json:"is_premium"`
 	UserVote         json.Number `json:"user_vote"`
-	Md5              string
-	ParentId         json.Number `json:"parent_id"`
-	Change           int
+	Md5              string      `json:"md5"`
+	ParentID         json.Number `json:"parent_id"`
+	Change           int         `json:"change"`
 	FavCount         json.Number `json:"fav_count"`
 	RecommendedPosts json.Number `json:"recommended_posts"`
 	RecommendedScore json.Number `json:"recommended_score"`
 	VoteCount        json.Number `json:"vote_count"`
 	TotalScore       json.Number `json:"total_score"`
 	CommentCount     json.Number `json:"comment_count"`
-	Source           string
-	InVisiblePool    bool `json:"in_visible_pool"`
-	IsPremium        bool `json:"is_premium"`
-	Sequence         json.Number
-	Tags             []tag
+	Source           string      `json:"source"`
+	Sequence         json.Number `json:"sequence"`
+	Tags             []tag       `json:"tags"`
 }
 
 type author struct {
-	Id           int
-	Name         string
-	Avatar       string
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Avatar       string `json:"avatar"`
 	AvatarRating string `json:"avatar_rating"`
 }
 
 type created struct {
-	JsonClass string `json:"json_class"`
-	S         int
-	N         int
+	JSONClass string `json:"json_class"`
+	S         int    `json:"s"`
+	N         int    `json:"n"`
 }
 
 type tag struct {
-	Id        int
-	NameEn    string `json:"name_en"`
-	NameJa    string `json:"name_ja"`
-	Type      int
-	Count     int
-	PostCount int `json:"post_count"`
-	PoolCount int `json:"pool_count"`
-	Locale    string
-	Rating    json.Number
-	Name      string
+	ID        int         `json:"id"`
+	NameEn    string      `json:"name_en"`
+	NameJa    string      `json:"name_ja"`
+	Type      int         `json:"type"`
+	Count     int         `json:"count"`
+	PostCount int         `json:"post_count"`
+	PoolCount int         `json:"pool_count"`
+	Locale    string      `json:"locale"`
+	Rating    json.Number `json:"rating"`
+	Name      string      `json:"name"`
 }
 
 // parse functionality for galleries based on the tags in the tracked item
@@ -81,17 +81,21 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	foundCurrentItem := false
 
 	for !foundCurrentItem {
-		page += 1
-		apiUri := fmt.Sprintf("https://capi-v2.sankakucomplex.com/posts?lang=english&page=%d&limit=100&tags=%s", page, url.QueryEscape(tag))
-		response, _ := m.Session.Get(apiUri)
-		apiItems := m.parseApiResponse(response)
+		page++
+		apiURI := fmt.Sprintf(
+			"https://capi-v2.sankakucomplex.com/posts?lang=english&page=%d&limit=100&tags=%s",
+			page,
+			url.QueryEscape(tag),
+		)
+		response, _ := m.Session.Get(apiURI)
+		apiItems := m.parseAPIResponse(response)
 		for _, data := range apiItems {
-			if string(data.Id) > item.CurrentItem || item.CurrentItem == "" {
+			if string(data.ID) > item.CurrentItem || item.CurrentItem == "" {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
-					ItemId:      string(data.Id),
+					ItemId:      string(data.ID),
 					DownloadTag: path.Join(m.SanitizePath(tag, false), m.getTagSubDirectory(data)),
-					FileName:    string(data.Id) + "_" + m.GetFileName(data.FileUrl),
-					FileUri:     data.FileUrl,
+					FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
+					FileUri:     data.FileURL,
 				})
 			} else {
 				foundCurrentItem = true
@@ -112,7 +116,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 }
 
 // parse the response from the API
-func (m *sankakuComplex) parseApiResponse(response *http.Response) []apiItem {
+func (m *sankakuComplex) parseAPIResponse(response *http.Response) []apiItem {
 	body, _ := ioutil.ReadAll(response.Body)
 	var apiItems []apiItem
 	_ = json.Unmarshal(body, &apiItems)

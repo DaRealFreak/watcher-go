@@ -2,7 +2,6 @@ package modules
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
@@ -17,7 +16,7 @@ type ModuleFactory struct {
 }
 
 // generate new module factory and register modules
-func NewModuleFactory(dbIO *database.DbIO) *ModuleFactory {
+func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
 	factory := ModuleFactory{
 		uriSchemas: make(map[string][]*regexp.Regexp),
 	}
@@ -43,7 +42,7 @@ func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 }
 
 // check the registered uri schemas for a match and return the module
-func (f ModuleFactory) GetModuleFromUri(uri string) *models.Module {
+func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 	for key, patternCollection := range f.uriSchemas {
 		for _, pattern := range patternCollection {
 			if pattern.MatchString(uri) {
