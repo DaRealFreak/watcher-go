@@ -68,8 +68,8 @@ func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
 	var imageUrls []imageGalleryItem
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find(".gdtm > div").Each(func(index int, row *goquery.Selection) {
-		uri, _ := row.Find("a[href]").Attr("href")
+	document.Find("div#gdt > div a[href]").Each(func(index int, row *goquery.Selection) {
+		uri, _ := row.Attr("href")
 		imageUrls = append(imageUrls, imageGalleryItem{
 			id:           m.galleryImageIDPattern.FindString(uri),
 			uri:          uri,
