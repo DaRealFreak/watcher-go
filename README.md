@@ -1,12 +1,20 @@
 # Watcher-go
-[![Go Report Card](https://goreportcard.com/badge/github.com/DaRealFreak/watcher-go)](https://goreportcard.com/report/github.com/DaRealFreak/watcher-go?style=flat-square)  ![GitHub](https://img.shields.io/github/license/DaRealFreak/watcher-go?style=flat-square)
+[![Go Report Card](https://goreportcard.com/badge/github.com/DaRealFreak/watcher-go)](https://goreportcard.com/report/github.com/DaRealFreak/watcher-go)  ![GitHub](https://img.shields.io/github/license/DaRealFreak/watcher-go)
 
 Application to keep track of items from multiple sources with a local database. 
 It will download any detected item and update the index in the database on completion of the download.
 
+## Dependencies
+For image to animation conversions (currently only used pixiv) this application is using ImageMagick and FFmpeg.  
+The executed command on Windows for ImageMagick is `magick.exe convert`,
+which is the default for a [chocolately](https://chocolatey.org/) installation.  
+For all other operating systems the commands `ffmpeg` and `convert` are executed.  
+As fallback if ImageMagick and FFmpeg are not available the golang imaging library is used.
+The libraries can only generate a GIF file with 256 colors, so it is not recommended.
+
 
 ## Usage
-There are currently 4 available root commands with following functionality:
+There are currently 5 available root commands with following functionality:
 ```  
 Available Commands:
   add                   add an item or account to the database
@@ -20,10 +28,16 @@ Available Commands:
 These flags are available for all commands and sub commands:
 ```
 Flags:
-      --config string      config file (default is ./.watcher.yaml)
-  -v, --verbosity string   log level (debug, info, warn, error, fatal, panic (default "info")
+      --config             config file (default is ./.watcher.yaml)
+  -v, --verbosity          log level (debug, info, warn, error, fatal, panic (default "info")
       --version            version for watcher
+      --disable-sentry     disable sentry and don't send usage statistics/errors to the developer
+      --enable-sentry      use sentry to send usage statistics/errors to the developer
 ```
+
+The sentry is disabled by default and has to be enabled before errors will be sent to the sentry server.
+You can do so by adding `--enable-sentry` to any command.
+This setting will be active until `--disable-sentry` is being added to another execution.
 
 ### Running the application
 Just running the command `watcher run` will run the main functionality of the application:  
@@ -112,9 +126,9 @@ Flags:
 ```
 
 Similar to the accounts is the command for enabling items:  
-`watcher update items enable [url1] [url2] [url3] ...`  
+`watcher update item enable [url1] [url2] [url3] ...`  
 and the command for disabling items:  
-`watcher update items disable [url1] [url2] [url3] ...`.
+`watcher update item disable [url1] [url2] [url3] ...`
 
 No flags are required for to enable/disable items.
 
