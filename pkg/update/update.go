@@ -32,7 +32,7 @@ func (u *updateChecker) CheckForAvailableUpdates() {
 
 // check latest release and compare the version
 func (u *updateChecker) isUpdateAvailable() (updateAvailable bool, err error) {
-	latest, found, err := selfupdate.DetectLatest(version.RepositoryUrl)
+	latest, found, err := selfupdate.DetectLatest(version.RepositoryURL)
 	if err != nil {
 		log.Warning("error occurred while detecting version: ", err)
 		return false, err
@@ -72,7 +72,7 @@ func (u *updateChecker) UpdateApplication() (err error) {
 
 	fmt.Println("new version detected, updating...")
 	// retrieve latest asset url again
-	latest, _, err := up.DetectLatest(version.RepositoryUrl)
+	latest, _, err := up.DetectLatest(version.RepositoryURL)
 	if err != nil {
 		log.Warning("error occurred while retrieving latest asset URLs: ", err)
 		return err

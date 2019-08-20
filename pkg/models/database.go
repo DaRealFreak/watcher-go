@@ -5,13 +5,13 @@ type DatabaseInterface interface {
 	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
 	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
 	CreateTrackedItem(uri string, module ModuleInterface)
-	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 
 	// account functions
 	CreateAccount(user string, password string, module ModuleInterface)
 	GetFirstOrCreateAccount(user string, password string, module ModuleInterface) *Account
 	GetAccount(module ModuleInterface) *Account
+	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 }
 
 type Account struct {

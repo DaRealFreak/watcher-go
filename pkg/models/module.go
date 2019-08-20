@@ -16,8 +16,8 @@ import (
 type ModuleInterface interface {
 	Key() (key string)
 	RequiresLogin() (requiresLogin bool)
-	IsLoggedIn() (loggedIn bool)
-	RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp)
+	IsLoggedIn() bool
+	RegisterURISchema(uriSchemas map[string][]*regexp.Regexp)
 	Login(account *Account) (success bool)
 	Parse(item *TrackedItem)
 }

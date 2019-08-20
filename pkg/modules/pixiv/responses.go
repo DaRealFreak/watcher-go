@@ -7,19 +7,19 @@ import (
 
 type user struct {
 	ProfileImageUrls map[string]string `json:"profile_image_urls"`
-	Id               json.Number       `json:"id"`
+	ID               json.Number       `json:"id"`
 	Name             string            `json:"name"`
 	Account          string            `json:"account"`
 	MailAddress      string            `json:"mail_address"`
 	IsPremium        bool              `json:"is_premium"`
-	XRestrict        json.Number       `json:"x_restrict"`
 	IsMailAuthorized bool              `json:"is_mail_authorized"`
-	Comment          string            `json:"comment"`
 	IsFollowed       bool              `json:"is_followed"`
+	XRestrict        json.Number       `json:"x_restrict"`
+	Comment          string            `json:"comment"`
 }
 
 type illustration struct {
-	Id             json.Number                    `json:"id"`
+	ID             json.Number                    `json:"id"`
 	Title          string                         `json:"title"`
 	Type           string                         `json:"type"`
 	ImageUrls      map[string]string              `json:"image_urls"`
@@ -46,7 +46,7 @@ type illustration struct {
 }
 
 type series struct {
-	Id    json.Number `json:"id"`
+	ID    json.Number `json:"id"`
 	Title string      `json:"title"`
 }
 
@@ -72,10 +72,10 @@ type profile struct {
 	BirthDay                   string      `json:"birth_day"`
 	BirthYear                  json.Number `json:"birth_year"`
 	Region                     string      `json:"region"`
-	AddressId                  json.Number `json:"address_id"`
+	AddressID                  json.Number `json:"address_id"`
 	CountryCode                string      `json:"country_code"`
 	Job                        string      `json:"job"`
-	JobId                      json.Number `json:"job_id"`
+	JobID                      json.Number `json:"job_id"`
 	TotalFollowUsers           json.Number `json:"total_follow_users"`
 	TotalPixivUsers            json.Number `json:"total_mypixiv_users"`
 	TotalIllusts               json.Number `json:"total_illusts"`
@@ -84,10 +84,10 @@ type profile struct {
 	TotalIllustBookmarksPublic json.Number `json:"total_illust_bookmarks_public"`
 	TotalIllustSeries          json.Number `json:"total_illust_series"`
 	TotalNovelSeries           json.Number `json:"total_novel_series"`
-	BackgroundImageUrl         string      `json:"background_image_url"`
+	BackgroundImageURL         string      `json:"background_image_url"`
 	TwitterAccount             string      `json:"twitter_account"`
-	TwitterUrl                 string      `json:"twitter_url"`
-	PawooUrl                   string      `json:"pawoo_url"`
+	TwitterURL                 string      `json:"twitter_url"`
+	PawooURL                   string      `json:"pawoo_url"`
 	IsPremium                  bool        `json:"is_premium"`
 	IsUsingCustomProfileImage  bool        `json:"is_using_custom_profile_image"`
 }
@@ -114,7 +114,7 @@ type workspace struct {
 	Desk              string `json:"desk"`
 	Chair             string `json:"chair"`
 	Comment           string `json:"comment"`
-	WorkspaceImageUrl string `json:"workspace_image_url"`
+	WorkspaceImageURL string `json:"workspace_image_url"`
 }
 
 type loginResponseData struct {
@@ -154,7 +154,7 @@ type userDetailResponse struct {
 
 type userWorkResponse struct {
 	Illustrations []*illustration `json:"illusts"`
-	NextUrl       string          `json:"next_url"`
+	NextURL       string          `json:"next_url"`
 }
 
 type ugoiraResponse struct {

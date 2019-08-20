@@ -2,7 +2,6 @@ package ehentai
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ type ehentai struct {
 }
 
 // generate new module and register uri schema
-func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
+func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = ehentai{
 		galleryImageIdPattern:    regexp.MustCompile(`(\w+-\d+)`),
@@ -47,7 +46,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	subModule.Module = module
 
 	// register the uri schema
-	module.RegisterUriSchema(uriSchemas)
+	module.RegisterURISchema(uriSchemas)
 	return &module
 }
 
@@ -62,15 +61,15 @@ func (m *ehentai) RequiresLogin() (requiresLogin bool) {
 }
 
 // retrieve the logged in status
-func (m *ehentai) IsLoggedIn() (LoggedIn bool) {
+func (m *ehentai) IsLoggedIn() bool {
 	return m.LoggedIn
 }
 
 // add our pattern to the uri schemas
-func (m *ehentai) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
+func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleUriSchemas []*regexp.Regexp
-	schema, _ := regexp.Compile(`.*e[\-x]hentai.org`)
-	moduleUriSchemas = append(moduleUriSchemas, schema)
+	moduleUriSchema := regexp.MustCompile(`.*e[\-x]hentai.org`)
+	moduleUriSchemas = append(moduleUriSchemas, moduleUriSchema)
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
 

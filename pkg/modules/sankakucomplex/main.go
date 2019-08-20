@@ -1,7 +1,6 @@
 package sankakucomplex
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"net/url"
@@ -14,7 +13,7 @@ type sankakuComplex struct {
 }
 
 // generate new module and register uri schema
-func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
+func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = sankakuComplex{}
 
@@ -28,7 +27,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
 	// register the uri schema
-	module.RegisterUriSchema(uriSchemas)
+	module.RegisterURISchema(uriSchemas)
 	return &module
 }
 
@@ -43,15 +42,15 @@ func (m *sankakuComplex) RequiresLogin() (requiresLogin bool) {
 }
 
 // retrieve the logged in status
-func (m *sankakuComplex) IsLoggedIn() (LoggedIn bool) {
+func (m *sankakuComplex) IsLoggedIn() bool {
 	return m.LoggedIn
 }
 
 // add our pattern to the uri schemas
-func (m *sankakuComplex) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
+func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleUriSchemas []*regexp.Regexp
-	test, _ := regexp.Compile(".*sankakucomplex.com")
-	moduleUriSchemas = append(moduleUriSchemas, test)
+	moduleUriSchema := regexp.MustCompile(".*sankakucomplex.com")
+	moduleUriSchemas = append(moduleUriSchemas, moduleUriSchema)
 	uriSchemas[m.Key()] = moduleUriSchemas
 }
 

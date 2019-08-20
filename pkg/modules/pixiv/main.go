@@ -3,7 +3,6 @@ package pixiv
 import (
 	"encoding/json"
 	"github.com/DaRealFreak/watcher-go/pkg/animation"
-	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
 	log "github.com/sirupsen/logrus"
@@ -20,7 +19,7 @@ type pixiv struct {
 }
 
 type downloadQueueItem struct {
-	ItemId       string
+	ItemID       string
 	DownloadTag  string
 	Illustration *illustration
 }
@@ -45,7 +44,7 @@ const (
 )
 
 // generate new module and register uri schema
-func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *models.Module {
+func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = pixiv{
 		animationHelper: animation.NewAnimationHelper(),
@@ -63,7 +62,7 @@ func NewModule(dbIO *database.DbIO, uriSchemas map[string][]*regexp.Regexp) *mod
 	subModule.Module = module
 	subModule.pixivSession.Module = &subModule
 	// register the uri schema
-	module.RegisterUriSchema(uriSchemas)
+	module.RegisterURISchema(uriSchemas)
 	return &module
 }
 
@@ -78,16 +77,16 @@ func (m *pixiv) RequiresLogin() (requiresLogin bool) {
 }
 
 // retrieve the logged in status
-func (m *pixiv) IsLoggedIn() (LoggedIn bool) {
+func (m *pixiv) IsLoggedIn() bool {
 	return m.LoggedIn
 }
 
 // add our pattern to the uri schemas
-func (m *pixiv) RegisterUriSchema(uriSchemas map[string][]*regexp.Regexp) {
-	var moduleUriSchemas []*regexp.Regexp
-	test, _ := regexp.Compile(".*pixiv.(co.jp|net)")
-	moduleUriSchemas = append(moduleUriSchemas, test)
-	uriSchemas[m.Key()] = moduleUriSchemas
+func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
+	var moduleURISchemas []*regexp.Regexp
+	moduleURISchema := regexp.MustCompile(".*pixiv.(co.jp|net)")
+	moduleURISchemas = append(moduleURISchemas, moduleURISchema)
+	uriSchemas[m.Key()] = moduleURISchemas
 }
 
 // login function

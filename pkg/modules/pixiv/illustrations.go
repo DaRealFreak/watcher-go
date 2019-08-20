@@ -7,14 +7,14 @@ import (
 )
 
 // retrieve meta data of ugoira illustrations
-func (m *pixiv) getUgoiraMetaData(illustrationId string) *ugoiraResponse {
+func (m *pixiv) getUgoiraMetaData(illustrationID string) *ugoiraResponse {
 	var ugoiraMetadataResponse ugoiraResponse
-	apiUrl, _ := url.Parse("https://app-api.pixiv.net/v1/ugoira/metadata")
+	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/ugoira/metadata")
 	data := url.Values{
-		"illust_id": {illustrationId},
+		"illust_id": {illustrationID},
 	}
-	apiUrl.RawQuery = data.Encode()
-	res, err := m.Session.Get(apiUrl.String())
+	apiURL.RawQuery = data.Encode()
+	res, err := m.Session.Get(apiURL.String())
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)

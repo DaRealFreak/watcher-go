@@ -11,8 +11,8 @@ import (
 
 // parse illustrations of artists
 func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
-	userId := m.getUserIdFromUrl(item.Uri)
-	if m.getUserDetail(userId) == nil {
+	userID := m.getUserIDFromURL(item.Uri)
+	if m.getUserDetail(userID) == nil {
 		log.Info("couldn't retrieve user details, changing artist to complete")
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return
@@ -20,13 +20,13 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 
 	var downloadQueue []*downloadQueueItem
 	foundCurrentItem := false
-	apiUrl := m.getUserIllustsUrl(userId, SearchFilterAll, 0)
+	apiURL := m.getUserIllustsURL(userID, SearchFilterAll, 0)
 
 	for !foundCurrentItem {
-		response := m.getUserIllusts(apiUrl)
-		apiUrl = response.NextUrl
+		response := m.getUserIllusts(apiURL)
+		apiURL = response.NextURL
 		for _, userIllustration := range response.Illustrations {
-			if string(userIllustration.Id) == item.CurrentItem {
+			if string(userIllustration.ID) == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
@@ -34,7 +34,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 		}
 
 		// break if we don't have another page
-		if apiUrl == "" {
+		if apiURL == "" {
 			break
 		}
 	}
@@ -51,7 +51,13 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 
 	for index, data := range downloadQueue {
 		var err error
-		log.Info(fmt.Sprintf("downloading updates for uri: %s (%0.2f%%)", trackedItem.Uri, float64(index+1)/float64(len(downloadQueue))*100))
+		log.Info(
+			fmt.Sprintf(
+				"downloading updates for uri: %s (%0.2f%%)",
+				trackedItem.Uri,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			),
+		)
 		if data.Illustration.Type == SearchFilterIllustration || data.Illustration.Type == SearchFilterManga {
 			err = m.downloadIllustration(data)
 		} else if data.Illustration.Type == SearchFilterUgoira {
@@ -60,12 +66,12 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		// ToDo: download novels as .txt
 
 		m.CheckError(err)
-		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemId)
+		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
 }
 
 // extract the user ID from the passed url
-func (m *pixiv) getUserIdFromUrl(uri string) string {
+func (m *pixiv) getUserIDFromURL(uri string) string {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["id"]) == 0 {
@@ -75,14 +81,14 @@ func (m *pixiv) getUserIdFromUrl(uri string) string {
 }
 
 // retrieve the user details from the API
-func (m *pixiv) getUserDetail(userId string) *userDetailResponse {
-	apiUrl, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
+func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
+	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
 	data := url.Values{
-		"user_id": {userId},
+		"user_id": {userID},
 		"filter":  {"for_ios"},
 	}
-	apiUrl.RawQuery = data.Encode()
-	res, err := m.Session.Get(apiUrl.String())
+	apiURL.RawQuery = data.Encode()
+	res, err := m.Session.Get(apiURL.String())
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
@@ -95,10 +101,10 @@ func (m *pixiv) getUserDetail(userId string) *userDetailResponse {
 }
 
 // build the user illustrations page URL manually
-func (m *pixiv) getUserIllustsUrl(userId string, filter string, offset int) string {
-	apiUrl, _ := url.Parse("https://app-api.pixiv.net/v1/user/illusts")
+func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) string {
+	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/illusts")
 	data := url.Values{
-		"user_id": {userId},
+		"user_id": {userID},
 		"filter":  {"for_ios"},
 	}
 
@@ -109,46 +115,45 @@ func (m *pixiv) getUserIllustsUrl(userId string, filter string, offset int) stri
 	if offset > 0 {
 		data.Add("offset", string(offset))
 	}
-	apiUrl.RawQuery = data.Encode()
-	return apiUrl.String()
+	apiURL.RawQuery = data.Encode()
+	return apiURL.String()
 }
 
 // retrieve user illustrations directly by url since the API response returns the next page url directly
-func (m *pixiv) getUserIllusts(apiUrl string) *userWorkResponse {
+func (m *pixiv) getUserIllusts(apiURL string) *userWorkResponse {
 	var userWorks userWorkResponse
-	res, err := m.Session.Get(apiUrl)
+	res, err := m.Session.Get(apiURL)
 	m.CheckError(err)
 
 	response, err := ioutil.ReadAll(res.Body)
 	m.CheckError(err)
 
-	err = json.Unmarshal(response, &userWorks)
-	m.CheckError(err)
+	m.CheckError(json.Unmarshal(response, &userWorks))
 	return &userWorks
 }
 
 // differentiate the work types (illustration/manga/ugoira/novels)
 func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
-	if userIllustration.Type == SearchFilterIllustration || userIllustration.Type == SearchFilterManga {
+	switch userIllustration.Type {
+	case SearchFilterIllustration, SearchFilterManga:
 		downloadQueueItem := downloadQueueItem{
-			ItemId:       string(userIllustration.Id),
-			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+			ItemID:       string(userIllustration.ID),
+			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.ID, m.SanitizePath(userIllustration.User.Name, false)),
 			Illustration: userIllustration,
 		}
 		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
-	} else if userIllustration.Type == SearchFilterUgoira {
+	case SearchFilterUgoira:
 		// retrieve metadata later on download to prevent getting detected as harvesting software
 		downloadQueueItem := downloadQueueItem{
-			ItemId:       string(userIllustration.Id),
-			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.Id, m.SanitizePath(userIllustration.User.Name, false)),
+			ItemID:       string(userIllustration.ID),
+			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.ID, m.SanitizePath(userIllustration.User.Name, false)),
 			Illustration: userIllustration,
 		}
 		*downloadQueue = append(*downloadQueue, &downloadQueueItem)
-	} else if userIllustration.Type == SearchFilterNovel {
-		fmt.Println(userIllustration)
+	case SearchFilterNovel:
 		// ToDo: parse novel types
-		return
-	} else {
+		fmt.Println(userIllustration)
+	default:
 		log.Fatal("unknown illustration type: " + userIllustration.Type)
 	}
 }

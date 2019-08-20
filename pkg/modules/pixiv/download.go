@@ -16,10 +16,10 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 	for i := len(downloadQueueItem.Illustration.MetaPages) - 1; i >= 0; i-- {
 		image := downloadQueueItem.Illustration.MetaPages[i]
 		fileName := m.GetFileName(image["image_urls"]["original"])
-		fileUri := image["image_urls"]["original"]
+		fileURI := image["image_urls"]["original"]
 		if err := m.Session.DownloadFile(
 			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
-			fileUri,
+			fileURI,
 		); err != nil {
 			// if download was not successful return the occurred error here
 			return err
@@ -28,21 +28,21 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 
 	if len(downloadQueueItem.Illustration.MetaSinglePage) > 0 {
 		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
-		fileUri := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
+		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
 		return m.Session.DownloadFile(
 			path.Join(viper.GetString("downloadDirectory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
-			fileUri,
+			fileURI,
 		)
 	}
 	return nil
 }
 
 func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
-	metadata := m.getUgoiraMetaData(downloadQueueItem.ItemId).UgoiraMetadata
+	metadata := m.getUgoiraMetaData(downloadQueueItem.ItemID).UgoiraMetadata
 	fileName := strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp"
-	fileUri := metadata.ZipUrls["medium"]
+	fileURI := metadata.ZipUrls["medium"]
 
-	resp, err := m.Session.Get(fileUri)
+	resp, err := m.Session.Get(fileURI)
 	if err != nil {
 		return err
 	}
