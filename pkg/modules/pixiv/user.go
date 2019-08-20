@@ -2,17 +2,17 @@ package pixiv
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
-// parse illustrations of artists
+// parseUserIllustrations parses illustrations of artists
 func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	userID := m.getUserIDFromURL(item.URI)
 	if m.getUserDetail(userID) == nil {
@@ -49,6 +49,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	m.processDownloadQueue(downloadQueue, item)
 }
 
+// processDownloadQueue processes the download queue of user illustration download queue items
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
 	log.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI))
 
@@ -73,17 +74,17 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	}
 }
 
-// extract the user ID from the passed url
+// getUserIDFromURL extracts the user ID from the passed URL
 func (m *pixiv) getUserIDFromURL(uri string) string {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["id"]) == 0 {
-		raven.CheckError(errors.New(fmt.Sprintf("parsed uri(%s) does not contain any \"id\" tag", uri)))
+		raven.CheckError(fmt.Errorf("parsed uri(%s) does not contain any \"id\" tag", uri))
 	}
 	return q["id"][0]
 }
 
-// retrieve the user details from the API
+// getUserDetail returns the user details from the API
 func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
 	data := url.Values{
@@ -103,7 +104,7 @@ func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	return &details
 }
 
-// build the user illustrations page URL manually
+// getUserIllustsURL builds the user illustrations page URL manually
 func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) string {
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/illusts")
 	data := url.Values{
@@ -122,7 +123,7 @@ func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) stri
 	return apiURL.String()
 }
 
-// retrieve user illustrations directly by url since the API response returns the next page url directly
+// getUserIllusts returns user illustrations directly by URL since the API response returns the next page URL directly
 func (m *pixiv) getUserIllusts(apiURL string) *userWorkResponse {
 	var userWorks userWorkResponse
 	res, err := m.Session.Get(apiURL)
@@ -135,7 +136,7 @@ func (m *pixiv) getUserIllusts(apiURL string) *userWorkResponse {
 	return &userWorks
 }
 
-// differentiate the work types (illustration/manga/ugoira/novels)
+// parseWork parses the different work types (illustration/manga/ugoira/novels) to append to the download queue
 func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
 	switch userIllustration.Type {
 	case SearchFilterIllustration, SearchFilterManga:
@@ -157,11 +158,11 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 		// ToDo: parse novel types
 		fmt.Println(userIllustration)
 	default:
-		raven.CheckError(errors.New(fmt.Sprintf("unknown illustration type: %s", userIllustration.Type)))
+		raven.CheckError(fmt.Errorf("unknown illustration type: %s", userIllustration.Type))
 	}
 }
 
-// retrieve corresponding frame for the passed file name from the ugoira metadata
+// getUgoiraFrame returns the corresponding frame for the passed file name from the passed ugoira metadata
 func (m *pixiv) getUgoiraFrame(fileName string, metadata *ugoiraMetadata) (*frame, error) {
 	for _, frame := range metadata.Frames {
 		if frame.File == fileName {

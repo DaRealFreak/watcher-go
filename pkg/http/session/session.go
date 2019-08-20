@@ -3,13 +3,14 @@ package session
 import (
 	"context"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	log "github.com/sirupsen/logrus"
@@ -96,7 +97,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer raven.CheckError(resp.Body.Close())
 
 	// ensure the directory
 	s.EnsureDownloadDirectory(filepath)
@@ -106,7 +107,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer raven.CheckError(out.Close())
 
 	// write the body to file
 	written, err := io.Copy(out, resp.Body)

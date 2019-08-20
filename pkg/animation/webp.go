@@ -28,6 +28,7 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 		filepath.Join(fData.WorkPath, h.outputFileName+".webp"),
 	}
 	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
+	// #nosec
 	if err := exec.Command("ffmpeg", args...).Run(); err != nil {
 		return nil, err
 	}
@@ -40,5 +41,5 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 
 	// clean up the created folder/files
 	err = os.RemoveAll(fData.WorkPath)
-	return
+	return content, err
 }

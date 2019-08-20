@@ -9,11 +9,12 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
+// sankakuComplex contains the implementation of the ModuleInterface
 type sankakuComplex struct {
 	models.Module
 }
 
-// generate new module and register uri schema
+// NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = sankakuComplex{}
@@ -32,22 +33,22 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	return &module
 }
 
-// retrieve the module key
+// Key returns the module key
 func (m *sankakuComplex) Key() (key string) {
 	return "chan.sankakucomplex.com"
 }
 
-// check if this module requires a login to work
+// RequiresLogin checks if this module requires a login to work
 func (m *sankakuComplex) RequiresLogin() (requiresLogin bool) {
 	return false
 }
 
-// retrieve the logged in status
+// IsLoggedIn returns the logged in status
 func (m *sankakuComplex) IsLoggedIn() bool {
 	return m.LoggedIn
 }
 
-// add our pattern to the uri schemas
+// RegisterURISchema adds our pattern to the URI Schemas
 func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleURISchemas []*regexp.Regexp
 	moduleURISchema := regexp.MustCompile(".*sankakucomplex.com")
@@ -55,7 +56,7 @@ func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regex
 	uriSchemas[m.Key()] = moduleURISchemas
 }
 
-// login function
+// Login logs us in for the current session if possible/account available
 func (m *sankakuComplex) Login(account *models.Account) bool {
 	values := url.Values{
 		"url":            {""},
@@ -70,7 +71,7 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 	return m.LoggedIn
 }
 
-// main functionality to parse and process the passed item
+// Parse parses the tracked item
 func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 	// ToDo: add book support
 	downloadQueue := m.parseGallery(item)

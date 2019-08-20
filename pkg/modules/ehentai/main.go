@@ -2,12 +2,13 @@ package ehentai
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// ehentai contains the implementation of the ModuleInterface and extends it by custom required values
 type ehentai struct {
 	models.Module
 	downloadLimitReached     bool
@@ -24,7 +26,7 @@ type ehentai struct {
 	searchGalleryIDPattern   *regexp.Regexp
 }
 
-// generate new module and register uri schema
+// NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = ehentai{
@@ -52,22 +54,22 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	return &module
 }
 
-// retrieve the module key
+// Key returns the module key
 func (m *ehentai) Key() (key string) {
 	return "e-hentai.com"
 }
 
-// check if this module requires a login to work
+// RequiresLogin checks if this module requires a login to work
 func (m *ehentai) RequiresLogin() (requiresLogin bool) {
 	return false
 }
 
-// retrieve the logged in status
+// IsLoggedIn returns the logged in status
 func (m *ehentai) IsLoggedIn() bool {
 	return m.LoggedIn
 }
 
-// add our pattern to the uri schemas
+// RegisterURISchema adds our pattern to the URI Schemas
 func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	var moduleURISchemas []*regexp.Regexp
 	moduleURISchema := regexp.MustCompile(`.*e[\-x]hentai.org`)
@@ -75,7 +77,7 @@ func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	uriSchemas[m.Key()] = moduleURISchemas
 }
 
-// login function
+// Login logs us in for the current session if possible/account available
 func (m *ehentai) Login(account *models.Account) bool {
 	values := url.Values{
 		"CookieDate":       {"1"},
@@ -98,6 +100,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	return m.LoggedIn
 }
 
+// Parse parses the tracked item
 func (m *ehentai) Parse(item *models.TrackedItem) {
 	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
 		m.parseGallery(item)
@@ -106,6 +109,7 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 	}
 }
 
+// processDownloadQueue processes the download queue consisting of gallery items
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
 	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
 

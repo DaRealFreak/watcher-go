@@ -2,12 +2,13 @@ package pixiv
 
 import (
 	"encoding/json"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
-// retrieve meta data of ugoira illustrations
+// getUgoiraMetaData retrieves meta data of ugoira illustrations
 func (m *pixiv) getUgoiraMetaData(illustrationID string) *ugoiraResponse {
 	var ugoiraMetadataResponse ugoiraResponse
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/ugoira/metadata")

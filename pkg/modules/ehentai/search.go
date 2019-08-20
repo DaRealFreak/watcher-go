@@ -8,11 +8,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// searchGalleryItem contains the required variables for gallery items of the search function
 type searchGalleryItem struct {
 	id  string
 	uri string
 }
 
+// parseSearch parses the tracked item if we detected a search/tag
 func (m *ehentai) parseSearch(item *models.TrackedItem) {
 	response, _ := m.Session.Get(item.URI)
 	html, _ := m.Session.GetDocument(response).Html()
@@ -55,6 +57,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 	}
 }
 
+// getSearchGalleryUrls returns all gallery URLs from the passed HTML
 func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	var items []searchGalleryItem
 
@@ -70,6 +73,7 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	return items
 }
 
+// getNextSearchPageURL retrieves the url of the next page if it exists
 func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")

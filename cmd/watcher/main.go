@@ -2,8 +2,9 @@ package watcher
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"

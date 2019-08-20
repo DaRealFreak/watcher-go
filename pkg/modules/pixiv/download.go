@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// downloadIllustration handles the download process of Illustration and Manga illustration types
 func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err error) {
 	for i := len(downloadQueueItem.Illustration.MetaPages) - 1; i >= 0; i-- {
 		image := downloadQueueItem.Illustration.MetaPages[i]
@@ -38,6 +39,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 	return nil
 }
 
+// downloadUgoira handles the download process of ugoira illustration types
 func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
 	metadata := m.getUgoiraMetaData(downloadQueueItem.ItemID).UgoiraMetadata
 	fileName := strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp"

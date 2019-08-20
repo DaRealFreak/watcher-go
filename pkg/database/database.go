@@ -1,8 +1,9 @@
 package database
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"database/sql"
 
@@ -26,7 +27,7 @@ func NewConnection() *DbIO {
 		dbIO.createDatabase()
 	}
 	db, err := sql.Open("sqlite3", "./watcher.db")
-	dbIO.checkErr(err)
+	raven.CheckError(err)
 
 	dbIO.connection = db
 	return &dbIO

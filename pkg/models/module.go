@@ -2,12 +2,13 @@ package models
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	log "github.com/sirupsen/logrus"
@@ -16,11 +17,17 @@ import (
 
 // ModuleInterface of used functions from the application for all modules
 type ModuleInterface interface {
+	// Key returns the module key
 	Key() (key string)
+	// RequiresLogin checks if this module requires a login to work
 	RequiresLogin() (requiresLogin bool)
+	// IsLoggedIn returns the logged in status
 	IsLoggedIn() bool
+	// RegisterURISchema adds our pattern to the URI Schemas
 	RegisterURISchema(uriSchemas map[string][]*regexp.Regexp)
+	// Login logs us in for the current session if possible/account available
 	Login(account *Account) (success bool)
+	// Parse parses the tracked item
 	Parse(item *TrackedItem)
 }
 

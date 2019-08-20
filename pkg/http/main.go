@@ -3,13 +3,14 @@ package http
 import (
 	"compress/gzip"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/PuerkitoBio/goquery"
 )

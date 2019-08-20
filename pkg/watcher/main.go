@@ -1,11 +1,11 @@
 package watcher
 
 import (
-	"errors"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"os"
 	"text/tabwriter"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -157,9 +157,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	if account == nil {
 		if module.RequiresLogin() {
 			raven.CheckError(
-				errors.New(
-					fmt.Sprintf("Module \"%s\" requires a login, but no account could be found", module.Key()),
-				),
+				fmt.Errorf("module \"%s\" requires a login, but no account could be found", module.Key()),
 			)
 		} else {
 			return
@@ -173,11 +171,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	} else {
 		if module.RequiresLogin() {
 			raven.CheckError(
-				errors.New(
-					fmt.Sprintf(
-						"Module \"%s\" requires a login, but the login failed", module.Key(),
-					),
-				),
+				fmt.Errorf("module \"%s\" requires a login, but the login failed", module.Key()),
 			)
 		} else {
 			log.Warning("login not successful")

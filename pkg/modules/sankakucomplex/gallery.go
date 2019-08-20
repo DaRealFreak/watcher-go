@@ -2,17 +2,18 @@ package sankakucomplex
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
+// apiItem is the JSON struct of item objects returned by the API
 type apiItem struct {
 	ID               json.Number `json:"id"`
 	Rating           string      `json:"rating"`
@@ -50,6 +51,7 @@ type apiItem struct {
 	Tags             []tag       `json:"tags"`
 }
 
+// author is the JSON struct of author objects returned by the API
 type author struct {
 	ID           int    `json:"id"`
 	Name         string `json:"name"`
@@ -57,12 +59,14 @@ type author struct {
 	AvatarRating string `json:"avatar_rating"`
 }
 
+// created is the JSON struct of created objects returned by the API
 type created struct {
 	JSONClass string `json:"json_class"`
 	S         int    `json:"s"`
 	N         int    `json:"n"`
 }
 
+// tag is the JSON struct of tag objects returned by the API
 type tag struct {
 	ID        int         `json:"id"`
 	NameEn    string      `json:"name_en"`
@@ -76,7 +80,7 @@ type tag struct {
 	Name      string      `json:"name"`
 }
 
-// parse functionality for galleries based on the tags in the tracked item
+// parseGallery parses galleries based on the tags in the tracked item
 func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue []models.DownloadQueueItem) {
 	tag := m.extractItemTag(item)
 	page := 0
@@ -117,25 +121,26 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	return downloadQueue
 }
 
-// parse the response from the API
+// parseAPIResponse parses the response from the API
 func (m *sankakuComplex) parseAPIResponse(response *http.Response) []apiItem {
 	body, _ := ioutil.ReadAll(response.Body)
 	var apiItems []apiItem
-	_ = json.Unmarshal(body, &apiItems)
+	err := json.Unmarshal(body, &apiItems)
+	raven.CheckError(err)
 	return apiItems
 }
 
-// extract the tag from the passed item to use in the API request
+// extractItemTag extracts the tag from the passed item URL
 func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
 	u, _ := url.Parse(item.URI)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["tags"]) == 0 {
-		raven.CheckError(errors.New(fmt.Sprintf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)))
+		raven.CheckError(fmt.Errorf("parsed uri(%s) does not contain any \"tags\" tag", item.URI))
 	}
 	return q["tags"][0]
 }
 
-// since the books got kinda overhand, sort some items in sub folders based on the tags
+// getTagSubDirectory returns possible sub directories since the books got kinda overhand
 func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
 	for _, tag := range item.Tags {
 		if tag.NameEn == "doujinshi" {

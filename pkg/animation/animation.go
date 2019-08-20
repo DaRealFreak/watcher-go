@@ -82,6 +82,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+	// #nosec
 	if err := exec.Command(executable, args...).Run(); err != nil {
 		if fData.ConvertedFrames {
 			// fallback failed, return the error
@@ -93,6 +94,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	}
 
 	// read file content to return it
+	// #nosec
 	content, err = ioutil.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 	if err != nil {
 		return nil, err
@@ -157,6 +159,7 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 		args = append(args, fData.FilePaths[i], newFilePath)
 		fData.FilePaths[i] = newFilePath
 		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+		// #nosec
 		if err := exec.Command(executable, args...).Run(); err != nil {
 			return nil, err
 		}

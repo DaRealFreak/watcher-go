@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// user is the JSON struct of user objects returned by the API
 type user struct {
 	ProfileImageUrls map[string]string `json:"profile_image_urls"`
 	ID               json.Number       `json:"id"`
@@ -18,6 +19,7 @@ type user struct {
 	Comment          string            `json:"comment"`
 }
 
+// illustration is the JSON struct of illustration objects returned by the API
 type illustration struct {
 	ID             json.Number                    `json:"id"`
 	Title          string                         `json:"title"`
@@ -45,26 +47,31 @@ type illustration struct {
 	TotalComments  json.Number                    `json:"total_comments"`
 }
 
+// series is the JSON struct of series objects returned by the API
 type series struct {
 	ID    json.Number `json:"id"`
 	Title string      `json:"title"`
 }
 
+// ugoiraMetadata is the JSON struct of ugoira metadata objects returned by the API
 type ugoiraMetadata struct {
 	ZipUrls map[string]string `json:"zip_urls"`
 	Frames  []*frame
 }
 
+// frame is the JSON struct of frame objects returned by the API
 type frame struct {
 	File  string      `json:"file"`
 	Delay json.Number `json:"delay"`
 }
 
+// tag is the JSON struct of tag objects returned by the API
 type tag struct {
 	Name           string `json:"name"`
 	TranslatedName string `json:"translated_name"`
 }
 
+// profile is the JSON struct of profile objects returned by the API
 type profile struct {
 	Webpage                    string      `json:"webpage"`
 	Gender                     string      `json:"gender"`
@@ -92,6 +99,7 @@ type profile struct {
 	IsUsingCustomProfileImage  bool        `json:"is_using_custom_profile_image"`
 }
 
+// profilePublicity is the JSON struct of profile publicity objects returned by the API
 type profilePublicity struct {
 	Gender    string `json:"gender"`
 	Region    string `json:"region"`
@@ -101,6 +109,7 @@ type profilePublicity struct {
 	Pawoo     bool   `json:"pawoo"`
 }
 
+// workspace is the JSON struct of workspace objects returned by the API
 type workspace struct {
 	Pc                string `json:"pc"`
 	Monitor           string `json:"monitor"`
@@ -117,6 +126,7 @@ type workspace struct {
 	WorkspaceImageURL string `json:"workspace_image_url"`
 }
 
+// loginResponseData is the JSON struct of login response data objects returned by the API
 type loginResponseData struct {
 	AccessToken  string      `json:"access_token"`
 	ExpiresIn    json.Number `json:"expires_in"`
@@ -127,24 +137,29 @@ type loginResponseData struct {
 	DeviceToken  string      `json:"device_token"`
 }
 
+// errorMessage is the JSON struct of error message objects returned by the API
 type errorMessage struct {
 	Message string      `json:"message"`
 	Code    json.Number `json:"code"`
 }
 
+// errorData is the JSON struct of error data objects returned by the API
 type errorData struct {
 	System *errorMessage `json:"system"`
 }
 
+// errorResponse is the JSON struct of error response objects returned by the API
 type errorResponse struct {
 	HasError bool       `json:"has_error"`
 	Errors   *errorData `json:"errors"`
 }
 
+// loginResponse is the JSON struct of login response objects returned by the API
 type loginResponse struct {
 	Response *loginResponseData `json:"response"`
 }
 
+// userDetailResponse is the JSON struct of user detail response objects returned by the API
 type userDetailResponse struct {
 	User             *user             `json:"user"`
 	Profile          *profile          `json:"profile"`
@@ -152,11 +167,13 @@ type userDetailResponse struct {
 	Workspace        *workspace        `json:"workspace"`
 }
 
+// userWorkResponse is the JSON struct of user work response objects returned by the API
 type userWorkResponse struct {
 	Illustrations []*illustration `json:"illusts"`
 	NextURL       string          `json:"next_url"`
 }
 
+// ugoiraResponse is the JSON struct of ugoira response objects returned by the API
 type ugoiraResponse struct {
 	UgoiraMetadata *ugoiraMetadata `json:"ugoira_metadata"`
 }

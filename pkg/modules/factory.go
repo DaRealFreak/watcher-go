@@ -1,10 +1,10 @@
 package modules
 
 import (
-	"errors"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"regexp"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
@@ -12,12 +12,13 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 )
 
+// ModuleFactory contains all registered modules and URI Schemas
 type ModuleFactory struct {
 	modules    []*models.Module
 	uriSchemas map[string][]*regexp.Regexp
 }
 
-// generate new module factory and register modules
+// NewModuleFactory generates a new module factory and register all modules
 func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
 	factory := ModuleFactory{
 		uriSchemas: make(map[string][]*regexp.Regexp),
@@ -28,12 +29,12 @@ func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
 	return &factory
 }
 
-// retrieve all available modules
+// GetAllModules returns all available modules
 func (f ModuleFactory) GetAllModules() []*models.Module {
 	return f.modules
 }
 
-// retrieve module by it's key
+// GetModule returns a module by it's key
 func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
 		if module.Key() == moduleName {
@@ -43,7 +44,7 @@ func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 	return nil
 }
 
-// check the registered uri schemas for a match and return the module
+// GetModuleFromURI checks the registered URI schemas for a match and returns the module
 func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 	for key, patternCollection := range f.uriSchemas {
 		for _, pattern := range patternCollection {
@@ -52,6 +53,6 @@ func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 			}
 		}
 	}
-	raven.CheckError(errors.New(fmt.Sprintf("no module is registered which can parse based on the url %s", uri)))
+	raven.CheckError(fmt.Errorf("no module is registered which can parse based on the url %s", uri))
 	return nil
 }

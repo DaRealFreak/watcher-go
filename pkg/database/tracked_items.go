@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"

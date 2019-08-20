@@ -1,9 +1,10 @@
 package raven
 
 import (
+	"time"
+
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // SetupSentry initializes the sentry

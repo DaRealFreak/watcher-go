@@ -3,11 +3,12 @@ package watcher
 import (
 	"bytes"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"

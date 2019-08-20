@@ -8,12 +8,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// imageGalleryItem contains the relevant data of gallery items
 type imageGalleryItem struct {
 	id           string
 	uri          string
 	galleryTitle string
 }
 
+// parseGallery parses the tracked item if we detected a tracked gallery
 func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	response, _ := m.Session.Get(item.URI)
 	html, _ := m.Session.GetDocument(response).Html()
@@ -54,7 +56,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 	}
 }
 
-// retrieve url of the next page if it exists
+// getNextGalleryPageURL retrieves the url of the next page if it exists
 func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
@@ -62,7 +64,7 @@ func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 	return nextPageElement.Find("a[href]").Attr("href")
 }
 
-// extract the gallery image urls from the passed html
+// getGalleryImageUrls extracts all gallery image urls from the passed html
 func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
 	var imageUrls []imageGalleryItem
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
@@ -77,7 +79,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 	return imageUrls
 }
 
-// check if gallery has raven and should be skipped
+// hasGalleryErrors checks if the gallery has any errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
 		log.Info("newer version of gallery available, updating uri of: " + item.URI)
@@ -100,6 +102,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	return false
 }
 
+// getDownloadQueueItem extract the direct image URL from the passed gallery item
 func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
 	response, _ := m.Session.Get(item.uri)
 	document := m.Session.GetDocument(response)
@@ -112,6 +115,7 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQue
 	}
 }
 
+// extractGalleryTitle extracts the gallery title from the passed HTML
 func (m *ehentai) extractGalleryTitle(html string) (galleryTitle string) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	galleryTitle = document.Find("div#gd2 > h1#gn").Text()

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,12 +14,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
+// PixivSession contains the implementation of the SessionInterface and custom required variables
 type PixivSession struct {
 	watcherHttp.Session
 	Module       models.ModuleInterface
@@ -31,6 +33,7 @@ type PixivSession struct {
 	MaxRetries   int
 }
 
+// mobileClient contains extracted variables of the official mobile application
 type mobileClient struct {
 	OauthURL     string
 	headers      map[string]string
@@ -40,6 +43,7 @@ type mobileClient struct {
 	RefreshToken string
 }
 
+// errorMessage is the JSON struct of API error messages
 type errorMessage struct {
 	UserMessage        string            `json:"user_message"`
 	Message            string            `json:"message"`
@@ -47,11 +51,12 @@ type errorMessage struct {
 	UserMessageDetails map[string]string `json:"user_message_details"`
 }
 
+// errorMessage is the JSON struct of API error responses
 type errorResponse struct {
 	Error *errorMessage `json:"error"`
 }
 
-// initialize a new session and set all the required headers etc
+// NewSession initializes a new session and sets all the required headers etc
 func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	return &PixivSession{
@@ -77,7 +82,7 @@ func NewSession() *PixivSession {
 	}
 }
 
-// custom GET function to set headers like the mobile app
+// Get is a custom GET function to set headers like the mobile app
 func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
@@ -96,7 +101,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
-			// check for API raven
+			// check for API errors
 			if s.containsAPIError(bodyBytes) {
 				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
@@ -118,7 +123,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 	return res, err
 }
 
-// custom GET function to set headers like the mobile app
+// Post is a custom GET function to set headers like the mobile app
 func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
@@ -136,7 +141,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 
-			// check for API raven
+			// check for API errors
 			if s.containsAPIError(bodyBytes) {
 				retry, err := s.handleAPIError(bodyBytes)
 				if retry {
@@ -157,7 +162,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 	return res, err
 }
 
-// try to download the file, returns the occurred error if something went wrong even after multiple tries
+// DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		log.Info(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
@@ -171,7 +176,7 @@ func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 	return err
 }
 
-// this function will download a url to a local file.
+// tryDownloadFile will download a url to a local file.
 // It's efficient because it will write as it downloads and not load the whole file into memory.
 func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	// retrieve the data
@@ -179,7 +184,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer raven.CheckError(resp.Body.Close())
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -196,7 +201,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	return err
 }
 
-// write content to file and return written amount of bytes and possible occurred raven
+// WriteToFile writes the passed content to file and returns the written amount of bytes and possible occurred errors
 func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int64, err error) {
 	// ensure the directory
 	s.EnsureDownloadDirectory(filepath)
@@ -206,7 +211,7 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	if err != nil {
 		return 0, err
 	}
-	defer out.Close()
+	defer raven.CheckError(out.Close())
 
 	// write the body to file
 	written, err = io.Copy(out, bytes.NewReader(content))
@@ -216,14 +221,14 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	return
 }
 
-// wait for the leaky bucket to fill again
+// applyRateLimit waits for the leaky bucket to fill again
 func (s *PixivSession) applyRateLimit() {
 	// wait for request to stay within the rate limit
 	err := s.rateLimiter.Wait(s.ctx)
 	raven.CheckError(err)
 }
 
-// check if the returned value contains an error object
+// containsAPIError checks if the returned value contains an error object
 func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
 	err := json.Unmarshal(response, &errorResponse)
@@ -233,7 +238,7 @@ func (s *PixivSession) containsAPIError(response []byte) bool {
 	return false
 }
 
-// handle possible API raven and return if the function should retry
+// handleAPIError handles possible API errors and returns if the function should retry it
 func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	var errorResponse errorResponse
 	_ = json.Unmarshal(response, &errorResponse)
