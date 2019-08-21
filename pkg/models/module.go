@@ -118,8 +118,10 @@ type moduleFormatter struct {
 
 // Format prints the default Formatter with a module prefix
 func (f *moduleFormatter) Format(entry *log.Entry) ([]byte, error) {
+	f.TextFormatter.ForceColors = config.GlobalConfig.Cli.ForceColors
+	f.TextFormatter.ForceFormatting = config.GlobalConfig.Cli.ForceFormat
 	result, err := f.TextFormatter.Format(entry)
-	return append([]byte("["+f.moduleKey+"]"), result...), err
+	return append(result, []byte("["+f.moduleKey+"]")...), err
 }
 
 // SetFormattedLogger sets the formatted logger for the module and its session
