@@ -87,7 +87,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.Logger.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		s.Logger.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
