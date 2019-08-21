@@ -2,8 +2,6 @@ package watcher
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
@@ -46,106 +44,6 @@ func (app *Watcher) Run(moduleURL string) {
 		log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem))
 		module.Parse(item)
 	}
-}
-
-// AddAccountByURI extracts the module based on the uri and adds an account if not registered already
-func (app *Watcher) AddAccountByURI(uri string, user string, password string) {
-	module := app.ModuleFactory.GetModuleFromURI(uri)
-	app.DbCon.GetFirstOrCreateAccount(user, password, module)
-}
-
-// ListAccounts lists all accounts with the option to limit it to a module
-func (app *Watcher) ListAccounts(uri string) {
-	var accounts []*models.Account
-	if uri == "" {
-		accounts = app.DbCon.GetAllAccounts(nil)
-	} else {
-		module := app.ModuleFactory.GetModuleFromURI(uri)
-		accounts = app.DbCon.GetAllAccounts(module)
-	}
-
-	// initialize tab writer
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "ID\tUsername\tPassword\tModule\tDisabled")
-	for _, account := range accounts {
-		_, _ = fmt.Fprintf(
-			w,
-			"%d\t%s\t%s\t%s\t%t\n",
-			account.ID,
-			account.Username,
-			account.Password,
-			account.Module,
-			account.Disabled,
-		)
-	}
-	_ = w.Flush()
-}
-
-// UpdateAccountDisabledStatusByURI updates an account of the passed uri and changes the disabled status
-func (app *Watcher) UpdateAccountDisabledStatusByURI(uri string, user string, disabled bool) {
-	module := app.ModuleFactory.GetModuleFromURI(uri)
-	app.DbCon.UpdateAccountDisabledStatus(user, disabled, module)
-}
-
-// UpdateAccountByURI updates the password of an account of the passed uri
-func (app *Watcher) UpdateAccountByURI(uri string, user string, password string) {
-	module := app.ModuleFactory.GetModuleFromURI(uri)
-	app.DbCon.UpdateAccount(user, password, module)
-}
-
-// AddItemByURI adds an item based on the uri and sets it to the passed current item if not nil
-func (app *Watcher) AddItemByURI(uri string, currentItem string) {
-	module := app.ModuleFactory.GetModuleFromURI(uri)
-	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
-	if currentItem != "" {
-		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
-	}
-}
-
-// ListTrackedItems lists all tracked items with the option to limit it to a module
-func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
-	var trackedItems []*models.TrackedItem
-	if uri == "" {
-		trackedItems = app.DbCon.GetTrackedItems(nil, includeCompleted)
-	} else {
-		module := app.ModuleFactory.GetModuleFromURI(uri)
-		trackedItems = app.DbCon.GetTrackedItems(module, includeCompleted)
-	}
-
-	// initialize tab writer
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "ID\tModule\tUrl\tCurrent Item\tCompleted")
-	for _, item := range trackedItems {
-		_, _ = fmt.Fprintf(
-			w,
-			"%d\t%s\t%s\t%s\t%t\n",
-			item.ID,
-			item.Module,
-			item.URI,
-			item.CurrentItem,
-			item.Complete,
-		)
-	}
-	_ = w.Flush()
-}
-
-// ListRegisteredModules lists all registered modules
-func (app *Watcher) ListRegisteredModules() {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "ID\tModule Key\tRequires Login")
-	for index, module := range app.ModuleFactory.GetAllModules() {
-		_, _ = fmt.Fprintf(
-			w,
-			"%d\t%s\t%t\n",
-			index,
-			module.Key(),
-			module.RequiresLogin(),
-		)
-	}
-	_ = w.Flush()
 }
 
 // loginToModule handles the login for modules, if an account exists: login
