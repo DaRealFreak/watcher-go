@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DaRealFreak/watcher-go/pkg/config"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"
@@ -15,16 +14,38 @@ import (
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
+// appConfiguration contains the persistent configurations/settings across all commands
+type appConfiguration struct {
+	configurationFile string
+	logLevel          string
+	enableSentry      bool
+	disableSentry     bool
+	// backup options
+	backup struct {
+		zip  bool
+		tar  bool
+		gzip bool
+		sql  bool
+	}
+	// cli specific options
+	cli struct {
+		forceColors bool
+		forceFormat bool
+	}
+}
+
 // CliApplication contains the structure for the Watcher application for the CLI interface
 type CliApplication struct {
 	watcher *watcherApp.Watcher
 	rootCmd *cobra.Command
+	config  *appConfiguration
 }
 
 // NewWatcherApplication returns the main command using cobra
 func NewWatcherApplication() *CliApplication {
 	app := &CliApplication{
 		watcher: watcherApp.NewWatcher(),
+		config:  new(appConfiguration),
 		rootCmd: &cobra.Command{
 			Use:   "watcher",
 			Short: "Watcher keeps track of all media items you want to track.",
@@ -57,38 +78,38 @@ func NewWatcherApplication() *CliApplication {
 // addPersistentFlags adds persistent flags to root command
 func (cli *CliApplication) addPersistentFlags() {
 	cli.rootCmd.PersistentFlags().StringVar(
-		&config.GlobalConfig.ConfigurationFile,
+		&cli.config.configurationFile,
 		"config",
 		"",
 		"config file (default is ./.watcher.yaml)",
 	)
 	cli.rootCmd.PersistentFlags().StringVarP(
-		&config.GlobalConfig.LogLevel,
+		&cli.config.logLevel,
 		"verbosity",
 		"v",
 		log.InfoLevel.String(),
 		"log level (debug, info, warn, error, fatal, panic",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
-		&config.GlobalConfig.EnableSentry,
+		&cli.config.enableSentry,
 		"enable-sentry",
 		false,
 		"use sentry to send usage statistics/errors to the developer",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
-		&config.GlobalConfig.DisableSentry,
+		&cli.config.disableSentry,
 		"disable-sentry",
 		false,
 		"disable sentry and don't send usage statistics/errors to the developer",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
-		&config.GlobalConfig.Cli.ForceColors,
+		&cli.config.cli.forceColors,
 		"log-force-colors",
 		false,
 		"enforces colored output even for non-tty terminals",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
-		&config.GlobalConfig.Cli.ForceFormat,
+		&cli.config.cli.forceFormat,
 		"log-force-format",
 		false,
 		"enforces formatted output even for non-tty terminals",
@@ -116,10 +137,10 @@ func (cli *CliApplication) initWatcher() {
 	cli.initConfig()
 
 	// sentry toggle
-	if config.GlobalConfig.EnableSentry {
+	if cli.config.enableSentry {
 		viper.Set("watcher.sentry", true)
 	}
-	if config.GlobalConfig.DisableSentry {
+	if cli.config.disableSentry {
 		viper.Set("watcher.sentry", false)
 	}
 	// setup sentry for error logging
@@ -133,24 +154,24 @@ func (cli *CliApplication) initWatcher() {
 // initLogger initializes the logger
 func (cli *CliApplication) initLogger() {
 	log.SetOutput(os.Stdout)
-	lvl, err := log.ParseLevel(config.GlobalConfig.LogLevel)
+	lvl, err := log.ParseLevel(cli.config.logLevel)
 	raven.CheckError(err)
 	log.SetLevel(lvl)
 	// set custom text formatter for the logger
 	log.StandardLogger().Formatter = &prefixed.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   true,
-		ForceColors:     config.GlobalConfig.Cli.ForceColors,
-		ForceFormatting: config.GlobalConfig.Cli.ForceFormat,
+		ForceColors:     cli.config.cli.forceColors,
+		ForceFormatting: cli.config.cli.forceFormat,
 	}
 }
 
 // initConfig reads the set configuration file
 func (cli *CliApplication) initConfig() {
 	// Don't forget to read config either from cfgFile or from home directory!
-	if config.GlobalConfig.ConfigurationFile != "" {
+	if cli.config.configurationFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(config.GlobalConfig.ConfigurationFile)
+		viper.SetConfigFile(cli.config.configurationFile)
 	} else {
 		cli.ensureDefaultConfigFile()
 		// Search config in current directory with name ".watcher" (without extension).

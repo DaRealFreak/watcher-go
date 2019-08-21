@@ -46,11 +46,11 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		s.Logger.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
 		if response != nil && response.StatusCode != 200 {
 			content, _ := ioutil.ReadAll(response.Body)
-			raven.CheckError(errors.New(string(content)))
+			raven.CheckError(errors.New(string(content) + " (" + uri + ")"))
 		}
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -68,11 +68,11 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		s.Logger.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
 		if response != nil && response.StatusCode != 200 {
 			content, _ := ioutil.ReadAll(response.Body)
-			raven.CheckError(errors.New(string(content)))
+			raven.CheckError(errors.New(string(content) + " (" + uri + ")"))
 		}
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -87,7 +87,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.Logger.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		log.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
@@ -142,9 +142,4 @@ func (s *DefaultSession) applyRateLimit() {
 		err := s.RateLimiter.Wait(s.ctx)
 		raven.CheckError(err)
 	}
-}
-
-// SetLogger sets the logger, required since sessions are an interface embedding
-func (s *DefaultSession) SetLogger(logger *log.Logger) {
-	s.Logger = logger
 }

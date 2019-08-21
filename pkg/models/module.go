@@ -8,13 +8,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/pkg/config"
-
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 // ModuleInterface of used functions from the application for all modules
@@ -47,7 +44,6 @@ type Module struct {
 	DbIO     DatabaseInterface
 	Session  http.SessionInterface
 	LoggedIn bool
-	Logger   *log.Logger
 }
 
 // GetFileName retrieves the file name of a passed uri
@@ -107,41 +103,4 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	}
 	path = strings.Trim(path, "_")
 	return path
-}
-
-// moduleFormatter is a custom formatter for modules for a better
-// overview during parallel module updates
-type moduleFormatter struct {
-	prefixed.TextFormatter
-	moduleKey string
-}
-
-// Format prints the default Formatter with a module prefix
-func (f *moduleFormatter) Format(entry *log.Entry) ([]byte, error) {
-	f.TextFormatter.ForceColors = config.GlobalConfig.Cli.ForceColors
-	f.TextFormatter.ForceFormatting = config.GlobalConfig.Cli.ForceFormat
-	result, err := f.TextFormatter.Format(entry)
-	return append(result, []byte("["+f.moduleKey+"]")...), err
-}
-
-// SetFormattedLogger sets the formatted logger for the module and its session
-func (t *Module) SetFormattedLogger() {
-	standardLogger := log.StandardLogger()
-	t.Logger = &log.Logger{
-		Out:   standardLogger.Out,
-		Hooks: standardLogger.Hooks,
-		Formatter: &moduleFormatter{
-			TextFormatter: prefixed.TextFormatter{
-				TimestampFormat: "2006-01-02 15:04:05",
-				FullTimestamp:   true,
-				ForceColors:     config.GlobalConfig.Cli.ForceColors,
-				ForceFormatting: config.GlobalConfig.Cli.ForceFormat,
-			},
-			moduleKey: t.Key(),
-		},
-		ReportCaller: standardLogger.ReportCaller,
-		Level:        standardLogger.Level,
-		ExitFunc:     standardLogger.ExitFunc,
-	}
-	t.Session.SetLogger(t.Logger)
 }

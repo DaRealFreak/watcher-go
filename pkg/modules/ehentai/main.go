@@ -11,6 +11,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
 )
@@ -46,7 +47,6 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
-	subModule.SetFormattedLogger()
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -110,19 +110,19 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 
 // processDownloadQueue processes the download queue consisting of gallery items
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
-	m.Logger.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
+	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
 
 	for index, data := range downloadQueue {
 		downloadQueueItem := m.getDownloadQueueItem(data)
 		// check for limit
 		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
-			m.Logger.Info("download limit reached, skipping galleries from now on")
+			log.Info("download limit reached, skipping galleries from now on")
 			m.downloadLimitReached = true
 			break
 		}
 
-		m.Logger.Info(
+		log.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,

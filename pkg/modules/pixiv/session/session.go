@@ -89,7 +89,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		s.Logger.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("GET", uri, nil)
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
@@ -101,7 +101,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 			if res != nil && res.StatusCode != 200 {
-				raven.CheckError(errors.New(string(bodyBytes)))
+				raven.CheckError(errors.New(string(bodyBytes) + " (" + uri + ")"))
 			}
 
 			// check for API errors
@@ -132,7 +132,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		s.Logger.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
+		log.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
@@ -144,7 +144,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
 			if res != nil && res.StatusCode != 200 {
-				raven.CheckError(errors.New(string(bodyBytes)))
+				raven.CheckError(errors.New(string(bodyBytes) + " (" + uri + ")"))
 			}
 
 			// check for API errors
@@ -171,7 +171,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.Logger.Debug(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
+		log.Debug(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
@@ -234,11 +234,6 @@ func (s *PixivSession) applyRateLimit() {
 	raven.CheckError(err)
 }
 
-// SetLogger sets the logger, required since sessions are an interface embedding
-func (s *PixivSession) SetLogger(logger *log.Logger) {
-	s.Logger = logger
-}
-
 // containsAPIError checks if the returned value contains an error object
 func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
@@ -257,11 +252,11 @@ func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	case "Error occurred at the OAuth process. " +
 		"Please check your Access Token to fix this. " +
 		"Error Message: invalid_grant":
-		s.Logger.Info("access token expired, using refresh token to generate new token...")
+		log.Info("access token expired, using refresh token to generate new token...")
 		s.Module.Login(nil)
 		return true, nil
 	case "Rate Limit":
-		s.Logger.Info("rate limit got exceeded, sleeping for 60 seconds...")
+		log.Info("rate limit got exceeded, sleeping for 60 seconds...")
 		time.Sleep(60 * time.Second)
 		return true, nil
 	}

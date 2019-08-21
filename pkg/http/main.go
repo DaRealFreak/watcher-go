@@ -12,7 +12,6 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
 
 // SessionInterface of used functions from the application to eventually change the underlying library
@@ -24,13 +23,11 @@ type SessionInterface interface {
 	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() *http.Client
-	SetLogger(logger *log.Logger)
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
 type Session struct {
 	SessionInterface
-	Logger *log.Logger
 }
 
 // EnsureDownloadDirectory ensures that the download path already exists or creates it if not
