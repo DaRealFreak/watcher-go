@@ -8,11 +8,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"github.com/DaRealFreak/watcher-go/pkg/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
 

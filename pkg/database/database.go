@@ -3,11 +3,10 @@ package database
 import (
 	"os"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"database/sql"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 
 	// import for side effects
 	_ "github.com/mattn/go-sqlite3"

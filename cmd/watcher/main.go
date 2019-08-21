@@ -2,31 +2,30 @@ package watcher
 
 import (
 	"fmt"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 // configuration contains the persistent configurations across all commands
 type configuration struct {
-	backup struct {
+	configurationFile string
+	logLevel          string
+	enableSentry      bool
+	disableSentry     bool
+	backup            struct {
 		zip  bool
 		tar  bool
 		gzip bool
 		sql  bool
 	}
-	configurationFile string
-	logLevel          string
-	enableSentry      bool
-	disableSentry     bool
 }
 
 // CliApplication contains the structure for the Watcher application for the CLI interface

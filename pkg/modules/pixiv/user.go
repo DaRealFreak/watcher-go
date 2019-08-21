@@ -6,9 +6,8 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
 

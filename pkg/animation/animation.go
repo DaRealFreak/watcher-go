@@ -3,17 +3,7 @@ package animation
 import (
 	"bytes"
 	"fmt"
-
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
-
 	"image"
-
-	// import for registering bmp format to image decoder
-	_ "golang.org/x/image/bmp"
-
-	// import for registering webp format to image decoder
-	_ "golang.org/x/image/webp"
 
 	// import for registering gif format to image decoder
 	_ "image/gif"
@@ -29,6 +19,14 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
+
+	// import for registering bmp format to image decoder
+	_ "golang.org/x/image/bmp"
+	// import for registering webp format to image decoder
+	_ "golang.org/x/image/webp"
 )
 
 // FileData is the object to create and handle possible steps during the animation creation process

@@ -8,12 +8,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"github.com/DaRealFreak/watcher-go/pkg/http"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/x-cray/logrus-prefixed-formatter"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 // ModuleInterface of used functions from the application for all modules

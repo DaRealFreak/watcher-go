@@ -8,10 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
 )

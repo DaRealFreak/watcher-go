@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
 )
@@ -48,6 +47,7 @@ func CheckRowClosure(row *sql.Rows) {
 }
 
 // CheckStatementClosure checks for errors on deferred Statements
+//nolint:interfacer
 func CheckStatementClosure(stmt *sql.Stmt) {
 	CheckError(stmt.Close())
 }

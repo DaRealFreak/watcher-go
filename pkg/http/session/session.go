@@ -10,9 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
@@ -135,6 +134,7 @@ func (s *DefaultSession) applyRateLimit() {
 	}
 }
 
+// SetLogger sets the logger, required since sessions are an interface embedding
 func (s *DefaultSession) SetLogger(logger *log.Logger) {
 	s.Logger = logger
 }

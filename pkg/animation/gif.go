@@ -3,6 +3,9 @@ package animation
 import (
 	"bytes"
 	"fmt"
+	"image"
+	"image/color/palette"
+	"image/gif"
 
 	log "github.com/sirupsen/logrus"
 
@@ -10,13 +13,8 @@ import (
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/image/draw"
 
-	"image"
-	"image/color/palette"
-	"image/gif"
-
 	// import for registering webp format to image decoder
 	_ "golang.org/x/image/webp"
-
 	// import for registering gif format to image decoder
 	_ "image/gif"
 	// import for registering jpeg format to image decoder

@@ -14,10 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
@@ -228,6 +227,7 @@ func (s *PixivSession) applyRateLimit() {
 	raven.CheckError(err)
 }
 
+// SetLogger sets the logger, required since sessions are an interface embedding
 func (s *PixivSession) SetLogger(logger *log.Logger) {
 	s.Logger = logger
 }
