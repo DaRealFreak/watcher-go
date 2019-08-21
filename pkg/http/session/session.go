@@ -2,8 +2,10 @@ package session
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -46,6 +48,10 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 
 		s.Logger.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
+		if response != nil && response.StatusCode != 200 {
+			content, _ := ioutil.ReadAll(response.Body)
+			raven.CheckError(errors.New(string(content)))
+		}
 		// if no error occurred break out of the loop
 		if err == nil {
 			break
@@ -64,6 +70,10 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 
 		s.Logger.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
+		if response != nil && response.StatusCode != 200 {
+			content, _ := ioutil.ReadAll(response.Body)
+			raven.CheckError(errors.New(string(content)))
+		}
 		// if no error occurred break out of the loop
 		if err == nil {
 			break

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -99,6 +100,9 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
+			if res != nil && res.StatusCode != 200 {
+				raven.CheckError(errors.New(string(bodyBytes)))
+			}
 
 			// check for API errors
 			if s.containsAPIError(bodyBytes) {
@@ -139,6 +143,9 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
+			if res != nil && res.StatusCode != 200 {
+				raven.CheckError(errors.New(string(bodyBytes)))
+			}
 
 			// check for API errors
 			if s.containsAPIError(bodyBytes) {
