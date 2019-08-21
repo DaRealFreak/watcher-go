@@ -51,7 +51,7 @@ func (db DbIO) CloseConnection() {
 
 // createDatabase creates the sqlite file and creates the required tables
 func (db DbIO) createDatabase() {
-	connection, err := sql.Open("sqlite3", "./watcher.db")
+	connection, err := sql.Open("sqlite3", "./watcher.db?_journal=WAL")
 	raven.CheckError(err)
 	defer raven.CheckDbClosure(connection)
 
