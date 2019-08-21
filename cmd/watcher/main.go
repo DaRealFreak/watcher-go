@@ -16,6 +16,12 @@ import (
 
 // configuration contains the persistent configurations across all commands
 type configuration struct {
+	backup struct {
+		zip  bool
+		tar  bool
+		gzip bool
+		sql  bool
+	}
 	configurationFile string
 	logLevel          string
 	enableSentry      bool
@@ -56,6 +62,7 @@ func NewWatcherApplication() *CliApplication {
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
+	app.addBackupCommand()
 	app.addGenerateAutoCompletionCommand()
 
 	// read in environment variables that match
