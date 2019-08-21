@@ -47,7 +47,6 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 		Short: "displays all items",
 		Long:  "displays all items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(includeCompleted)
 			cli.watcher.ListTrackedItems(url, includeCompleted)
 		},
 	}

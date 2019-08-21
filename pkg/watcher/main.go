@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
 

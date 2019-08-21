@@ -3,6 +3,8 @@ package watcher
 import (
 	"fmt"
 
+	"github.com/DaRealFreak/watcher-go/pkg/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,15 +16,15 @@ func (cli *CliApplication) addBackupCommand() {
 		Long: "generates a zip/tar.gz file of the current settings and database file.\n" +
 			"It is possible to narrow it down to specific elements like accounts/items/settings.",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(cli.configuration.backup)
+			fmt.Println(config.GlobalConfig.Backup)
 		},
 	}
 	// the archive flags are persistent for all sub commands
-	backupCmd.PersistentFlags().BoolVar(&cli.configuration.backup.zip, "zip", false, "use a zip(.zip) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.configuration.backup.tar, "tar", false, "use a tar(.tar) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.configuration.backup.gzip, "gzip", false, "use a gzip(.tar.gz) archive")
+	backupCmd.PersistentFlags().BoolVar(&config.GlobalConfig.Backup.Zip, "zip", false, "use a zip(.zip) archive")
+	backupCmd.PersistentFlags().BoolVar(&config.GlobalConfig.Backup.Tar, "tar", false, "use a tar(.tar) archive")
+	backupCmd.PersistentFlags().BoolVar(&config.GlobalConfig.Backup.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
 	// use this library to dump all https://github.com/schollz/sqlite3dump
-	backupCmd.PersistentFlags().BoolVar(&cli.configuration.backup.sql, "sql", false, "generate a .sql file")
+	backupCmd.PersistentFlags().BoolVar(&config.GlobalConfig.Backup.SQL, "sql", false, "generate a .sql file")
 
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())

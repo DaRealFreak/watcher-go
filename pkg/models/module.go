@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/pkg/config"
+
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
@@ -130,8 +132,8 @@ func (t *Module) SetFormattedLogger() {
 			TextFormatter: prefixed.TextFormatter{
 				TimestampFormat: "2006-01-02 15:04:05",
 				FullTimestamp:   true,
-				ForceColors:     true,
-				ForceFormatting: true,
+				ForceColors:     config.GlobalConfig.Cli.ForceColors,
+				ForceFormatting: config.GlobalConfig.Cli.ForceFormat,
 			},
 			moduleKey: t.Key(),
 		},

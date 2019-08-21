@@ -5,9 +5,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // SetupSentry initializes the sentry

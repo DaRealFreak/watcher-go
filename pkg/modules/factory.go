@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // ModuleFactory contains all registered modules and URI Schemas
