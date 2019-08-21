@@ -25,3 +25,4 @@ watcher.db
 dist/
 .gh-release.yaml
 gh_release.exe
+release.sh
