@@ -5,7 +5,6 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
 
 // imageGalleryItem contains the relevant data of gallery items
@@ -82,7 +81,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 // hasGalleryErrors checks if the gallery has any errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		log.Info("newer version of gallery available, updating uri of: " + item.URI)
+		m.Logger.Info("newer version of gallery available, updating uri of: " + item.URI)
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
 		// slice to retrieve only the latest gallery
@@ -91,7 +90,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 			url, exists := row.Attr("href")
 			if exists {
 				m.DbIO.GetFirstOrCreateTrackedItem(url, m)
-				log.Info("added gallery to tracked items: " + url)
+				m.Logger.Info("added gallery to tracked items: " + url)
 			}
 		})
 		return true

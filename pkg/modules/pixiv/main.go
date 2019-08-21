@@ -67,6 +67,8 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
 	subModule.pixivSession.Module = &subModule
+	subModule.SetFormattedLogger()
+
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
 	return &module

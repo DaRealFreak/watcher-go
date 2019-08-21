@@ -5,7 +5,6 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
 
 // searchGalleryItem contains the required variables for gallery items of the search function
@@ -51,7 +50,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 	}
 	// add items
 	for _, gallery := range itemQueue {
-		log.Info("added gallery to tracked items: " + gallery.uri)
+		m.Logger.Info("added gallery to tracked items: " + gallery.uri)
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}

@@ -45,7 +45,7 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		s.Logger.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -63,7 +63,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		s.Logger.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
 		// if no error occurred break out of the loop
 		if err == nil {
@@ -78,7 +78,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		log.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		s.Logger.Info(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
@@ -133,4 +133,8 @@ func (s *DefaultSession) applyRateLimit() {
 		err := s.RateLimiter.Wait(s.ctx)
 		raven.CheckError(err)
 	}
+}
+
+func (s *DefaultSession) SetLogger(logger *log.Logger) {
+	s.Logger = logger
 }

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"fmt"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -142,6 +143,13 @@ func (cli *CliApplication) initLogger() {
 	lvl, err := log.ParseLevel(cli.configuration.logLevel)
 	raven.CheckError(err)
 	log.SetLevel(lvl)
+	// set custom text formatter for the logger
+	log.StandardLogger().Formatter = &prefixed.TextFormatter{
+		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
+		ForceColors:     true,
+		ForceFormatting: true,
+	}
 }
 
 // initConfig reads the set configuration file
