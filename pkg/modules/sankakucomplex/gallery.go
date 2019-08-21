@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // apiItem is the JSON struct of item objects returned by the API
@@ -96,7 +96,11 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		response, _ := m.Session.Get(apiURI)
 		apiItems := m.parseAPIResponse(response)
 		for _, data := range apiItems {
-			if string(data.ID) > item.CurrentItem || item.CurrentItem == "" {
+			itemID, err := data.ID.Int64()
+			raven.CheckError(err)
+			// will return 0 on error, so fine for us too
+			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+			if item.CurrentItem == "" || itemID > currentItemID {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemID:      string(data.ID),
 					DownloadTag: path.Join(m.SanitizePath(tag, false), m.getTagSubDirectory(data)),
