@@ -2,10 +2,8 @@ package session
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -48,12 +46,8 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 
 		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
-		if response != nil && response.StatusCode != 200 {
-			content, _ := ioutil.ReadAll(response.Body)
-			raven.CheckError(errors.New(string(content) + " (" + uri + ")"))
-		}
-		// if no error occurred break out of the loop
-		if err == nil {
+		// if no error occurred and status code is okay too break out of the loop
+		if err == nil && response.StatusCode == 200 {
 			break
 		} else {
 			time.Sleep(time.Duration(try+1) * time.Second)
@@ -70,12 +64,8 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 
 		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
-		if response != nil && response.StatusCode != 200 {
-			content, _ := ioutil.ReadAll(response.Body)
-			raven.CheckError(errors.New(string(content) + " (" + uri + ")"))
-		}
-		// if no error occurred break out of the loop
-		if err == nil {
+		// if no error occurred and status code is okay too break out of the loop
+		if err == nil && response.StatusCode == 200 {
 			break
 		} else {
 			time.Sleep(time.Duration(try+1) * time.Second)
