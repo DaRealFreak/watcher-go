@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -100,9 +99,6 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
-			if res != nil && res.StatusCode != 200 {
-				raven.CheckError(errors.New(string(bodyBytes) + " (" + uri + ")"))
-			}
 
 			// check for API errors
 			if s.containsAPIError(bodyBytes) {
@@ -111,16 +107,15 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 					return s.Get(uri)
 				}
 				return nil, err
+			} else if !(res != nil && res.StatusCode != 200) {
+				// reset the response body to the original unread state
+				res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				// break if we didn't reach any error state until the end of the loop
+				break
 			}
-
-			// reset the response body to the original unread state
-			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			// break if we didn't reach any error state until the end of the loop
-			break
-		} else {
-			// sleep if an error occurred
-			time.Sleep(time.Duration(try+1) * time.Second)
 		}
+		// sleep if an error occurred
+		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 
 	return res, err
@@ -143,9 +138,6 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
-			if res != nil && res.StatusCode != 200 {
-				raven.CheckError(errors.New(string(bodyBytes) + " (" + uri + ")"))
-			}
 
 			// check for API errors
 			if s.containsAPIError(bodyBytes) {
@@ -154,12 +146,12 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 					return s.Post(uri, data)
 				}
 				return nil, err
+			} else if !(res != nil && res.StatusCode != 200) {
+				// reset the response body to the original unread state
+				res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				// break if we didn't reach any error state until the end of the loop
+				break
 			}
-
-			// reset the response body to the original unread state
-			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			// break if we didn't reach any error state until the end of the loop
-			break
 		} else {
 			// sleep if an error occurred
 			time.Sleep(time.Duration(try+1) * time.Second)
