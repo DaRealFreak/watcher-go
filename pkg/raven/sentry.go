@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/pkg/version"
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -19,7 +20,8 @@ func SetupSentry() {
 	}
 
 	if err := sentry.Init(sentry.ClientOptions{
-		Dsn: sentryDsn,
+		Dsn:     sentryDsn,
+		Release: "watcher-go@" + version.VERSION,
 	}); err != nil {
 		log.Fatal(err)
 	}
