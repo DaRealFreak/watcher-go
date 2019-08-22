@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
@@ -35,6 +36,7 @@ type FileData struct {
 	Frames          [][]byte
 	MsDelays        []int
 	FilePaths       []string
+	PreviousPath    string
 	WorkPath        string
 	ConvertedFrames bool
 }
@@ -74,7 +76,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 			// don't ask me about the conversion rate, was the result of trying to approach
 			// the best length on multiple long ugoira works
 			fmt.Sprintf("%0.2f", float64(fData.MsDelays[i])/13),
-			fData.FilePaths[i],
+			filepath.Base(fData.FilePaths[i]),
 		)
 	}
 	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
@@ -100,6 +102,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 
 	// option to keep converted mkv for further conversions
 	if del {
+		raven.CheckError(os.Chdir(fData.PreviousPath))
 		// clean up the created folder/files
 		err = os.RemoveAll(fData.WorkPath)
 	}
@@ -120,6 +123,15 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 	if err := os.MkdirAll(fData.WorkPath, os.ModePerm); err != nil {
 		return err
 	}
+
+	// save previous directory path since we cd into the created temporary directory
+	// for converting images without using the full file path
+	// (max command length in windows is 8191, linux/darwin normally 128*1024)
+	fData.PreviousPath, err = os.Getwd()
+	raven.CheckError(err)
+
+	// change into directory
+	raven.CheckError(os.Chdir(fData.WorkPath))
 
 	// reset file paths to allow multiple conversions of one FileData struct
 	fData.FilePaths = []string{}

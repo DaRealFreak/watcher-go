@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,6 +40,7 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 		return
 	}
 
+	raven.CheckError(os.Chdir(fData.PreviousPath))
 	// clean up the created folder/files
 	err = os.RemoveAll(fData.WorkPath)
 	return content, err
