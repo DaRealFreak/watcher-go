@@ -5,11 +5,12 @@ Application to keep track of items from multiple sources with a local database.
 It will download any detected item and update the index in the database on completion of the download.
 
 ## Dependencies
-For image to animation conversions (currently only used pixiv) this application is using ImageMagick and FFmpeg.  
+For image to animation conversions (currently only used by the pixiv module) this application is using
+[ImageMagick](https://imagemagick.org/) and [FFmpeg](https://ffmpeg.org/).  
 The executed command on Windows for ImageMagick is `magick.exe convert`,
 which is the default for a [chocolately](https://chocolatey.org/) installation.  
 For all other operating systems the commands `ffmpeg` and `convert` are executed.  
-As fallback if ImageMagick and FFmpeg are not available the golang imaging library is used.
+As fallback if ImageMagick and FFmpeg are not available the golang imaging libraries are used.
 The libraries can only generate a GIF file with 256 colors, so it is not recommended.
 
 
@@ -33,6 +34,8 @@ Flags:
       --version            version for watcher
       --disable-sentry     disable sentry and don't send usage statistics/errors to the developer
       --enable-sentry      use sentry to send usage statistics/errors to the developer
+      --log-force-colors   enforces colored output even for non-tty terminals
+      --log-force-format   enforces formatted output even for non-tty terminals
 ```
 
 The sentry is disabled by default and has to be enabled before errors will be sent to the sentry server.
