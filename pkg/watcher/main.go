@@ -25,10 +25,23 @@ type AppConfiguration struct {
 	DisableSentry     bool
 	// backup options
 	Backup struct {
-		Zip  bool
-		Tar  bool
-		Gzip bool
-		SQL  bool
+		Database struct {
+			Accounts struct {
+				Enabled bool
+				Url     string
+			}
+			Items struct {
+				Enabled bool
+				Url     string
+			}
+			SQL bool
+		}
+		Settings bool
+		Archive  struct {
+			Zip  bool
+			Tar  bool
+			Gzip bool
+		}
 	}
 	// cli specific options
 	Cli struct {

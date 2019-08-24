@@ -185,6 +185,6 @@ func (cli *CliApplication) initConfig() {
 // ensureDefaultConfigFile ensures that the default config file exists in case no config file is defined
 func (cli *CliApplication) ensureDefaultConfigFile() {
 	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
-		_, _ = os.Create(".watcher.yaml")
+		_, _ = os.Create("./.watcher.yaml")
 	}
 }

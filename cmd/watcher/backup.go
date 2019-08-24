@@ -1,8 +1,6 @@
 package watcher
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,15 +13,17 @@ func (cli *CliApplication) addBackupCommand() {
 			"It is possible to narrow it down to specific elements like accounts/items/settings.",
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.BackupEverything(args[0], cli.config)
+			cli.config.Backup.Database.Accounts.Enabled = true
+			cli.config.Backup.Database.Items.Enabled = true
+			cli.config.Backup.Settings = true
+			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
 	// the archive flags are persistent for all sub commands
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Zip, "zip", false, "use a zip(.zip) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Tar, "tar", false, "use a tar(.tar) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
-	// use this library to dump all https://github.com/schollz/sqlite3dump
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.SQL, "sql", false, "generate a .sql file")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Zip, "zip", false, "use a zip(.zip) archive")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Tar, "tar", false, "use a tar(.tar) archive")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
+	backupCmd.Flags().BoolVar(&cli.config.Backup.Database.SQL, "sql", false, "generate a .sql file")
 
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())
@@ -33,39 +33,53 @@ func (cli *CliApplication) addBackupCommand() {
 
 // getBackupAccountsCommand returns the command for the backup accounts sub command
 func (cli *CliApplication) getBackupAccountsCommand() *cobra.Command {
-	var url string
 	backupAccountsCmd := &cobra.Command{
-		Use:   "accounts",
+		Use:   "accounts [archive name]",
 		Short: "generates a backup of the current accounts",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("ToDo")
+			cli.config.Backup.Database.Accounts.Enabled = true
+			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
-	backupAccountsCmd.Flags().StringVar(&url, "url", "", "url of module")
+	backupAccountsCmd.Flags().StringVar(
+		&cli.config.Backup.Database.Accounts.Url,
+		"url",
+		"",
+		"url of module",
+	)
 	return backupAccountsCmd
 }
 
 // getBackupItemsCommand returns the command for the backup items sub command
 func (cli *CliApplication) getBackupItemsCommand() *cobra.Command {
-	var url string
 	backupItemsCmd := &cobra.Command{
-		Use:   "items",
+		Use:   "items [archive name]",
 		Short: "generates a backup of the current items",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("ToDo")
+			cli.config.Backup.Database.Items.Enabled = true
+			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
-	backupItemsCmd.Flags().StringVar(&url, "url", "", "url of module")
+	backupItemsCmd.Flags().StringVar(
+		&cli.config.Backup.Database.Items.Url,
+		"url",
+		"",
+		"url of module",
+	)
 	return backupItemsCmd
 }
 
 // getBackupSettingsCommand returns the command for the backup settings sub command
 func (cli *CliApplication) getBackupSettingsCommand() *cobra.Command {
 	backupSettingsCmd := &cobra.Command{
-		Use:   "settings",
+		Use:   "settings [archive name]",
 		Short: "generates a backup of the current settings",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("ToDo")
+			cli.config.Backup.Settings = true
+			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
 	return backupSettingsCmd

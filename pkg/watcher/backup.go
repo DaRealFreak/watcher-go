@@ -3,6 +3,7 @@ package watcher
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 
@@ -11,17 +12,57 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/spf13/viper"
 )
 
-// BackupEverything backs up the full database and the configuration
-func (app *Watcher) BackupEverything(archiveName string, cfg *AppConfiguration) {
+// Backup backs up the full database and the configuration
+func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
 	writer, err := app.getArchiveWriter(archiveName, cfg)
 	raven.CheckError(err)
-	_, err = writer.AddFileByPath("watcher.db", "watcher.db")
-	raven.CheckError(err)
 
-	err = writer.Close()
-	fmt.Println(err)
+	if cfg.Backup.Settings {
+		raven.CheckError(app.backupSettings(writer, cfg))
+	}
+
+	if cfg.Backup.Database.Accounts.Enabled || cfg.Backup.Database.Items.Enabled {
+		raven.CheckError(app.backupDatabase(writer, cfg))
+	}
+
+	raven.CheckError(writer.Close())
+}
+
+// backupDatabase generates an SQL file for items/accounts and adds it to the archive
+// if items and accounts are exported and SQL mode is not active we just archive the db file
+func (app *Watcher) backupDatabase(writer archive.Archive, cfg *AppConfiguration) (err error) {
+	switch {
+	case cfg.Backup.Database.Accounts.Enabled && cfg.Backup.Database.Items.Enabled:
+		if cfg.Backup.Database.SQL {
+			fmt.Println("ToDo export full database")
+		} else {
+			_, err = writer.AddFileByPath(
+				path.Base(viper.GetString("Database.Path")),
+				viper.GetString("Database.Path"),
+			)
+		}
+	case cfg.Backup.Database.Accounts.Enabled:
+		fmt.Println("ToDo export accounts")
+	case cfg.Backup.Database.Items.Enabled:
+		fmt.Println("ToDo export items")
+	}
+	return err
+}
+
+// backupSettings adds the setting file to the archive
+func (app *Watcher) backupSettings(writer archive.Archive, cfg *AppConfiguration) (err error) {
+	settingsPath := cfg.ConfigurationFile
+	if settingsPath == "" {
+		settingsPath = "./.watcher.yaml"
+	}
+	_, err = writer.AddFileByPath(
+		path.Base(settingsPath),
+		settingsPath,
+	)
+	return err
 }
 
 // getArchiveWriter returns the used archive based on the passed app configuration
@@ -55,11 +96,11 @@ func (app *Watcher) getArchiveWriter(archiveName string, cfg *AppConfiguration) 
 // getArchiveExtension returns the archive extension based on the app configuration
 func (app *Watcher) getArchiveExtension(cfg *AppConfiguration) (ext string) {
 	switch {
-	case cfg.Backup.Gzip, cfg.Backup.Tar && cfg.Backup.Zip:
+	case cfg.Backup.Archive.Gzip, cfg.Backup.Archive.Tar && cfg.Backup.Archive.Zip:
 		return gzip.FileExt
-	case cfg.Backup.Tar:
+	case cfg.Backup.Archive.Tar:
 		return tar.FileExt
-	case cfg.Backup.Zip:
+	case cfg.Backup.Archive.Zip:
 		return zip.FileExt
 	default:
 		// not directly passed archive type, use zip on windows, gzip on other systems
