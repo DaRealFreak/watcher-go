@@ -17,6 +17,26 @@ type Watcher struct {
 	ModuleFactory *modules.ModuleFactory
 }
 
+// AppConfiguration contains the persistent configurations/settings across all commands
+type AppConfiguration struct {
+	ConfigurationFile string
+	LogLevel          string
+	EnableSentry      bool
+	DisableSentry     bool
+	// backup options
+	Backup struct {
+		Zip  bool
+		Tar  bool
+		Gzip bool
+		Sql  bool
+	}
+	// cli specific options
+	Cli struct {
+		ForceColors bool
+		ForceFormat bool
+	}
+}
+
 // NewWatcher initializes a new Watcher with the default settings
 func NewWatcher() *Watcher {
 	dbIO := database.NewConnection()

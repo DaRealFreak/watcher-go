@@ -9,20 +9,21 @@ import (
 // addGenerateAutoCompletionCommand adds the generate-autocomplete sub command
 func (cli *CliApplication) addBackupCommand() {
 	var backupCmd = &cobra.Command{
-		Use:   "backup",
+		Use:   "backup [archive name]",
 		Short: "generates a backup of the current settings and database file",
 		Long: "generates a zip/tar.gz file of the current settings and database file.\n" +
 			"It is possible to narrow it down to specific elements like accounts/items/settings.",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(cli.config.backup)
+			cli.watcher.BackupEverything(args[0], cli.config)
 		},
 	}
 	// the archive flags are persistent for all sub commands
-	backupCmd.PersistentFlags().BoolVar(&cli.config.backup.zip, "zip", false, "use a zip(.zip) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.backup.tar, "tar", false, "use a tar(.tar) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.backup.gzip, "gzip", false, "use a gzip(.tar.gz) archive")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Zip, "zip", false, "use a zip(.zip) archive")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Tar, "tar", false, "use a tar(.tar) archive")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
 	// use this library to dump all https://github.com/schollz/sqlite3dump
-	backupCmd.PersistentFlags().BoolVar(&cli.config.backup.sql, "sql", false, "generate a .sql file")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Sql, "sql", false, "generate a .sql file")
 
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())
