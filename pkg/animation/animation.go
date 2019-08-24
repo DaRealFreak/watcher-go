@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"image"
 
-	// import for registering gif format to image decoder
-	_ "image/gif"
-	// import for registering jpeg format to image decoder
-	_ "image/jpeg"
-	// import for registering png format to image decoder
-	_ "image/png"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,10 +18,12 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
-	// import for registering bmp format to image decoder
+	// imports for registering formats to image decoder
 	_ "golang.org/x/image/bmp"
-	// import for registering webp format to image decoder
 	_ "golang.org/x/image/webp"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 // FileData is the object to create and handle possible steps during the animation creation process

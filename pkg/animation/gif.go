@@ -8,19 +8,15 @@ import (
 	"image/gif"
 
 	log "github.com/sirupsen/logrus"
-
-	// import for registering bmp format to image decoder
-	_ "golang.org/x/image/bmp"
 	"golang.org/x/image/draw"
 
-	// import for registering webp format to image decoder
-	_ "golang.org/x/image/webp"
-	// import for registering gif format to image decoder
+	// imports for registering formats to image decoder
 	_ "image/gif"
-	// import for registering jpeg format to image decoder
 	_ "image/jpeg"
-	// import for registering png format to image decoder
 	_ "image/png"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/webp"
 )
 
 // CreateAnimationGif creates a .gif (Graphics Interchange Format) file from the passed fileData.
