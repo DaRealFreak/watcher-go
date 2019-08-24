@@ -11,6 +11,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
+// FileExt is the file extension for gzip archives
+const FileExt = ".tar.gz"
+
 // gzipArchive adding both gzip and tar writer
 type gzipArchive struct {
 	archive.Archive
@@ -53,6 +56,7 @@ func (a *gzipArchive) AddFile(name string, fileContent []byte) (writtenSize int6
 // AddFileByPath adds a file which he tries to read from a local path
 func (a *gzipArchive) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
 	// open the file and defer closing it
+	// #nosec
 	file, err := os.Open(filePath)
 	if err != nil {
 		return 0, err

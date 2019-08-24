@@ -10,6 +10,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
+// FileExt is the file extension for tar archives
+const FileExt = ".tar"
+
 // tarArchive adding both gzip and tar writer
 type tarArchive struct {
 	archive.Archive
@@ -49,6 +52,7 @@ func (a *tarArchive) AddFile(name string, fileContent []byte) (writtenSize int64
 // AddFileByPath adds a file which he tries to read from a local path
 func (a *tarArchive) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
 	// open the file and defer closing it
+	// #nosec
 	file, err := os.Open(filePath)
 	if err != nil {
 		return 0, err
