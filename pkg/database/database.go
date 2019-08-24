@@ -1,12 +1,12 @@
 package database
 
 import (
-	"os"
-
 	"database/sql"
+	"os"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/spf13/viper"
 
 	// import for side effects
 	_ "github.com/mattn/go-sqlite3"
@@ -22,24 +22,14 @@ type DbIO struct {
 // Creates the database if the looked up file doesn't exist yet
 func NewConnection() *DbIO {
 	dbIO := DbIO{}
-	if _, err := os.Stat("./watcher.db"); os.IsNotExist(err) {
+	if _, err := os.Stat(viper.GetString("Database.Path")); os.IsNotExist(err) {
 		dbIO.createDatabase()
 	}
-	db, err := sql.Open("sqlite3", "./watcher.db")
+	db, err := sql.Open("sqlite3", viper.GetString("Database.Path"))
 	raven.CheckError(err)
 
 	dbIO.connection = db
 	return &dbIO
-}
-
-// RemoveDatabase removes the whole database file
-func RemoveDatabase() {
-	if _, err := os.Stat("./watcher.db"); err == nil {
-		err := os.Remove("./watcher.db")
-		if err != nil {
-			panic(err)
-		}
-	}
 }
 
 // CloseConnection safely closes the database connection
@@ -50,7 +40,7 @@ func (db DbIO) CloseConnection() {
 
 // createDatabase creates the sqlite file and creates the required tables
 func (db DbIO) createDatabase() {
-	connection, err := sql.Open("sqlite3", "./watcher.db?_journal=WAL")
+	connection, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
 	defer raven.CheckDbClosure(connection)
 

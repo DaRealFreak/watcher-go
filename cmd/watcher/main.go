@@ -24,8 +24,7 @@ type CliApplication struct {
 // NewWatcherApplication returns the main command using cobra
 func NewWatcherApplication() *CliApplication {
 	app := &CliApplication{
-		watcher: watcherApp.NewWatcher(),
-		config:  new(watcherApp.AppConfiguration),
+		config: new(watcherApp.AppConfiguration),
 		rootCmd: &cobra.Command{
 			Use:   "watcher",
 			Short: "Watcher keeps track of all media items you want to track.",
@@ -63,6 +62,12 @@ func (cli *CliApplication) addPersistentFlags() {
 		"",
 		"config file (default is ./.watcher.yaml)",
 	)
+	cli.rootCmd.PersistentFlags().StringVar(
+		&cli.config.Database,
+		"database",
+		"",
+		"database file (default is ./watcher.db)",
+	)
 	cli.rootCmd.PersistentFlags().StringVarP(
 		&cli.config.LogLevel,
 		"verbosity",
@@ -94,6 +99,7 @@ func (cli *CliApplication) addPersistentFlags() {
 		false,
 		"enforces formatted output even for non-tty terminals",
 	)
+	_ = viper.BindPFlag("Database.Path", cli.rootCmd.PersistentFlags().Lookup("database"))
 }
 
 // Execute executes the root command, entry point for the CLI application
@@ -104,8 +110,11 @@ func (cli *CliApplication) Execute() {
 	if err := cli.rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
-	// close the database to prevent any dangling data
-	cli.watcher.DbCon.CloseConnection()
+
+	// if watcher got initialized by any command we close the database connection to prevent dangling data
+	if cli.watcher != nil {
+		cli.watcher.DbCon.CloseConnection()
+	}
 }
 
 // initWatcher initializes everything the CLI application needs
@@ -125,6 +134,14 @@ func (cli *CliApplication) initWatcher() {
 	}
 	// setup sentry for error logging
 	raven.SetupSentry()
+
+	if viper.GetString("Database.Path") == "" {
+		// if viper has no database path set up, set it to the default value
+		viper.Set("Database.Path", "./watcher.db")
+	}
+
+	// initialize the watcher now after we parsed the configuration
+	cli.watcher = watcherApp.NewWatcher()
 
 	// save the configuration and check for errors
 	err := viper.WriteConfig()

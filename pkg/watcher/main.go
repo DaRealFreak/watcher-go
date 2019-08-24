@@ -35,6 +35,8 @@ type AppConfiguration struct {
 		ForceColors bool
 		ForceFormat bool
 	}
+	// database file location
+	Database string
 }
 
 // NewWatcher initializes a new Watcher with the default settings
