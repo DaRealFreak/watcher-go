@@ -13,7 +13,7 @@ func (cli *CliApplication) addBackupCommand() {
 		Short: "generates a backup of the current settings and database file",
 		Long: "generates a zip/tar.gz file of the current settings and database file.\n" +
 			"It is possible to narrow it down to specific elements like accounts/items/settings.",
-		Args:  cobra.MinimumNArgs(1),
+		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.watcher.BackupEverything(args[0], cli.config)
 		},
@@ -23,7 +23,7 @@ func (cli *CliApplication) addBackupCommand() {
 	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Tar, "tar", false, "use a tar(.tar) archive")
 	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
 	// use this library to dump all https://github.com/schollz/sqlite3dump
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Sql, "sql", false, "generate a .sql file")
+	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.SQL, "sql", false, "generate a .sql file")
 
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())

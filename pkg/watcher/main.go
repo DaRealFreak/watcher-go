@@ -28,7 +28,7 @@ type AppConfiguration struct {
 		Zip  bool
 		Tar  bool
 		Gzip bool
-		Sql  bool
+		SQL  bool
 	}
 	// cli specific options
 	Cli struct {
