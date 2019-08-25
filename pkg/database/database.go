@@ -33,13 +33,13 @@ func NewConnection() *DbIO {
 }
 
 // CloseConnection safely closes the database connection
-func (db DbIO) CloseConnection() {
+func (db *DbIO) CloseConnection() {
 	err := db.connection.Close()
 	raven.CheckError(err)
 }
 
 // createDatabase creates the sqlite file and creates the required tables
-func (db DbIO) createDatabase() {
+func (db *DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
 	defer raven.CheckDbClosure(connection)

@@ -12,7 +12,7 @@ import (
 
 // GetTrackedItems retrieves all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
+func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
 	var items []*models.TrackedItem
 	var rows *sql.Rows
 	var err error
@@ -49,7 +49,7 @@ func (db DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted b
 
 // GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
-func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInterface) *models.TrackedItem {
+func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInterface) *models.TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	raven.CheckError(err)
 
@@ -71,7 +71,7 @@ func (db DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInter
 }
 
 // CreateTrackedItem inserts the passed uri and the module into the tracked_items table
-func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
+func (db *DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO tracked_items (uri, module) VALUES (?, ?)")
 	raven.CheckError(err)
 	defer raven.CheckStatementClosure(stmt)
@@ -82,7 +82,7 @@ func (db DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 
 // UpdateTrackedItem updates the current item column of the tracked item in the database
 // also sets the complete status to false to check it on the next check cycle
-func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem string) {
+func (db *DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem string) {
 	stmt, err := db.connection.Prepare("UPDATE tracked_items SET current_item = ?, complete = ? WHERE uid = ?")
 	raven.CheckError(err)
 	defer raven.CheckStatementClosure(stmt)
@@ -95,7 +95,7 @@ func (db DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem st
 }
 
 // ChangeTrackedItemCompleteStatus changes the complete status of the passed tracked item in the database
-func (db DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, complete bool) {
+func (db *DbIO) ChangeTrackedItemCompleteStatus(trackedItem *models.TrackedItem, complete bool) {
 	var completeInt int8
 	if complete {
 		completeInt = 1

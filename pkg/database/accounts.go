@@ -11,7 +11,7 @@ import (
 )
 
 // GetAccount retrieves the first not disabled account of the passed module
-func (db DbIO) GetAccount(module models.ModuleInterface) *models.Account {
+func (db *DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	raven.CheckError(err)
 
@@ -29,7 +29,7 @@ func (db DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 }
 
 // GetAllAccounts retrieves all accounts of only by module if module is not nil
-func (db DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models.Account) {
+func (db *DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models.Account) {
 	var rows *sql.Rows
 	var err error
 	if module != nil {
@@ -55,7 +55,7 @@ func (db DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models
 
 // GetFirstOrCreateAccount checks if an account exists already, else creates it
 // returns the already persisted or the newly created account
-func (db DbIO) GetFirstOrCreateAccount(user string, password string, module models.ModuleInterface) *models.Account {
+func (db *DbIO) GetFirstOrCreateAccount(user string, password string, module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	raven.CheckError(err)
 
@@ -76,7 +76,7 @@ func (db DbIO) GetFirstOrCreateAccount(user string, password string, module mode
 }
 
 // CreateAccount inserts the passed user and password of the specific module into the database
-func (db DbIO) CreateAccount(user string, password string, module models.ModuleInterface) {
+func (db *DbIO) CreateAccount(user string, password string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("INSERT INTO accounts (user, password, module) VALUES (?, ?, ?)")
 	raven.CheckError(err)
 	defer raven.CheckStatementClosure(stmt)
@@ -86,7 +86,7 @@ func (db DbIO) CreateAccount(user string, password string, module models.ModuleI
 }
 
 // UpdateAccount updates the password of the passed user/module entry
-func (db DbIO) UpdateAccount(user string, password string, module models.ModuleInterface) {
+func (db *DbIO) UpdateAccount(user string, password string, module models.ModuleInterface) {
 	stmt, err := db.connection.Prepare("UPDATE accounts SET password = ? WHERE user = ? AND module = ?")
 	raven.CheckError(err)
 	defer raven.CheckStatementClosure(stmt)
@@ -96,7 +96,7 @@ func (db DbIO) UpdateAccount(user string, password string, module models.ModuleI
 }
 
 // UpdateAccountDisabledStatus disables the account of the passed user/module
-func (db DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module models.ModuleInterface) {
+func (db *DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module models.ModuleInterface) {
 	var disabledInt int8
 	if disabled {
 		disabledInt = 1
