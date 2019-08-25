@@ -41,7 +41,7 @@ func (a *gzipArchive) AddFile(name string, fileContent []byte) (writtenSize int6
 		ModTime:    time.Now(),
 		AccessTime: time.Now(),
 		ChangeTime: time.Now(),
-		Format:     tar.FormatPAX,
+		Format:     tar.FormatUnknown,
 	}
 
 	// write the header to the tar

@@ -37,7 +37,7 @@ func (a *tarArchive) AddFile(name string, fileContent []byte) (writtenSize int64
 		ModTime:    time.Now(),
 		AccessTime: time.Now(),
 		ChangeTime: time.Now(),
-		Format:     goTar.FormatPAX,
+		Format:     goTar.FormatUnknown,
 	}
 
 	// write the header to the tar
