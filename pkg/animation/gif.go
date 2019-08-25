@@ -15,6 +15,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	// more imports for registering formats to image decoder
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 )

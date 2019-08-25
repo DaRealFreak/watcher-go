@@ -49,7 +49,7 @@ func CheckRowClosure(row *sql.Rows) {
 }
 
 // CheckStatementClosure checks for errors on deferred Statements
-//nolint:interfacer
+// nolint: interfacer
 func CheckStatementClosure(stmt *sql.Stmt) {
 	CheckError(stmt.Close())
 }

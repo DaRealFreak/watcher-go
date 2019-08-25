@@ -18,9 +18,11 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
-	// imports for registering formats to image decoder
+	// imports of 3rd party libraries to register image formats to decoder
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
+
+	// imports for registering formats to image decoder
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"

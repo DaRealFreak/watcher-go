@@ -43,7 +43,7 @@ func (cli *CliApplication) getBackupAccountsCommand() *cobra.Command {
 		},
 	}
 	backupAccountsCmd.Flags().StringVar(
-		&cli.config.Backup.Database.Accounts.Url,
+		&cli.config.Backup.Database.Accounts.URL,
 		"url",
 		"",
 		"url of module",
@@ -63,7 +63,7 @@ func (cli *CliApplication) getBackupItemsCommand() *cobra.Command {
 		},
 	}
 	backupItemsCmd.Flags().StringVar(
-		&cli.config.Backup.Database.Items.Url,
+		&cli.config.Backup.Database.Items.URL,
 		"url",
 		"",
 		"url of module",

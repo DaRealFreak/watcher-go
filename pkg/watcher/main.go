@@ -23,16 +23,23 @@ type AppConfiguration struct {
 	LogLevel          string
 	EnableSentry      bool
 	DisableSentry     bool
+	// cli specific options
+	Cli struct {
+		ForceColors bool
+		ForceFormat bool
+	}
+	// database file location
+	Database string
 	// backup options
 	Backup struct {
 		Database struct {
 			Accounts struct {
 				Enabled bool
-				Url     string
+				URL     string
 			}
 			Items struct {
 				Enabled bool
-				Url     string
+				URL     string
 			}
 			SQL bool
 		}
@@ -43,13 +50,6 @@ type AppConfiguration struct {
 			Gzip bool
 		}
 	}
-	// cli specific options
-	Cli struct {
-		ForceColors bool
-		ForceFormat bool
-	}
-	// database file location
-	Database string
 }
 
 // NewWatcher initializes a new Watcher with the default settings
