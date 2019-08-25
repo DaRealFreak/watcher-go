@@ -13,21 +13,21 @@ import (
 // FileExt is the file extension for tar archives
 const FileExt = ".tar"
 
-// tarArchive adding both gzip and tar writer
-type tarArchive struct {
-	archive.Archive
+// tarArchiveWriter adding both gzip and tar writer
+type tarArchiveWriter struct {
+	archive.Writer
 	tarWriter *goTar.Writer
 }
 
-// NewArchive initializes the writers and returns the struct
-func NewArchive(target io.Writer) archive.Archive {
-	return &tarArchive{
+// NewArchiveWriter initializes the writers and returns the struct
+func NewArchiveWriter(target io.Writer) archive.Writer {
+	return &tarArchiveWriter{
 		tarWriter: goTar.NewWriter(target),
 	}
 }
 
 // AddFile adds a file directly from the binary data
-func (a *tarArchive) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
+func (a *tarArchiveWriter) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
 	header := &goTar.Header{
 		Typeflag:   goTar.TypeReg,
 		Name:       name,
@@ -50,7 +50,7 @@ func (a *tarArchive) AddFile(name string, fileContent []byte) (writtenSize int64
 }
 
 // AddFileByPath adds a file which he tries to read from a local path
-func (a *tarArchive) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
+func (a *tarArchiveWriter) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
 	// open the file and defer closing it
 	// #nosec
 	file, err := os.Open(filePath)
@@ -84,6 +84,6 @@ func (a *tarArchive) AddFileByPath(name string, filePath string) (writtenSize in
 }
 
 // Close closes the writers of the archive
-func (a *tarArchive) Close() error {
+func (a *tarArchiveWriter) Close() error {
 	return a.tarWriter.Close()
 }

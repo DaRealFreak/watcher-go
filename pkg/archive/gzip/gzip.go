@@ -14,16 +14,16 @@ import (
 // FileExt is the file extension for gzip archives
 const FileExt = ".tar.gz"
 
-// gzipArchive adding both gzip and tar writer
-type gzipArchive struct {
-	archive.Archive
+// gzipArchiveWriter adding both gzip and tar writer
+type gzipArchiveWriter struct {
+	archive.Writer
 	gzipWriter *gzip.Writer
 	tarWriter  *tar.Writer
 }
 
-// NewArchive initializes the writers and returns the struct
-func NewArchive(target io.Writer) archive.Archive {
-	writer := &gzipArchive{
+// NewArchiveWriter initializes the writers and returns the struct
+func NewArchiveWriter(target io.Writer) archive.Writer {
+	writer := &gzipArchiveWriter{
 		gzipWriter: gzip.NewWriter(target),
 	}
 	writer.tarWriter = tar.NewWriter(writer.gzipWriter)
@@ -31,7 +31,7 @@ func NewArchive(target io.Writer) archive.Archive {
 }
 
 // AddFile adds a file directly from the binary data
-func (a *gzipArchive) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
+func (a *gzipArchiveWriter) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
 	header := &tar.Header{
 		Typeflag:   tar.TypeReg,
 		Name:       name,
@@ -54,7 +54,7 @@ func (a *gzipArchive) AddFile(name string, fileContent []byte) (writtenSize int6
 }
 
 // AddFileByPath adds a file which he tries to read from a local path
-func (a *gzipArchive) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
+func (a *gzipArchiveWriter) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
 	// open the file and defer closing it
 	// #nosec
 	file, err := os.Open(filePath)
@@ -88,7 +88,7 @@ func (a *gzipArchive) AddFileByPath(name string, filePath string) (writtenSize i
 }
 
 // Close closes the writers of the archive
-func (a *gzipArchive) Close() error {
+func (a *gzipArchiveWriter) Close() error {
 	if err := a.tarWriter.Close(); err != nil {
 		return err
 	}

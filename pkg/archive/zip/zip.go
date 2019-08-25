@@ -13,21 +13,21 @@ import (
 // FileExt is the file extension for zip archives
 const FileExt = ".zip"
 
-// zipArchive adds a zip writer
-type zipArchive struct {
-	archive.Archive
+// zipArchiveWriter adds a zip writer
+type zipArchiveWriter struct {
+	archive.Writer
 	zipWriter *zip.Writer
 }
 
-// NewArchive initializes the writers and returns the struct
-func NewArchive(target io.Writer) archive.Archive {
-	return &zipArchive{
+// NewArchiveWriter initializes the writers and returns the struct
+func NewArchiveWriter(target io.Writer) archive.Writer {
+	return &zipArchiveWriter{
 		zipWriter: zip.NewWriter(target),
 	}
 }
 
 // AddFile adds a file directly from the binary data
-func (a *zipArchive) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
+func (a *zipArchiveWriter) AddFile(name string, fileContent []byte) (writtenSize int64, err error) {
 	header := &zip.FileHeader{
 		Name:               name,
 		Modified:           time.Now(),
@@ -45,7 +45,7 @@ func (a *zipArchive) AddFile(name string, fileContent []byte) (writtenSize int64
 }
 
 // AddFileByPath adds a file which he tries to read from a local path
-func (a *zipArchive) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
+func (a *zipArchiveWriter) AddFileByPath(name string, filePath string) (writtenSize int64, err error) {
 	// open the file and defer closing it
 	// #nosec
 	file, err := os.Open(filePath)
@@ -78,6 +78,6 @@ func (a *zipArchive) AddFileByPath(name string, filePath string) (writtenSize in
 }
 
 // Close closes the writers of the archive
-func (a *zipArchive) Close() error {
+func (a *zipArchiveWriter) Close() error {
 	return a.zipWriter.Close()
 }
