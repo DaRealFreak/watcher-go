@@ -17,39 +17,46 @@ type Watcher struct {
 	ModuleFactory *modules.ModuleFactory
 }
 
+// BackupSettings are the possible configuration settings for backups and recoveries
+type BackupSettings struct {
+	Database struct {
+		Accounts struct {
+			Enabled bool
+		}
+		Items struct {
+			Enabled bool
+		}
+		SQL bool
+	}
+	Settings bool
+}
+
 // AppConfiguration contains the persistent configurations/settings across all commands
 type AppConfiguration struct {
 	ConfigurationFile string
 	LogLevel          string
-	EnableSentry      bool
-	DisableSentry     bool
-	// cli specific options
-	Cli struct {
-		ForceColors bool
-		ForceFormat bool
-	}
 	// database file location
 	Database string
 	// backup options
 	Backup struct {
-		Database struct {
-			Accounts struct {
-				Enabled bool
-				URL     string
-			}
-			Items struct {
-				Enabled bool
-				URL     string
-			}
-			SQL bool
-		}
-		Settings bool
-		Archive  struct {
+		BackupSettings
+		Archive struct {
 			Zip  bool
 			Tar  bool
 			Gzip bool
 		}
 	}
+	Restore struct {
+		BackupSettings
+	}
+	// cli specific options
+	Cli struct {
+		ForceColors bool
+		ForceFormat bool
+	}
+	// sentry toggles
+	EnableSentry  bool
+	DisableSentry bool
 }
 
 // NewWatcher initializes a new Watcher with the default settings
