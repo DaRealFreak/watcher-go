@@ -1,7 +1,8 @@
 package watcher
 
 import (
-	"fmt"
+	"bytes"
+	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -37,7 +38,9 @@ func (app *Watcher) backupDatabase(writer archive.Archive, cfg *AppConfiguration
 	switch {
 	case cfg.Backup.Database.Accounts.Enabled && cfg.Backup.Database.Items.Enabled:
 		if cfg.Backup.Database.SQL {
-			fmt.Println("ToDo export full database")
+			for _, table := range []string{"accounts", "tracked_items"} {
+				app.backupTableAsSQL(writer, table)
+			}
 		} else {
 			_, err = writer.AddFileByPath(
 				path.Base(viper.GetString("Database.Path")),
@@ -45,11 +48,21 @@ func (app *Watcher) backupDatabase(writer archive.Archive, cfg *AppConfiguration
 			)
 		}
 	case cfg.Backup.Database.Accounts.Enabled:
-		fmt.Println("ToDo export accounts")
+		app.backupTableAsSQL(writer, "accounts")
 	case cfg.Backup.Database.Items.Enabled:
-		fmt.Println("ToDo export items")
+		app.backupTableAsSQL(writer, "tracked_items")
 	}
 	return err
+}
+
+// backupTableAsSQL generates an .sql file from the passed table and adds it to the passed archive as [table].sql
+func (app *Watcher) backupTableAsSQL(writer archive.Archive, table string) {
+	buffer := new(bytes.Buffer)
+	raven.CheckError(app.DbCon.DumpTables(buffer, table))
+	content, err := ioutil.ReadAll(buffer)
+	raven.CheckError(err)
+	_, err = writer.AddFile(table+".sql", content)
+	raven.CheckError(err)
 }
 
 // backupSettings adds the setting file to the archive
