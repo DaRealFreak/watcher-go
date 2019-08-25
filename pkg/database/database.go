@@ -38,6 +38,16 @@ func (db *DbIO) CloseConnection() {
 	raven.CheckError(err)
 }
 
+// RemoveDatabase removes the currently set database, used primarily for unit tests
+func RemoveDatabase() {
+	if _, err := os.Stat(viper.GetString("Database.Path")); err == nil {
+		err := os.Remove(viper.GetString("Database.Path"))
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // createDatabase creates the sqlite file and creates the required tables
 func (db *DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
