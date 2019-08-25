@@ -15,7 +15,7 @@ import (
 func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	userID := m.getUserIDFromURL(item.URI)
 	if m.getUserDetail(userID) == nil {
-		log.Info("couldn't retrieve user details, changing artist to complete")
+		log.Warning("couldn't retrieve user details, changing artist to complete")
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return
 	}
@@ -93,6 +93,11 @@ func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	apiURL.RawQuery = data.Encode()
 	res, err := m.Session.Get(apiURL.String())
 	raven.CheckError(err)
+
+	// user got deleted or deactivated his account
+	if res.StatusCode == 404 {
+		return nil
+	}
 
 	response, err := ioutil.ReadAll(res.Body)
 	raven.CheckError(err)
