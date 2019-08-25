@@ -15,14 +15,15 @@ The libraries can only generate a GIF file with 256 colors, so it is not recomme
 
 
 ## Usage
-There are currently 5 available root commands with following functionality:
+There are currently 6 available root commands with following functionality:
 ```  
 Available Commands:
   add                   add an item or account to the database
+  backup                generates a backup of the current settings and database file
+  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
   list                  lists items or accounts from the database
   run                   update all tracked items
   update                update the application or an item/account in the database
-  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
 ```
 
 ### Global Flags
@@ -30,6 +31,7 @@ These flags are available for all commands and sub commands:
 ```
 Flags:
       --config             config file (default is ./.watcher.yaml)
+      --database string    database file (default is ./watcher.db)
   -v, --verbosity          log level (debug, info, warn, error, fatal, panic (default "info")
       --version            version for watcher
       --disable-sentry     disable sentry and don't send usage statistics/errors to the developer
@@ -51,11 +53,14 @@ Options for this command are:
 Flags:
   -d, --directory string   download directory (will be saved in config file)
   -u, --url string         url of module you want to run
+  -p, --parallel           run modules parallel
 ```
 
 You can specify the download directory, which is getting saved in a configuration file,
 so you don't have to pass the argument every time.  
-You can also specify which module to run by passing an example url to retrieve the module from.
+You can also specify which module to run by passing an example url to retrieve the module from.  
+Modules can be run parallel to each other with the `--parallel` flag, causing each module
+to run independently from each other, ignoring possible rate limits from other modules.
 
 ### Adding Accounts/Items
 Accounts and tracked items be added by attaching to the add command (f.e. `watcher add item`)
@@ -139,13 +144,32 @@ No flags are required for to enable/disable items.
 Auto Completion can be generated for the terminals bash, powershell and zsh.
 Simply run `watcher generate-autocomplete` with the following sub commands
 to generate a script in `~/.watcher/completion` and printing you the command to active it.
-
 ```
 Available Commands:
   bash        generates auto completion for Bash
   powershell  generates auto completion for PowerShell
   zsh         generates auto completion for Zsh
 ```
+
+### Backup Database/Settings
+You can backup the database and the settings with the `backup [archive]` command.  
+It is also possible to further specify more precisely what you want to backup using these sub commands.
+```
+Available Commands:
+  accounts    generates a backup of the current accounts
+  items       generates a backup of the current items
+  settings    generates a backup of the current settings
+```
+
+There are currently gzip, tar and zip archive formats supported which can be specified with the command flags
+```
+Flags:
+      --gzip   use a gzip(.tar.gz) archive
+      --tar    use a tar(.tar) archive
+      --zip    use a zip(.zip) archive
+      --sql    generate a .sql file
+```
+The `--sql` flags does not exist for the `backup settings` sub command, but for every other sub command.
 
 
 ## Development
