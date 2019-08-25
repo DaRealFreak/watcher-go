@@ -19,16 +19,20 @@ func (cli *CliApplication) addBackupCommand() {
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
-	// the archive flags are persistent for all sub commands
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Zip, "zip", false, "use a zip(.zip) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Tar, "tar", false, "use a tar(.tar) archive")
-	backupCmd.PersistentFlags().BoolVar(&cli.config.Backup.Archive.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
+	cli.addBackupArchiveFlags(backupCmd)
 	backupCmd.Flags().BoolVar(&cli.config.Backup.Database.SQL, "sql", false, "generate a .sql file")
 
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())
 	backupCmd.AddCommand(cli.getBackupSettingsCommand())
 	cli.rootCmd.AddCommand(backupCmd)
+}
+
+// addBackupArchiveFlags adds the archive options to the local flags to reuse them on sub commands
+func (cli *CliApplication) addBackupArchiveFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&cli.config.Backup.Archive.Zip, "zip", false, "use a zip(.zip) archive")
+	cmd.Flags().BoolVar(&cli.config.Backup.Archive.Tar, "tar", false, "use a tar(.tar) archive")
+	cmd.Flags().BoolVar(&cli.config.Backup.Archive.Gzip, "gzip", false, "use a gzip(.tar.gz) archive")
 }
 
 // getBackupAccountsCommand returns the command for the backup accounts sub command
@@ -42,12 +46,7 @@ func (cli *CliApplication) getBackupAccountsCommand() *cobra.Command {
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
-	backupAccountsCmd.Flags().StringVar(
-		&cli.config.Backup.Database.Accounts.URL,
-		"url",
-		"",
-		"url of module",
-	)
+	cli.addBackupArchiveFlags(backupAccountsCmd)
 	return backupAccountsCmd
 }
 
@@ -62,12 +61,7 @@ func (cli *CliApplication) getBackupItemsCommand() *cobra.Command {
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
-	backupItemsCmd.Flags().StringVar(
-		&cli.config.Backup.Database.Items.URL,
-		"url",
-		"",
-		"url of module",
-	)
+	cli.addBackupArchiveFlags(backupItemsCmd)
 	return backupItemsCmd
 }
 
