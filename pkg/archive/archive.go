@@ -10,6 +10,6 @@ type Writer interface {
 // Reader is the reader interface for all valid archive types (zip, gzip, tar)
 type Reader interface {
 	GetFiles() (files []string, err error)
-	GetFileContent(fileName string)
+	GetFileContent(fileName string) (content []byte)
 	Close() error
 }
