@@ -67,13 +67,9 @@ func (app *Watcher) backupTableAsSQL(writer archive.Writer, table string) {
 
 // backupSettings adds the setting file to the archive
 func (app *Watcher) backupSettings(writer archive.Writer, cfg *AppConfiguration) (err error) {
-	settingsPath := cfg.ConfigurationFile
-	if settingsPath == "" {
-		settingsPath = "./.watcher.yaml"
-	}
 	_, err = writer.AddFileByPath(
-		path.Base(settingsPath),
-		settingsPath,
+		path.Base(cfg.ConfigurationFile),
+		cfg.ConfigurationFile,
 	)
 	return err
 }

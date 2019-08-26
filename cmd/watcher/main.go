@@ -61,13 +61,13 @@ func (cli *CliApplication) addPersistentFlags() {
 		&cli.config.ConfigurationFile,
 		"config",
 		"",
-		"config file (default is ./.watcher.yaml)",
+		"config file (default is "+watcherApp.DefaultConfigurationPath+")",
 	)
 	cli.rootCmd.PersistentFlags().StringVar(
 		&cli.config.Database,
 		"database",
 		"",
-		"database file (default is ./watcher.db)",
+		"database file (default is "+watcherApp.DefaultDatabasePath+")",
 	)
 	cli.rootCmd.PersistentFlags().StringVarP(
 		&cli.config.LogLevel,
@@ -138,7 +138,7 @@ func (cli *CliApplication) initWatcher() {
 
 	if viper.GetString("Database.Path") == "" {
 		// if viper has no database path set up, set it to the default value
-		viper.Set("Database.Path", "./watcher.db")
+		viper.Set("Database.Path", watcherApp.DefaultDatabasePath)
 	}
 
 	// initialize the watcher now after we parsed the configuration
@@ -166,16 +166,11 @@ func (cli *CliApplication) initLogger() {
 
 // initConfig reads the set configuration file
 func (cli *CliApplication) initConfig() {
-	// Don't forget to read config either from cfgFile or from home directory!
-	if cli.config.ConfigurationFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cli.config.ConfigurationFile)
-	} else {
-		cli.ensureDefaultConfigFile()
-		// Search config in current directory with name ".watcher" (without extension).
-		viper.AddConfigPath("./")
-		viper.SetConfigName(".watcher")
+	if cli.config.ConfigurationFile == "" {
+		cli.config.ConfigurationFile = watcherApp.DefaultConfigurationPath
 	}
+	cli.ensureConfigurationFile()
+	viper.SetConfigFile(cli.config.ConfigurationFile)
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Can't read config:", err)
@@ -183,9 +178,9 @@ func (cli *CliApplication) initConfig() {
 	}
 }
 
-// ensureDefaultConfigFile ensures that the default config file exists in case no config file is defined
-func (cli *CliApplication) ensureDefaultConfigFile() {
-	if _, err := os.Stat("./.watcher.yaml"); os.IsNotExist(err) {
-		_, _ = os.Create("./.watcher.yaml")
+// ensureConfigurationFile ensures that the default config file exists in case no config file is defined
+func (cli *CliApplication) ensureConfigurationFile() {
+	if _, err := os.Stat(cli.config.ConfigurationFile); os.IsNotExist(err) {
+		_, _ = os.Create(cli.config.ConfigurationFile)
 	}
 }

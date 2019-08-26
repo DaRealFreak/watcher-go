@@ -11,6 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// DefaultDatabasePath is the default path for the database file
+const DefaultDatabasePath = "./watcher.db"
+
+// DefaultConfigurationPath is the default path for the settings file
+const DefaultConfigurationPath = "./.watcher.yaml"
+
 // Watcher contains the database connection and module factory of the main application
 type Watcher struct {
 	DbCon         *database.DbIO
