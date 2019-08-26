@@ -37,9 +37,9 @@ func (a *zipArchiveReader) GetFiles() (files []string, err error) {
 	return files, nil
 }
 
-// GetFileContent returns the file content if it exists, returns empty []byte if the file does not exist
-func (a *zipArchiveReader) GetFileContent(fileName string) (content []byte) {
-	return content
+// GetFile returns the reader the for the passed archive file
+func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader) {
+	return reader
 }
 
 // Close closes the reader
