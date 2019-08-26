@@ -2,15 +2,16 @@ package watcher
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/archive/gzip"
-	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
-	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/pkg/archive/gzip"
+	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
+	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -80,21 +81,22 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 			}
 			log.Info("restored database file from archive")
 		}
-		return app.restoreTablesFromArchive(reader, cfg, "accounts.sql", "tracked_items.sql")
+		return app.restoreTablesFromArchive(reader, "accounts.sql", "tracked_items.sql")
 	case cfg.Restore.Database.Accounts.Enabled:
 		// check for accounts.sql in archive
-		return app.restoreTablesFromArchive(reader, cfg, "accounts.sql")
+		return app.restoreTablesFromArchive(reader, "accounts.sql")
 	case cfg.Restore.Database.Items.Enabled:
 		// check for tracked_items.sql in archive
-		return app.restoreTablesFromArchive(reader, cfg, "tracked_items.sql")
+		return app.restoreTablesFromArchive(reader, "tracked_items.sql")
 	}
 	// no restore option selected, should be unreachable from the command line options
 	log.Warning("no restore option selected")
 	return nil
 }
 
-// restoreTablesFromArchive uses sqlite3 command to import tables from the passed sql files
-func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, cfg *AppConfiguration, filesNames ...string) error {
+// restoreTablesFromArchive uses the RestoreTableFromFile func of the database interface
+// to import tables from the archived sql files
+func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames ...string) error {
 	for _, sqlFileName := range filesNames {
 		if exists, _ := reader.HasFile(sqlFileName); exists {
 			file, err := ioutil.TempFile("", "*.sql")
@@ -136,11 +138,10 @@ func (app *Watcher) restoreSettings(reader archive.Reader, cfg *AppConfiguration
 			return err
 		}
 		return ioutil.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
-	} else {
-		log.Warnf(
-			"the passed archive does not contain your current configuration file %s",
-			cfg.ConfigurationFile,
-		)
 	}
+	log.Warnf(
+		"the passed archive does not contain your current configuration file %s",
+		cfg.ConfigurationFile,
+	)
 	return nil
 }
