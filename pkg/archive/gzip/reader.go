@@ -32,8 +32,8 @@ func (a *gzipArchiveReader) GetFiles() (files []string, err error) {
 }
 
 // GetFile returns the reader the for the passed archive file
-func (a *gzipArchiveReader) GetFile(fileName string) (reader io.Reader) {
-	return reader
+func (a *gzipArchiveReader) GetFile(fileName string) (reader io.Reader, err error) {
+	return nil, err
 }
 
 // Close closes the reader

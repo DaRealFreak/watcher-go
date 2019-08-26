@@ -38,8 +38,17 @@ func (a *zipArchiveReader) GetFiles() (files []string, err error) {
 }
 
 // GetFile returns the reader the for the passed archive file
-func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader) {
-	return reader
+func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader, err error) {
+	for _, f := range a.zipReader.File {
+		if f.Name == fileName {
+			file, err := f.Open()
+			if err != nil {
+				return nil, err
+			}
+			return file, nil
+		}
+	}
+	return nil, nil
 }
 
 // Close closes the reader

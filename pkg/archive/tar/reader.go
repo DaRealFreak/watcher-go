@@ -25,8 +25,8 @@ func (a *tarArchiveReader) GetFiles() (files []string, err error) {
 }
 
 // GetFile returns the reader the for the passed archive file
-func (a *tarArchiveReader) GetFile(fileName string) (reader io.Reader) {
-	return reader
+func (a *tarArchiveReader) GetFile(fileName string) (reader io.Reader, err error) {
+	return nil, nil
 }
 
 // Close closes the reader
