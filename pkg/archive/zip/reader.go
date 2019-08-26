@@ -3,6 +3,7 @@ package zip
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
@@ -49,10 +50,5 @@ func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader, err error
 			return file, nil
 		}
 	}
-	return nil, nil
-}
-
-// Close closes the reader
-func (a *zipArchiveReader) Close() (err error) {
-	return err
+	return nil, fmt.Errorf("file not found in archive")
 }

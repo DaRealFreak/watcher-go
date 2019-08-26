@@ -13,5 +13,4 @@ type Writer interface {
 type Reader interface {
 	GetFiles() (files []string, err error)
 	GetFile(fileName string) (reader io.Reader, err error)
-	Close() error
 }
