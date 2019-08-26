@@ -12,7 +12,8 @@ import (
 // tarArchiveReader wrapper for tar archives to be used as the other archive types
 type tarArchiveReader struct {
 	archive.Reader
-	buffer *bytes.Buffer
+	buffer    *bytes.Buffer
+	tarReader *tar.Reader
 }
 
 // NewReader initializes the reader and returns the struct
@@ -27,10 +28,9 @@ func NewReader(f io.Reader) archive.Reader {
 
 // GetFiles returns all files in the archive
 func (a *tarArchiveReader) GetFiles() (files []string, err error) {
-	// create new tar reader, since the reader can't remember previous bytes on multiple usages
-	tarReader := tar.NewReader(bytes.NewReader(a.buffer.Bytes()))
+	a.resetReader()
 	for {
-		hdr, err := tarReader.Next()
+		hdr, err := a.tarReader.Next()
 		if err == io.EOF {
 			// end of archive
 			break
@@ -45,10 +45,9 @@ func (a *tarArchiveReader) GetFiles() (files []string, err error) {
 
 // GetFile returns the reader the for the passed archive file
 func (a *tarArchiveReader) GetFile(fileName string) (reader io.Reader, err error) {
-	// create new tar reader, since the reader can't remember previous bytes on multiple usages
-	tarReader := tar.NewReader(bytes.NewReader(a.buffer.Bytes()))
+	a.resetReader()
 	for {
-		hdr, err := tarReader.Next()
+		hdr, err := a.tarReader.Next()
 		if err == io.EOF {
 			// end of archive
 			break
@@ -58,8 +57,13 @@ func (a *tarArchiveReader) GetFile(fileName string) (reader io.Reader, err error
 		}
 
 		if hdr.Name == fileName {
-			return tarReader, nil
+			return a.tarReader, nil
 		}
 	}
 	return nil, fmt.Errorf("file not found in archive")
+}
+
+// resetReader recreates the tar reader from the saved buffer
+func (a *tarArchiveReader) resetReader() {
+	a.tarReader = tar.NewReader(bytes.NewReader(a.buffer.Bytes()))
 }
