@@ -20,8 +20,6 @@ func (app *Watcher) Restore(archiveName string, cfg *AppConfiguration) {
 	if cfg.Backup.Database.Accounts.Enabled || cfg.Backup.Database.Items.Enabled {
 		raven.CheckError(app.restoreDatabase(reader, cfg))
 	}
-
-	raven.CheckError(reader.Close())
 }
 
 // getArchiveReader returns the reader for the passed archive if it exists and can be opened
