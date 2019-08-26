@@ -28,7 +28,10 @@ func (db *DbIO) DumpTables(writer io.Writer, tableNames ...string) (err error) {
 	}
 
 	for _, tableSchema := range tableSchemas {
-		if _, err := writer.Write([]byte(tableSchema.SQL + "\n")); err != nil {
+		if _, err := writer.Write([]byte("DROP TABLE IF EXISTS " + tableSchema.Name + ";\n")); err != nil {
+			return err
+		}
+		if _, err := writer.Write([]byte(tableSchema.SQL + ";\n")); err != nil {
 			return err
 		}
 
@@ -64,7 +67,7 @@ func (db *DbIO) getTableRows(tableName string) (inserts []string, err error) {
 	// create insert queries with the pragma table info, so we can't use static queries here
 	// #nosec
 	q := fmt.Sprintf(`
-		SELECT 'INSERT INTO "%s" VALUES(%s)' FROM "%s";
+		SELECT 'INSERT INTO "%s" VALUES(%s);' FROM "%s";
 	`,
 		tableName,
 		strings.Join(columnSelects, ","),
