@@ -1,10 +1,11 @@
 package archivetest
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/archive"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
+
+	"github.com/DaRealFreak/watcher-go/pkg/archive"
+	"github.com/stretchr/testify/assert"
 )
 
 // GetFiles checks if all added files are contained in the archive

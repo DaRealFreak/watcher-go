@@ -3,9 +3,10 @@ package gzip
 import (
 	"archive/tar"
 	"compress/gzip"
+	"io"
+
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	"io"
 )
 
 // gzipArchiveReader wrapper for gzip archives to be used as the other archive types

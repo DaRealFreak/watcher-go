@@ -1,11 +1,11 @@
 package zip
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/archive/archivetest"
 	"io/ioutil"
 	"os"
 	"testing"
 
+	"github.com/DaRealFreak/watcher-go/pkg/archive/archivetest"
 	"github.com/stretchr/testify/assert"
 )
 

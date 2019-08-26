@@ -3,9 +3,10 @@ package zip
 import (
 	"archive/zip"
 	"bytes"
+	"io"
+
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	"io"
 )
 
 // zipArchiveReader wrapper for zip archives to be used as the other archive types

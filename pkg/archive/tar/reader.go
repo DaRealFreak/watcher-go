@@ -2,8 +2,9 @@ package tar
 
 import (
 	"archive/tar"
-	"github.com/DaRealFreak/watcher-go/pkg/archive"
 	"io"
+
+	"github.com/DaRealFreak/watcher-go/pkg/archive"
 )
 
 // tarArchiveReader wrapper for tar archives to be used as the other archive types
