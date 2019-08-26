@@ -75,12 +75,12 @@ func (db *DbIO) getTableRows(tableName string) (inserts []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckStatementClosure(stmt)
+	defer raven.CheckClosure(stmt)
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckRowClosure(rows)
+	defer raven.CheckClosure(rows)
 
 	inserts = []string{}
 	for rows.Next() {
@@ -103,12 +103,12 @@ func (db *DbIO) getPragmaTableInfo(tableName string) (columnNames []string, err 
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckStatementClosure(stmt)
+	defer raven.CheckClosure(stmt)
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckRowClosure(rows)
+	defer raven.CheckClosure(rows)
 
 	columnNames = []string{}
 	for rows.Next() {
@@ -167,7 +167,7 @@ func (db *DbIO) getSchemas(names ...string) (schemas []*tableSchema, err error) 
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckStatementClosure(stmt)
+	defer raven.CheckClosure(stmt)
 	var rows *sql.Rows
 	if len(names) > 0 {
 		rows, err = stmt.Query(tableNames...)
@@ -177,7 +177,7 @@ func (db *DbIO) getSchemas(names ...string) (schemas []*tableSchema, err error) 
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckRowClosure(rows)
+	defer raven.CheckClosure(rows)
 
 	schemas = []*tableSchema{}
 	for rows.Next() {

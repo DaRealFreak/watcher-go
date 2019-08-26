@@ -68,7 +68,7 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	default:
 		reader = response.Body
 	}
-	defer raven.CheckReadCloser(reader)
+	defer raven.CheckClosure(reader)
 	document, err := goquery.NewDocumentFromReader(reader)
 	raven.CheckError(err)
 	return document

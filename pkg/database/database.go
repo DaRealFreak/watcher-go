@@ -52,7 +52,7 @@ func RemoveDatabase() {
 func (db *DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
-	defer raven.CheckDbClosure(connection)
+	defer raven.CheckClosure(connection)
 
 	sqlStatement := `
 		CREATE TABLE accounts

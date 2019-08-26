@@ -54,7 +54,7 @@ func (a *tarArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	if err != nil {
 		return 0, err
 	}
-	defer raven.CheckReadCloser(file)
+	defer raven.CheckClosure(file)
 
 	// retrieve file stats for headers
 	info, err := file.Stat()

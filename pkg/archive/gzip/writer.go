@@ -58,7 +58,7 @@ func (a *gzipArchiveWriter) AddFileByPath(name string, filePath string) (written
 	if err != nil {
 		return 0, err
 	}
-	defer raven.CheckReadCloser(file)
+	defer raven.CheckClosure(file)
 
 	// retrieve file stats for headers
 	info, err := file.Stat()

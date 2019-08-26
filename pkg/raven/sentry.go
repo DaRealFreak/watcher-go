@@ -1,8 +1,6 @@
 package raven
 
 import (
-	"database/sql"
-	"io"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/version"
@@ -38,23 +36,12 @@ func CheckError(err error) {
 	}
 }
 
-// CheckDbClosure checks for errors on deferred DB connections
-func CheckDbClosure(db *sql.DB) {
-	CheckError(db.Close())
+// Closure is the interface for closeable objects which we want to catch on deferred closes
+type Closure interface {
+	Close() error
 }
 
-// CheckRowClosure checks for errors on deferred Rows
-func CheckRowClosure(row *sql.Rows) {
-	CheckError(row.Close())
-}
-
-// CheckStatementClosure checks for errors on deferred Statements
-// nolint: interfacer
-func CheckStatementClosure(stmt *sql.Stmt) {
-	CheckError(stmt.Close())
-}
-
-// CheckReadCloser checks for errors on deferred ReadCloser objects
-func CheckReadCloser(closer io.ReadCloser) {
-	CheckError(closer.Close())
+// CheckClosure checks for errors on closeable objects
+func CheckClosure(obj Closure) {
+	CheckError(obj.Close())
 }
