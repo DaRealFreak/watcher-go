@@ -97,11 +97,11 @@ func (app *Watcher) getArchiveWriter(archiveName string, cfg *AppConfiguration) 
 	// retrieve the archive writer based on the archive extension
 	switch archiveExt {
 	case gzip.FileExt:
-		archiveWriter = gzip.NewArchiveWriter(f)
+		archiveWriter = gzip.NewWriter(f)
 	case tar.FileExt:
-		archiveWriter = tar.NewArchiveWriter(f)
+		archiveWriter = tar.NewWriter(f)
 	case zip.FileExt:
-		archiveWriter = zip.NewArchiveWriter(f)
+		archiveWriter = zip.NewWriter(f)
 	}
 	return archiveWriter, nil
 }

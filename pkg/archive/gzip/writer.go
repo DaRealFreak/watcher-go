@@ -18,8 +18,8 @@ type gzipArchiveWriter struct {
 	tarWriter  *tar.Writer
 }
 
-// NewArchiveWriter initializes the writers and returns the struct
-func NewArchiveWriter(target io.Writer) archive.Writer {
+// NewWriter initializes the writers and returns the struct
+func NewWriter(target io.Writer) archive.Writer {
 	writer := &gzipArchiveWriter{
 		gzipWriter: gzip.NewWriter(target),
 	}
