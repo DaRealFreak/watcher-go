@@ -31,6 +31,9 @@ func NewReader(f io.Reader) archive.Reader {
 
 // GetFiles returns all files in the archive
 func (a *zipArchiveReader) GetFiles() (files []string, err error) {
+	for _, f := range a.zipReader.File {
+		files = append(files, f.Name)
+	}
 	return files, nil
 }
 
