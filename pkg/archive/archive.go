@@ -12,5 +12,6 @@ type Writer interface {
 // Reader is the reader interface for all valid archive types (zip, gzip, tar)
 type Reader interface {
 	GetFiles() (files []string, err error)
+	HasFile(fileName string) (exists bool, err error)
 	GetFile(fileName string) (reader io.Reader, err error)
 }

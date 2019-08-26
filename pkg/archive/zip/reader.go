@@ -39,6 +39,21 @@ func (a *zipArchiveReader) GetFiles() (files []string, err error) {
 	return files, nil
 }
 
+// HasFile checks if the archive has a file with the passed file path
+func (a *zipArchiveReader) HasFile(fileName string) (exists bool, err error) {
+	files, err := a.GetFiles()
+	if err != nil {
+		return false, err
+	}
+
+	for _, archivedFileName := range files {
+		if fileName == archivedFileName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // GetFile returns the reader the for the passed archive file
 func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader, err error) {
 	for _, f := range a.zipReader.File {
