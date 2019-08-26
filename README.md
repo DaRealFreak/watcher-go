@@ -5,25 +5,25 @@ Application to keep track of items from multiple sources with a local database.
 It will download any detected item and update the index in the database on completion of the download.
 
 ## Dependencies
-For image to animation conversions (currently only used by the pixiv module) this application is using
-[ImageMagick](https://imagemagick.org/) and [FFmpeg](https://ffmpeg.org/).  
-The executed command on Windows for ImageMagick is `magick.exe convert`,
-which is the default for a [chocolately](https://chocolatey.org/) installation.  
-For all other operating systems the commands `ffmpeg` and `convert` are executed.  
-As fallback if ImageMagick and FFmpeg are not available the golang imaging libraries are used.
-The libraries can only generate a GIF file with 256 colors, so it is not recommended.
+- [ImageMagick](https://imagemagick.org/) - for image to animation conversions (currently only used by the pixiv module).  
+Windows will try to execute `magick.exe convert`(default for a [chocolately](https://chocolatey.org/) installation), other operating systems `convert`
+- [FFmpeg](https://ffmpeg.org/) - for video to animation conversion (currently only used by the pixiv module)
+- [SQLite3](https://www.sqlite.org/index.html) - for restoring data from SQL files in backup archives
 
+If ImageMagick and FFmpeg are not available a fallback is implemented to generate .gif animations using the golang imaging libraries.
+These libraries can only generate a GIF file with 256 colors, so it is not recommended.
 
 ## Usage
-There are currently 6 available root commands with following functionality:
+There are currently 7 available root commands with following functionality:
 ```  
 Available Commands:
-  add                   add an item or account to the database
-  backup                generates a backup of the current settings and database file
-  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
-  list                  lists items or accounts from the database
   run                   update all tracked items
+  add                   add an item or account to the database
+  list                  lists items or accounts from the database
   update                update the application or an item/account in the database
+  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
+  backup                generates a backup of the current settings and database file
+  restore               restores the current settings/database from the passed backup archive
 ```
 
 ### Global Flags
@@ -171,6 +171,19 @@ Flags:
 ```
 The `--sql` flags does not exist for the `backup settings` sub command, but for every other sub command.
 
+### Restore Database/Settings
+The generated archives from the `watcher backup` command can be directly used to restore the database/settings.  
+As with the backup command it is possible to further specify what you want to restore using these flags:
+```
+Available Commands:
+  accounts    restores the accounts table from the passed archive
+  items       restores the tracked_items table from the passed archive
+  settings    restores the settings file from the passed archive
+```
+
+The binary backup from the database will be preferred over the .sql files in the archive (only used in full restore)
+in case that the archive got manually modified (the backup command can either backup the binary file or .sql files,
+not both). Neither the binary file nor the .sql files are further checked for invalid/corrupted data.
 
 ## Development
 Want to contribute? Great!  
