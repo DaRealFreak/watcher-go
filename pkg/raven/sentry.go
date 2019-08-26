@@ -1,6 +1,7 @@
 package raven
 
 import (
+	"io"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/version"
@@ -36,12 +37,7 @@ func CheckError(err error) {
 	}
 }
 
-// Closure is the interface for closeable objects which we want to catch on deferred closes
-type Closure interface {
-	Close() error
-}
-
 // CheckClosure checks for errors on closeable objects
-func CheckClosure(obj Closure) {
+func CheckClosure(obj io.Closer) {
 	CheckError(obj.Close())
 }
