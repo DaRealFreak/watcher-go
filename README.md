@@ -5,6 +5,7 @@ Application to keep track of items from multiple sources with a local database.
 It will download any detected item and update the index in the database on completion of the download.
 
 ## Dependencies
+Optional dependencies (some functionality may not be accessible without):
 - [ImageMagick](https://imagemagick.org/) - for image to animation conversions (currently only used by the pixiv module).  
 Windows will try to execute `magick.exe convert`(default for a [chocolately](https://chocolatey.org/) installation), other operating systems `convert`
 - [FFmpeg](https://ffmpeg.org/) - for video to animation conversion (currently only used by the pixiv module)
