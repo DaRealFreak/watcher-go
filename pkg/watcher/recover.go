@@ -6,6 +6,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -64,15 +65,57 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 	switch {
 	case cfg.Restore.Database.Accounts.Enabled && cfg.Restore.Database.Items.Enabled:
 		// check if [database] exists in archive, else check for accounts.sql and tracked_items.sql
-		fmt.Println("ToDo full database restoration")
+		if exists, _ := reader.HasFile(filepath.Base(cfg.Database)); exists {
+			file, err := reader.GetFile(filepath.Base(cfg.Database))
+			if err != nil {
+				return err
+			}
+			content, err := ioutil.ReadAll(file)
+			if err != nil {
+				return err
+			}
+			err = ioutil.WriteFile(cfg.Database, content, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			log.Info("restored database file from archive")
+		}
+		return app.restoreTablesFromArchive(reader, cfg, "accounts.sql", "tracked_items.sql")
 	case cfg.Restore.Database.Accounts.Enabled:
 		// check for accounts.sql in archive
-		fmt.Println("ToDo database accounts restoration")
+		return app.restoreTablesFromArchive(reader, cfg, "accounts.sql")
 	case cfg.Restore.Database.Items.Enabled:
 		// check for tracked_items.sql in archive
-		fmt.Println("ToDo database tracked items restoration")
+		return app.restoreTablesFromArchive(reader, cfg, "tracked_items.sql")
 	}
-	return err
+	// no restore option selected, should be unreachable from the command line options
+	log.Warning("no restore option selected")
+	return nil
+}
+
+// restoreTablesFromArchive uses sqlite3 command to import tables from the passed sql files
+func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, cfg *AppConfiguration, filesNames ...string) error {
+	for _, sqlFileName := range filesNames {
+		if exists, _ := reader.HasFile(sqlFileName); exists {
+			file, err := ioutil.TempFile("", "*.sql")
+			if err != nil {
+				return err
+			}
+			reader, err := reader.GetFile(sqlFileName)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(file, reader); err != nil {
+				return err
+			}
+
+			if err := app.DbCon.RestoreTableFromFile(file.Name()); err != nil {
+				return err
+			}
+			log.Infof("restored database settings from file %s", sqlFileName)
+		}
+	}
+	return nil
 }
 
 // restoreSettings restores the settings from the archive
