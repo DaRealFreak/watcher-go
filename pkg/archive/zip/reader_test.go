@@ -1,6 +1,7 @@
 package zip
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/archive/archivetest"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -11,35 +12,35 @@ import (
 // TestGetFiles tests if an archive can retrieve all file names/paths from the generated archive
 func TestGetFiles(t *testing.T) {
 	var assertion = assert.New(t)
-	files := map[string]string{
-		"accounts.sql":        "INSERT INTO test; COMMIT;",
-		"README":              "some meaningful content",
-		"content_dir/LICENSE": "license content",
-		"empty_dir/":          "",
-	}
-
-	tmpArchive := generateTestFile(t, files)
-	f, err := os.Open(tmpArchive)
-	assertion.NoError(err)
-	archiveReader := NewReader(f)
-	archiveFiles, err := archiveReader.GetFiles()
-	assertion.NoError(err)
-	assertion.Equal(len(files), len(archiveFiles))
-}
-
-// generateTestFile generates a new archive with the passed files
-func generateTestFile(t *testing.T, files map[string]string) string {
-	var assertion = assert.New(t)
-	// create a new archive
+	// create the archive
 	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
 	assertion.NoError(err)
-	archive := NewArchiveWriter(tmpArchiveFile)
+	writer := NewWriter(tmpArchiveFile)
+	archivetest.GenerateTestFiles(t, writer)
 
-	for fileName, fileContent := range files {
-		_, err = archive.AddFile(fileName, []byte(fileContent))
-		assertion.NoError(err)
-	}
-	err = archive.Close()
+	// open the archive and create a reader for it
+	f, err := os.Open(tmpArchiveFile.Name())
 	assertion.NoError(err)
-	return tmpArchiveFile.Name()
+	reader := NewReader(f)
+
+	// archive
+	archivetest.GetFiles(t, reader)
+}
+
+// TestGetFile tests if an archive can retrieve the passed file names from the archive
+func TestGetFile(t *testing.T) {
+	var assertion = assert.New(t)
+	// create the archive
+	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
+	assertion.NoError(err)
+	writer := NewWriter(tmpArchiveFile)
+	archivetest.GenerateTestFiles(t, writer)
+
+	// open the archive and create a reader for it
+	f, err := os.Open(tmpArchiveFile.Name())
+	assertion.NoError(err)
+	archiveReader := NewReader(f)
+
+	// test if all files exist and the content is equal
+	archivetest.GetFile(t, archiveReader)
 }
