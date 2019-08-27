@@ -23,8 +23,8 @@ type oAuth2 struct {
 	granted chan bool
 }
 
-// NewOAuth2Application creates the granted channel
-func NewOAuth2Application() *oAuth2 {
+// newOAuth2Application creates the granted channel
+func newOAuth2Application() *oAuth2 {
 	return &oAuth2{
 		granted: make(chan bool),
 	}
@@ -45,9 +45,13 @@ func (a *oAuth2) oAuth2ApplicationCallback(w http.ResponseWriter, r *http.Reques
 // and waits for a request containing the OAuth2 token for the API
 // server will shut down after 60 seconds automatically and return an empty string
 func retrieveOAuth2Code() string {
-	oAuth2Application := NewOAuth2Application()
-	srv := &http.Server{Addr: ":8080"}
-	http.HandleFunc("/cb", oAuth2Application.oAuth2ApplicationCallback)
+	oAuth2Application := newOAuth2Application()
+	mux := http.NewServeMux()
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+	mux.HandleFunc("/cb", oAuth2Application.oAuth2ApplicationCallback)
 	log.Debug("starting local web server at port 8080")
 
 	// listen with a go routine to be able to time it out
