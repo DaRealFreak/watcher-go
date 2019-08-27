@@ -1,12 +1,11 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/webserver"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,36 +45,23 @@ func (a *oAuth2) oAuth2ApplicationCallback(w http.ResponseWriter, r *http.Reques
 // server will shut down after 60 seconds automatically and return an empty string
 func retrieveOAuth2Code() string {
 	oAuth2Application := newOAuth2Application()
-	mux := http.NewServeMux()
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
-	mux.HandleFunc("/cb", oAuth2Application.oAuth2ApplicationCallback)
-	log.Debug("starting local web server at port 8080")
+	webserver.Server.Mux.HandleFunc("/da-cb", oAuth2Application.oAuth2ApplicationCallback)
+	webserver.StartWebServer()
 
-	// listen with a go routine to be able to time it out
-	go func() {
-		// returns ErrServerClosed on graceful close
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("ListenAndServe(): %s", err)
-		}
-	}()
 	// print DeviantArt URL to retrieve the grant granted
 	log.Infof("open following url to retrieve the granted: %s",
 		"https://www.deviantart.com/oauth2/authorize?response_type=code"+
-			"&client_id="+DeviantArtAPIClientID+"&redirect_uri=http://lvh.me:8080/cb&scope=basic&state=mysessionid",
+			"&client_id="+DeviantArtAPIClientID+"&redirect_uri=http://lvh.me:8080/da-cb&scope=basic&state=mysessionid",
 	)
 
 	select {
 	case <-oAuth2Application.granted:
-		log.Info("callback with granted received, shutting down local web server")
-		raven.CheckError(srv.Shutdown(context.Background()))
-		return oAuth2Application.code
+		log.Info("callback with granted received")
 	case <-time.After(WebServerTimeout):
-		log.Warningf("no callback with granted received within %d seconds, shutting down local web server",
+		log.Warningf("no callback with token received within %d seconds",
 			int(WebServerTimeout.Seconds()),
 		)
-		return ""
 	}
+	webserver.StopWebServer()
+	return oAuth2Application.code
 }

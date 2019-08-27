@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestRetrieveOAuth2Code tests the local http server to retrieve the OAuth2 code
-func TestRetrieveOAuth2Code(t *testing.T) {
+// TestRetrieveOAuth2CodeCalled tests the return value of the retrieve OAuth2 token if it gets called in time
+func TestRetrieveOAuth2CodeCalled(t *testing.T) {
 	assertion := assert.New(t)
 
 	var wg sync.WaitGroup
@@ -17,10 +17,15 @@ func TestRetrieveOAuth2Code(t *testing.T) {
 	// routine this check so we can actually call the request
 	go checkNoTimeout(t, &wg)
 	// call local host resolved domain with test_code as code
-	_, err := http.Get("http://lvh.me:8080/cb?code=test_code")
+	_, err := http.Get("http://lvh.me:8080/da-cb?code=test_code")
 	assertion.NoError(err)
 	// wait for this test to finish
 	wg.Wait()
+}
+
+// TestRetrieveOAuth2CodeTimedOut tests the timout shutdown of the web server
+func TestRetrieveOAuth2CodeTimedOut(t *testing.T) {
+	assertion := assert.New(t)
 
 	// wait for timeout returning empty string
 	oAuth2Code := retrieveOAuth2Code()
