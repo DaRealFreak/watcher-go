@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
@@ -25,6 +27,7 @@ func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
 	factory.modules = append(factory.modules, sankakucomplex.NewModule(dbIO, factory.uriSchemas))
 	factory.modules = append(factory.modules, ehentai.NewModule(dbIO, factory.uriSchemas))
 	factory.modules = append(factory.modules, pixiv.NewModule(dbIO, factory.uriSchemas))
+	factory.modules = append(factory.modules, deviantart.NewModule(dbIO, factory.uriSchemas))
 	return &factory
 }
 
