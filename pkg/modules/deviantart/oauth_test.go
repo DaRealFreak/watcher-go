@@ -1,11 +1,18 @@
-package main
+package deviantart
 
 import (
 	"net/http"
 	"sync"
 	"testing"
 
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/stretchr/testify/assert"
+)
+
+// nolint: gochecknoglobals
+var (
+	da *deviantArt
 )
 
 // TestRetrieveOAuth2CodeCalled tests the return value of the retrieve OAuth2 token if it gets called in time
@@ -27,8 +34,16 @@ func TestRetrieveOAuth2CodeCalled(t *testing.T) {
 func TestRetrieveOAuth2CodeTimedOut(t *testing.T) {
 	assertion := assert.New(t)
 
+	da = &deviantArt{}
+	module := models.Module{
+		Session:         session.NewSession(),
+		LoggedIn:        false,
+		ModuleInterface: da,
+	}
+	da.Module = module
+
 	// wait for timeout returning empty string
-	oAuth2Code := retrieveOAuth2Code()
+	oAuth2Code := da.retrieveOAuth2Code()
 	assertion.Equal(oAuth2Code, "")
 }
 
@@ -39,7 +54,7 @@ func checkNoTimeout(t *testing.T, wg *sync.WaitGroup) {
 	ch := make(chan string)
 	// listen with a go routine to be able to time it out
 	go func() {
-		ch <- retrieveOAuth2Code()
+		ch <- da.retrieveOAuth2Code()
 	}()
 
 	receivedCode := <-ch
