@@ -8,6 +8,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
+	"github.com/DaRealFreak/watcher-go/pkg/webserver"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -116,6 +117,7 @@ func (cli *CliApplication) Execute() {
 	if cli.watcher != nil {
 		cli.watcher.DbCon.CloseConnection()
 	}
+	webserver.ForceStopWebServer()
 }
 
 // initWatcher initializes everything the CLI application needs
