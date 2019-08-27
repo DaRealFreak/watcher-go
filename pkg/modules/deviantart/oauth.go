@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/webserver"
+	"github.com/pkg/browser"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,11 +50,15 @@ func retrieveOAuth2Code() string {
 	webserver.Server.Mux.HandleFunc("/da-cb", oAuth2Application.oAuth2ApplicationCallback)
 	webserver.StartWebServer()
 
-	// print DeviantArt URL to retrieve the grant granted
-	log.Infof("open following url to retrieve the granted: %s",
-		"https://www.deviantart.com/oauth2/authorize?response_type=code"+
-			"&client_id="+DeviantArtAPIClientID+"&redirect_uri=http://lvh.me:8080/da-cb&scope=basic&state=mysessionid",
-	)
+	oAuth2URL := "https://www.deviantart.com/oauth2/authorize?response_type=code" +
+		"&client_id=" + DeviantArtAPIClientID + "&redirect_uri=http://lvh.me:8080/da-cb&scope=basic&state=mysessionid"
+	if true {
+		// print DeviantArt URL to retrieve the grant granted
+		log.Infof("open following url to retrieve the token: %s", oAuth2URL)
+	} else {
+		// ToDo: add option to directly open it in the browser
+		raven.CheckError(browser.OpenURL(oAuth2URL))
+	}
 
 	select {
 	case <-oAuth2Application.granted:
