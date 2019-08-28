@@ -66,7 +66,8 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
 		// if no error occurred and status code is okay too break out of the loop
-		if err == nil && response.StatusCode == 200 {
+		// 4xx & 5xx are client/server error codes, so we check for < 400
+		if err == nil && response.StatusCode < 400 {
 			break
 		} else {
 			time.Sleep(time.Duration(try+1) * time.Second)
