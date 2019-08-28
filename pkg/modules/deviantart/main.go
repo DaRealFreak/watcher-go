@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -70,7 +71,12 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 func (m *deviantArt) Login(account *models.Account) bool {
 	m.prepareSessionForOAuth2(account)
 	m.token = m.retrieveOAuth2Code()
-	m.LoggedIn = m.token != nil
+	// check placebo response if the token can be used
+	if placebo, err := m.Placebo(); err == nil {
+		if placebo.Status == "success" {
+			m.LoggedIn = true
+		}
+	}
 	return m.LoggedIn
 }
 
@@ -128,10 +134,9 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
-	values := url.Values{
-		"access_token": {m.token.AccessToken},
+	for range time.Tick(60 * time.Second) {
+		placebo, err := m.Placebo()
+		raven.CheckError(err)
+		fmt.Println(placebo.Status)
 	}
-	res, _ := m.Session.Post("https://www.deviantart.com/api/v1/oauth2/placebo", values)
-	fmt.Println(m.Session.GetDocument(res).Html())
-	fmt.Println(item)
 }
