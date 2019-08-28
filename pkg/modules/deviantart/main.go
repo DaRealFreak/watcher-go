@@ -15,20 +15,19 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 // deviantArt contains the implementation of the ModuleInterface
 type deviantArt struct {
 	models.Module
-	oAuth2Token string
+	token *oauth2.Token
 }
 
 // NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
-	var subModule = deviantArt{
-		oAuth2Token: "",
-	}
+	var subModule = deviantArt{}
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
@@ -73,8 +72,8 @@ func (m *deviantArt) Login(account *models.Account) bool {
 	if viper.GetBool("Modules.DeviantArt.OAuth2.Auto") {
 		m.prepareSessionForOAuth2(account)
 	}
-	m.oAuth2Token = m.retrieveOAuth2Code()
-	m.LoggedIn = m.oAuth2Token != ""
+	m.token = m.retrieveOAuth2Code()
+	m.LoggedIn = m.token != nil
 	return m.LoggedIn
 }
 
@@ -132,5 +131,10 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
+	values := url.Values{
+		"access_token": {m.token.AccessToken},
+	}
+	res, _ := m.Session.Post("https://www.deviantart.com/api/v1/oauth2/placebo", values)
+	fmt.Println(m.Session.GetDocument(res).Html())
 	fmt.Println(item)
 }
