@@ -4,24 +4,21 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // Placebo implements the API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
-func (m *deviantArt) Placebo() (response *PlaceboResponse, err error) {
+func (m *deviantArt) Placebo() (response *PlaceboResponse) {
 	var placebo PlaceboResponse
-	values := url.Values{
-		"access_token": {m.token.AccessToken},
-	}
-	res, err := m.Session.Post("https://www.deviantart.com/api/v1/oauth2/placebo", values)
-	if err != nil {
-		return nil, err
-	}
+	values := url.Values{}
+	res, err := m.deviantArtSession.APIPost("https://www.deviantart.com/api/v1/oauth2/placebo", values)
+	raven.CheckError(err)
+
 	content, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(content, &placebo); err != nil {
-		return nil, err
-	}
-	return &placebo, nil
+	raven.CheckError(err)
+
+	// unmarshal the request content into the PlaceboResponse
+	raven.CheckError(json.Unmarshal(content, &placebo))
+	return &placebo
 }

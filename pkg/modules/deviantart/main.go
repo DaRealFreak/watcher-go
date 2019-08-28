@@ -74,12 +74,9 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		log.Warning("preparing session for OAuth2 Token generation failed, please check your account")
 		return false
 	}
+
 	// check placebo response if the token can be used
-	if placebo, err := m.Placebo(); err == nil {
-		if placebo.Status == "success" {
-			m.LoggedIn = true
-		}
-	}
+	m.LoggedIn = m.Placebo().Status == "success"
 	return m.LoggedIn
 }
 
@@ -135,8 +132,6 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
 	for range time.Tick(60 * time.Second) {
-		placebo, err := m.Placebo()
-		raven.CheckError(err)
-		fmt.Println(placebo.Status)
+		fmt.Println(m.Placebo().Status)
 	}
 }
