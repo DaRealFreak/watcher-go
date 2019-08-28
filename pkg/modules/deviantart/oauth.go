@@ -3,13 +3,13 @@ package deviantart
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/webserver"
-	"github.com/pkg/browser"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 // WebServerTimeout default timeout for web server to retrieve OAuth2 token
@@ -17,54 +17,63 @@ const WebServerTimeout = 60 * time.Second
 
 // APIClientID is the client ID of the registered application accessing the API
 // can be retrieved from https://www.deviantart.com/developers/apps
+// make sure the OAuth2 Grant Type is set to Implicit and the redirect URL matches the constant below
 const APIClientID = "9991"
 
 // RedirectURL is the URL to the local DNS resolved page (lvh is resolving to 127.0.0.1, only works with IPv4 though)
-const RedirectURL = "http://lvh.me:8080/da-cb"
+// Implicit grant type requires https URLs and has to match the pattern exactly contrary to the authorization code
+const RedirectURL = "https://lvh.me:8080/da-cb"
 
-// oAuth2 is used to retrieve the OAuth2 code
-type oAuth2 struct {
-	code    string
+// oAuth2Check is used to retrieve the OAuth2 code
+type oAuth2Check struct {
+	code    *oauth2.Token
 	granted chan bool
 }
 
 // newOAuth2Application creates the granted channel
-func newOAuth2Application() *oAuth2 {
-	return &oAuth2{
+func newOAuth2Application() *oAuth2Check {
+	return &oAuth2Check{
 		granted: make(chan bool),
 	}
 }
 
-// oAuth2ApplicationCallback handles web requests and passes it to the granted channel
-// if a granted query fragment is present
-func (a *oAuth2) oAuth2ApplicationCallback(w http.ResponseWriter, r *http.Request) {
-	q, _ := url.ParseQuery(r.URL.RawQuery)
-	if len(q["code"]) > 0 {
-		a.code = q["code"][0]
+// checkResponseUrlForTokenFragment checks the passed http Response for OAuth2 Token fragments
+func (a *oAuth2Check) checkResponseUrlForTokenFragment(res *http.Response) (foundToken bool) {
+	f, _ := url.ParseQuery(res.Request.URL.Fragment)
+	if len(f["access_token"]) > 0 && len(f["token_type"][0]) > 0 && len(f["expires_in"][0]) > 0 {
+		expiration, err := strconv.Atoi(f["expires_in"][0])
+		raven.CheckError(err)
+
+		a.code = &oauth2.Token{
+			AccessToken:  f["access_token"][0],
+			TokenType:    f["token_type"][0],
+			RefreshToken: "",
+			Expiry:       time.Now().Add(time.Duration(expiration) * time.Second),
+		}
 		a.granted <- true
+		return true
 	}
+	return false
+}
+
+// oAuth2ApplicationCallback handles web requests
+// not much to do here since the client has to check for the OAuth2 token fragments
+func (a *oAuth2Check) oAuth2ApplicationCallback(w http.ResponseWriter, r *http.Request) {
 	log.Debug("request received from: ", r.RemoteAddr)
 }
 
 // retrieveOAuth2Code creates a new OAuth2Application, starts a local web server on port 8080
 // and waits for a request containing the OAuth2 token for the API
 // server will shut down after 60 seconds automatically and return an empty string
-func (m *deviantArt) retrieveOAuth2Code() string {
+func (m *deviantArt) retrieveOAuth2Code() *oauth2.Token {
 	oAuth2Application := newOAuth2Application()
 	webserver.Server.Mux.HandleFunc("/da-cb", oAuth2Application.oAuth2ApplicationCallback)
 	webserver.StartWebServer()
 
-	oAuth2URL := "https://www.deviantart.com/oauth2/authorize?response_type=code" +
+	oAuth2URL := "https://www.deviantart.com/oauth2/authorize?response_type=token" +
 		"&client_id=" + APIClientID + "&redirect_uri=" + RedirectURL + "&scope=basic&state=mysessionid"
-
-	switch {
-	case viper.GetBool("Modules.DeviantArt.OAuth2.Auto"):
-		go m.sendOAuth2AcceptRequest(oAuth2URL)
-	case viper.GetBool("Modules.DeviantArt.OAuth2.Browser"):
-		raven.CheckError(browser.OpenURL(oAuth2URL))
-	default:
-		log.Infof("open following url to retrieve the token: %s", oAuth2URL)
-	}
+	// send request and wait for either a successful response or a timeout
+	go m.sendOAuth2AcceptRequest(oAuth2Application, oAuth2URL)
 
 	select {
 	case <-oAuth2Application.granted:
@@ -81,18 +90,22 @@ func (m *deviantArt) retrieveOAuth2Code() string {
 // sendOAuth2AcceptRequest automates the authentication process and logs the user in
 // before checking and if needed authorizing the application
 // this is the default process since it requires the least amount of input from the user
-func (m *deviantArt) sendOAuth2AcceptRequest(oAuth2URL string) {
+func (m *deviantArt) sendOAuth2AcceptRequest(a *oAuth2Check, oAuth2URL string) {
 	// open the passed OAuth2 URL
 	res, err := m.Session.Get(oAuth2URL)
 	raven.CheckError(err)
 
-	// if already authorized we will receive a nil error and an empty response
-	doc := m.Session.GetDocument(res)
-	form := doc.Find("form#authorize_form").First()
-	if html, err := form.Html(); err == nil && html == "" {
-		log.Debug("application already authorized, skipping authorization POST request")
+	// if application already got authorized we are getting redirected directly to the OAuth2 token URL
+	if a.checkResponseUrlForTokenFragment(res) {
+		log.Debugf("retrieved OAuth2 token: %s", a.code.AccessToken)
 		return
 	}
+
+	// we are currently in the authorization step
+	// if the function didn't get redirected directly to the OAuth2 token URL
+	log.Info("application not authorized yet, sending authorization POST request")
+	doc := m.Session.GetDocument(res)
+	form := doc.Find("form#authorize_form").First()
 
 	// scrape all relevant data from the selected form
 	authValues := new(authInfo)
@@ -114,5 +127,9 @@ func (m *deviantArt) sendOAuth2AcceptRequest(oAuth2URL string) {
 		"validate_token": {authValues.ValidateToken},
 		"validate_key":   {authValues.ValidateKey},
 	}
-	_, _ = m.Session.Post("https://www.deviantart.com/settings/authorize_app", values)
+	res, err = m.Session.Post("https://www.deviantart.com/settings/authorize_app", values)
+	raven.CheckError(err)
+
+	// check the response to the authorization request for the OAuth2 token URL
+	a.checkResponseUrlForTokenFragment(res)
 }
