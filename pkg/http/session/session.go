@@ -47,7 +47,8 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
 		// if no error occurred and status code is okay too break out of the loop
-		if err == nil && response.StatusCode == 200 {
+		// 4xx & 5xx are client/server error codes, so we check for < 400
+		if err == nil && response.StatusCode < 400 {
 			break
 		} else {
 			time.Sleep(time.Duration(try+1) * time.Second)
