@@ -22,7 +22,8 @@ const APIClientID = "9991"
 
 // RedirectURL is the URL to the local DNS resolved page (lvh is resolving to 127.0.0.1, only works with IPv4 though)
 // Implicit grant type requires https URLs and has to match the pattern exactly contrary to the authorization code
-const RedirectURL = "https://lvh.me:8080/da-cb"
+// nolint: gochecknoglobals
+var RedirectURL = "https://"+webserver.LocalDomainTLD+":8080/da-cb"
 
 // oAuth2Check is used to retrieve the OAuth2 code
 type oAuth2Check struct {

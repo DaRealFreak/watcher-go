@@ -3,6 +3,11 @@ package webserver
 import (
 	"context"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/mitchellh/go-homedir"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +15,8 @@ import (
 
 // nolint: gochecknoglobals
 var (
-	Server = newWebServer()
+	Server         = newWebServer()
+	LocalDomainTLD = "lvh.me"
 )
 
 // WebServer contains all relevant information for managing the local web server
@@ -46,8 +52,22 @@ func StartWebServer() {
 	}
 	// listen with a go routine to be able to time it out
 	go func() {
+		// retrieve the home dir to place certificates in our default folder
+		home, err := homedir.Dir()
+		raven.CheckError(err)
+
+		// certificate and key pem
+		certificateDir := filepath.Join(home, "/.watcher/certificates/")
+		localCert := filepath.Join(certificateDir, LocalDomainTLD+".pem")
+		localKeyFile := filepath.Join(certificateDir, LocalDomainTLD+".key.pem")
+		raven.CheckError(ensureCertificates(localCert, localKeyFile))
+
+		// listen and serve with the local certificate
 		// returns ErrServerClosed on graceful close
-		if err := Server.Srv.ListenAndServe(); err != http.ErrServerClosed {
+		if err := Server.Srv.ListenAndServeTLS(
+			localCert,
+			localKeyFile,
+		); err != http.ErrServerClosed {
 			log.Fatalf("ListenAndServe(): %s", err)
 		}
 	}()
@@ -78,10 +98,10 @@ func StopWebServer() {
 func ForceStopWebServer() {
 	if Server.currentJobs > 0 {
 		log.Info("force shutting down local web server")
+		raven.CheckError(Server.Srv.Shutdown(Server.ctx))
+		resetServerHandler()
+		Server.currentJobs = 0
 	}
-	raven.CheckError(Server.Srv.Shutdown(Server.ctx))
-	resetServerHandler()
-	Server.currentJobs = 0
 }
 
 // resetServerHandler resets the server handler to be able to register a handler function on the same pattern again
@@ -89,4 +109,24 @@ func resetServerHandler() {
 	log.Debug("resetting server handler")
 	Server.Mux = http.NewServeMux()
 	Server.Srv.Handler = Server.Mux
+}
+
+func ensureCertificates(certFile string, keyFile string) (err error) {
+	// ensure the directory for the files
+	for _, fileName := range []string{certFile, keyFile} {
+		dirName := filepath.Dir(fileName)
+		if _, statError := os.Stat(dirName); statError != nil {
+			if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
+				return err
+			}
+		}
+	}
+
+	// if either of the files does not exist we run the mkcert command and return the value
+	for _, fileName := range []string{certFile, keyFile} {
+		if _, err := os.Stat(fileName); os.IsNotExist(err) {
+			return exec.Command("mkcert", "-cert-file", certFile, "-key-file", keyFile, LocalDomainTLD).Run()
+		}
+	}
+	return nil
 }
