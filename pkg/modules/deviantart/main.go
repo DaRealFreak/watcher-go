@@ -10,29 +10,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 )
 
 // deviantArt contains the implementation of the ModuleInterface
 type deviantArt struct {
 	models.Module
-	token *oauth2.Token
+	deviantArtSession *session.DeviantArtSession
 }
 
 // NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
-	var subModule = deviantArt{}
+	var subModule = deviantArt{
+		deviantArtSession: session.NewSession(),
+	}
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         session.NewSession(),
+		Session:         subModule.deviantArtSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
@@ -73,7 +74,6 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		log.Warning("preparing session for OAuth2 Token generation failed, please check your account")
 		return false
 	}
-	m.token = m.retrieveOAuth2Code()
 	// check placebo response if the token can be used
 	if placebo, err := m.Placebo(); err == nil {
 		if placebo.Status == "success" {
