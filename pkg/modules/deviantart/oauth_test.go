@@ -1,6 +1,7 @@
 package deviantart
 
 import (
+	"golang.org/x/oauth2"
 	"net/http"
 	"sync"
 	"testing"
@@ -16,6 +17,7 @@ var (
 )
 
 // TestRetrieveOAuth2CodeCalled tests the return value of the retrieve OAuth2 token if it gets called in time
+// FixMe: update for implicit type instead of previous code type
 func TestRetrieveOAuth2CodeCalled(t *testing.T) {
 	assertion := assert.New(t)
 
@@ -44,14 +46,14 @@ func TestRetrieveOAuth2CodeTimedOut(t *testing.T) {
 
 	// wait for timeout returning empty string
 	oAuth2Code := da.retrieveOAuth2Code()
-	assertion.Equal(oAuth2Code, "")
+	assertion.Equal(oAuth2Code, (*oauth2.Token)(nil))
 }
 
 // checkNoTimeout checks the web server response if actually called
 // to test this we have to goroutine this check and lock it to prevent overlapping port bindings
 func checkNoTimeout(t *testing.T, wg *sync.WaitGroup) {
 	assertion := assert.New(t)
-	ch := make(chan string)
+	ch := make(chan *oauth2.Token)
 	// listen with a go routine to be able to time it out
 	go func() {
 		ch <- da.retrieveOAuth2Code()
