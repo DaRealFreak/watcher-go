@@ -1,6 +1,7 @@
 package deviantart
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -68,7 +69,15 @@ func (a *oAuth2Check) checkRedirect(req *http.Request, via []*http.Request) erro
 	}
 
 	// return the previously set redirect function if no token fragments were in the request
-	return a.sessionRedirect(req, via)
+	if a.sessionRedirect != nil {
+		return a.sessionRedirect(req, via)
+	} else {
+		// session redirect can be nil too, fallback to default http.Client -> defaultCheckRedirect
+		if len(via) >= 10 {
+			return errors.New("stopped after 10 redirects")
+		}
+		return nil
+	}
 }
 
 // retrieveOAuth2Code creates a new OAuth2Application and checks redirects for OAuth2 token fragments
