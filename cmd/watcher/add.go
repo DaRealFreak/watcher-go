@@ -24,7 +24,7 @@ func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 	itemCmd := &cobra.Command{
 		Use:   "item [urls]",
 		Short: "adds an item to the database",
-		Long:  "parses and adds the passed url into the tracked items if not already tracked",
+		Long:  "parses and adds the passed url into the tracked items if not tracked already",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
