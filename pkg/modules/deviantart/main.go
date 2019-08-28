@@ -14,7 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
@@ -69,9 +68,7 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	if viper.GetBool("Modules.DeviantArt.OAuth2.Auto") {
-		m.prepareSessionForOAuth2(account)
-	}
+	m.prepareSessionForOAuth2(account)
 	m.token = m.retrieveOAuth2Code()
 	m.LoggedIn = m.token != nil
 	return m.LoggedIn

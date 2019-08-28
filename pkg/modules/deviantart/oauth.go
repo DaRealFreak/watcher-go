@@ -7,40 +7,41 @@ import (
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	"github.com/DaRealFreak/watcher-go/pkg/webserver"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
-// WebServerTimeout default timeout for web server to retrieve OAuth2 token
-const WebServerTimeout = 60 * time.Second
+// Timeout is default timeout duration to check redirects of the client for OAuth2 token fragments for
+const Timeout = 60 * time.Second
 
 // APIClientID is the client ID of the registered application accessing the API
 // can be retrieved from https://www.deviantart.com/developers/apps
 // make sure the OAuth2 Grant Type is set to Implicit and the redirect URL matches the constant below
 const APIClientID = "9991"
 
-// RedirectURL is the URL to the local DNS resolved page (lvh is resolving to 127.0.0.1, only works with IPv4 though)
+// RedirectURL is the URL the API tries to redirect you to. Doesn't have to exist, we simply check the redirects.
 // Implicit grant type requires https URLs and has to match the pattern exactly contrary to the authorization code
-// nolint: gochecknoglobals
-var RedirectURL = "https://"+webserver.LocalDomainTLD+":8080/da-cb"
+// in case you want to register your own application on paranoia
+const RedirectURL = "https://lvh.me:8080/da-cb"
 
 // oAuth2Check is used to retrieve the OAuth2 code
 type oAuth2Check struct {
-	code    *oauth2.Token
-	granted chan bool
+	code            *oauth2.Token
+	granted         chan bool
+	sessionRedirect func(req *http.Request, via []*http.Request) error
 }
 
-// newOAuth2Application creates the granted channel
+// newOAuth2Application creates the granted channel and functions for the whole OAuth2 token check process
 func newOAuth2Application() *oAuth2Check {
 	return &oAuth2Check{
 		granted: make(chan bool),
 	}
 }
 
-// checkResponseUrlForTokenFragment checks the passed http Response for OAuth2 Token fragments
-func (a *oAuth2Check) checkResponseUrlForTokenFragment(res *http.Response) (foundToken bool) {
-	f, _ := url.ParseQuery(res.Request.URL.Fragment)
+// checkRequestForTokenFragment checks the passed http Request for OAuth2 Token fragments
+// if not found it uses the redirect default behaviour
+func (a *oAuth2Check) checkRequestForTokenFragment(res *http.Request) (foundToken bool) {
+	f, _ := url.ParseQuery(res.URL.Fragment)
 	if len(f["access_token"]) > 0 && len(f["token_type"][0]) > 0 && len(f["expires_in"][0]) > 0 {
 		expiration, err := strconv.Atoi(f["expires_in"][0])
 		raven.CheckError(err)
@@ -57,20 +58,24 @@ func (a *oAuth2Check) checkResponseUrlForTokenFragment(res *http.Response) (foun
 	return false
 }
 
-// oAuth2ApplicationCallback handles web requests
-// not much to do here since the client has to check for the OAuth2 token fragments
-func (a *oAuth2Check) oAuth2ApplicationCallback(w http.ResponseWriter, r *http.Request) {
-	log.Debug("request received from: ", r.RemoteAddr)
+// checkRedirect checks the passed request for token fragments and returns http.ErrUseLastResponse if found
+// this causes the client to not follow the redirect, enabling us to use non-existing URLs as redirect URL
+func (a *oAuth2Check) checkRedirect(req *http.Request, via []*http.Request) error {
+	if a.checkRequestForTokenFragment(req) {
+		log.Debugf("found OAuth2 token in redirect: %s, "+
+			"preventing redirect to avert error messages from unresolved/unreachable domain", a.code.AccessToken)
+		return http.ErrUseLastResponse
+	}
+
+	// return the previously set redirect function if no token fragments were in the request
+	return a.sessionRedirect(req, via)
 }
 
-// retrieveOAuth2Code creates a new OAuth2Application, starts a local web server on port 8080
-// and waits for a request containing the OAuth2 token for the API
-// server will shut down after 60 seconds automatically and return an empty string
+// retrieveOAuth2Code creates a new OAuth2Application and checks redirects for OAuth2 token fragments
+// if not found it tries to authorize the application and checks again
+// if token could not get extracted within 60 seconds it will return a nil token
 func (m *deviantArt) retrieveOAuth2Code() *oauth2.Token {
 	oAuth2Application := newOAuth2Application()
-	webserver.Server.Mux.HandleFunc("/da-cb", oAuth2Application.oAuth2ApplicationCallback)
-	webserver.StartWebServer()
-
 	oAuth2URL := "https://www.deviantart.com/oauth2/authorize?response_type=token" +
 		"&client_id=" + APIClientID + "&redirect_uri=" + RedirectURL + "&scope=basic&state=mysessionid"
 	// send request and wait for either a successful response or a timeout
@@ -78,32 +83,36 @@ func (m *deviantArt) retrieveOAuth2Code() *oauth2.Token {
 
 	select {
 	case <-oAuth2Application.granted:
-		log.Info("callback with granted received")
-	case <-time.After(WebServerTimeout):
-		log.Warningf("no callback with token received within %d seconds",
-			int(WebServerTimeout.Seconds()),
+		log.Debugf("token got successfully extracted")
+	case <-time.After(Timeout):
+		log.Warningf("no token redirect occurred within %d seconds",
+			int(Timeout.Seconds()),
 		)
 	}
-	webserver.StopWebServer()
+	log.Debugf("restoring previous CheckRedirect function")
+	m.Session.GetClient().CheckRedirect = oAuth2Application.sessionRedirect
 	return oAuth2Application.code
 }
 
-// sendOAuth2AcceptRequest automates the authentication process and logs the user in
-// before checking and if needed authorizing the application
-// this is the default process since it requires the least amount of input from the user
+// sendOAuth2AcceptRequest sets the CheckRedirect function of the client to our custom function
+// and opens the OAuth2 URL. If the OAuth2 token fragments got found in the redirect it will cancel here
+// else it will try to authorize the application and check for the token fragments once again
 func (m *deviantArt) sendOAuth2AcceptRequest(a *oAuth2Check, oAuth2URL string) {
+	// save the previous CheckRedirect function for restoring it later and using it for checks in case
+	// that the token fragments are not set in the request URL
+	a.sessionRedirect = m.Session.GetClient().CheckRedirect
+	m.Session.GetClient().CheckRedirect = a.checkRedirect
+
 	// open the passed OAuth2 URL
 	res, err := m.Session.Get(oAuth2URL)
 	raven.CheckError(err)
 
-	// if application already got authorized we are getting redirected directly to the OAuth2 token URL
-	if a.checkResponseUrlForTokenFragment(res) {
-		log.Debugf("retrieved OAuth2 token: %s", a.code.AccessToken)
+	// the application is authorized already if we already got the OAuth2 token, so no need to go further
+	if a.code != nil {
 		return
 	}
 
-	// we are currently in the authorization step
-	// if the function didn't get redirected directly to the OAuth2 token URL
+	// we are currently in the authorization step since the previous redirect function didn't contain a token
 	log.Info("application not authorized yet, sending authorization POST request")
 	doc := m.Session.GetDocument(res)
 	form := doc.Find("form#authorize_form").First()
@@ -128,9 +137,7 @@ func (m *deviantArt) sendOAuth2AcceptRequest(a *oAuth2Check, oAuth2URL string) {
 		"validate_token": {authValues.ValidateToken},
 		"validate_key":   {authValues.ValidateKey},
 	}
-	res, err = m.Session.Post("https://www.deviantart.com/settings/authorize_app", values)
+	// the custom redirect function is still active, so new check is executed here
+	_, err = m.Session.Post("https://www.deviantart.com/settings/authorize_app", values)
 	raven.CheckError(err)
-
-	// check the response to the authorization request for the OAuth2 token URL
-	a.checkResponseUrlForTokenFragment(res)
 }
