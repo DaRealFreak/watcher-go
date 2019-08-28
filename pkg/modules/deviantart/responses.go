@@ -29,15 +29,6 @@ type loginInfo struct {
 	SocialBlockExpanded bool   `json:"socialBlockExpanded"`
 }
 
-// authInfo contains all required information for the app authorization request
-type authInfo struct {
-	State         string
-	Scope         string
-	ResponseType  string
-	ValidateToken string
-	ValidateKey   string
-}
-
 // PlaceboResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
 type PlaceboResponse struct {
 	Status string `json:"status"`
