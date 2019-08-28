@@ -63,6 +63,13 @@ type AppConfiguration struct {
 	// sentry toggles
 	EnableSentry  bool
 	DisableSentry bool
+	// run specific options
+	Run struct {
+		RunParallel       bool
+		Items             []string
+		DownloadDirectory string
+		ModuleURL         string
+	}
 }
 
 // NewWatcher initializes a new Watcher with the default settings
@@ -76,16 +83,9 @@ func NewWatcher() *Watcher {
 }
 
 // Run is the main functionality, updates all tracked items either parallel or linear
-func (app *Watcher) Run(moduleURL string, parallel bool) {
-	var trackedItems []*models.TrackedItem
-	if moduleURL != "" {
-		module := app.ModuleFactory.GetModuleFromURI(moduleURL)
-		trackedItems = app.DbCon.GetTrackedItems(module, false)
-	} else {
-		trackedItems = app.DbCon.GetTrackedItems(nil, false)
-	}
-
-	if parallel {
+func (app *Watcher) Run(cfg *AppConfiguration) {
+	trackedItems := app.getRelevantTrackedItems(cfg)
+	if cfg.Run.RunParallel {
 		groupedItems := make(map[string][]*models.TrackedItem)
 		for _, item := range trackedItems {
 			groupedItems[item.Module] = append(groupedItems[item.Module], item)
@@ -106,6 +106,34 @@ func (app *Watcher) Run(moduleURL string, parallel bool) {
 			module.Parse(item)
 		}
 	}
+}
+
+// getRelevantTrackedItems returns the relevant tracked items based on the passed app configuration
+func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.TrackedItem {
+	var trackedItems []*models.TrackedItem
+	switch {
+	case len(cfg.Run.Items) > 0:
+		for _, itemURL := range cfg.Run.Items {
+			module := app.ModuleFactory.GetModuleFromURI(itemURL)
+			if cfg.Run.ModuleURL != "" {
+				selectedModule := app.ModuleFactory.GetModuleFromURI(cfg.Run.ModuleURL)
+				if selectedModule.Key() != module.Key() {
+					log.Warningf(
+						"ignoring directly passed item %s due to not matching the passed module %s",
+						itemURL, selectedModule.Key(),
+					)
+					continue
+				}
+			}
+			trackedItems = append(trackedItems, app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module))
+		}
+	case cfg.Run.ModuleURL != "":
+		module := app.ModuleFactory.GetModuleFromURI(cfg.Run.ModuleURL)
+		trackedItems = app.DbCon.GetTrackedItems(module, false)
+	default:
+		trackedItems = app.DbCon.GetTrackedItems(nil, false)
+	}
+	return trackedItems
 }
 
 // runForItems is the go routine to parse run parallel for groups

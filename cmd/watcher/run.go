@@ -7,33 +7,31 @@ import (
 
 // addRunCommand adds the run sub command
 func (cli *CliApplication) addRunCommand() {
-	var downloadDirectory string
-	var moduleURL string
-	var runParallel bool
 	// runs the main functionality to update all tracked items
 	var runCmd = &cobra.Command{
 		Use:   "run",
 		Short: "update all tracked items",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.Run(moduleURL, runParallel)
+			cli.config.Run.Items = args
+			cli.watcher.Run(cli.config)
 		},
 	}
 	runCmd.Flags().StringVarP(
-		&downloadDirectory,
+		&cli.config.Run.DownloadDirectory,
 		"directory",
 		"d",
 		"",
 		"download directory (will be saved in config file)",
 	)
 	runCmd.Flags().StringVarP(
-		&moduleURL,
+		&cli.config.Run.ModuleURL,
 		"url",
 		"u",
 		"",
 		"url of module you want to run",
 	)
 	runCmd.Flags().BoolVarP(
-		&runParallel,
+		&cli.config.Run.RunParallel,
 		"parallel",
 		"p",
 		false,
