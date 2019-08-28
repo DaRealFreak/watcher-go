@@ -37,3 +37,8 @@ type authInfo struct {
 	ValidateToken string
 	ValidateKey   string
 }
+
+// PlaceboResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
+type PlaceboResponse struct {
+	Status string `json:"status"`
+}
