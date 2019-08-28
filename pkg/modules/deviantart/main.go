@@ -69,7 +69,10 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	m.prepareSessionForOAuth2(account)
+	if !m.prepareSessionForOAuth2(account) {
+		log.Warning("preparing session for OAuth2 Token generation failed, please check your account")
+		return false
+	}
 	m.token = m.retrieveOAuth2Code()
 	// check placebo response if the token can be used
 	if placebo, err := m.Placebo(); err == nil {
@@ -83,7 +86,7 @@ func (m *deviantArt) Login(account *models.Account) bool {
 // prepareSessionForOAuth2 is used if the OAuth2 step should be completed automatically
 // so we log in into the website with the session before retrieving the OAuth2 Code
 // if login fails we use the browser solution as fallback which wouldn't even require a user in the database
-func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) {
+func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) bool {
 	res, err := m.Session.Get("https://www.deviantart.com/users/login")
 	raven.CheckError(err)
 
@@ -104,10 +107,7 @@ func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) {
 	doc := m.Session.GetDocument(res)
 	html, err := doc.Html()
 	raven.CheckError(err)
-	// login not successful
-	if !strings.Contains(html, "\"loggedIn\":true") {
-		log.Warning("login not successful, using browser authentication process as fallback")
-	}
+	return strings.Contains(html, "\"loggedIn\":true")
 }
 
 // getLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
