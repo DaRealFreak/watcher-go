@@ -9,8 +9,10 @@ import (
 func (cli *CliApplication) addRunCommand() {
 	// runs the main functionality to update all tracked items
 	var runCmd = &cobra.Command{
-		Use:   "run",
-		Short: "update all tracked items",
+		Use:   "run [items]",
+		Short: "update all tracked items or directly passed items",
+		Long: "update all tracked items if no direct items are passed.\n" +
+			"If items are directly passed only these will be updated.",
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Run.Items = args
 			cli.watcher.Run(cli.config)

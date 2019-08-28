@@ -47,9 +47,11 @@ This setting will be active until `--disable-sentry` is being added to another e
 
 ### Running the application
 Just running the command `watcher run` will run the main functionality of the application:  
-checking all active sources and downloading updates  
+checking all active sources and downloading updates.  
+Running the application only for specific items is possible by running:  
+`watcher run [flags] [url1] [url2] [url3] ...`  
 
-Options for this command are:
+Flags for the `run` command are:
 ```
 Flags:
   -d, --directory string   download directory (will be saved in config file)
