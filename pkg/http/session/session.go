@@ -42,15 +42,17 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.applyRateLimit()
+		s.ApplyRateLimit()
 
 		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.Get(uri)
-		// if no error occurred and status code is okay too break out of the loop
-		// 4xx & 5xx are client/server error codes, so we check for < 400
-		if err == nil && response.StatusCode < 400 {
-			break
-		} else {
+		switch {
+		case err == nil && response.StatusCode < 400:
+			// if no error occurred and status code is okay too break out of the loop
+			// 4xx & 5xx are client/server error codes, so we check for < 400
+			return response, err
+		default:
+			// any other error falls into the retry clause
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
@@ -61,15 +63,17 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.applyRateLimit()
+		s.ApplyRateLimit()
 
 		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		response, err = s.Client.PostForm(uri, data)
-		// if no error occurred and status code is okay too break out of the loop
-		// 4xx & 5xx are client/server error codes, so we check for < 400
-		if err == nil && response.StatusCode < 400 {
-			break
-		} else {
+		switch {
+		case err == nil && response.StatusCode < 400:
+			// if no error occurred and status code is okay too break out of the loop
+			// 4xx & 5xx are client/server error codes, so we check for < 400
+			return response, err
+		default:
+			// any other error falls into the retry clause
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
@@ -126,8 +130,8 @@ func (s *DefaultSession) GetClient() *http.Client {
 	return s.Client
 }
 
-// applyRateLimit waits for the leaky bucket to fill again
-func (s *DefaultSession) applyRateLimit() {
+// ApplyRateLimit waits for the leaky bucket to fill again
+func (s *DefaultSession) ApplyRateLimit() {
 	// if no rate limiter is defined we don't have to wait
 	if s.RateLimiter != nil {
 		// wait for request to stay within the rate limit
