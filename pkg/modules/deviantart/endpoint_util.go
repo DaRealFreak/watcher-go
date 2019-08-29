@@ -18,13 +18,13 @@ func (m *deviantArt) Placebo() (*UtilPlaceboResponse, *APIError) {
 	res, err := m.deviantArtSession.APIPost("https://www.deviantart.com/api/v1/oauth2/placebo", values, ScopeBasic)
 	raven.CheckError(err)
 
-	m.mapAPIResponse(res, &apiRes, apiErr)
+	m.mapAPIResponse(res, &apiRes, &apiErr)
 	return apiRes, apiErr
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 // or into the passed APIError if the status code is 400
-func (m *deviantArt) mapAPIResponse(res *http.Response, apiRes interface{}, apiErr *APIError) {
+func (m *deviantArt) mapAPIResponse(res *http.Response, apiRes interface{}, apiErr interface{}) {
 	content, err := ioutil.ReadAll(res.Body)
 	raven.CheckError(err)
 

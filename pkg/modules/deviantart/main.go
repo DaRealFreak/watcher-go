@@ -75,8 +75,10 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		return false
 	}
 
+	// call the utility endpoint function placebo to check the validity of the generated token
+	placebo, err := m.Placebo()
 	// check placebo response if the token can be used
-	m.LoggedIn = m.Placebo().Status == "success"
+	m.LoggedIn = err == nil && placebo.Status == "success"
 	return m.LoggedIn
 }
 
@@ -132,6 +134,8 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
 	for range time.Tick(60 * time.Second) {
-		fmt.Println(m.Placebo().Status)
+		res, err := m.Placebo()
+		fmt.Println(res, err)
+		fmt.Println(m.BrowseCategoryTree("not existing category"))
 	}
 }

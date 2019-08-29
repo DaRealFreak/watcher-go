@@ -24,6 +24,6 @@ func (m *deviantArt) BrowseCategoryTree(categoryPath string) (*BrowseCategoryTre
 	raven.CheckError(err)
 
 	// map the http.Response into either the api response or the api error
-	m.mapAPIResponse(res, &apiRes, apiErr)
+	m.mapAPIResponse(res, &apiRes, &apiErr)
 	return apiRes, apiErr
 }

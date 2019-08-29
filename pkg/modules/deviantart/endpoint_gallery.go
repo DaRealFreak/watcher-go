@@ -27,7 +27,7 @@ func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) (*Gall
 	raven.CheckError(err)
 
 	// map the http.Response into either the api response or the api error
-	m.mapAPIResponse(res, &apiRes, apiErr)
+	m.mapAPIResponse(res, &apiRes, &apiErr)
 	return apiRes, apiErr
 }
 
@@ -49,6 +49,6 @@ func (m *deviantArt) GalleryFoldersCreate(folder string) (*GalleryFoldersCreateR
 	raven.CheckError(err)
 
 	// map the http.Response into either the api response or the api error
-	m.mapAPIResponse(res, &apiRes, apiErr)
+	m.mapAPIResponse(res, &apiRes, &apiErr)
 	return apiRes, apiErr
 }
