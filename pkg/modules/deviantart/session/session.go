@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"golang.org/x/time/rate"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,10 +20,12 @@ type DeviantArtSession struct {
 
 // NewSession returns an initialized DeviantArtSession
 func NewSession() *DeviantArtSession {
-	return &DeviantArtSession{
+	ses := &DeviantArtSession{
 		DefaultSession: session.NewSession(),
 		TokenStore:     NewTokenStore(),
 	}
+	ses.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 10)
+	return ses
 }
 
 // Post sends normal POST requests without any API scope/token contrary to the APIPost function
@@ -52,10 +55,10 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 				data.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 				return s.post(uri, data, scope)
 			}
-			time.Sleep(time.Duration(try+1) * time.Second)
+			time.Sleep(time.Duration(try*5) * time.Second)
 		default:
 			// any other error falls into the retry clause
-			time.Sleep(time.Duration(try+1) * time.Second)
+			time.Sleep(time.Duration(try*5) * time.Second)
 		}
 	}
 	return res, err
@@ -150,10 +153,10 @@ func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, e
 				parsedURI.RawQuery = values.Encode()
 				return s.get(parsedURI.String(), scope)
 			}
-			time.Sleep(time.Duration(try+1) * time.Second)
+			time.Sleep(time.Duration(try*5) * time.Second)
 		default:
 			// any other error falls into the retry clause
-			time.Sleep(time.Duration(try+1) * time.Second)
+			time.Sleep(time.Duration(try*5) * time.Second)
 		}
 	}
 	return res, err
