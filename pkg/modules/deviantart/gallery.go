@@ -21,16 +21,10 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) {
 		deviations = append(deviations, results.Results...)
 	}
 
-	count := 0
-	count2 := 0
 	for _, result := range deviations {
 		if result.Excerpt != "" {
-			count++
-		}
-		content, _ := m.DeviationContent(result.DeviationID.String())
-		if content != nil {
-			count2++
+			// deviation has text so we retrieve the full content
+			_, _ = m.DeviationContent(result.DeviationID.String())
 		}
 	}
-	fmt.Println(count, count2)
 }
