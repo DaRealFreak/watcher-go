@@ -14,10 +14,10 @@ func TestRetrieveOAuth2TokenTimedOut(t *testing.T) {
 
 	da := &DeviantArtSession{
 		DefaultSession: session.NewSession(),
-		AccessToken:    nil,
+		TokenStore:     NewTokenStore(),
 	}
 
 	// wait for timeout returning empty string
-	oAuth2Code := da.retrieveOAuth2Token()
+	oAuth2Code := da.retrieveOAuth2Token("basic")
 	assertion.Equal(oAuth2Code, (*oauth2.Token)(nil))
 }
