@@ -2,6 +2,14 @@ package deviantart
 
 import "encoding/json"
 
+// APIError is the struct of the error API responses
+type APIError struct {
+	Error            string            `json:"error"`
+	ErrorDescription string            `json:"error_description"`
+	ErrorDetails     map[string]string `json:"error_details"`
+	ErrorCode        json.Number       `json:"error_code"`
+}
+
 // User is the struct of the user API response
 // https://www.deviantart.com/developers/http/v1/20160316/object/user
 type User struct {
