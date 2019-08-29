@@ -135,3 +135,11 @@ type Deviation struct {
 	ChallengeEntry   *ChallengeEntry `json:"challenge_entry"`
 	MotionBook       *MotionBook     `json:"motion_book"`
 }
+
+// Category is the struct of the category API response
+type Category struct {
+	CategoryPath       string `json:"catpath"`
+	Title              string `json:"title"`
+	HasSubcategory     bool   `json:"has_subcategory"`
+	ParentCategoryPath string `json:"parent_catpath"`
+}

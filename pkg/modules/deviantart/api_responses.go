@@ -36,9 +36,21 @@ type UtilPlaceboResponse struct {
 	Status string `json:"status"`
 }
 
-// BrowseGalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
-type BrowseGalleryAllResponse struct {
+// GalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
+type GalleryAllResponse struct {
 	HasMore    bool        `json:"has_more"`
 	NextOffset json.Number `json:"next_offset"`
 	Results    []*Deviation
+}
+
+// GalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/categorytree
+type BrowseCategoryTreeResponse struct {
+	Categories []*Category `json:"categories"`
+}
+
+// GalleryAllResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders/create
+type GalleryFoldersCreateResponse struct {
+	FolderID json.Number `json:"folderid"`
+	Name     string      `json:"name"`
 }
