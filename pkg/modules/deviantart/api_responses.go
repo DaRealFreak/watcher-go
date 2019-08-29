@@ -1,5 +1,7 @@
 package deviantart
 
+import "encoding/json"
+
 // loginInfo contains every JSON encoded information on the login page
 type loginInfo struct {
 	// ToDo: @@publicSession
@@ -13,7 +15,7 @@ type loginInfo struct {
 	AuthMode            string `json:"authMode"`
 	BaseDaURL           string `json:"baseDaUrl"`
 	CardImage           string `json:"cardImage"`
-	CsrfToken           string `json:"csrfToken"`
+	CSRFToken           string `json:"csrfToken"`
 	EnvironmentType     string `json:"environmentType"`
 	FacebookAppID       string `json:"facebookAppId"`
 	GoogleClientID      string `json:"googleClientId"`
@@ -29,7 +31,14 @@ type loginInfo struct {
 	SocialBlockExpanded bool   `json:"socialBlockExpanded"`
 }
 
-// PlaceboResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
-type PlaceboResponse struct {
+// UtilPlaceboResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
+type UtilPlaceboResponse struct {
 	Status string `json:"status"`
+}
+
+// BrowseGalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
+type BrowseGalleryAllResponse struct {
+	HasMore    bool        `json:"has_more"`
+	NextOffset json.Number `json:"next_offset"`
+	Results    []*Deviation
 }
