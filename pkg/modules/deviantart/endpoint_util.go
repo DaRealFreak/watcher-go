@@ -10,10 +10,7 @@ import (
 )
 
 // Placebo implements the API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
-func (m *deviantArt) Placebo() (*UtilPlaceboResponse, *APIError) {
-	apiRes := (*UtilPlaceboResponse)(nil)
-	apiErr := (*APIError)(nil)
-
+func (m *deviantArt) Placebo() (apiRes *UtilPlaceboResponse, apiErr *APIError) {
 	values := url.Values{}
 	res, err := m.deviantArtSession.APIPost("https://www.deviantart.com/api/v1/oauth2/placebo", values, ScopeBasic)
 	raven.CheckError(err)

@@ -8,16 +8,13 @@ import (
 )
 
 // GalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
-func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) (*GalleryAllResponse, *APIError) {
-	apiRes := (*GalleryAllResponse)(nil)
-	apiErr := (*APIError)(nil)
-
+func (m *deviantArt) GalleryAll(user string, offset uint, limit uint) (apiRes *GalleryAllResponse, apiErr *APIError) {
 	apiURL, err := url.Parse("https://www.deviantart.com/api/v1/oauth2/gallery/all")
 	raven.CheckError(err)
 
 	// add our API values and replace the RawQuery of the apiUrl
 	values := url.Values{
-		"username": {username},
+		"username": {user},
 		"offset":   {strconv.FormatUint(uint64(offset), 10)},
 		"limit":    {strconv.FormatUint(uint64(limit), 10)},
 	}
@@ -32,10 +29,7 @@ func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) (*Gall
 }
 
 // GalleryFoldersCreate implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders/create
-func (m *deviantArt) GalleryFoldersCreate(folder string) (*GalleryFoldersCreateResponse, *APIError) {
-	apiRes := (*GalleryFoldersCreateResponse)(nil)
-	apiErr := (*APIError)(nil)
-
+func (m *deviantArt) GalleryFoldersCreate(folder string) (apiRes *GalleryFoldersCreateResponse, apiErr *APIError) {
 	// add our API values and replace the RawQuery of the apiURL
 	values := url.Values{
 		"folder": {folder},
