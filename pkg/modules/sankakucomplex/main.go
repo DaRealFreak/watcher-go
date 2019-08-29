@@ -51,10 +51,9 @@ func (m *sankakuComplex) IsLoggedIn() bool {
 
 // RegisterURISchema adds our pattern to the URI Schemas
 func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	var moduleURISchemas []*regexp.Regexp
-	moduleURISchema := regexp.MustCompile(".*sankakucomplex.com")
-	moduleURISchemas = append(moduleURISchemas, moduleURISchema)
-	uriSchemas[m.Key()] = moduleURISchemas
+	uriSchemas[m.Key()] = []*regexp.Regexp{
+		regexp.MustCompile(".*sankakucomplex.com"),
+	}
 }
 
 // Login logs us in for the current session if possible/account available
