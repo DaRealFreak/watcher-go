@@ -88,13 +88,13 @@ func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) bool {
 	raven.CheckError(err)
 
 	info := m.getLoginCSRFToken(res)
-	if !(info.CsrfToken != "") {
+	if !(info.CSRFToken != "") {
 		raven.CheckError(fmt.Errorf("could not retrieve CSRF token from login page"))
 	}
 
 	values := url.Values{
 		"referer":    {info.Referer},
-		"csrf_token": {info.CsrfToken},
+		"csrf_token": {info.CSRFToken},
 		"challenge":  {"0"},
 		"username":   {account.Username},
 		"password":   {account.Password},
@@ -114,7 +114,7 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 	scriptTags := doc.Find("script")
 	scriptTags.Each(func(row int, selection *goquery.Selection) {
 		// no need for further checks if we already have our login info
-		if loginInfo.CsrfToken != "" {
+		if loginInfo.CSRFToken != "" {
 			return
 		}
 
