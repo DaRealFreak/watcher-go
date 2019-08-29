@@ -41,9 +41,9 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
 		res, err = s.Client.PostForm(uri, data)
 		switch {
-		case err == nil && res.StatusCode < 400:
-			// if no error occurred and status code is okay too break out of the loop
-			// 4xx & 5xx are client/server error codes, so we check for < 400
+		case err == nil && res.StatusCode < 401:
+			// normally everything < 400 is okay, but the API returns an error object on 400
+			// and retrying won't help on that status code anyways
 			return res, err
 		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
@@ -132,9 +132,9 @@ func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, e
 		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
 		res, err = s.Client.Get(uri)
 		switch {
-		case err == nil && res.StatusCode < 400:
-			// if no error occurred and status code is okay too break out of the loop
-			// 4xx & 5xx are client/server error codes, so we check for < 400
+		case err == nil && res.StatusCode < 401:
+			// normally everything < 400 is okay, but the API returns an error object on 400
+			// and retrying won't help on that status code anyways
 			return res, err
 		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
