@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/session"
@@ -20,14 +19,16 @@ import (
 // deviantArt contains the implementation of the ModuleInterface
 type deviantArt struct {
 	models.Module
-	deviantArtSession *session.DeviantArtSession
+	deviantArtSession  *session.DeviantArtSession
+	userGalleryPattern *regexp.Regexp
 }
 
 // NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = deviantArt{
-		deviantArtSession: session.NewSession(),
+		deviantArtSession:  session.NewSession(),
+		userGalleryPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]+)(/gallery(/?))?$`),
 	}
 
 	// initialize the Module with the session/database and login status
@@ -133,9 +134,8 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
-	for range time.Tick(60 * time.Second) {
-		res, err := m.Placebo()
-		fmt.Println(res, err)
-		fmt.Println(m.BrowseCategoryTree("not existing category"))
+	switch {
+	case m.userGalleryPattern.MatchString(item.URI):
+		m.parseGallery(item)
 	}
 }
