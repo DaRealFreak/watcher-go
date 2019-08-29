@@ -1,16 +1,16 @@
 package deviantart
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/url"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // BrowseGalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/browse/categorytree
-func (m *deviantArt) BrowseCategoryTree(categoryPath string) *BrowseCategoryTreeResponse {
-	var browseCategoryTreeResponse BrowseCategoryTreeResponse
+func (m *deviantArt) BrowseCategoryTree(categoryPath string) (*BrowseCategoryTreeResponse, *APIError) {
+	apiRes := (*BrowseCategoryTreeResponse)(nil)
+	apiErr := (*APIError)(nil)
+
 	apiURL, err := url.Parse("https://www.deviantart.com/api/v1/oauth2/browse/categorytree")
 	raven.CheckError(err)
 
@@ -23,10 +23,7 @@ func (m *deviantArt) BrowseCategoryTree(categoryPath string) *BrowseCategoryTree
 	res, err := m.deviantArtSession.APIGet(apiURL.String(), ScopeBrowse)
 	raven.CheckError(err)
 
-	content, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
-
-	// unmarshal the request content into the response struct
-	raven.CheckError(json.Unmarshal(content, &browseCategoryTreeResponse))
-	return &browseCategoryTreeResponse
+	// map the http.Response into either the api response or the api error
+	m.mapAPIResponse(res, &apiRes, apiErr)
+	return apiRes, apiErr
 }

@@ -1,9 +1,6 @@
 package deviantart
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/url"
 	"strconv"
 
@@ -11,8 +8,10 @@ import (
 )
 
 // GalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
-func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) *GalleryAllResponse {
-	var galleryAllResponse GalleryAllResponse
+func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) (*GalleryAllResponse, *APIError) {
+	apiRes := (*GalleryAllResponse)(nil)
+	apiErr := (*APIError)(nil)
+
 	apiURL, err := url.Parse("https://www.deviantart.com/api/v1/oauth2/gallery/all")
 	raven.CheckError(err)
 
@@ -27,17 +26,15 @@ func (m *deviantArt) GalleryAll(username string, offset uint, limit uint) *Galle
 	res, err := m.deviantArtSession.APIGet(apiURL.String(), ScopeBrowse)
 	raven.CheckError(err)
 
-	content, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
-
-	// unmarshal the request content into the response struct
-	raven.CheckError(json.Unmarshal(content, &galleryAllResponse))
-	return &galleryAllResponse
+	// map the http.Response into either the api response or the api error
+	m.mapAPIResponse(res, &apiRes, apiErr)
+	return apiRes, apiErr
 }
 
 // GalleryFoldersCreate implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders/create
-func (m *deviantArt) GalleryFoldersCreate(folder string) *GalleryFoldersCreateResponse {
-	var galleryAllResponse GalleryFoldersCreateResponse
+func (m *deviantArt) GalleryFoldersCreate(folder string) (*GalleryFoldersCreateResponse, *APIError) {
+	apiRes := (*GalleryFoldersCreateResponse)(nil)
+	apiErr := (*APIError)(nil)
 
 	// add our API values and replace the RawQuery of the apiURL
 	values := url.Values{
@@ -51,12 +48,7 @@ func (m *deviantArt) GalleryFoldersCreate(folder string) *GalleryFoldersCreateRe
 	)
 	raven.CheckError(err)
 
-	content, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
-	fmt.Println(string(content))
-	fmt.Println(res.StatusCode)
-
-	// unmarshal the request content into the response struct
-	raven.CheckError(json.Unmarshal(content, &galleryAllResponse))
-	return &galleryAllResponse
+	// map the http.Response into either the api response or the api error
+	m.mapAPIResponse(res, &apiRes, apiErr)
+	return apiRes, apiErr
 }
