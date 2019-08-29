@@ -154,10 +154,19 @@ type Category struct {
 
 // DeviationPagination is the struct of deviation pagination API responses
 type DeviationPagination struct {
-	HasMore        bool        `json:"has_more"`
-	NextOffset     json.Number `json:"next_offset"`
-	Results        []*Deviation
-	EstimatedTotal json.Number `json:"estimated_total"`
+	HasMore        bool         `json:"has_more"`
+	NextOffset     json.Number  `json:"next_offset"`
+	Results        []*Deviation `json:"results"`
+	EstimatedTotal json.Number  `json:"estimated_total"`
+}
+
+// EmbeddedContentPagination is the struct of embedded content pagination API responses
+type EmbeddedContentPagination struct {
+	HasMore    bool         `json:"has_more"`
+	NextOffset json.Number  `json:"next_offset"`
+	HasLess    bool         `json:"has_less"`
+	PrevOffset json.Number  `json:"prev_offset"`
+	Results    []*Deviation `json:"results"`
 }
 
 // Tag is the struct of tag API responses
