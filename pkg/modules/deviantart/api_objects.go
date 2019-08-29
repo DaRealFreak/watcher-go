@@ -82,14 +82,14 @@ type DailyDeviation struct {
 // Challenge is the struct of the challenge API response
 type Challenge struct {
 	Type            []string      `json:"type"`
-	Completed       bool          `json:"completed"`
 	Tags            []string      `json:"tags"`
-	Locked          bool          `json:"locked"`
 	CreditDeviation json.Number   `json:"credit_deviation"`
 	Media           []string      `json:"media"`
 	LevelLabel      string        `json:"level_label"`
 	TimeLimit       json.Number   `json:"time_limit"`
 	Levels          []json.Number `json:"levels"`
+	Completed       bool          `json:"completed"`
+	Locked          bool          `json:"locked"`
 }
 
 // ChallengeEntry is the struct of the challenge entry API response
@@ -115,12 +115,9 @@ type Deviation struct {
 	Title            string          `json:"title"`
 	Category         string          `json:"category"`
 	CategoryPath     string          `json:"category_path"`
-	IsFavourited     bool            `json:"is_favourited"`
-	IsDeleted        bool            `json:"is_deleted"`
 	Author           *User           `json:"author"`
 	Stats            *DeviationStats `json:"stats"`
 	PublishedTime    string          `json:"published_time"`
-	AllowsComments   bool            `json:"allows_comments"`
 	Preview          *Image          `json:"preview"`
 	Content          *Image          `json:"content"`
 	Thumbs           []*Image        `json:"thumbs"`
@@ -128,12 +125,15 @@ type Deviation struct {
 	Flash            *Image          `json:"flash"`
 	DailyDeviation   *DailyDeviation `json:"daily_deviation"`
 	Excerpt          string          `json:"excerpt"`
-	IsMature         bool            `json:"is_mature"`
-	IsDownloadable   bool            `json:"is_downloadable"`
 	DownloadFileSize json.Number     `json:"download_filesize"`
 	Challenge        *Challenge      `json:"challenge"`
 	ChallengeEntry   *ChallengeEntry `json:"challenge_entry"`
 	MotionBook       *MotionBook     `json:"motion_book"`
+	IsFavourited     bool            `json:"is_favourited"`
+	IsDeleted        bool            `json:"is_deleted"`
+	AllowsComments   bool            `json:"allows_comments"`
+	IsMature         bool            `json:"is_mature"`
+	IsDownloadable   bool            `json:"is_downloadable"`
 }
 
 // Category is the struct of the category API response
