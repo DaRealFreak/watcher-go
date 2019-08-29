@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -61,9 +62,12 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 }
 
 // APIPost handles the OAuth2 Token for the POST request including refresh for API requests
-func (s *DeviantArtSession) APIPost(uri string, data url.Values, scope string) (response *http.Response, err error) {
-	// refresh OAuth2 Token if not set, return error if token couldn't get retrieved
+func (s *DeviantArtSession) APIPost(uri string, data url.Values, scopes ...string) (response *http.Response, err error) {
+	// scopes are separated by whitespaces according to the docs
+	// https://www.deviantart.com/developers/authentication
+	scope := strings.Join(scopes, " ")
 
+	// refresh OAuth2 Token if not set, return error if token couldn't get retrieved
 	if !s.TokenStore.HasToken(scope) {
 		if !s.RefreshOAuth2Token(scope) {
 			return nil,
@@ -82,7 +86,11 @@ func (s *DeviantArtSession) APIPost(uri string, data url.Values, scope string) (
 }
 
 // APIGet handles the OAuth2 Token for the GET request including refresh for API requests
-func (s *DeviantArtSession) APIGet(uri string, scope string) (response *http.Response, err error) {
+func (s *DeviantArtSession) APIGet(uri string, scopes ...string) (response *http.Response, err error) {
+	// scopes are separated by whitespaces according to the docs
+	// https://www.deviantart.com/developers/authentication
+	scope := strings.Join(scopes, " ")
+
 	// refresh OAuth2 Token if not set, return error if token couldn't get retrieved
 	if !s.TokenStore.HasToken(scope) {
 		if !s.RefreshOAuth2Token(scope) {

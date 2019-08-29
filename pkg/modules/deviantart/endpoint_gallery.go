@@ -46,7 +46,7 @@ func (m *deviantArt) GalleryFoldersCreate(folder string) *GalleryFoldersCreateRe
 	res, err := m.deviantArtSession.APIPost(
 		"https://www.deviantart.com/api/v1/oauth2/gallery/folders/create",
 		values,
-		ScopeGallery+" "+ScopeBrowse,
+		ScopeGallery, ScopeBrowse,
 	)
 	raven.CheckError(err)
 
