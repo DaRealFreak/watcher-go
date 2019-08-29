@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -91,19 +92,19 @@ func (a *tokenRequestApplication) checkRedirect(req *http.Request, via []*http.R
 // retrieveOAuth2Token creates a new OAuth2Application and checks redirects for OAuth2 token fragments
 // if not found it tries to authorize the application and checks again
 // if token could not get extracted within 60 seconds it will return a nil token
-func (s *DeviantArtSession) retrieveOAuth2Token() *oauth2.Token {
+func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 	tokenRequestApplication := newTokenRequestApplication()
-	oAuth2URL := "https://www.deviantart.com/oauth2/authorize?response_type=token" +
-		"&client_id=" + APIClientID + "&redirect_uri=" + RedirectURL + "&scope=basic&state=mysessionid"
+	oAuth2URL := fmt.Sprintf("https://www.deviantart.com/oauth2/authorize"+
+		"?response_type=token&client_id=%s&redirect_uri=%s&scope=%s&state=mysessionid", APIClientID, RedirectURL, scope)
 	// send request and wait for either a successful response or a timeout
 	go s.sendOAuth2AcceptRequest(tokenRequestApplication, oAuth2URL)
 
 	select {
 	case <-tokenRequestApplication.granted:
-		log.Debugf("token got successfully extracted")
+		log.Debugf("token for scope %s got successfully extracted", scope)
 	case <-time.After(Timeout):
-		log.Warningf("no token redirect occurred within %d seconds",
-			int(Timeout.Seconds()),
+		log.Warningf("no token redirect for scope occurred within %d seconds",
+			scope, int(Timeout.Seconds()),
 		)
 	}
 	log.Debugf("restoring previous CheckRedirect function")
