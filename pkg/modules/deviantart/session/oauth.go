@@ -103,7 +103,7 @@ func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 	case <-tokenRequestApplication.granted:
 		log.Debugf("token for scope %s got successfully extracted", scope)
 	case <-time.After(Timeout):
-		log.Warningf("no token redirect for scope occurred within %d seconds",
+		log.Warningf("no token redirect for scope %s occurred within %d seconds",
 			scope, int(Timeout.Seconds()),
 		)
 	}
