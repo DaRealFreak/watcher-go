@@ -95,7 +95,7 @@ func (a *tokenRequestApplication) checkRedirect(req *http.Request, via []*http.R
 func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 	tokenRequestApplication := newTokenRequestApplication()
 	oAuth2URL := fmt.Sprintf("https://www.deviantart.com/oauth2/authorize"+
-		"?response_type=token&client_id=%s&redirect_uri=%s&scope=%s&state=mysessionid", APIClientID, RedirectURL, scope)
+		"?response_type=token&client_id=%s&redirect_uri=%s&scope=%s&state=mysessionid", APIClientID, RedirectURL, url.QueryEscape(scope))
 	// send request and wait for either a successful response or a timeout
 	go s.sendOAuth2AcceptRequest(tokenRequestApplication, oAuth2URL)
 
