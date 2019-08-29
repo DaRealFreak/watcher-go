@@ -151,3 +151,16 @@ type Category struct {
 	HasSubcategory     bool   `json:"has_subcategory"`
 	ParentCategoryPath string `json:"parent_catpath"`
 }
+
+// DeviationPagination is the struct of deviation pagination API responses
+type DeviationPagination struct {
+	HasMore        bool        `json:"has_more"`
+	NextOffset     json.Number `json:"next_offset"`
+	Results        []*Deviation
+	EstimatedTotal json.Number `json:"estimated_total"`
+}
+
+// Tag is the struct of tag API responses
+type Tag struct {
+	TagName string `json:"tag_name"`
+}
