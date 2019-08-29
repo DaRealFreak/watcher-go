@@ -2,9 +2,10 @@ package deviantart
 
 import (
 	"encoding/json"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // BrowseGalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/browse/categorytree

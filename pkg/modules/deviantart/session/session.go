@@ -33,21 +33,21 @@ func (s *DeviantArtSession) Post(uri string, data url.Values) (response *http.Re
 
 // post is the internal POST functionality with the scope attached for OAuth2 Token refreshes
 // if we receive an "Not Authorized" (401) status code
-func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (response *http.Response, err error) {
+func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
 		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
-		response, err = s.Client.PostForm(uri, data)
+		res, err = s.Client.PostForm(uri, data)
 		switch {
-		case err == nil && response.StatusCode < 400:
+		case err == nil && res.StatusCode < 400:
 			// if no error occurred and status code is okay too break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
-			return response, err
-		case err == nil && (response.StatusCode == 401 || response.StatusCode == 403) && scope != "":
+			return res, err
+		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
-			log.Infof("status code %d, refreshing OAuth2 Token", response.StatusCode)
+			log.Infof("status code %d, refreshing OAuth2 Token", res.StatusCode)
 			if s.RefreshOAuth2Token(scope) {
 				data.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 				return s.post(uri, data, scope)
@@ -58,11 +58,11 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
-	return response, err
+	return res, err
 }
 
 // APIPost handles the OAuth2 Token for the POST request including refresh for API requests
-func (s *DeviantArtSession) APIPost(uri string, data url.Values, scopes ...string) (response *http.Response, err error) {
+func (s *DeviantArtSession) APIPost(uri string, data url.Values, scopes ...string) (res *http.Response, err error) {
 	// scopes are separated by whitespaces according to the docs
 	// https://www.deviantart.com/developers/authentication
 	scope := strings.Join(scopes, " ")
@@ -86,7 +86,7 @@ func (s *DeviantArtSession) APIPost(uri string, data url.Values, scopes ...strin
 }
 
 // APIGet handles the OAuth2 Token for the GET request including refresh for API requests
-func (s *DeviantArtSession) APIGet(uri string, scopes ...string) (response *http.Response, err error) {
+func (s *DeviantArtSession) APIGet(uri string, scopes ...string) (res *http.Response, err error) {
 	// scopes are separated by whitespaces according to the docs
 	// https://www.deviantart.com/developers/authentication
 	scope := strings.Join(scopes, " ")
@@ -118,27 +118,27 @@ func (s *DeviantArtSession) APIGet(uri string, scopes ...string) (response *http
 
 // Get sends normal GET requests without any API scope/token contrary to the APIGet function
 // it will try multiple times to successfully retrieve the http Response, if the error persists it will return the error
-func (s *DeviantArtSession) Get(uri string) (response *http.Response, err error) {
+func (s *DeviantArtSession) Get(uri string) (res *http.Response, err error) {
 	return s.get(uri, "")
 }
 
 // get is the internal GET functionality with the scope attached for OAuth2 Token refreshes
 // if we receive an "Not Authorized" (401) status code
-func (s *DeviantArtSession) get(uri string, scope string) (response *http.Response, err error) {
+func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
 		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
-		response, err = s.Client.Get(uri)
+		res, err = s.Client.Get(uri)
 		switch {
-		case err == nil && response.StatusCode < 400:
+		case err == nil && res.StatusCode < 400:
 			// if no error occurred and status code is okay too break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
-			return response, err
-		case err == nil && (response.StatusCode == 401 || response.StatusCode == 403) && scope != "":
+			return res, err
+		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
-			log.Infof("status code %d, refreshing OAuth2 Token", response.StatusCode)
+			log.Infof("status code %d, refreshing OAuth2 Token", res.StatusCode)
 			if s.RefreshOAuth2Token(scope) {
 				// replace access_token fragment with new token
 				parsedURI, err := url.Parse(uri)
@@ -156,7 +156,7 @@ func (s *DeviantArtSession) get(uri string, scope string) (response *http.Respon
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
-	return response, err
+	return res, err
 }
 
 // RefreshOAuth2Token tries to retrieve the OAuth2 Token from the API for passed scope, returns the success as boolean

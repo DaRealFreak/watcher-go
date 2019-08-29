@@ -3,10 +3,11 @@ package deviantart
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"io/ioutil"
 	"net/url"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // GalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
