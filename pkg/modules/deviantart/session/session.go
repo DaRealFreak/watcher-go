@@ -44,8 +44,8 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 			// if no error occurred and status code is okay too break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
 			return response, err
-		case err == nil && response.StatusCode == 401 && scope != "":
-			// on 401 we try to refresh our OAuth2 Token and try it again
+		case err == nil && (response.StatusCode == 401 || response.StatusCode == 403) && scope != "":
+			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
 			log.Infof("status code %d, refreshing OAuth2 Token", response.StatusCode)
 			if s.RefreshOAuth2Token(scope) {
 				data.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
@@ -128,8 +128,8 @@ func (s *DeviantArtSession) get(uri string, scope string) (response *http.Respon
 			// if no error occurred and status code is okay too break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
 			return response, err
-		case err == nil && response.StatusCode == 401 && scope != "":
-			// on 401 we try to refresh our OAuth2 Token and try it again
+		case err == nil && (response.StatusCode == 401 || response.StatusCode == 403) && scope != "":
+			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
 			log.Infof("status code %d, refreshing OAuth2 Token", response.StatusCode)
 			if s.RefreshOAuth2Token(scope) {
 				// replace access_token fragment with new token
