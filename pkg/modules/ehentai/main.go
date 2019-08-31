@@ -52,6 +52,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
+	// register module to log formatter
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: module.Key(),
+		Color: "232:94",
+	})
 	return &module
 }
 
@@ -145,12 +150,4 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		// if no error occurred update the tracked item
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
-}
-
-// init registers the module to the log formatter
-func init() {
-	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: (&ehentai{}).Key(),
-		Color: "232:94",
-	})
 }

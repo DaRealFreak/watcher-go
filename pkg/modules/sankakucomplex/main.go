@@ -34,6 +34,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
+	// register module to log formatter
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: module.Key(),
+		Color: "232:172",
+	})
 	return &module
 }
 
@@ -80,12 +85,4 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) {
 	downloadQueue := m.parseGallery(item)
 
 	m.ProcessDownloadQueue(downloadQueue, item)
-}
-
-// init registers the module to the log formatter
-func init() {
-	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: (&sankakuComplex{}).Key(),
-		Color: "232:172",
-	})
 }

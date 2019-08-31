@@ -3,13 +3,13 @@ package deviantart
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -45,6 +45,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
+	// register module to log formatter
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: module.Key(),
+		Color: "232:34",
+	})
 	return &module
 }
 
@@ -140,12 +145,4 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 	case m.userGalleryPattern.MatchString(item.URI):
 		m.parseGallery(item)
 	}
-}
-
-// init registers the module to the log formatter
-func init() {
-	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: (&deviantArt{}).Key(),
-		Color: "232:34",
-	})
 }

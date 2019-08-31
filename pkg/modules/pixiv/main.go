@@ -71,6 +71,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
+	// register module to log formatter
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: module.Key(),
+		Color: "232:33",
+	})
 	return &module
 }
 
@@ -146,12 +151,4 @@ func (m *pixiv) Parse(item *models.TrackedItem) {
 	if strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php") {
 		m.parseUserIllustrations(item)
 	}
-}
-
-// init registers the module to the log formatter
-func init() {
-	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: (&pixiv{}).Key(),
-		Color: "232:33",
-	})
 }
