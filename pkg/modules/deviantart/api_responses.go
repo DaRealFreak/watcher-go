@@ -36,9 +36,86 @@ type UtilPlaceboResponse struct {
 	Status string `json:"status"`
 }
 
-// BrowseGalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
-type BrowseGalleryAllResponse struct {
-	HasMore    bool        `json:"has_more"`
-	NextOffset json.Number `json:"next_offset"`
-	Results    []*Deviation
+// GalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
+type GalleryAllResponse struct {
+	DeviationPagination
+}
+
+// BrowseCategoryTreeResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/categorytree
+type BrowseCategoryTreeResponse struct {
+	Categories []*Category `json:"categories"`
+}
+
+// BrowseDailyDeviationsResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/dailydeviations
+type BrowseDailyDeviationsResponse struct {
+	Results []*Deviation `json:"results"`
+}
+
+// BrowseHotResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/hot
+type BrowseHotResponse struct {
+	DeviationPagination
+}
+
+// BrowseMoreLikeThisResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/morelikethis
+type BrowseMoreLikeThisResponse struct {
+	DeviationPagination
+}
+
+// BrowseMoreLikeThisPreviewResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/morelikethis/preview
+type BrowseMoreLikeThisPreviewResponse struct {
+	Seed           json.Number  `json:"seed"`
+	Author         *User        `json:"author"`
+	MoreFromArtist []*Deviation `json:"more_from_artist"`
+	MoreFromDa     []*Deviation `json:"more_from_da"`
+}
+
+// BrowseNewestResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/newest
+type BrowseNewestResponse struct {
+	DeviationPagination
+}
+
+// BrowsePopularResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/popular
+type BrowsePopularResponse struct {
+	DeviationPagination
+}
+
+// BrowseTagsResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags
+type BrowseTagsResponse struct {
+	DeviationPagination
+}
+
+// BrowseTagsSearchResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags/search
+type BrowseTagsSearchResponse struct {
+	Results []*Tag `json:"results"`
+}
+
+// BrowseUndiscoveredResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/undiscovered
+type BrowseUndiscoveredResponse struct {
+	DeviationPagination
+}
+
+// BrowseUserJournalsResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/user/journals
+type BrowseUserJournalsResponse struct {
+	DeviationPagination
+}
+
+// DeviationContent is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/deviation/content
+type DeviationContent struct {
+	Html     string `json:"html"`
+	Css      string `json:"css"`
+	CssFonts string `json:"css_fonts"`
+}
+
+// GalleryFoldersCreateResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders/create
+type GalleryFoldersCreateResponse struct {
+	FolderID json.Number `json:"folderid"`
+	Name     string      `json:"name"`
 }

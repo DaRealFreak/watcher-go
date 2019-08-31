@@ -72,10 +72,9 @@ func (m *ehentai) IsLoggedIn() bool {
 
 // RegisterURISchema adds our pattern to the URI Schemas
 func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	var moduleURISchemas []*regexp.Regexp
-	moduleURISchema := regexp.MustCompile(`.*e[\-x]hentai.org`)
-	moduleURISchemas = append(moduleURISchemas, moduleURISchema)
-	uriSchemas[m.Key()] = moduleURISchemas
+	uriSchemas[m.Key()] = []*regexp.Regexp{
+		regexp.MustCompile(`.*e[\-x]hentai.org`),
+	}
 }
 
 // Login logs us in for the current session if possible/account available

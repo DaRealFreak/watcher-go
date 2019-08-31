@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -21,14 +20,16 @@ import (
 // deviantArt contains the implementation of the ModuleInterface
 type deviantArt struct {
 	models.Module
-	deviantArtSession *session.DeviantArtSession
+	deviantArtSession  *session.DeviantArtSession
+	userGalleryPattern *regexp.Regexp
 }
 
 // NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = deviantArt{
-		deviantArtSession: session.NewSession(),
+		deviantArtSession:  session.NewSession(),
+		userGalleryPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]+)(/gallery(/?))?$`),
 	}
 
 	// initialize the Module with the session/database and login status
@@ -64,10 +65,10 @@ func (m *deviantArt) IsLoggedIn() bool {
 
 // RegisterURISchema adds our pattern to the URI Schemas
 func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	var moduleURISchemas []*regexp.Regexp
-	moduleURISchema := regexp.MustCompile(".*deviantart.com")
-	moduleURISchemas = append(moduleURISchemas, moduleURISchema)
-	uriSchemas[m.Key()] = moduleURISchemas
+	uriSchemas[m.Key()] = []*regexp.Regexp{
+		regexp.MustCompile(".*deviantart.com"),
+		regexp.MustCompile(`DeviantArt://.*`),
+	}
 }
 
 // Login logs us in for the current session if possible/account available
@@ -77,8 +78,10 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		return false
 	}
 
+	// call the utility endpoint function placebo to check the validity of the generated token
+	placebo, err := m.Placebo()
 	// check placebo response if the token can be used
-	m.LoggedIn = m.Placebo().Status == "success"
+	m.LoggedIn = err == nil && placebo.Status == "success"
 	return m.LoggedIn
 }
 
@@ -133,8 +136,9 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
-	for range time.Tick(60 * time.Second) {
-		fmt.Println(m.Placebo().Status)
+	switch {
+	case m.userGalleryPattern.MatchString(item.URI):
+		m.parseGallery(item)
 	}
 }
 

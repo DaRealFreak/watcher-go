@@ -2,6 +2,14 @@ package deviantart
 
 import "encoding/json"
 
+// APIError is the struct of the error API responses
+type APIError struct {
+	Error            string            `json:"error"`
+	ErrorDescription string            `json:"error_description"`
+	ErrorDetails     map[string]string `json:"error_details"`
+	ErrorCode        json.Number       `json:"error_code"`
+}
+
 // User is the struct of the user API response
 // https://www.deviantart.com/developers/http/v1/20160316/object/user
 type User struct {
@@ -82,14 +90,14 @@ type DailyDeviation struct {
 // Challenge is the struct of the challenge API response
 type Challenge struct {
 	Type            []string      `json:"type"`
-	Completed       bool          `json:"completed"`
 	Tags            []string      `json:"tags"`
-	Locked          bool          `json:"locked"`
 	CreditDeviation json.Number   `json:"credit_deviation"`
 	Media           []string      `json:"media"`
 	LevelLabel      string        `json:"level_label"`
 	TimeLimit       json.Number   `json:"time_limit"`
 	Levels          []json.Number `json:"levels"`
+	Completed       bool          `json:"completed"`
+	Locked          bool          `json:"locked"`
 }
 
 // ChallengeEntry is the struct of the challenge entry API response
@@ -115,12 +123,9 @@ type Deviation struct {
 	Title            string          `json:"title"`
 	Category         string          `json:"category"`
 	CategoryPath     string          `json:"category_path"`
-	IsFavourited     bool            `json:"is_favourited"`
-	IsDeleted        bool            `json:"is_deleted"`
 	Author           *User           `json:"author"`
 	Stats            *DeviationStats `json:"stats"`
 	PublishedTime    string          `json:"published_time"`
-	AllowsComments   bool            `json:"allows_comments"`
 	Preview          *Image          `json:"preview"`
 	Content          *Image          `json:"content"`
 	Thumbs           []*Image        `json:"thumbs"`
@@ -128,10 +133,43 @@ type Deviation struct {
 	Flash            *Image          `json:"flash"`
 	DailyDeviation   *DailyDeviation `json:"daily_deviation"`
 	Excerpt          string          `json:"excerpt"`
-	IsMature         bool            `json:"is_mature"`
-	IsDownloadable   bool            `json:"is_downloadable"`
 	DownloadFileSize json.Number     `json:"download_filesize"`
 	Challenge        *Challenge      `json:"challenge"`
 	ChallengeEntry   *ChallengeEntry `json:"challenge_entry"`
 	MotionBook       *MotionBook     `json:"motion_book"`
+	IsFavourited     bool            `json:"is_favourited"`
+	IsDeleted        bool            `json:"is_deleted"`
+	AllowsComments   bool            `json:"allows_comments"`
+	IsMature         bool            `json:"is_mature"`
+	IsDownloadable   bool            `json:"is_downloadable"`
+}
+
+// Category is the struct of the category API response
+type Category struct {
+	CategoryPath       string `json:"catpath"`
+	Title              string `json:"title"`
+	HasSubcategory     bool   `json:"has_subcategory"`
+	ParentCategoryPath string `json:"parent_catpath"`
+}
+
+// DeviationPagination is the struct of deviation pagination API responses
+type DeviationPagination struct {
+	HasMore        bool         `json:"has_more"`
+	NextOffset     json.Number  `json:"next_offset"`
+	Results        []*Deviation `json:"results"`
+	EstimatedTotal json.Number  `json:"estimated_total"`
+}
+
+// EmbeddedContentPagination is the struct of embedded content pagination API responses
+type EmbeddedContentPagination struct {
+	HasMore    bool         `json:"has_more"`
+	NextOffset json.Number  `json:"next_offset"`
+	HasLess    bool         `json:"has_less"`
+	PrevOffset json.Number  `json:"prev_offset"`
+	Results    []*Deviation `json:"results"`
+}
+
+// Tag is the struct of tag API responses
+type Tag struct {
+	TagName string `json:"tag_name"`
 }
