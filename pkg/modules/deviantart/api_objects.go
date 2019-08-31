@@ -162,11 +162,11 @@ type DeviationPagination struct {
 
 // EmbeddedContentPagination is the struct of embedded content pagination API responses
 type EmbeddedContentPagination struct {
-	HasMore    bool         `json:"has_more"`
 	NextOffset json.Number  `json:"next_offset"`
-	HasLess    bool         `json:"has_less"`
 	PrevOffset json.Number  `json:"prev_offset"`
 	Results    []*Deviation `json:"results"`
+	HasMore    bool         `json:"has_more"`
+	HasLess    bool         `json:"has_less"`
 }
 
 // Tag is the struct of tag API responses

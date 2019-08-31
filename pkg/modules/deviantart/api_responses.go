@@ -108,9 +108,9 @@ type BrowseUserJournalsResponse struct {
 
 // DeviationContent is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/deviation/content
 type DeviationContent struct {
-	Html     string `json:"html"`
-	Css      string `json:"css"`
-	CssFonts string `json:"css_fonts"`
+	HTML     string `json:"html"`
+	CSS      string `json:"css"`
+	CSSFonts string `json:"css_fonts"`
 }
 
 // GalleryFoldersCreateResponse is the struct

@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"golang.org/x/time/rate"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 // DeviantArtSession is an extension of the DefaultSession, handling the OAuth2 Token process and POST requests

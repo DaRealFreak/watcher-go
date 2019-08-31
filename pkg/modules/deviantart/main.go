@@ -3,13 +3,13 @@ package deviantart
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
