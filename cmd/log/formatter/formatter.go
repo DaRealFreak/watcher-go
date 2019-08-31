@@ -49,6 +49,10 @@ type ColorSchema struct {
 
 // Formatter contains all options for this formatter
 type Formatter struct {
+	// timestamp formatting, default is time.RFC3339
+	TimestampFormat string
+	// color schema for messages
+	ColorSchema *ColorSchema
 	// no colors
 	DisableColors bool
 	// no check for TTY terminal
@@ -61,10 +65,7 @@ type Formatter struct {
 	DisableLowercase bool
 	// false -> time passed, true -> timestamp
 	FullTimestamp bool
-	// timestamp formatting, default is time.RFC3339
-	TimestampFormat string
-	// color schema for messages
-	ColorSchema      *ColorSchema
+	// reserves space for all log entries for all registered matches
 	PadAllLogEntries bool
 }
 
