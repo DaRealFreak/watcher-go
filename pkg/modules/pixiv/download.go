@@ -87,7 +87,9 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 	}
 
 	filepath := path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName)
-	log.Debug(fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)))
+	log.WithField("module", m.Key()).Debug(
+		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
+	)
 	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
 		return err
 	}

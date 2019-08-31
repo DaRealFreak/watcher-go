@@ -69,10 +69,12 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
 func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
+	log.WithField("module", t.Key()).Info(
+		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+	)
 
 	for index, data := range downloadQueue {
-		log.Info(
+		log.WithField("module", t.Key()).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,

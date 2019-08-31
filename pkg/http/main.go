@@ -28,6 +28,7 @@ type SessionInterface interface {
 // Session is an implementation to the SessionInterface to provide basic functions
 type Session struct {
 	SessionInterface
+	ModuleKey string
 }
 
 // EnsureDownloadDirectory ensures that the download path already exists or creates it if not

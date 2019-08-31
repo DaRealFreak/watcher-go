@@ -102,7 +102,9 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 			if !module.IsLoggedIn() {
 				app.loginToModule(module)
 			}
-			log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem))
+			log.WithField("module", module.Key()).Info(
+				fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+			)
 			module.Parse(item)
 		}
 	}
@@ -118,7 +120,7 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 			if cfg.Run.ModuleURL != "" {
 				selectedModule := app.ModuleFactory.GetModuleFromURI(cfg.Run.ModuleURL)
 				if selectedModule.Key() != module.Key() {
-					log.Warningf(
+					log.WithField("module", module.Key()).Warningf(
 						"ignoring directly passed item %s due to not matching the passed module %s",
 						itemURL, selectedModule.Key(),
 					)
@@ -145,14 +147,16 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 	}
 
 	for _, item := range trackedItems {
-		log.Info(fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem))
+		log.WithField("module", module.Key()).Info(
+			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+		)
 		module.Parse(item)
 	}
 }
 
 // loginToModule handles the login for modules, if an account exists: login
 func (app *Watcher) loginToModule(module *models.Module) {
-	log.Info(fmt.Sprintf("logging in for module %s", module.Key()))
+	log.WithField("module", module.Key()).Info(fmt.Sprintf("logging in for module %s", module.Key()))
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
@@ -169,14 +173,14 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	// login into the module
 	success := module.Login(account)
 	if success {
-		log.Info("login successful")
+		log.WithField("module", module.Key()).Info("login successful")
 	} else {
 		if module.RequiresLogin() {
 			raven.CheckError(
 				fmt.Errorf("module \"%s\" requires a login, but the login failed", module.Key()),
 			)
 		} else {
-			log.Warning("login not successful")
+			log.WithField("module", module.Key()).Warning("login not successful")
 		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -37,6 +38,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// set rate limiter on 1.5 seconds with burst limit of 1
 	ehSession := session.NewSession()
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+	ehSession.ModuleKey = subModule.Key()
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
@@ -110,19 +112,21 @@ func (m *ehentai) Parse(item *models.TrackedItem) {
 
 // processDownloadQueue processes the download queue consisting of gallery items
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI))
+	log.WithField("module", m.Key()).Info(
+		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+	)
 
 	for index, data := range downloadQueue {
 		downloadQueueItem := m.getDownloadQueueItem(data)
 		// check for limit
 		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
-			log.Info("download limit reached, skipping galleries from now on")
+			log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
 			m.downloadLimitReached = true
 			break
 		}
 
-		log.Info(
+		log.WithField("module", m.Key()).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
@@ -142,4 +146,12 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		// if no error occurred update the tracked item
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
+}
+
+// init registers the module to the log formatter
+func init() {
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: (&ehentai{}).Key(),
+		Color: "232:94",
+	})
 }

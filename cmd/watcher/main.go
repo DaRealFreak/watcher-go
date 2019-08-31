@@ -3,15 +3,17 @@ package watcher
 import (
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/DaRealFreak/watcher-go/pkg/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
+	"github.com/mattn/go-colorable"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 // CliApplication contains the structure for the Watcher application for the CLI interface
@@ -151,16 +153,19 @@ func (cli *CliApplication) initWatcher() {
 
 // initLogger initializes the logger
 func (cli *CliApplication) initLogger() {
-	log.SetOutput(os.Stdout)
+	log.SetOutput(colorable.NewColorableStdout())
 	lvl, err := log.ParseLevel(cli.config.LogLevel)
 	raven.CheckError(err)
 	log.SetLevel(lvl)
 	// set custom text formatter for the logger
-	log.StandardLogger().Formatter = &prefixed.TextFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   true,
-		ForceColors:     cli.config.Cli.ForceColors,
-		ForceFormatting: cli.config.Cli.ForceFormat,
+	log.StandardLogger().Formatter = &formatter.Formatter{
+		DisableColors:    false,
+		ForceColors:      false,
+		DisableTimestamp: false,
+		DisableLowercase: false,
+		FullTimestamp:    false,
+		TimestampFormat:  time.StampMilli,
+		PadAllLogEntries: true,
 	}
 }
 

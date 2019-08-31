@@ -15,7 +15,9 @@ import (
 func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	userID := m.getUserIDFromURL(item.URI)
 	if m.getUserDetail(userID) == nil {
-		log.Warning("couldn't retrieve user details, changing artist to complete")
+		log.WithField("module", m.Key()).Warning(
+			"couldn't retrieve user details, changing artist to complete",
+		)
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return
 	}
@@ -50,11 +52,13 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 
 // processDownloadQueue processes the download queue of user illustration download queue items
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
-	log.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI))
+	log.WithField("module", m.Key()).Info(
+		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
+	)
 
 	for index, data := range downloadQueue {
 		var err error
-		log.Info(
+		log.WithField("module", m.Key()).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: %s (%0.2f%%)",
 				trackedItem.URI,

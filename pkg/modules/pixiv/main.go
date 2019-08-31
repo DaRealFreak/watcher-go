@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
@@ -66,6 +67,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
 	subModule.pixivSession.Module = &subModule
+	subModule.pixivSession.ModuleKey = subModule.Key()
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -129,7 +131,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 	} else {
 		var response errorResponse
 		_ = json.Unmarshal(body, &response)
-		log.Warning("login not successful.")
+		log.WithField("module", m.Key()).Warning("login not successful.")
 		raven.CheckError(
 			fmt.Errorf("message: %s (code: %s)",
 				response.Errors.System.Message,
@@ -145,4 +147,12 @@ func (m *pixiv) Parse(item *models.TrackedItem) {
 	if strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php") {
 		m.parseUserIllustrations(item)
 	}
+}
+
+// init registers the module to the log formatter
+func init() {
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: (&pixiv{}).Key(),
+		Color: "232:33",
+	})
 }

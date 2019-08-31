@@ -88,7 +88,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("GET", uri, nil)
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
@@ -127,7 +127,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.applyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
@@ -163,7 +163,9 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		log.Debug(fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try),
+		)
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
@@ -244,11 +246,13 @@ func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	case "Error occurred at the OAuth process. " +
 		"Please check your Access Token to fix this. " +
 		"Error Message: invalid_grant":
-		log.Info("access token expired, using refresh token to generate new token...")
+		log.WithField("module", s.ModuleKey).Info(
+			"access token expired, using refresh token to generate new token...",
+		)
 		s.Module.Login(nil)
 		return true, nil
 	case "Rate Limit":
-		log.Info("rate limit got exceeded, sleeping for 60 seconds...")
+		log.WithField("module", s.ModuleKey).Info("rate limit got exceeded, sleeping for 60 seconds...")
 		time.Sleep(60 * time.Second)
 		return true, nil
 	}

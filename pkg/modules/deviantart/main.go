@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -39,6 +40,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+	subModule.deviantArtSession.ModuleKey = subModule.Key()
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -134,4 +136,12 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 	for range time.Tick(60 * time.Second) {
 		fmt.Println(m.Placebo().Status)
 	}
+}
+
+// init registers the module to the log formatter
+func init() {
+	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
+		Value: (&deviantArt{}).Key(),
+		Color: "232:34",
+	})
 }

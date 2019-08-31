@@ -44,7 +44,9 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+		)
 		response, err = s.Client.Get(uri)
 		switch {
 		case err == nil && response.StatusCode < 400:
@@ -65,7 +67,9 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try),
+		)
 		response, err = s.Client.PostForm(uri, data)
 		switch {
 		case err == nil && response.StatusCode < 400:
@@ -83,7 +87,9 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
-		log.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try),
+		)
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
