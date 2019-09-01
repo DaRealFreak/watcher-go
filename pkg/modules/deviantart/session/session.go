@@ -24,7 +24,7 @@ func NewSession() *DeviantArtSession {
 		DefaultSession: session.NewSession(),
 		TokenStore:     NewTokenStore(),
 	}
-	ses.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 10)
+	ses.RateLimiter = rate.NewLimiter(rate.Every(5000*time.Millisecond), 1)
 	return ses
 }
 
@@ -153,10 +153,13 @@ func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, e
 				parsedURI.RawQuery = values.Encode()
 				return s.get(parsedURI.String(), scope)
 			}
-			time.Sleep(time.Duration(try*5) * time.Second)
+			time.Sleep(time.Duration(try*2) * time.Second)
+		case res.StatusCode == 429:
+			// the API limits are horrible, just sleep up to 5 minutes in which hopefully we get one more request in
+			time.Sleep(time.Duration(try*20) * time.Second)
 		default:
 			// any other error falls into the retry clause
-			time.Sleep(time.Duration(try*5) * time.Second)
+			time.Sleep(time.Duration(try*2) * time.Second)
 		}
 	}
 	return res, err
