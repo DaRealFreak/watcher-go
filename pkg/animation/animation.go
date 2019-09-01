@@ -141,7 +141,7 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(fPath, frame, 0644)
+		err = ioutil.WriteFile(fPath, frame, os.ModePerm)
 		if err != nil {
 			return err
 		}
