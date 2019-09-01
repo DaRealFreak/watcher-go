@@ -79,7 +79,9 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
 	if !m.prepareSessionForOAuth2(account) {
-		log.Warning("preparing session for OAuth2 Token generation failed, please check your account")
+		log.WithField("module", m.Key()).Warning(
+			"preparing session for OAuth2 Token generation failed, please check your account",
+		)
 		return false
 	}
 

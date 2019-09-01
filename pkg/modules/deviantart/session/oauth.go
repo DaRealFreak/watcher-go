@@ -103,13 +103,16 @@ func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 
 	select {
 	case <-tokenRequestApplication.granted:
-		log.Debugf("token for scope %s got successfully extracted", scope)
+		log.WithField("module", s.ModuleKey).Debugf(
+			"token for scope %s got successfully extracted", scope,
+		)
 	case <-time.After(Timeout):
-		log.Warningf("no token redirect for scope %s occurred within %d seconds",
+		log.WithField("module", s.ModuleKey).Warningf(
+			"no token redirect for scope %s occurred within %d seconds",
 			scope, int(Timeout.Seconds()),
 		)
 	}
-	log.Debugf("restoring previous CheckRedirect function")
+	log.WithField("module", s.ModuleKey).Debugf("restoring previous CheckRedirect function")
 	s.Client.CheckRedirect = tokenRequestApplication.sessionRedirect
 	return tokenRequestApplication.token
 }
@@ -133,7 +136,9 @@ func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, 
 	}
 
 	// we are currently in the authorization step since the previous redirect function didn't contain a token
-	log.Info("application not authorized yet, sending authorization POST request")
+	log.WithField("module", s.ModuleKey).Info(
+		"application not authorized yet, sending authorization POST request",
+	)
 	doc := s.GetDocument(res)
 	form := doc.Find("form#authorize_form").First()
 
