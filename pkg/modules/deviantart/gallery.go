@@ -9,27 +9,36 @@ import (
 
 func (m *deviantArt) parseGallery(item *models.TrackedItem) {
 	userName := m.userGalleryPattern.FindStringSubmatch(item.URI)[1]
-	results, apiErr := m.GalleryAll(userName, 0, 24)
-	if apiErr != nil {
-		raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
-	}
 
-	deviations := results.Results
-	for results.HasMore {
-		nextOffset, err := results.NextOffset.Int64()
-		raven.CheckError(err)
+	foundCurrentItem := false
+	offset := 0
+	var deviations []*Deviation
 
-		results, apiErr = m.GalleryAll(userName, uint(nextOffset), 24)
+	for !foundCurrentItem {
+		results, apiErr := m.GalleryAll(userName, uint(offset), 24)
 		if apiErr != nil {
 			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
 		}
-		deviations = append(deviations, results.Results...)
+
+		for _, result := range results.Results {
+			if result.DeviationID.String() == item.CurrentItem {
+				foundCurrentItem = true
+				break
+			}
+			deviations = append(deviations, result)
+			fmt.Println(result.Title, result.DeviationID)
+		}
+
+		// no more results, break out of the loop
+		if !results.HasMore {
+			break
+		}
+
+		// update offset
+		nextOffset, err := results.NextOffset.Int64()
+		raven.CheckError(err)
+		offset = int(nextOffset)
 	}
 
-	for _, result := range deviations {
-		if result.Excerpt != "" {
-			// deviation has text so we retrieve the full content
-			_, _ = m.DeviationContent(result.DeviationID.String())
-		}
-	}
+	fmt.Println(m.retrieveDeviationDetails(deviations))
 }
