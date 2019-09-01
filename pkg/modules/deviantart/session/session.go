@@ -41,7 +41,9 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try),
+		)
 		res, err = s.Client.PostForm(uri, data)
 		switch {
 		case err == nil && res.StatusCode < 401:
@@ -50,7 +52,9 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 			return res, err
 		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
-			log.Infof("status code %d, refreshing OAuth2 Token", res.StatusCode)
+			log.WithField("module", s.ModuleKey).Infof(
+				"status code %d, refreshing OAuth2 Token", res.StatusCode,
+			)
 			if s.RefreshOAuth2Token(scope) {
 				data.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 				return s.post(uri, data, scope)
@@ -132,7 +136,9 @@ func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, e
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.Debug(fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try))
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+		)
 		res, err = s.Client.Get(uri)
 		switch {
 		case err == nil && res.StatusCode < 401:
@@ -141,7 +147,9 @@ func (s *DeviantArtSession) get(uri string, scope string) (res *http.Response, e
 			return res, err
 		case err == nil && (res.StatusCode == 401 || res.StatusCode == 403) && scope != "":
 			// on 401 or 403 we try to refresh our OAuth2 Token for the scope and try it again
-			log.Infof("status code %d, refreshing OAuth2 Token", res.StatusCode)
+			log.WithField("module", s.ModuleKey).Infof(
+				"status code %d, refreshing OAuth2 Token", res.StatusCode,
+			)
 			if s.RefreshOAuth2Token(scope) {
 				// replace access_token fragment with new token
 				parsedURI, err := url.Parse(uri)

@@ -31,6 +31,7 @@ type tokenRequestApplication struct {
 	token           *oauth2.Token
 	granted         chan bool
 	sessionRedirect func(req *http.Request, via []*http.Request) error
+	moduleKey       string
 }
 
 // authInfo contains all required information for the app authorization request
@@ -43,9 +44,10 @@ type authInfo struct {
 }
 
 // newTokenRequestApplication creates the granted channel and functions for the whole OAuth2 token check process
-func newTokenRequestApplication() *tokenRequestApplication {
+func newTokenRequestApplication(moduleKey string) *tokenRequestApplication {
 	return &tokenRequestApplication{
-		granted: make(chan bool),
+		granted:   make(chan bool),
+		moduleKey: moduleKey,
 	}
 }
 
@@ -73,7 +75,7 @@ func (a *tokenRequestApplication) checkRequestForTokenFragment(res *http.Request
 // this causes the client to not follow the redirect, enabling us to use non-existing URLs as redirect URL
 func (a *tokenRequestApplication) checkRedirect(req *http.Request, via []*http.Request) error {
 	if a.checkRequestForTokenFragment(req) {
-		log.Debugf("found OAuth2 token in redirect: %s, "+
+		log.WithField("module", a.moduleKey).Debugf("found OAuth2 token in redirect: %s, "+
 			"preventing redirect to avert error messages from unresolved/unreachable domain", a.token.AccessToken)
 		return http.ErrUseLastResponse
 	}
@@ -93,7 +95,7 @@ func (a *tokenRequestApplication) checkRedirect(req *http.Request, via []*http.R
 // if not found it tries to authorize the application and checks again
 // if token could not get extracted within 60 seconds it will return a nil token
 func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
-	tokenRequestApplication := newTokenRequestApplication()
+	tokenRequestApplication := newTokenRequestApplication(s.ModuleKey)
 	oAuth2URL := fmt.Sprintf("https://www.deviantart.com/oauth2/authorize"+
 		"?response_type=token&client_id=%s&redirect_uri=%s&scope=%s&state=mysessionid",
 		APIClientID, RedirectURL, url.QueryEscape(scope),
