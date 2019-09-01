@@ -76,28 +76,35 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm)
 			raven.CheckError(err)
 		}
-		if deviationItem.Content != nil {
-			raven.CheckError(m.Session.DownloadFile(
-				path.Join(viper.GetString("download.directory"),
-					m.Key(),
-					deviationItem.Author.Username,
-					deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Content.Src),
-				),
-				deviationItem.Content.Src,
-			))
+
+		// either no download link or an HTML deviation
+		// so we download the content or thumbnail
+		if deviationItem.Download == nil || deviationItem.DeviationContent != nil {
+			// if we have an HTML story here we are downloading the content/thumbs too
+			switch {
+			case deviationItem.Content != nil:
+				raven.CheckError(m.Session.DownloadFile(
+					path.Join(viper.GetString("download.directory"),
+						m.Key(),
+						deviationItem.Author.Username,
+						deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Content.Src),
+					),
+					deviationItem.Content.Src,
+				))
+			case len(deviationItem.Thumbs) > 0:
+				// if no content is set we download the highest thumbnail
+				last := deviationItem.Thumbs[len(deviationItem.Thumbs)-1]
+				raven.CheckError(m.Session.DownloadFile(
+					path.Join(viper.GetString("download.directory"),
+						m.Key(),
+						deviationItem.Author.Username,
+						deviationItem.PublishedTime+"_"+m.GetFileName(last.Src),
+					),
+					last.Src,
+				))
+			}
 		}
-		if deviationItem.Content == nil && len(deviationItem.Thumbs) > 0 {
-			// if no content is set we download the highest thumbnail
-			last := deviationItem.Thumbs[len(deviationItem.Thumbs)-1]
-			raven.CheckError(m.Session.DownloadFile(
-				path.Join(viper.GetString("download.directory"),
-					m.Key(),
-					deviationItem.Author.Username,
-					deviationItem.PublishedTime+"_"+m.GetFileName(last.Src),
-				),
-				last.Src,
-			))
-		}
+
 		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.DeviationID.String())
 	}
 }
