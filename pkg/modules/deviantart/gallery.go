@@ -26,7 +26,6 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) {
 				break
 			}
 			deviations = append(deviations, result)
-			fmt.Println(result.Title, result.DeviationID)
 		}
 
 		// no more results, break out of the loop
@@ -40,5 +39,10 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) {
 		offset = int(nextOffset)
 	}
 
-	fmt.Println(m.retrieveDeviationDetails(deviations))
+	// reverse deviations to download the oldest items first
+	for i, j := 0, len(deviations)-1; i < j; i, j = i+1, j-1 {
+		deviations[i], deviations[j] = deviations[j], deviations[i]
+	}
+	// retrieve all relevant details and parse the download queue
+	m.processDownloadQueue(item, deviations)
 }
