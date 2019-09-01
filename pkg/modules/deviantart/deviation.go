@@ -45,6 +45,15 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 	for _, item := range deviations {
 		deviationItem := m.retrieveDeviationDetails(item)
 
+		// ensure download directory, needed for only text artists
+		m.Session.EnsureDownloadDirectory(
+			path.Join(
+				viper.GetString("download.directory"),
+				m.Key(),
+				deviationItem.Author.Username,
+				"tmp.txt",
+			),
+		)
 		if deviationItem.Download != nil {
 			raven.CheckError(m.Session.DownloadFile(
 				path.Join(viper.GetString("download.directory"),
