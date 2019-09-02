@@ -142,7 +142,8 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 				path.Join(
 					viper.GetString("download.directory"),
 					m.Key(),
-					downloadQueueItem.DownloadTag, downloadQueueItem.FileName,
+					strings.TrimSpace(downloadQueueItem.DownloadTag),
+					strings.TrimSpace(downloadQueueItem.FileName),
 				),
 				downloadQueueItem.FileURI,
 			),
