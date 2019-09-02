@@ -14,6 +14,10 @@ import (
 	"strings"
 	"time"
 
+	// ignore gosec messages since the session is only a port from the android app
+	// nolint: gosec
+	"crypto/md5"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -38,6 +42,7 @@ type mobileClient struct {
 	headers      map[string]string
 	ClientID     string
 	ClientSecret string
+	HashSecret   string
 	AccessToken  string
 	RefreshToken string
 }
@@ -58,20 +63,29 @@ type errorResponse struct {
 // NewSession initializes a new session and sets all the required headers etc
 func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
+	hashSalt := "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
 	return &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
 		MobileClient: &mobileClient{
-			OauthURL: "https://oauth.secure.pixiv.net/auth/token",
-			headers: map[string]string{
-				"App-OS":         "ios",
-				"App-OS-Version": "10.3.1",
-				"App-Version":    "6.7.1",
-				"User-Agent":     "PixivIOSApp/6.7.1 (iOS 10.3.1; iPhone8,1)",
-				"Referer":        "https://app-api.pixiv.net/",
-				"Content-Type":   "application/x-www-form-urlencoded",
-			},
+			OauthURL:     "https://oauth.secure.pixiv.net/auth/token",
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
+			headers: map[string]string{
+				"User-Agent":      "PixivAndroidApp/5.0.156 (Android 9; ONEPLUS A6013)",
+				"Accept-Language": "en_US",
+				"App-OS":          "android",
+				"App-OS-Version":  "9",
+				"App-Version":     "5.0.156",
+				"X-Client-Time":   time.Now().Format(time.RFC3339),
+				"X-Client-Hash": fmt.Sprintf(
+					"%x",
+					// nolint: gosec
+					md5.Sum([]byte(time.Now().Format(time.RFC3339)+hashSalt)),
+				),
+				"Content-Type": "application/x-www-form-urlencoded",
+				"Referer":      "https://app-api.pixiv.net/",
+			},
+			HashSecret:   hashSalt,
 			AccessToken:  "",
 			RefreshToken: "",
 		},

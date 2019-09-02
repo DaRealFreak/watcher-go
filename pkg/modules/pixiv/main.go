@@ -104,7 +104,9 @@ func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 // Login logs us in for the current session if possible/account available
 func (m *pixiv) Login(account *models.Account) bool {
 	data := url.Values{
-		"get_secure_url": {"1"},
+		"device_token":   {"true"},
+		"get_secure_url": {"true"},
+		"include_policy": {"true"},
 		"client_id":      {m.pixivSession.MobileClient.ClientID},
 		"client_secret":  {m.pixivSession.MobileClient.ClientSecret},
 	}
