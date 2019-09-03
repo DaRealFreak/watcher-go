@@ -31,14 +31,17 @@ Available Commands:
 These flags are available for all commands and sub commands:
 ```
 Flags:
-      --config             config file (default is ./.watcher.yaml)
-      --database string    database file (default is ./watcher.db)
-  -v, --verbosity          log level (debug, info, warn, error, fatal, panic (default "info")
-      --version            version for watcher
-      --disable-sentry     disable sentry and don't send usage statistics/errors to the developer
-      --enable-sentry      use sentry to send usage statistics/errors to the developer
-      --log-force-colors   enforces colored output even for non-tty terminals
-      --log-force-format   enforces formatted output even for non-tty terminals
+      --config                      config file (default is ./.watcher.yaml)
+      --database string             database file (default is ./watcher.db)
+  -v, --verbosity                   log level (debug, info, warn, error, fatal, panic (default "info")
+      --version                     version for watcher
+      --disable-sentry              disable sentry and don't send usage statistics/errors to the developer
+      --enable-sentry               use sentry to send usage statistics/errors to the developer
+      --log-disable-colors          disables colors even for tty terminals
+      --log-force-colors            enforces colored output even for non-tty terminals
+      --log-disable-timestamp       removes the time info of the log entries, useful if output is logged with a timestamp already
+      --log-timestamp-passed-time   uses the passed time since the program is running in seconds instead of a formatted time
+      --log-level-uppercase         transforms the log levels into upper case
 ```
 
 The sentry is disabled by default and has to be enabled before errors will be sent to the sentry server.
