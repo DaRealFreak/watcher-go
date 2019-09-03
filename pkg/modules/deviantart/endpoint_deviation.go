@@ -10,7 +10,8 @@ import (
 // Deviation implements the API endpoint https://www.deviantart.com/api/v1/oauth2/deviation/{deviationid}
 func (m *deviantArt) Deviation(deviationID string) (apiRes *Deviation, apiErr *APIError) {
 	res, err := m.deviantArtSession.APIGet(
-		"https://www.deviantart.com/api/v1/oauth2/deviation/"+url.QueryEscape(deviationID),
+		"/deviation/"+url.QueryEscape(deviationID),
+		url.Values{},
 		ScopeBrowse,
 	)
 	raven.CheckError(err)
@@ -22,16 +23,11 @@ func (m *deviantArt) Deviation(deviationID string) (apiRes *Deviation, apiErr *A
 
 // DeviationContent implements the API endpoint https://www.deviantart.com/api/v1/oauth2/deviation/content
 func (m *deviantArt) DeviationContent(deviationID string) (apiRes *DeviationContent, apiErr *APIError) {
-	apiURL, err := url.Parse("https://www.deviantart.com/api/v1/oauth2/deviation/content")
-	raven.CheckError(err)
-
-	// add our API values and replace the RawQuery of the apiUrl
 	values := url.Values{
 		"deviationid": {deviationID},
 	}
-	apiURL.RawQuery = values.Encode()
 
-	res, err := m.deviantArtSession.APIGet(apiURL.String(), ScopeBrowse)
+	res, err := m.deviantArtSession.APIGet("/deviation/content", values, ScopeBrowse)
 	raven.CheckError(err)
 
 	// map the http.Response into either the api response or the api error
@@ -43,7 +39,8 @@ func (m *deviantArt) DeviationContent(deviationID string) (apiRes *DeviationCont
 // https://www.deviantart.com/api/v1/oauth2/deviation/download/{deviationid}
 func (m *deviantArt) DeviationDownload(deviationID string) (apiRes *Image, apiErr *APIError) {
 	res, err := m.deviantArtSession.APIGet(
-		"https://www.deviantart.com/api/v1/oauth2/deviation/download/"+url.QueryEscape(deviationID),
+		"/deviation/download/"+url.QueryEscape(deviationID),
+		url.Values{},
 		ScopeBrowse,
 	)
 	raven.CheckError(err)
@@ -58,19 +55,14 @@ func (m *deviantArt) DeviationDownload(deviationID string) (apiRes *Image, apiEr
 func (m *deviantArt) DeviationEmbeddedContent(
 	deviationID string, offsetDeviationID string, offset uint, limit uint,
 ) (apiRes *EmbeddedContentPagination, apiErr *APIError) {
-	apiURL, err := url.Parse("https://www.deviantart.com/api/v1/oauth2/deviation/embeddedcontent")
-	raven.CheckError(err)
-
-	// add our API values and replace the RawQuery of the apiUrl
 	values := url.Values{
 		"deviationid":        {deviationID},
 		"offset_deviationid": {offsetDeviationID},
 		"offset":             {strconv.FormatUint(uint64(offset), 10)},
 		"limit":              {strconv.FormatUint(uint64(limit), 10)},
 	}
-	apiURL.RawQuery = values.Encode()
 
-	res, err := m.deviantArtSession.APIGet(apiURL.String(), ScopeBrowse)
+	res, err := m.deviantArtSession.APIGet("/deviation/embeddedcontent", values, ScopeBrowse)
 	raven.CheckError(err)
 
 	// map the http.Response into either the api response or the api error
