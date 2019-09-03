@@ -13,13 +13,13 @@ func TestFormat(t *testing.T) {
 	logrus.SetLevel(lvl)
 	// set custom text formatter for the logger
 	logrus.StandardLogger().Formatter = &Formatter{
-		DisableColors:    false,
-		ForceColors:      false,
-		DisableTimestamp: false,
-		DisableLowercase: false,
-		FullTimestamp:    false,
-		TimestampFormat:  time.StampMilli,
-		PadAllLogEntries: true,
+		DisableColors:            false,
+		ForceColors:              false,
+		DisableTimestamp:         false,
+		UseUppercaseLevel:        false,
+		UseTimePassedAsTimestamp: false,
+		TimestampFormat:          time.StampMilli,
+		PadAllLogEntries:         true,
 	}
 	logrus.SetOutput(colorable.NewColorableStdout())
 	logrus.Debug("test")

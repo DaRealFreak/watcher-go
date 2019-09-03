@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -12,6 +13,9 @@ import (
 
 // defaultTimestampFormat is the time format we use if nothing is set manually
 const defaultTimestampFormat = time.StampMilli
+
+// nolint: gochecknoglobals
+var baseTimestamp = time.Now()
 
 // nolint: gochecknoglobals
 var (
@@ -54,14 +58,12 @@ type Formatter struct {
 	DisableColors bool
 	// no check for TTY terminal
 	ForceColors bool
-	// no check for TTY terminal
-	ForceFormatting bool
 	// no timestamp
 	DisableTimestamp bool
-	// false -> info, true -> INFO
-	DisableLowercase bool
 	// false -> time passed, true -> timestamp
-	FullTimestamp bool
+	UseTimePassedAsTimestamp bool
+	// false -> info, true -> INFO
+	UseUppercaseLevel bool
 	// reserves space for all log entries for all registered matches
 	PadAllLogEntries bool
 }
@@ -75,21 +77,11 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		f.ColorSchema = defaultColorSchema
 	}
 
-	timestampFormat := f.TimestampFormat
-	if timestampFormat == "" {
-		timestampFormat = defaultTimestampFormat
-	}
-
-	colorSchema := f.getEntryColor(entry, f.ColorSchema.Timestamp, defaultColorSchema.Timestamp)
-	if _, err := out.WriteString(colorSchema(entry.Time.Format(timestampFormat))); err != nil {
+	if err := f.appendTimeInfo(out, entry); err != nil {
 		return nil, err
 	}
 
-	if err := f.addPadding(out); err != nil {
-		return nil, err
-	}
-	colorSchema = f.getLevelColor(entry)
-	if _, err := out.WriteString(colorSchema(fmt.Sprintf("%7s", entry.Level.String()))); err != nil {
+	if err := f.appendLevelInfo(out, entry); err != nil {
 		return nil, err
 	}
 
@@ -97,13 +89,12 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := f.addPadding(out); err != nil {
-		return nil, err
-	}
 	if _, err := out.Write([]byte(entry.Message)); err != nil {
 		return nil, err
 	}
 
+	// print not prefixed fields in the same color as the level
+	colorSchema := f.getLevelColor(entry)
 	for fieldKey, fieldValue := range entry.Data {
 		if err := f.addPadding(out); err != nil {
 			return nil, err
@@ -119,8 +110,47 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+// appendTimeInfo appends the time related info
+// appends nothing on DisableTimestamp
+// appends [seconds] on UseTimePassedAsTimestamp
+// appends formatted TimestampFormat else
+func (f *Formatter) appendTimeInfo(out io.StringWriter, entry *logrus.Entry) (err error) {
+	if !f.DisableTimestamp {
+		var timeInfo string
+		if f.UseTimePassedAsTimestamp {
+			timeInfo = fmt.Sprintf("[%04d]", int(entry.Time.Sub(baseTimestamp)/time.Second))
+		} else {
+			timestampFormat := f.TimestampFormat
+			if timestampFormat == "" {
+				timestampFormat = defaultTimestampFormat
+			}
+			timeInfo = entry.Time.Format(timestampFormat)
+		}
+
+		colorSchema := f.getEntryColor(entry, f.ColorSchema.Timestamp, defaultColorSchema.Timestamp)
+		if _, err := out.WriteString(colorSchema(timeInfo)); err != nil {
+			return err
+		}
+
+		if err := f.addPadding(out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *Formatter) appendLevelInfo(out io.StringWriter, entry *logrus.Entry) (err error) {
+	colorSchema := f.getLevelColor(entry)
+	entryLevel := entry.Level.String()
+	if f.UseUppercaseLevel {
+		entryLevel = strings.ToUpper(entryLevel)
+	}
+	_, err = out.WriteString(colorSchema(fmt.Sprintf("%7s", entryLevel)))
+	return err
+}
+
 // appendPrependedFields appends the prepended fields and removes them from the data attribute in the entry
-func (f *Formatter) appendPrependedFields(out io.Writer, entry *logrus.Entry) (err error) {
+func (f *Formatter) appendPrependedFields(out io.StringWriter, entry *logrus.Entry) (err error) {
 	for fieldKey, fieldMatches := range FieldMatchColorScheme {
 		// check for the longest value for the required padding on PadAllLogEntries = true
 		longestValue := 0
@@ -139,8 +169,8 @@ func (f *Formatter) appendPrependedFields(out io.Writer, entry *logrus.Entry) (e
 				if entryKey == fieldKey && entryValue == matchValue.Value {
 					// match found, write the (colored) value into the passed writer
 					colorSchema := f.getEntryColor(entry, matchValue.Color, "")
-					_, err = out.Write(
-						[]byte(" " + colorSchema(fmt.Sprintf(outFormat, fmt.Sprintf("[%v]", entryValue)))),
+					_, err = out.WriteString(
+						" " + colorSchema(fmt.Sprintf(outFormat, fmt.Sprintf("[%v]", entryValue))),
 					)
 					if err != nil {
 						return err
@@ -157,13 +187,13 @@ func (f *Formatter) appendPrependedFields(out io.Writer, entry *logrus.Entry) (e
 			if err := f.addPadding(out); err != nil {
 				return err
 			}
-			_, err = out.Write([]byte(fmt.Sprintf(outFormat, "")))
+			_, err = out.WriteString(fmt.Sprintf(outFormat, ""))
 			if err != nil {
 				return err
 			}
 		}
 	}
-	return nil
+	return f.addPadding(out)
 }
 
 // getLevelColor returns the ansi ColorFunc depending on the log entry level
@@ -203,8 +233,8 @@ func (f *Formatter) getEntryColor(entry *logrus.Entry, customColor string, defau
 }
 
 // addPadding adds the assigned padding character and writes it to our buffer
-func (f *Formatter) addPadding(writer io.Writer) (err error) {
-	_, err = writer.Write([]byte(" "))
+func (f *Formatter) addPadding(writer io.StringWriter) (err error) {
+	_, err = writer.WriteString(" ")
 	return err
 }
 
