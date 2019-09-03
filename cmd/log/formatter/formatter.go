@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
-	"github.com/mattn/go-colorable"
-	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 )
@@ -167,19 +164,6 @@ func (f *Formatter) appendPrependedFields(out io.Writer, entry *logrus.Entry) (e
 		}
 	}
 	return nil
-}
-
-// isTerminal checks if we are currently in a terminal
-func (f *Formatter) isTerminal(writer io.Writer) bool {
-	// check the type since the file descriptor is only callable for files, so we can't access it directly
-	switch out := writer.(type) {
-	case *os.File:
-		return isatty.IsCygwinTerminal(out.Fd())
-	case *colorable.Writer:
-		return isatty.IsTerminal(os.Stdout.Fd())
-	default:
-		return false
-	}
 }
 
 // getLevelColor returns the ansi ColorFunc depending on the log entry level
