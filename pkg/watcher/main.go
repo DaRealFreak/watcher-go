@@ -57,8 +57,11 @@ type AppConfiguration struct {
 	}
 	// cli specific options
 	Cli struct {
-		ForceColors bool
-		ForceFormat bool
+		DisableColors            bool
+		ForceColors              bool
+		DisableTimestamp         bool
+		UseUppercaseLevel        bool
+		UseTimePassedAsTimestamp bool
 	}
 	// sentry toggles
 	EnableSentry  bool

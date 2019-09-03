@@ -91,17 +91,36 @@ func (cli *CliApplication) addPersistentFlags() {
 		"disable sentry and don't send usage statistics/errors to the developer",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
+		&cli.config.Cli.DisableColors,
+		"log-disable-colors",
+		false,
+		"disables colors even for tty terminals",
+	)
+	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.ForceColors,
 		"log-force-colors",
 		false,
 		"enforces colored output even for non-tty terminals",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
-		&cli.config.Cli.ForceFormat,
-		"log-force-format",
+		&cli.config.Cli.DisableTimestamp,
+		"log-disable-timestamp",
 		false,
-		"enforces formatted output even for non-tty terminals",
+		"removes the time info of the log entries, useful if output is logged with a timestamp already",
 	)
+	cli.rootCmd.PersistentFlags().BoolVar(
+		&cli.config.Cli.UseUppercaseLevel,
+		"log-level-uppercase",
+		false,
+		"transforms the log levels into upper case",
+	)
+	cli.rootCmd.PersistentFlags().BoolVar(
+		&cli.config.Cli.UseTimePassedAsTimestamp,
+		"log-timestamp-passed-time",
+		false,
+		"uses the passed time since the program is running in seconds instead of a formatted time",
+	)
+
 	_ = viper.BindPFlag("Database.Path", cli.rootCmd.PersistentFlags().Lookup("database"))
 }
 
@@ -159,13 +178,13 @@ func (cli *CliApplication) initLogger() {
 	log.SetLevel(lvl)
 	// set custom text formatter for the logger
 	log.StandardLogger().Formatter = &formatter.Formatter{
-		DisableColors:    false,
-		ForceColors:      false,
-		DisableTimestamp: false,
-		DisableLowercase: false,
-		FullTimestamp:    false,
-		TimestampFormat:  time.StampMilli,
-		PadAllLogEntries: true,
+		DisableColors:            cli.config.Cli.DisableColors,
+		ForceColors:              cli.config.Cli.ForceColors,
+		DisableTimestamp:         cli.config.Cli.DisableTimestamp,
+		UseUppercaseLevel:        cli.config.Cli.UseUppercaseLevel,
+		UseTimePassedAsTimestamp: cli.config.Cli.UseTimePassedAsTimestamp,
+		TimestampFormat:          time.StampMilli,
+		PadAllLogEntries:         true,
 	}
 }
 
