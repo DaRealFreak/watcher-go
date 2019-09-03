@@ -2,13 +2,14 @@ package deviantart
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/jaytaylor/html2text"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"os"
-	"path"
 )
 
 // DeviationItem contains the combination of the HTML content and Download information

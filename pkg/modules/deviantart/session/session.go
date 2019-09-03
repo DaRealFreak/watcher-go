@@ -47,32 +47,30 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 }
 
 // APIPost handles the OAuth2 Token for the POST request including refresh for API requests
-func (s *DeviantArtSession) APIPost(endpoint string, values url.Values, scopes ...string) (res *http.Response, err error) {
+func (s *DeviantArtSession) APIPost(endpoint string, values url.Values, scopes ...string) (*http.Response, error) {
 	// scopes are separated by whitespaces according to the docs
 	// https://www.deviantart.com/developers/authentication
 	scope := strings.Join(scopes, " ")
 
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
-	} else {
-		raven.CheckError(s.handleToken(&values, scope))
-		// handle the request now as a normal POST request
-		return s.post("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 	}
+	raven.CheckError(s.handleToken(&values, scope))
+	// handle the request now as a normal POST request
+	return s.post("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
 
 // APIGet handles the OAuth2 Token and scopes for the GET request including refresh for API requests
-func (s *DeviantArtSession) APIGet(endpoint string, values url.Values, scopes ...string) (res *http.Response, err error) {
+func (s *DeviantArtSession) APIGet(endpoint string, values url.Values, scopes ...string) (*http.Response, error) {
 	// scopes are separated by whitespaces according to the docs
 	// https://www.deviantart.com/developers/authentication
 	scope := strings.Join(scopes, " ")
 
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
-	} else {
-		raven.CheckError(s.handleToken(&values, scope))
-		return s.get("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 	}
+	raven.CheckError(s.handleToken(&values, scope))
+	return s.get("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
 
 // Get sends normal GET requests without any API scope/token contrary to the APIGet function
@@ -121,8 +119,8 @@ func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values
 	}
 
 	// retrieve the user info cookie for the ui argument (validated by the server)
-	daUrl, _ := url.Parse("https://deviantart.com")
-	for _, cookie := range s.GetClient().Jar.Cookies(daUrl) {
+	daURL, _ := url.Parse("https://deviantart.com")
+	for _, cookie := range s.GetClient().Jar.Cookies(daURL) {
 		if cookie.Name == "userinfo" {
 			ui, _ := url.QueryUnescape(cookie.Value)
 			values.Set("ui", ui)
@@ -165,7 +163,7 @@ func (s *DeviantArtSession) getDeveloperConsoleCommand(endpoint string, values u
 	values.Set("grant_type", "authorization_code")
 	values.Set("mature_content", "true")
 	values.Set("endpoint", endpoint)
-	var requestValues [] string
+	requestValues := make([]string, 0, len(values))
 	for k, v := range values {
 		requestValues = append(requestValues, "{\"name\":\""+k+"\",\"value\":\""+v[0]+"\"}")
 	}
