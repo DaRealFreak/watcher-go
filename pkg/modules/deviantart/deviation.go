@@ -77,9 +77,14 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			raven.CheckError(err)
 		}
 
-		// either no download link or an HTML deviation
-		// so we download the content or thumbnail
-		if deviationItem.Download == nil || deviationItem.DeviationContent != nil {
+		// download if one of these conditions match:
+		// - no download link (content)
+		// - HTML deviation (content or thumbnail)
+		// - download link and content but different file types (f.e. image + pdf)
+		if deviationItem.Download == nil ||
+			deviationItem.DeviationContent != nil ||
+			(deviationItem.Download != nil && deviationItem.Content != nil &&
+				(m.GetFileExtension(deviationItem.Download.Src) != m.GetFileExtension(deviationItem.Content.Src))) {
 			// if we have an HTML story here we are downloading the content/thumbs too
 			switch {
 			case deviationItem.Content != nil:
