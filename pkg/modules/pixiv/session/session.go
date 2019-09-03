@@ -63,7 +63,6 @@ type errorResponse struct {
 // NewSession initializes a new session and sets all the required headers etc
 func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
-	hashSalt := "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
 	return &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
 		MobileClient: &mobileClient{
@@ -76,16 +75,10 @@ func NewSession() *PixivSession {
 				"App-OS":          "android",
 				"App-OS-Version":  "9",
 				"App-Version":     "5.0.156",
-				"X-Client-Time":   time.Now().Format(time.RFC3339),
-				"X-Client-Hash": fmt.Sprintf(
-					"%x",
-					// nolint: gosec
-					md5.Sum([]byte(time.Now().Format(time.RFC3339)+hashSalt)),
-				),
-				"Content-Type": "application/x-www-form-urlencoded",
-				"Referer":      "https://app-api.pixiv.net/",
+				"Content-Type":    "application/x-www-form-urlencoded",
+				"Referer":         "https://app-api.pixiv.net/",
 			},
-			HashSecret:   hashSalt,
+			HashSecret:   "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c",
 			AccessToken:  "",
 			RefreshToken: "",
 		},
@@ -107,6 +100,14 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
+		// add X-Client-Time and X-Client-Hash which are now getting validated server side
+		localTime := time.Now()
+		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
+		req.Header.Add("X-Client-Hash", fmt.Sprintf(
+			// nolint: gosec
+			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.MobileClient.HashSecret)),
+		))
+
 		if s.MobileClient.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
 		}
@@ -146,6 +147,14 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		for headerKey, headerValue := range s.MobileClient.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
+		// add X-Client-Time and X-Client-Hash which are now getting validated server side
+		localTime := time.Now()
+		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
+		req.Header.Add("X-Client-Hash", fmt.Sprintf(
+			// nolint: gosec
+			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.MobileClient.HashSecret)),
+		))
+
 		if s.MobileClient.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
 		}
