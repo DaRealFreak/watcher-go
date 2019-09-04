@@ -7,17 +7,20 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
+// parseFeed retrieves the deviation_submitted bucket and parses all new deviations
 func (m *deviantArt) parseFeed(item *models.TrackedItem) {
 	foundCurrentItem := false
-	offset := 0
 	var deviations []*Deviation
 
+	bucket, apiErr := m.FeedHomeBucket("deviation_submitted", 0, 10, true)
+	if apiErr != nil {
+		raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+	}
 	for !foundCurrentItem {
-		results, apiErr := m.FeedHomeBucket("deviation_submitted", uint(offset), 10, true)
+		results, apiErr := m.FeedHome(bucket.Cursor, true)
 		if apiErr != nil {
 			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
 		}
-
 		for _, itemFeed := range results.Items {
 			for _, result := range itemFeed.Deviations {
 				if result.DeviationID.String() == item.CurrentItem {
@@ -37,9 +40,8 @@ func (m *deviantArt) parseFeed(item *models.TrackedItem) {
 			break
 		}
 
-		// update offset
-		// feed API documentation is completely wrong (response and parameters), ignores limit anyways
-		offset += 10
+		// update cursor to retrieve next page
+		bucket.Cursor = results.Cursor
 	}
 
 	// reverse deviations to download the oldest items first
