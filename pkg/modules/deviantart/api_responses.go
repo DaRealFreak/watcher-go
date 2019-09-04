@@ -36,6 +36,16 @@ type UtilPlaceboResponse struct {
 	Status string `json:"status"`
 }
 
+// CollectionsResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/collections/{folderid}
+type CollectionsResponse struct {
+	DeviationPagination
+}
+
+// GalleryResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/{folderid}
+type GalleryResponse struct {
+	DeviationPagination
+}
+
 // GalleryAllResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
 type GalleryAllResponse struct {
 	DeviationPagination
