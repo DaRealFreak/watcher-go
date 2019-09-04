@@ -1,6 +1,8 @@
 package deviantart
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // APIError is the struct of the error API responses
 type APIError struct {
@@ -172,4 +174,12 @@ type EmbeddedContentPagination struct {
 // Tag is the struct of tag API responses
 type Tag struct {
 	TagName string `json:"tag_name"`
+}
+
+// FeedItem is the struct of feed items API responses
+type FeedItem struct {
+	Timestamp  string       `json:"ts"`
+	Type       string       `json:"type"`
+	ByUser     *User        `json:"by_user"`
+	Deviations []*Deviation `json:"deviations"`
 }

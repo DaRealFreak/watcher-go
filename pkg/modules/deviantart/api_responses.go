@@ -1,6 +1,8 @@
 package deviantart
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // loginInfo contains every JSON encoded information on the login page
 type loginInfo struct {
@@ -128,4 +130,12 @@ type DeviationContent struct {
 type GalleryFoldersCreateResponse struct {
 	FolderID json.Number `json:"folderid"`
 	Name     string      `json:"name"`
+}
+
+// FeedBucketResponse is the struct
+// for API endpoint https://www.deviantart.com/api/v1/oauth2/feed/home/{bucketid}
+type FeedBucketResponse struct {
+	Cursor  string      `json:"cursor"`
+	HasMore bool        `json:"has_more"`
+	Items   []*FeedItem `json:"items"`
 }

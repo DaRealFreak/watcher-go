@@ -172,10 +172,10 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 		m.parseDeviation(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://gallery/"):
 		m.parseGallery(appURL, item)
-	case strings.HasPrefix(appURL, "DeviantArt://browse/morelikethis/"):
-		fmt.Println("downloading MLT")
 	case strings.HasPrefix(appURL, "DeviantArt://watchfeed"):
-		fmt.Println("downloading watch feed")
+		// ToDo: debug android client, API documentation is completely wrong (even wrong response)
+		// and pagination won't work either
+		m.parseFeed(item)
 	}
 }
 

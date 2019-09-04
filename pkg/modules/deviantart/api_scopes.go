@@ -8,3 +8,6 @@ const ScopeBrowse = "browse"
 
 // ScopeGallery is the required gallery scope identifier
 const ScopeGallery = "gallery"
+
+// ScopeFeed is the required feed scope identifier
+const ScopeFeed = "feed"
