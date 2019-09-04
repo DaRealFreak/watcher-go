@@ -3,6 +3,7 @@ module github.com/DaRealFreak/watcher-go
 go 1.12
 
 require (
+	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/getsentry/sentry-go v0.2.1

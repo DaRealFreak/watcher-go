@@ -12,6 +12,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
@@ -43,7 +44,17 @@ func (s *DeviantArtSession) Post(uri string, data url.Values) (response *http.Re
 // post is the internal POST functionality which uses the handleRequest function
 // to handle all error responses/expired tokens etc.
 func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res *http.Response, err error) {
-	return s.handleRequest(uri, data, scope, s.Client.PostForm)
+	return s.handleRequest(uri, data, scope,
+		func(uri string, values url.Values) (res *http.Response, err error) {
+			log.WithField("module", s.ModuleKey).Debugf("POST request: %s", uri)
+			req, err := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
+			if err != nil {
+				log.Fatalln(err)
+			}
+			req.Header.Set("User-Agent", browser.Chrome())
+			return s.Client.Do(req)
+		},
+	)
 }
 
 // APIPost handles the OAuth2 Token for the POST request including refresh for API requests
@@ -94,7 +105,12 @@ func (s *DeviantArtSession) get(uri string, values url.Values, scope string) (re
 			}
 			apiURL.RawQuery = fragments.Encode()
 			log.WithField("module", s.ModuleKey).Debugf("GET request: %s", apiURL.String())
-			return s.Client.Get(apiURL.String())
+			req, err := http.NewRequest("GET", apiURL.String(), nil)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			req.Header.Set("User-Agent", browser.Chrome())
+			return s.Client.Do(req)
 		},
 	)
 }
