@@ -25,11 +25,11 @@ func (cli *CliApplication) addRunCommand() {
 		"",
 		"download directory (will be saved in config file)",
 	)
-	runCmd.Flags().StringVarP(
+	runCmd.Flags().StringSliceVarP(
 		&cli.config.Run.ModuleURL,
 		"url",
 		"u",
-		"",
+		[]string{},
 		"url of module you want to run",
 	)
 	runCmd.Flags().BoolVarP(

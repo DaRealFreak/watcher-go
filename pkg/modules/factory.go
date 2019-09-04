@@ -58,3 +58,11 @@ func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 	raven.CheckError(fmt.Errorf("no module is registered which can parse based on the url %s", uri))
 	return nil
 }
+
+// GetModulesFromURIs returns the selected modules in bulk for urls
+func (f ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Module) {
+	for _, moduleURI := range uri {
+		modules = append(modules, f.GetModuleFromURI(moduleURI))
+	}
+	return modules
+}

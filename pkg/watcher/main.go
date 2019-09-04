@@ -71,7 +71,7 @@ type AppConfiguration struct {
 		RunParallel       bool
 		Items             []string
 		DownloadDirectory string
-		ModuleURL         string
+		ModuleURL         []string
 	}
 }
 
@@ -120,21 +120,30 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 	case len(cfg.Run.Items) > 0:
 		for _, itemURL := range cfg.Run.Items {
 			module := app.ModuleFactory.GetModuleFromURI(itemURL)
-			if cfg.Run.ModuleURL != "" {
-				selectedModule := app.ModuleFactory.GetModuleFromURI(cfg.Run.ModuleURL)
-				if selectedModule.Key() != module.Key() {
+			if len(cfg.Run.ModuleURL) > 0 {
+				found := false
+				usedModules := app.ModuleFactory.GetModulesFromURIs(cfg.Run.ModuleURL...)
+				for _, usedModule := range usedModules {
+					if module.Key() == usedModule.Key() {
+						found = true
+						break
+					}
+				}
+				if !found {
 					log.WithField("module", module.Key()).Warningf(
-						"ignoring directly passed item %s due to not matching the passed module %s",
-						itemURL, selectedModule.Key(),
+						"ignoring directly passed item %s due to not matching the active modules",
+						itemURL,
 					)
 					continue
 				}
 			}
 			trackedItems = append(trackedItems, app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module))
 		}
-	case cfg.Run.ModuleURL != "":
-		module := app.ModuleFactory.GetModuleFromURI(cfg.Run.ModuleURL)
-		trackedItems = app.DbCon.GetTrackedItems(module, false)
+	case len(cfg.Run.ModuleURL) > 0:
+		for _, moduleURL := range cfg.Run.ModuleURL {
+			module := app.ModuleFactory.GetModuleFromURI(moduleURL)
+			trackedItems = append(app.DbCon.GetTrackedItems(module, false))
+		}
 	default:
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
 	}
