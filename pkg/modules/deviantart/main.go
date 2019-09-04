@@ -28,8 +28,10 @@ type deviantArt struct {
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = deviantArt{
-		deviantArtSession:  session.NewSession(),
-		userGalleryPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]+)(/gallery(/?))?$`),
+		deviantArtSession: session.NewSession(),
+		userGalleryPattern: regexp.MustCompile(
+			`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
+		),
 	}
 
 	// initialize the Module with the session/database and login status
@@ -143,8 +145,45 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) {
-	switch {
-	case m.userGalleryPattern.MatchString(item.URI):
-		m.parseGallery(item)
+	// special behaviour: viewing "all" gallery doesn't contain unique gallery id (using featured uuid)
+	// so it won't retrieve all items, only the featured ones
+	// we use the /gallery/all API endpoint in that case to retrieve actually all deviations
+	if m.userGalleryPattern.MatchString(item.URI) {
+		m.parseGalleryAll(item)
+		return
 	}
+
+	appUrl := item.URI
+	if !strings.HasPrefix(appUrl, "DeviantArt://") {
+		var exists bool
+		appUrl, exists = m.getAppUrl(item.URI)
+		if !exists {
+			log.WithField("module", m.Key()).Warnf("couldn't extract app url from page %s", item.URI)
+			// couldn't extract url from passed uri
+			return
+		}
+	}
+	switch {
+	case strings.HasPrefix(appUrl, "DeviantArt://collection/"):
+		m.parseCollection(appUrl, item)
+	case strings.HasPrefix(appUrl, "DeviantArt://tag/"):
+		fmt.Println("downloading tag")
+	case strings.HasPrefix(appUrl, "DeviantArt://deviation/"):
+		fmt.Println("downloading single deviation")
+	case strings.HasPrefix(appUrl, "DeviantArt://gallery/"):
+		m.parseGallery(appUrl, item)
+	case strings.HasPrefix(appUrl, "DeviantArt://browse/morelikethis/"):
+		fmt.Println("downloading MLT")
+	case strings.HasPrefix(appUrl, "DeviantArt://watchfeed"):
+		fmt.Println("downloading watch feed")
+	}
+}
+
+// getAppUrl extracts the meta attribute da:appurl and returns it
+func (m *deviantArt) getAppUrl(uri string) (appUrl string, exists bool) {
+	res, err := m.Session.Get(uri)
+	raven.CheckError(err)
+
+	doc := m.Session.GetDocument(res)
+	return doc.Find("meta[property=\"da:appurl\"]").First().Attr("content")
 }
