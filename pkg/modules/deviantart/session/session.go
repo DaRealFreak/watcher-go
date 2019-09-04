@@ -2,8 +2,10 @@ package session
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -163,7 +165,15 @@ func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values
 	if err != nil {
 		return res, err
 	}
-	content, err := ioutil.ReadAll(res.Body)
+
+	var reader io.ReadCloser
+	switch res.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, _ = gzip.NewReader(res.Body)
+	default:
+		reader = res.Body
+	}
+	content, err := ioutil.ReadAll(reader)
 	raven.CheckError(err)
 
 	// unmarshal the response into the DeveloperConsoleResponse struct
