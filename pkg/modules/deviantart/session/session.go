@@ -31,7 +31,7 @@ func NewSession() *DeviantArtSession {
 		TokenStore:        NewTokenStore(),
 		UseConsoleExploit: false,
 	}
-	ses.RateLimiter = rate.NewLimiter(rate.Every(2500*time.Millisecond), 1)
+	ses.RateLimiter = rate.NewLimiter(rate.Every(5000*time.Millisecond), 1)
 	return ses
 }
 
