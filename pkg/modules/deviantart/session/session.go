@@ -188,6 +188,8 @@ func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values
 
 	marshalledResponse, err := json.Marshal(consoleResponse.DiFi.Response.Calls[0].Response.Content)
 	raven.CheckError(err)
+	// since we had to parse the content already reset the Content-Encoding header to prevent duplicate decompressing
+	res.Header.Set("Content-Encoding", "")
 	// replace the response body with our marshalledResponse (equal to the direct OAuth2 application response)
 	res.Body = ioutil.NopCloser(bytes.NewReader(marshalledResponse))
 	return res, err
