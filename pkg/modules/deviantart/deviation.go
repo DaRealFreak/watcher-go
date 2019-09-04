@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -17,6 +18,17 @@ type DeviationItem struct {
 	*Deviation
 	*DeviationContent
 	Download *Image
+}
+
+// parseDeviation parses and downloads a single deviation
+func (m *deviantArt) parseDeviation(appURL string, item *models.TrackedItem) {
+	deviationID := strings.Split(appURL, "/")[3]
+	result, apiErr := m.Deviation(deviationID)
+	if apiErr != nil {
+		raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+	}
+	m.processDownloadQueue(item, []*Deviation{result})
+	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 }
 
 // retrieveDeviationDetails adds possible Content or Download responses if required
