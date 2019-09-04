@@ -167,7 +167,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 	case strings.HasPrefix(appURL, "DeviantArt://collection/"):
 		m.parseCollection(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://tag/"):
-		fmt.Println("downloading tag")
+		m.parseTag(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://deviation/"):
 		fmt.Println("downloading single deviation")
 	case strings.HasPrefix(appURL, "DeviantArt://gallery/"):
