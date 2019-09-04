@@ -1,7 +1,9 @@
 package deviantart
 
 import (
+	"compress/gzip"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -22,7 +24,15 @@ func (m *deviantArt) Placebo() (apiRes *UtilPlaceboResponse, apiErr *APIError) {
 // mapAPIResponse maps the API response into the passed APIResponse type
 // or into the passed APIError if the status code is 400
 func (m *deviantArt) mapAPIResponse(res *http.Response, apiRes interface{}, apiErr interface{}) {
-	content, err := ioutil.ReadAll(res.Body)
+	var reader io.ReadCloser
+	switch res.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, _ = gzip.NewReader(res.Body)
+	default:
+		reader = res.Body
+	}
+
+	content, err := ioutil.ReadAll(reader)
 	raven.CheckError(err)
 
 	if res.StatusCode == 400 || res.StatusCode == 429 {
