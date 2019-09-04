@@ -142,7 +142,7 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 	case len(cfg.Run.ModuleURL) > 0:
 		for _, moduleURL := range cfg.Run.ModuleURL {
 			module := app.ModuleFactory.GetModuleFromURI(moduleURL)
-			trackedItems = append(app.DbCon.GetTrackedItems(module, false))
+			trackedItems = append(trackedItems, app.DbCon.GetTrackedItems(module, false)...)
 		}
 	default:
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
