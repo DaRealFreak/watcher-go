@@ -1,9 +1,10 @@
 package deviantart
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // Collections implements the API endpoint https://www.deviantart.com/api/v1/oauth2/collections/{folderid}

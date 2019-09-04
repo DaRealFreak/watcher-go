@@ -2,14 +2,15 @@ package deviantart
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	"strings"
 )
 
-func (m *deviantArt) parseCollection(appUrl string, item *models.TrackedItem) {
-	userName := strings.Split(appUrl, "/")[3]
-	folderID := strings.Split(appUrl, "/")[4]
+func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
+	userName := strings.Split(appURL, "/")[3]
+	folderID := strings.Split(appURL, "/")[4]
 	foundCurrentItem := false
 	offset := 0
 	var deviations []*Deviation

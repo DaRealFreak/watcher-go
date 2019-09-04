@@ -153,10 +153,10 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 		return
 	}
 
-	appUrl := item.URI
-	if !strings.HasPrefix(appUrl, "DeviantArt://") {
+	appURL := item.URI
+	if !strings.HasPrefix(appURL, "DeviantArt://") {
 		var exists bool
-		appUrl, exists = m.getAppUrl(item.URI)
+		appURL, exists = m.getAppURL(item.URI)
 		if !exists {
 			log.WithField("module", m.Key()).Warnf("couldn't extract app url from page %s", item.URI)
 			// couldn't extract url from passed uri
@@ -164,23 +164,23 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 		}
 	}
 	switch {
-	case strings.HasPrefix(appUrl, "DeviantArt://collection/"):
-		m.parseCollection(appUrl, item)
-	case strings.HasPrefix(appUrl, "DeviantArt://tag/"):
+	case strings.HasPrefix(appURL, "DeviantArt://collection/"):
+		m.parseCollection(appURL, item)
+	case strings.HasPrefix(appURL, "DeviantArt://tag/"):
 		fmt.Println("downloading tag")
-	case strings.HasPrefix(appUrl, "DeviantArt://deviation/"):
+	case strings.HasPrefix(appURL, "DeviantArt://deviation/"):
 		fmt.Println("downloading single deviation")
-	case strings.HasPrefix(appUrl, "DeviantArt://gallery/"):
-		m.parseGallery(appUrl, item)
-	case strings.HasPrefix(appUrl, "DeviantArt://browse/morelikethis/"):
+	case strings.HasPrefix(appURL, "DeviantArt://gallery/"):
+		m.parseGallery(appURL, item)
+	case strings.HasPrefix(appURL, "DeviantArt://browse/morelikethis/"):
 		fmt.Println("downloading MLT")
-	case strings.HasPrefix(appUrl, "DeviantArt://watchfeed"):
+	case strings.HasPrefix(appURL, "DeviantArt://watchfeed"):
 		fmt.Println("downloading watch feed")
 	}
 }
 
-// getAppUrl extracts the meta attribute da:appurl and returns it
-func (m *deviantArt) getAppUrl(uri string) (appUrl string, exists bool) {
+// getAppURL extracts the meta attribute da:appurl and returns it
+func (m *deviantArt) getAppURL(uri string) (appURL string, exists bool) {
 	res, err := m.Session.Get(uri)
 	raven.CheckError(err)
 

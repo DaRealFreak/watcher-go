@@ -48,9 +48,9 @@ func (m *deviantArt) parseGalleryAll(item *models.TrackedItem) {
 	m.processDownloadQueue(item, deviations)
 }
 
-func (m *deviantArt) parseGallery(appUrl string, item *models.TrackedItem) {
-	userName := strings.Split(appUrl, "/")[3]
-	folderID := strings.Split(appUrl, "/")[4]
+func (m *deviantArt) parseGallery(appURL string, item *models.TrackedItem) {
+	userName := strings.Split(appURL, "/")[3]
+	folderID := strings.Split(appURL, "/")[4]
 	foundCurrentItem := false
 	offset := 0
 	var deviations []*Deviation
