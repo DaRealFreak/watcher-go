@@ -22,6 +22,7 @@ type DeviantArtSession struct {
 	*session.DefaultSession
 	TokenStore        *TokenStore
 	UseConsoleExploit bool
+	DefaultHeaders    map[string]string
 }
 
 // NewSession returns an initialized DeviantArtSession
@@ -30,6 +31,15 @@ func NewSession() *DeviantArtSession {
 		DefaultSession:    session.NewSession(),
 		TokenStore:        NewTokenStore(),
 		UseConsoleExploit: false,
+		DefaultHeaders: map[string]string{
+			"User-Agent":                browser.Chrome(),
+			"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			"Accept-Encoding":           "gzip, deflate, br",
+			"Accept-Language":           "en-US;en;q=0.5",
+			"Host":                      "www.deviantart.com",
+			"Upgrade-Insecure-Requests": "1",
+			"Connection":                "keep-alive",
+		},
 	}
 	ses.RateLimiter = rate.NewLimiter(rate.Every(5000*time.Millisecond), 1)
 	return ses
@@ -48,10 +58,10 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 		func(uri string, values url.Values) (res *http.Response, err error) {
 			log.WithField("module", s.ModuleKey).Debugf("POST request: %s", uri)
 			req, err := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
-			if err != nil {
-				log.Fatalln(err)
+			raven.CheckError(err)
+			for k, v := range s.DefaultHeaders {
+				req.Header.Set(k, v)
 			}
-			req.Header.Set("User-Agent", browser.Chrome())
 			return s.Client.Do(req)
 		},
 	)
@@ -106,10 +116,10 @@ func (s *DeviantArtSession) get(uri string, values url.Values, scope string) (re
 			apiURL.RawQuery = fragments.Encode()
 			log.WithField("module", s.ModuleKey).Debugf("GET request: %s", apiURL.String())
 			req, err := http.NewRequest("GET", apiURL.String(), nil)
-			if err != nil {
-				log.Fatalln(err)
+			raven.CheckError(err)
+			for k, v := range s.DefaultHeaders {
+				req.Header.Set(k, v)
 			}
-			req.Header.Set("User-Agent", browser.Chrome())
 			return s.Client.Do(req)
 		},
 	)
