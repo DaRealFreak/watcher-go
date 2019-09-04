@@ -26,6 +26,8 @@ func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
 				foundCurrentItem = true
 				break
 			}
+			// fake the username to retrieve owner/folderID as path
+			result.Author.Username = userName + "/" + folderID
 			deviations = append(deviations, result)
 		}
 
