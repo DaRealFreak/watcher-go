@@ -238,7 +238,7 @@ func (s *DeviantArtSession) handleRequest(
 			if s.RefreshOAuth2Token(scope) {
 				values.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 			}
-		case res.StatusCode == 429:
+		case res != nil && res.StatusCode == 429:
 			switchMode = true
 			// the API limits are horrible, just sleep up to 5 minutes in which hopefully we get one more request in
 			time.Sleep(time.Duration(try*20) * time.Second)
