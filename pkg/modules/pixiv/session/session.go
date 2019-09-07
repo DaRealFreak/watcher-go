@@ -255,8 +255,7 @@ func (s *PixivSession) applyRateLimit() {
 func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
 	err := json.Unmarshal(response, &errorResponse)
-	if err == nil && errorResponse.Error != nil &&
-		(errorResponse.Error.Message != "" || errorResponse.Error.UserMessage != "") {
+	if err == nil && errorResponse.Error != nil && errorResponse.Error.Message != "" {
 		return true
 	}
 	return false

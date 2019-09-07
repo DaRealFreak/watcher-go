@@ -99,7 +99,7 @@ func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	raven.CheckError(err)
 
 	// user got deleted or deactivated his account
-	if res.StatusCode == 404 {
+	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
 		return nil
 	}
 
