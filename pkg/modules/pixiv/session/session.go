@@ -255,7 +255,8 @@ func (s *PixivSession) applyRateLimit() {
 func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
 	err := json.Unmarshal(response, &errorResponse)
-	if err == nil && errorResponse.Error != nil && errorResponse.Error.Message != "" {
+	if err == nil && errorResponse.Error != nil &&
+		(errorResponse.Error.Message != "" || errorResponse.Error.UserMessage != "") {
 		return true
 	}
 	return false
@@ -281,9 +282,9 @@ func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	}
 
 	switch errorResponse.Error.UserMessage {
-	case "該当作品は削除されたか、存在しない作品IDです。":
+	case "該当作品は削除されたか、存在しない作品IDです。", "Work has been deleted or the ID does not exist.":
 		return false, fmt.Errorf("requested art got removed or restricted")
-	case "アクセスが制限されています。":
+	case "アクセスが制限されています。", "Your access is currently restricted.":
 		return false, fmt.Errorf("requested user got restricted")
 	}
 	return
