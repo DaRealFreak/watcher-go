@@ -118,7 +118,7 @@ func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) bool {
 	doc := m.Session.GetDocument(res)
 	html, err := doc.Html()
 	raven.CheckError(err)
-	return strings.Contains(html, "\"loggedIn\":true")
+	return strings.Contains(html, "\"loggedIn\":true") || strings.Contains(html, "\\\"isLoggedIn\\\":true")
 }
 
 // getLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
