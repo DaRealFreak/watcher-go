@@ -209,6 +209,11 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	}
 	defer raven.CheckClosure(resp.Body)
 
+	// return custom error if status code is 404 to skip the download
+	if resp.StatusCode == 404 {
+		return &FileNotFoundError{message: "unexpected status code of response: 404"}
+	}
+
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err

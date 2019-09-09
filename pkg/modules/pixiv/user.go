@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
@@ -72,7 +73,17 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		}
 		// ToDo: download novels as .txt
 
-		raven.CheckError(err)
+		if err != nil {
+			switch e := err.(type) {
+			case *session.FileNotFoundError:
+				log.WithField("module", m.Key()).Warningf(
+					"404 status code received for ID %s, skipping item",
+					data.ItemID,
+				)
+			default:
+				raven.CheckError(e)
+			}
+		}
 		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
 }
