@@ -62,7 +62,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 
 // Key returns the module key
 func (m *ehentai) Key() (key string) {
-	return "e-hentai.com"
+	return "e-hentai.org"
 }
 
 // RequiresLogin checks if this module requires a login to work
