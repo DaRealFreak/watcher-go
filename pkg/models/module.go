@@ -103,6 +103,9 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	for strings.Contains(path, "__") {
 		path = strings.Replace(path, "__", "_", -1)
 	}
+	for strings.Contains(path, "..") {
+		path = strings.Replace(path, "..", ".", -1)
+	}
 	path = strings.Trim(path, "_")
 	return path
 }
