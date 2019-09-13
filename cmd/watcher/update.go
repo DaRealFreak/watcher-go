@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// addListCommand adds the update sub command
+// addUpdateCommand adds the update sub command
 func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
