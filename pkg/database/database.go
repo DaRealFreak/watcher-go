@@ -25,7 +25,7 @@ func NewConnection() *DbIO {
 	if _, err := os.Stat(viper.GetString("Database.Path")); os.IsNotExist(err) {
 		dbIO.createDatabase()
 	}
-	db, err := sql.Open("sqlite3", viper.GetString("Database.Path"))
+	db, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
 
 	dbIO.connection = db
