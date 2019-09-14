@@ -10,6 +10,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/jaytaylor/html2text"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -47,15 +48,32 @@ func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDe
 	if deviation.IsDownloadable {
 		deviationDownload, apiErr := m.DeviationDownload(deviation.DeviationID.String())
 		if apiErr != nil {
-			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+			var err error
+			deviationDownload, err = m.DeviationDownloadFallback(deviation.URL)
+			if err != nil {
+				raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+			}
 		}
 		completedDeviationItem.Download = deviationDownload
 	}
 	return completedDeviationItem
 }
 
+// processDownloadQueue retrieves the deviation details and proceeds to download the relevant information
 func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, deviations []*Deviation) {
-	for _, item := range deviations {
+	log.WithField("module", m.Key()).Info(
+		fmt.Sprintf("found %d new items for uri: %s", len(deviations), trackedItem.URI),
+	)
+
+	for index, item := range deviations {
+		log.WithField("module", m.Key()).Info(
+			fmt.Sprintf(
+				"downloading updates for uri: %s (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(deviations))*100,
+			),
+		)
+
 		deviationItem := m.retrieveDeviationDetails(item)
 
 		// ensure download directory, needed for only text artists
