@@ -10,6 +10,7 @@ type APIError struct {
 	ErrorDescription string            `json:"error_description"`
 	ErrorDetails     map[string]string `json:"error_details"`
 	ErrorCode        json.Number       `json:"error_code"`
+	Status           string            `json:"status"`
 }
 
 // User is the struct of the user API response
