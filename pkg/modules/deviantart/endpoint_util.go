@@ -35,7 +35,7 @@ func (m *deviantArt) mapAPIResponse(res *http.Response, apiRes interface{}, apiE
 	content, err := ioutil.ReadAll(reader)
 	raven.CheckError(err)
 
-	if res.StatusCode == 400 || res.StatusCode == 429 {
+	if res.StatusCode >= 400 {
 		// unmarshal the request content into the error struct
 		raven.CheckError(json.Unmarshal(content, &apiErr))
 	} else {
