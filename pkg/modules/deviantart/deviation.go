@@ -46,11 +46,11 @@ func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDe
 		completedDeviationItem.DeviationContent = deviationContent
 	}
 	if deviation.IsDownloadable {
-		deviationDownload, apiErr := m.DeviationDownload(deviation.DeviationID.String())
-		if apiErr != nil {
-			var err error
-			deviationDownload, err = m.DeviationDownloadFallback(deviation.URL)
-			if err != nil {
+		deviationDownload, err := m.DeviationDownloadFallback(deviation.URL)
+		if err != nil {
+			var apiErr *APIError
+			deviationDownload, apiErr = m.DeviationDownload(deviation.DeviationID.String())
+			if apiErr != nil {
 				raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
 			}
 		}
