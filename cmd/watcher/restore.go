@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// addGenerateAutoCompletionCommand adds the generate-autocomplete sub command
+// addRestoreCommand adds the restore sub command
 func (cli *CliApplication) addRestoreCommand() {
 	var restoreCmd = &cobra.Command{
 		Use:   "restore [archive name]",
