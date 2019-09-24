@@ -18,8 +18,10 @@
 .idea/
 
 # Project generated binaries
-watcher.db
-.watcher.yaml
+*.db
+*.yaml
+*.db-shm
+*.db-wal
 
 # Build Pipeline files
 dist/
