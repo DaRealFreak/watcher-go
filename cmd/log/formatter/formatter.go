@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // defaultTimestampFormat is the time format we use if nothing is set manually
@@ -69,7 +69,7 @@ type Formatter struct {
 }
 
 // Format implements the interface method of the logrus Formatter
-func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *Formatter) Format(entry *log.Entry) ([]byte, error) {
 	out := new(bytes.Buffer)
 
 	// if colors are not disabled and no color schema got set we use the default color schema
@@ -114,7 +114,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 // appends nothing on DisableTimestamp
 // appends [seconds] on UseTimePassedAsTimestamp
 // appends formatted TimestampFormat else
-func (f *Formatter) appendTimeInfo(out io.StringWriter, entry *logrus.Entry) (err error) {
+func (f *Formatter) appendTimeInfo(out io.StringWriter, entry *log.Entry) (err error) {
 	if !f.DisableTimestamp {
 		var timeInfo string
 		if f.UseTimePassedAsTimestamp {
@@ -139,7 +139,7 @@ func (f *Formatter) appendTimeInfo(out io.StringWriter, entry *logrus.Entry) (er
 	return nil
 }
 
-func (f *Formatter) appendLevelInfo(out io.StringWriter, entry *logrus.Entry) (err error) {
+func (f *Formatter) appendLevelInfo(out io.StringWriter, entry *log.Entry) (err error) {
 	colorSchema := f.getLevelColor(entry)
 	entryLevel := entry.Level.String()
 	if f.UseUppercaseLevel {
@@ -150,7 +150,7 @@ func (f *Formatter) appendLevelInfo(out io.StringWriter, entry *logrus.Entry) (e
 }
 
 // appendPrependedFields appends the prepended fields and removes them from the data attribute in the entry
-func (f *Formatter) appendPrependedFields(out io.StringWriter, entry *logrus.Entry) (err error) {
+func (f *Formatter) appendPrependedFields(out io.StringWriter, entry *log.Entry) (err error) {
 	for fieldKey, fieldMatches := range FieldMatchColorScheme {
 		// check for the longest value for the required padding on PadAllLogEntries = true
 		longestValue := 0
@@ -197,30 +197,30 @@ func (f *Formatter) appendPrependedFields(out io.StringWriter, entry *logrus.Ent
 }
 
 // getLevelColor returns the ansi ColorFunc depending on the log entry level
-func (f *Formatter) getLevelColor(entry *logrus.Entry) func(string) string {
+func (f *Formatter) getLevelColor(entry *log.Entry) func(string) string {
 	// disabled colors or not a terminal
 	if f.DisableColors || (!f.isTerminal(entry.Logger.Out) && !f.ForceColors) {
 		return ansi.ColorFunc("")
 	}
 	switch entry.Level {
-	case logrus.InfoLevel:
+	case log.InfoLevel:
 		return f.getEntryColor(entry, f.ColorSchema.InfoLevel, defaultColorSchema.InfoLevel)
-	case logrus.WarnLevel:
+	case log.WarnLevel:
 		return f.getEntryColor(entry, f.ColorSchema.WarnLevel, defaultColorSchema.WarnLevel)
-	case logrus.ErrorLevel:
+	case log.ErrorLevel:
 		return f.getEntryColor(entry, f.ColorSchema.ErrorLevel, defaultColorSchema.ErrorLevel)
-	case logrus.FatalLevel:
+	case log.FatalLevel:
 		return f.getEntryColor(entry, f.ColorSchema.FatalLevel, defaultColorSchema.FatalLevel)
-	case logrus.PanicLevel:
+	case log.PanicLevel:
 		return f.getEntryColor(entry, f.ColorSchema.PanicLevel, defaultColorSchema.PanicLevel)
-	case logrus.DebugLevel:
+	case log.DebugLevel:
 		return f.getEntryColor(entry, f.ColorSchema.DebugLevel, defaultColorSchema.DebugLevel)
 	}
 	return ansi.ColorFunc("")
 }
 
 // getEntryColor checks if we have a terminal and colors are not disabled and returns the ansi ColorFunc
-func (f *Formatter) getEntryColor(entry *logrus.Entry, customColor string, defaultColor string) func(string) string {
+func (f *Formatter) getEntryColor(entry *log.Entry, customColor string, defaultColor string) func(string) string {
 	// disabled colors or not a terminal
 	if f.DisableColors || (!f.isTerminal(entry.Logger.Out) && !f.ForceColors) {
 		return ansi.ColorFunc("")
