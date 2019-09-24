@@ -1,6 +1,7 @@
 package ehentai
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -16,12 +17,16 @@ type imageGalleryItem struct {
 }
 
 // parseGallery parses the tracked item if we detected a tracked gallery
-func (m *ehentai) parseGallery(item *models.TrackedItem) {
-	response, _ := m.Session.Get(item.URI)
+func (m *ehentai) parseGallery(item *models.TrackedItem) error {
+	response, err := m.Session.Get(item.URI)
+	if err != nil {
+		return err
+	}
+
 	html, _ := m.Session.GetDocument(response).Html()
 	if m.hasGalleryErrors(item, html) {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		return
+		return fmt.Errorf("gallery contains errors")
 	}
 	galleryTitle := m.extractGalleryTitle(html)
 
@@ -48,12 +53,16 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) {
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	m.processDownloadQueue(downloadQueue, item)
+	if err := m.processDownloadQueue(downloadQueue, item); err != nil {
+		return err
+	}
+
 	if !m.downloadLimitReached {
 		// mark item as complete since update doesn't affect old galleries
 		// if download limit got reached we didn't reach the final image and don't set the gallery as complete
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 	}
+	return nil
 }
 
 // getNextGalleryPageURL retrieves the url of the next page if it exists
@@ -103,16 +112,19 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 }
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
-func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) models.DownloadQueueItem {
-	response, _ := m.Session.Get(item.uri)
+func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) (*models.DownloadQueueItem, error) {
+	response, err := m.Session.Get(item.uri)
+	if err != nil {
+		return nil, err
+	}
 	document := m.Session.GetDocument(response)
 	imageURL, _ := document.Find("img#img").Attr("src")
-	return models.DownloadQueueItem{
+	return &models.DownloadQueueItem{
 		ItemID:      item.id,
 		DownloadTag: item.galleryTitle,
 		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
 		FileURI:     imageURL,
-	}
+	}, nil
 }
 
 // extractGalleryTitle extracts the gallery title from the passed HTML

@@ -15,8 +15,11 @@ type searchGalleryItem struct {
 }
 
 // parseSearch parses the tracked item if we detected a search/tag
-func (m *ehentai) parseSearch(item *models.TrackedItem) {
-	response, _ := m.Session.Get(item.URI)
+func (m *ehentai) parseSearch(item *models.TrackedItem) error {
+	response, err := m.Session.Get(item.URI)
+	if err != nil {
+		return err
+	}
 	html, _ := m.Session.GetDocument(response).Html()
 
 	var itemQueue []searchGalleryItem
@@ -41,7 +44,10 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 			// no next page exists anymore, break here
 			break
 		}
-		response, _ = m.Session.Get(nextPageURL)
+		response, err = m.Session.Get(nextPageURL)
+		if err != nil {
+			return err
+		}
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -55,6 +61,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) {
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}
+	return nil
 }
 
 // getSearchGalleryUrls returns all gallery URLs from the passed HTML

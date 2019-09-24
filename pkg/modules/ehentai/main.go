@@ -11,7 +11,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
@@ -107,27 +106,34 @@ func (m *ehentai) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *ehentai) Parse(item *models.TrackedItem) {
+	var err error
 	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
-		m.parseGallery(item)
+		err = m.parseGallery(item)
 	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
-		m.parseSearch(item)
+		err = m.parseSearch(item)
+	}
+	if err != nil {
+		log.WithField("module", m.Key()).Warningf("error occurred parsing item %s, skipping", item.URI)
 	}
 }
 
 // processDownloadQueue processes the download queue consisting of gallery items
-func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) {
+func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key()).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
 	for index, data := range downloadQueue {
-		downloadQueueItem := m.getDownloadQueueItem(data)
+		downloadQueueItem, err := m.getDownloadQueueItem(data)
+		if err != nil {
+			return err
+		}
 		// check for limit
 		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 			log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
 			m.downloadLimitReached = true
-			break
+			return fmt.Errorf("download limit reached")
 		}
 
 		log.WithField("module", m.Key()).Info(
@@ -137,18 +143,20 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
-		raven.CheckError(
-			m.Session.DownloadFile(
-				path.Join(
-					viper.GetString("download.directory"),
-					m.Key(),
-					strings.TrimSpace(downloadQueueItem.DownloadTag),
-					strings.TrimSpace(downloadQueueItem.FileName),
-				),
-				downloadQueueItem.FileURI,
+		err = m.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"),
+				m.Key(),
+				strings.TrimSpace(downloadQueueItem.DownloadTag),
+				strings.TrimSpace(downloadQueueItem.FileName),
 			),
+			downloadQueueItem.FileURI,
 		)
+		if err != nil {
+			return err
+		}
 		// if no error occurred update the tracked item
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
+	return nil
 }
