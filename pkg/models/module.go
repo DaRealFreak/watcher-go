@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -68,7 +67,7 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 }
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
-func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) {
+func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) error {
 	log.WithField("module", t.Key()).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
@@ -85,9 +84,12 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 			path.Join(viper.GetString("download.directory"), t.Key(), data.DownloadTag, data.FileName),
 			data.FileURI,
 		)
-		raven.CheckError(err)
+		if err != nil {
+			return err
+		}
 		t.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
+	return nil
 }
 
 // SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
