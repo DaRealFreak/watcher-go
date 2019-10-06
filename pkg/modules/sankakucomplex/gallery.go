@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // apiItem is the JSON struct of item objects returned by the API
@@ -81,8 +80,11 @@ type tag struct {
 }
 
 // parseGallery parses galleries based on the tags in the tracked item
-func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue []models.DownloadQueueItem) {
-	tag := m.extractItemTag(item)
+func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue []models.DownloadQueueItem, err error) {
+	tag, err := m.extractItemTag(item)
+	if err != nil {
+		return nil, err
+	}
 	page := 0
 	foundCurrentItem := false
 
@@ -93,11 +95,19 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			page,
 			url.QueryEscape(tag),
 		)
-		response, _ := m.Session.Get(apiURI)
-		apiItems := m.parseAPIResponse(response)
+		response, err := m.Session.Get(apiURI)
+		if err != nil {
+			return nil, err
+		}
+		apiItems, err := m.parseAPIResponse(response)
+		if err != nil {
+			return nil, err
+		}
 		for _, data := range apiItems {
 			itemID, err := data.ID.Int64()
-			raven.CheckError(err)
+			if err != nil {
+				return nil, err
+			}
 			// will return 0 on error, so fine for us too
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			if item.CurrentItem == "" || itemID > currentItemID {
@@ -121,27 +131,28 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 
 	// reverse queue to get the oldest "new" item first and manually update it
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
-
-	return downloadQueue
+	return downloadQueue, nil
 }
 
 // parseAPIResponse parses the response from the API
-func (m *sankakuComplex) parseAPIResponse(response *http.Response) []apiItem {
+func (m *sankakuComplex) parseAPIResponse(response *http.Response) ([]apiItem, error) {
 	body, _ := ioutil.ReadAll(response.Body)
 	var apiItems []apiItem
 	err := json.Unmarshal(body, &apiItems)
-	raven.CheckError(err)
-	return apiItems
+	if err != nil {
+		return nil, err
+	}
+	return apiItems, err
 }
 
 // extractItemTag extracts the tag from the passed item URL
-func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) string {
+func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) (string, error) {
 	u, _ := url.Parse(item.URI)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["tags"]) == 0 {
-		raven.CheckError(fmt.Errorf("parsed uri(%s) does not contain any \"tags\" tag", item.URI))
+		return "", fmt.Errorf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)
 	}
-	return q["tags"][0]
+	return q["tags"][0], nil
 }
 
 // getTagSubDirectory returns possible sub directories since the books got kinda overhand

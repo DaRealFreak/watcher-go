@@ -82,8 +82,10 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 // Parse parses the tracked item
 func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 	// ToDo: add book support
-	downloadQueue := m.parseGallery(item)
+	downloadQueue, err := m.parseGallery(item)
+	if err != nil {
+		return err
+	}
 
-	m.ProcessDownloadQueue(downloadQueue, item)
-	return nil
+	return m.ProcessDownloadQueue(downloadQueue, item)
 }
