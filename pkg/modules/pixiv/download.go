@@ -41,9 +41,12 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 
 // downloadUgoira handles the download process of ugoira illustration types
 func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
-	metadata := m.getUgoiraMetaData(downloadQueueItem.ItemID).UgoiraMetadata
-	fileName := strings.TrimSuffix(m.GetFileName(metadata.ZipUrls["medium"]), ".zip") + ".webp"
-	fileURI := metadata.ZipUrls["medium"]
+	apiRes, err := m.getUgoiraMetaData(downloadQueueItem.ItemID)
+	if err != nil {
+		return err
+	}
+	fileName := strings.TrimSuffix(m.GetFileName(apiRes.UgoiraMetadata.ZipUrls["medium"]), ".zip") + ".webp"
+	fileURI := apiRes.UgoiraMetadata.ZipUrls["medium"]
 
 	resp, err := m.Session.Get(fileURI)
 	if err != nil {
@@ -61,7 +64,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 
 	animationData := animation.FileData{}
 	for _, zipFile := range zipReader.File {
-		frame, err := m.getUgoiraFrame(zipFile.Name, metadata)
+		frame, err := m.getUgoiraFrame(zipFile.Name, apiRes.UgoiraMetadata)
 		if err != nil {
 			return err
 		}

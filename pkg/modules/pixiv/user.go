@@ -8,14 +8,20 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 )
 
 // parseUserIllustrations parses illustrations of artists
-func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
-	userID := m.getUserIDFromURL(item.URI)
-	if m.getUserDetail(userID) == nil {
+func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
+	userID, err := m.getUserIDFromURL(item.URI)
+	if err != nil {
+		return err
+	}
+	userDetails, err := m.getUserDetail(userID)
+	if err != nil {
+		return err
+	}
+	if userDetails == nil {
 		log.WithField("module", m.Key()).Warning(
 			"couldn't retrieve user details, changing artist to complete",
 		)
@@ -28,14 +34,20 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	apiURL := m.getUserIllustsURL(userID, SearchFilterAll, 0)
 
 	for !foundCurrentItem {
-		response := m.getUserIllusts(apiURL)
+		response, err := m.getUserIllusts(apiURL)
+		if err != nil {
+			return err
+		}
 		apiURL = response.NextURL
 		for _, userIllustration := range response.Illustrations {
 			if string(userIllustration.ID) == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
-			m.parseWork(userIllustration, &downloadQueue)
+			err = m.parseWork(userIllustration, &downloadQueue)
+			if err != nil {
+				return err
+			}
 		}
 
 		// break if we don't have another page
@@ -48,17 +60,16 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) {
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
-	m.processDownloadQueue(downloadQueue, item)
+	return m.processDownloadQueue(downloadQueue, item)
 }
 
 // processDownloadQueue processes the download queue of user illustration download queue items
-func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) {
+func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) (err error) {
 	log.WithField("module", m.Key()).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
 
 	for index, data := range downloadQueue {
-		var err error
 		log.WithField("module", m.Key()).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: %s (%0.2f%%)",
@@ -74,32 +85,33 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		// ToDo: download novels as .txt
 
 		if err != nil {
-			switch e := err.(type) {
+			switch err.(type) {
 			case *session.FileNotFoundError:
 				log.WithField("module", m.Key()).Warningf(
 					"404 status code received for ID %s, skipping item",
 					data.ItemID,
 				)
 			default:
-				raven.CheckError(e)
+				return err
 			}
 		}
 		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
+	return nil
 }
 
 // getUserIDFromURL extracts the user ID from the passed URL
-func (m *pixiv) getUserIDFromURL(uri string) string {
+func (m *pixiv) getUserIDFromURL(uri string) (string, error) {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["id"]) == 0 {
-		raven.CheckError(fmt.Errorf("parsed uri(%s) does not contain any \"id\" tag", uri))
+		return "", fmt.Errorf("parsed uri(%s) does not contain any \"id\" tag", uri)
 	}
-	return q["id"][0]
+	return q["id"][0], nil
 }
 
 // getUserDetail returns the user details from the API
-func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
+func (m *pixiv) getUserDetail(userID string) (apiRes *userDetailResponse, err error) {
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
 	data := url.Values{
 		"user_id": {userID},
@@ -107,20 +119,23 @@ func (m *pixiv) getUserDetail(userID string) *userDetailResponse {
 	}
 	apiURL.RawQuery = data.Encode()
 	res, err := m.Session.Get(apiURL.String())
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	// user got deleted or deactivated his account
 	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
-		return nil
+		return nil, nil
 	}
 
 	response, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	var details userDetailResponse
 	err = json.Unmarshal(response, &details)
-	raven.CheckError(err)
-	return &details
+	return &details, err
 }
 
 // getUserIllustsURL builds the user illustrations page URL manually
@@ -143,20 +158,24 @@ func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) stri
 }
 
 // getUserIllusts returns user illustrations directly by URL since the API response returns the next page URL directly
-func (m *pixiv) getUserIllusts(apiURL string) *userWorkResponse {
+func (m *pixiv) getUserIllusts(apiURL string) (apiRes *userWorkResponse, err error) {
 	var userWorks userWorkResponse
 	res, err := m.Session.Get(apiURL)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	response, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
-	raven.CheckError(json.Unmarshal(response, &userWorks))
-	return &userWorks
+	err = json.Unmarshal(response, &userWorks)
+	return &userWorks, err
 }
 
 // parseWork parses the different work types (illustration/manga/ugoira/novels) to append to the download queue
-func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) {
+func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) error {
 	switch userIllustration.Type {
 	case SearchFilterIllustration, SearchFilterManga:
 		downloadQueueItem := downloadQueueItem{
@@ -177,8 +196,9 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 		// ToDo: parse novel types
 		fmt.Println(userIllustration)
 	default:
-		raven.CheckError(fmt.Errorf("unknown illustration type: %s", userIllustration.Type))
+		return fmt.Errorf("unknown illustration type: %s", userIllustration.Type)
 	}
+	return nil
 }
 
 // getUgoiraFrame returns the corresponding frame for the passed file name from the passed ugoira metadata

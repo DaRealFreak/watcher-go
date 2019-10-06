@@ -93,7 +93,9 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.applyRateLimit()
+		if err := s.applyRateLimit(); err != nil {
+			return nil, err
+		}
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("GET", uri, nil)
@@ -140,7 +142,9 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, err error) {
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
-		s.applyRateLimit()
+		if err := s.applyRateLimit(); err != nil {
+			return nil, err
+		}
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
@@ -207,7 +211,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
-	defer raven.CheckClosure(resp.Body)
+	defer raven.CheckClosureNonFatal(resp.Body)
 
 	// return custom error if status code is 404 to skip the download
 	if resp.StatusCode == 404 {
@@ -239,7 +243,7 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	if err != nil {
 		return 0, err
 	}
-	defer raven.CheckClosure(out)
+	defer raven.CheckClosureNonFatal(out)
 
 	// write the body to file
 	written, err = io.Copy(out, bytes.NewReader(content))
@@ -250,10 +254,9 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 }
 
 // applyRateLimit waits for the leaky bucket to fill again
-func (s *PixivSession) applyRateLimit() {
+func (s *PixivSession) applyRateLimit() error {
 	// wait for request to stay within the rate limit
-	err := s.rateLimiter.Wait(s.ctx)
-	raven.CheckError(err)
+	return s.rateLimiter.Wait(s.ctx)
 }
 
 // containsAPIError checks if the returned value contains an error object

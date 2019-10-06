@@ -13,6 +13,6 @@ func (m *pixiv) readZipFile(zf *zip.File) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer raven.CheckClosure(f)
+	defer raven.CheckClosureNonFatal(f)
 	return ioutil.ReadAll(f)
 }
