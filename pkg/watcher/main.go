@@ -108,7 +108,11 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 			log.WithField("module", module.Key()).Info(
 				fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 			)
-			module.Parse(item)
+			if err := module.Parse(item); err != nil {
+				log.WithField("module", item.Module).Warningf(
+					"error occurred parsing item %s, skipping", item.URI,
+				)
+			}
 		}
 	}
 }
@@ -162,7 +166,11 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 		log.WithField("module", module.Key()).Info(
 			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 		)
-		module.Parse(item)
+		if err := module.Parse(item); err != nil {
+			log.WithField("module", item.Module).Warningf(
+				"error occurred parsing item %s, skipping", item.URI,
+			)
+		}
 	}
 }
 

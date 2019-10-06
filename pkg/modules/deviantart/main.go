@@ -144,13 +144,13 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 }
 
 // Parse parses the tracked item
-func (m *deviantArt) Parse(item *models.TrackedItem) {
+func (m *deviantArt) Parse(item *models.TrackedItem) error {
 	// special behaviour: viewing "all" gallery doesn't contain unique gallery id (using featured uuid)
 	// so it won't retrieve all items, only the featured ones
 	// we use the /gallery/all API endpoint in that case to retrieve actually all deviations
 	if m.userGalleryPattern.MatchString(item.URI) {
 		m.parseGalleryAll(item)
-		return
+		return nil
 	}
 
 	appURL := item.URI
@@ -160,7 +160,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 		if !exists {
 			log.WithField("module", m.Key()).Warnf("couldn't extract app url from page %s", item.URI)
 			// couldn't extract url from passed uri
-			return
+			return nil
 		}
 	}
 	switch {
@@ -175,6 +175,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) {
 	case strings.HasPrefix(appURL, "DeviantArt://watchfeed"):
 		m.parseFeed(item)
 	}
+	return nil
 }
 
 // getAppURL extracts the meta attribute da:appurl and returns it

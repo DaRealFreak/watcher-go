@@ -105,16 +105,13 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 // Parse parses the tracked item
-func (m *ehentai) Parse(item *models.TrackedItem) {
-	var err error
+func (m *ehentai) Parse(item *models.TrackedItem) error {
 	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
-		err = m.parseGallery(item)
+		return m.parseGallery(item)
 	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
-		err = m.parseSearch(item)
+		return m.parseSearch(item)
 	}
-	if err != nil {
-		log.WithField("module", m.Key()).Warningf("error occurred parsing item %s, skipping", item.URI)
-	}
+	return nil
 }
 
 // processDownloadQueue processes the download queue consisting of gallery items

@@ -149,8 +149,9 @@ func (m *pixiv) Login(account *models.Account) bool {
 }
 
 // Parse parses the tracked item
-func (m *pixiv) Parse(item *models.TrackedItem) {
+func (m *pixiv) Parse(item *models.TrackedItem) error {
 	if strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php") {
 		m.parseUserIllustrations(item)
 	}
+	return nil
 }

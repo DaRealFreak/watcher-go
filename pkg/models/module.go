@@ -27,7 +27,7 @@ type ModuleInterface interface {
 	// Login logs us in for the current session if possible/account available
 	Login(account *Account) (success bool)
 	// Parse parses the tracked item
-	Parse(item *TrackedItem)
+	Parse(item *TrackedItem) error
 }
 
 // DownloadQueueItem is a generic struct in case the module doesn't require special actions
