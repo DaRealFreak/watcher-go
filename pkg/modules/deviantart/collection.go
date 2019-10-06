@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
-func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
+func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) error {
 	userName := strings.Split(appURL, "/")[3]
 	folderID := strings.Split(appURL, "/")[4]
 	foundCurrentItem := false
@@ -16,9 +15,12 @@ func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
 	var deviations []*Deviation
 
 	for !foundCurrentItem {
-		results, apiErr := m.Collections(userName, folderID, uint(offset), 24)
+		results, apiErr, err := m.Collections(userName, folderID, uint(offset), 24)
+		if err != nil {
+			return err
+		}
 		if apiErr != nil {
-			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+			return fmt.Errorf(apiErr.ErrorDescription)
 		}
 
 		for _, result := range results.Results {
@@ -38,7 +40,9 @@ func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
 
 		// update offset
 		nextOffset, err := results.NextOffset.Int64()
-		raven.CheckError(err)
+		if err != nil {
+			return err
+		}
 		offset = int(nextOffset)
 	}
 
@@ -47,5 +51,5 @@ func (m *deviantArt) parseCollection(appURL string, item *models.TrackedItem) {
 		deviations[i], deviations[j] = deviations[j], deviations[i]
 	}
 	// retrieve all relevant details and parse the download queue
-	m.processDownloadQueue(item, deviations)
+	return m.processDownloadQueue(item, deviations)
 }

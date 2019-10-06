@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // FeedHomeBucket implements the API endpoint https://www.deviantart.com/api/v1/oauth2/feed/home/{bucketid}
 func (m *deviantArt) FeedHomeBucket(bucketID string, offset uint, limit uint, matureContent bool) (
-	apiRes *FeedBucketResponse, apiErr *APIError,
+	apiRes *FeedBucketResponse, apiErr *APIError, err error,
 ) {
 	values := url.Values{
 		"bucketid":       {bucketID},
@@ -20,16 +18,18 @@ func (m *deviantArt) FeedHomeBucket(bucketID string, offset uint, limit uint, ma
 	}
 
 	res, err := m.deviantArtSession.APIGet("/feed/home/"+bucketID, values, ScopeFeed)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// map the http.Response into either the api response or the api error
-	m.mapAPIResponse(res, &apiRes, &apiErr)
-	return apiRes, apiErr
+	err = m.mapAPIResponse(res, &apiRes, &apiErr)
+	return apiRes, apiErr, err
 }
 
 // FeedHomeBucket implements the API endpoint https://www.deviantart.com/api/v1/oauth2/feed/home/
 func (m *deviantArt) FeedHome(cursor string, matureContent bool) (
-	apiRes *FeedBucketResponse, apiErr *APIError,
+	apiRes *FeedBucketResponse, apiErr *APIError, err error,
 ) {
 	values := url.Values{
 		"cursor":         {cursor},
@@ -37,9 +37,11 @@ func (m *deviantArt) FeedHome(cursor string, matureContent bool) (
 	}
 
 	res, err := m.deviantArtSession.APIGet("/feed/home/", values, ScopeFeed)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// map the http.Response into either the api response or the api error
-	m.mapAPIResponse(res, &apiRes, &apiErr)
-	return apiRes, apiErr
+	err = m.mapAPIResponse(res, &apiRes, &apiErr)
+	return apiRes, apiErr, err
 }

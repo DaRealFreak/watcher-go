@@ -4,22 +4,27 @@ import (
 	"fmt"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // parseFeed retrieves the deviation_submitted bucket and parses all new deviations
-func (m *deviantArt) parseFeed(item *models.TrackedItem) {
+func (m *deviantArt) parseFeed(item *models.TrackedItem) error {
 	foundCurrentItem := false
 	var deviations []*Deviation
 
-	bucket, apiErr := m.FeedHomeBucket("deviation_submitted", 0, 10, true)
+	bucket, apiErr, err := m.FeedHomeBucket("deviation_submitted", 0, 10, true)
+	if err != nil {
+		return err
+	}
 	if apiErr != nil {
-		raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+		return fmt.Errorf(apiErr.ErrorDescription)
 	}
 	for !foundCurrentItem {
-		results, apiErr := m.FeedHome(bucket.Cursor, true)
+		results, apiErr, err := m.FeedHome(bucket.Cursor, true)
+		if err != nil {
+			return err
+		}
 		if apiErr != nil {
-			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+			return fmt.Errorf(apiErr.ErrorDescription)
 		}
 		for _, itemFeed := range results.Items {
 			for _, result := range itemFeed.Deviations {
@@ -49,5 +54,5 @@ func (m *deviantArt) parseFeed(item *models.TrackedItem) {
 		deviations[i], deviations[j] = deviations[j], deviations[i]
 	}
 	// retrieve all relevant details and parse the download queue
-	m.processDownloadQueue(item, deviations)
+	return m.processDownloadQueue(item, deviations)
 }

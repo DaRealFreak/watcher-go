@@ -88,9 +88,9 @@ func (m *deviantArt) Login(account *models.Account) bool {
 	}
 
 	// call the utility endpoint function placebo to check the validity of the generated token
-	placebo, err := m.Placebo()
+	placebo, apiErr, err := m.Placebo()
 	// check placebo response if the token can be used
-	m.LoggedIn = err == nil && placebo.Status == "success"
+	m.LoggedIn = apiErr == nil && err == nil && placebo.Status == "success"
 	return m.LoggedIn
 }
 
@@ -101,7 +101,8 @@ func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) bool {
 	res, err := m.Session.Get("https://www.deviantart.com/users/login")
 	raven.CheckError(err)
 
-	info := m.getLoginCSRFToken(res)
+	info, err := m.getLoginCSRFToken(res)
+	raven.CheckError(err)
 	if !(info.CSRFToken != "") {
 		raven.CheckError(fmt.Errorf("could not retrieve CSRF token from login page"))
 	}
@@ -122,7 +123,7 @@ func (m *deviantArt) prepareSessionForOAuth2(account *models.Account) bool {
 }
 
 // getLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
-func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo) {
+func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo, err error) {
 	jsonPattern := regexp.MustCompile(`JSON.parse\((?P<Number>.*csrfToken.*?)\);`)
 	doc := m.Session.GetDocument(res)
 	scriptTags := doc.Find("script")
@@ -134,29 +135,36 @@ func (m *deviantArt) getLoginCSRFToken(res *http.Response) (loginInfo loginInfo)
 
 		scriptContent := selection.Text()
 		if jsonPattern.MatchString(scriptContent) {
-			s, err := strconv.Unquote(jsonPattern.FindStringSubmatch(scriptContent)[1])
-			raven.CheckError(err)
+			var s string
+			s, err = strconv.Unquote(jsonPattern.FindStringSubmatch(scriptContent)[1])
+			if err != nil {
+				return
+			}
 			err = json.Unmarshal([]byte(s), &loginInfo)
-			raven.CheckError(err)
+			if err != nil {
+				return
+			}
 		}
 	})
-	return loginInfo
+	return loginInfo, err
 }
 
 // Parse parses the tracked item
-func (m *deviantArt) Parse(item *models.TrackedItem) error {
+func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	// special behaviour: viewing "all" gallery doesn't contain unique gallery id (using featured uuid)
 	// so it won't retrieve all items, only the featured ones
 	// we use the /gallery/all API endpoint in that case to retrieve actually all deviations
 	if m.userGalleryPattern.MatchString(item.URI) {
-		m.parseGalleryAll(item)
-		return nil
+		return m.parseGalleryAll(item)
 	}
 
 	appURL := item.URI
 	if !strings.HasPrefix(appURL, "DeviantArt://") {
 		var exists bool
-		appURL, exists = m.getAppURL(item.URI)
+		appURL, exists, err = m.getAppURL(item.URI)
+		if err != nil {
+			return err
+		}
 		if !exists {
 			log.WithField("module", m.Key()).Warnf("couldn't extract app url from page %s", item.URI)
 			// couldn't extract url from passed uri
@@ -165,24 +173,27 @@ func (m *deviantArt) Parse(item *models.TrackedItem) error {
 	}
 	switch {
 	case strings.HasPrefix(appURL, "DeviantArt://collection/"):
-		m.parseCollection(appURL, item)
+		return m.parseCollection(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://tag/"):
-		m.parseTag(appURL, item)
+		return m.parseTag(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://deviation/"):
-		m.parseDeviation(appURL, item)
+		return m.parseDeviation(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://gallery/"):
-		m.parseGallery(appURL, item)
+		return m.parseGallery(appURL, item)
 	case strings.HasPrefix(appURL, "DeviantArt://watchfeed"):
-		m.parseFeed(item)
+		return m.parseFeed(item)
 	}
 	return nil
 }
 
 // getAppURL extracts the meta attribute da:appurl and returns it
-func (m *deviantArt) getAppURL(uri string) (appURL string, exists bool) {
+func (m *deviantArt) getAppURL(uri string) (appURL string, exists bool, err error) {
 	res, err := m.Session.Get(uri)
-	raven.CheckError(err)
+	if err != nil {
+		return "", false, err
+	}
 
 	doc := m.Session.GetDocument(res)
-	return doc.Find("meta[property=\"da:appurl\"]").First().Attr("content")
+	appURL, exists = doc.Find("meta[property=\"da:appurl\"]").First().Attr("content")
+	return appURL, exists, nil
 }

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -57,7 +56,9 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 		func(uri string, values url.Values) (res *http.Response, err error) {
 			log.WithField("module", s.ModuleKey).Debugf("POST request: %s", uri)
 			req, err := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
-			raven.CheckError(err)
+			if err != nil {
+				return nil, err
+			}
 			for k, v := range s.DefaultHeaders {
 				req.Header.Set(k, v)
 			}
@@ -77,7 +78,9 @@ func (s *DeviantArtSession) APIPost(endpoint string, values url.Values, scopes .
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
 	}
-	raven.CheckError(s.handleToken(&values, scope))
+	if err := s.handleToken(&values, scope); err != nil {
+		return nil, err
+	}
 	// handle the request now as a normal POST request
 	return s.post("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
@@ -91,7 +94,9 @@ func (s *DeviantArtSession) APIGet(endpoint string, values url.Values, scopes ..
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
 	}
-	raven.CheckError(s.handleToken(&values, scope))
+	if err := s.handleToken(&values, scope); err != nil {
+		return nil, err
+	}
 	return s.get("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
 
@@ -108,7 +113,9 @@ func (s *DeviantArtSession) get(uri string, values url.Values, scope string) (re
 		uri, values, scope,
 		func(uri string, values url.Values) (res *http.Response, err error) {
 			apiURL, err := url.Parse(uri)
-			raven.CheckError(err)
+			if err != nil {
+				return nil, err
+			}
 			// parse existing fragments and override with passed values (required for token)
 			fragments := apiURL.Query()
 			for k, v := range values {
@@ -117,7 +124,9 @@ func (s *DeviantArtSession) get(uri string, values url.Values, scope string) (re
 			apiURL.RawQuery = fragments.Encode()
 			log.WithField("module", s.ModuleKey).Debugf("GET request: %s", apiURL.String())
 			req, err := http.NewRequest("GET", apiURL.String(), nil)
-			raven.CheckError(err)
+			if err != nil {
+				return nil, err
+			}
 			for k, v := range s.DefaultHeaders {
 				req.Header.Set(k, v)
 			}
@@ -169,16 +178,23 @@ func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values
 	var reader io.ReadCloser
 	switch res.Header.Get("Content-Encoding") {
 	case "gzip":
-		reader, _ = gzip.NewReader(res.Body)
+		reader, err = gzip.NewReader(res.Body)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		reader = res.Body
 	}
 	content, err := ioutil.ReadAll(reader)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	// unmarshal the response into the DeveloperConsoleResponse struct
 	var consoleResponse DeveloperConsoleResponse
-	raven.CheckError(json.Unmarshal(content, &consoleResponse))
+	if err := json.Unmarshal(content, &consoleResponse); err != nil {
+		return nil, err
+	}
 
 	// if request was not successful we treat it as a 429 status code
 	// we want to switch back the API mode to default and we most likely won't get any other errors anyway
@@ -187,7 +203,9 @@ func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values
 	}
 
 	marshalledResponse, err := json.Marshal(consoleResponse.DiFi.Response.Calls[0].Response.Content)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 	// since we had to parse the content already reset the Content-Encoding header to prevent duplicate decompressing
 	res.Header.Set("Content-Encoding", "")
 	// replace the response body with our marshalledResponse (equal to the direct OAuth2 application response)

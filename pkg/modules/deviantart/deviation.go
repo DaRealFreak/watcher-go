@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -22,26 +21,35 @@ type DeviationItem struct {
 }
 
 // parseDeviation parses and downloads a single deviation
-func (m *deviantArt) parseDeviation(appURL string, item *models.TrackedItem) {
+func (m *deviantArt) parseDeviation(appURL string, item *models.TrackedItem) error {
 	deviationID := strings.Split(appURL, "/")[3]
-	result, apiErr := m.Deviation(deviationID)
-	if apiErr != nil {
-		raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+	result, apiErr, err := m.Deviation(deviationID)
+	if err != nil {
+		return nil
 	}
-	m.processDownloadQueue(item, []*Deviation{result})
+	if apiErr != nil {
+		return fmt.Errorf(apiErr.ErrorDescription)
+	}
+	if err := m.processDownloadQueue(item, []*Deviation{result}); err != nil {
+		return err
+	}
 	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+	return nil
 }
 
 // retrieveDeviationDetails adds possible Content or Download responses if required
-func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDeviationItem *DeviationItem) {
+func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDeviationItem *DeviationItem, err error) {
 	completedDeviationItem = &DeviationItem{
 		Deviation: deviation,
 	}
 	if deviation.Excerpt != "" {
 		// deviation has text so we retrieve the full content
-		deviationContent, apiErr := m.DeviationContent(deviation.DeviationID.String())
+		deviationContent, apiErr, err := m.DeviationContent(deviation.DeviationID.String())
+		if err != nil {
+			return nil, err
+		}
 		if apiErr != nil {
-			raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+			return nil, fmt.Errorf(apiErr.ErrorDescription)
 		}
 		completedDeviationItem.DeviationContent = deviationContent
 	}
@@ -49,18 +57,21 @@ func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDe
 		deviationDownload, err := m.DeviationDownloadFallback(deviation.URL)
 		if err != nil {
 			var apiErr *APIError
-			deviationDownload, apiErr = m.DeviationDownload(deviation.DeviationID.String())
+			deviationDownload, apiErr, err = m.DeviationDownload(deviation.DeviationID.String())
+			if err != nil {
+				return nil, err
+			}
 			if apiErr != nil {
-				raven.CheckError(fmt.Errorf(apiErr.ErrorDescription))
+				return nil, fmt.Errorf(apiErr.ErrorDescription)
 			}
 		}
 		completedDeviationItem.Download = deviationDownload
 	}
-	return completedDeviationItem
+	return completedDeviationItem, nil
 }
 
 // processDownloadQueue retrieves the deviation details and proceeds to download the relevant information
-func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, deviations []*Deviation) {
+func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, deviations []*Deviation) error {
 	log.WithField("module", m.Key()).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(deviations), trackedItem.URI),
 	)
@@ -74,7 +85,10 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			),
 		)
 
-		deviationItem := m.retrieveDeviationDetails(item)
+		deviationItem, err := m.retrieveDeviationDetails(item)
+		if err != nil {
+			return err
+		}
 
 		// ensure download directory, needed for only text artists
 		m.Session.EnsureDownloadDirectory(
@@ -86,26 +100,31 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			),
 		)
 		if deviationItem.Download != nil {
-			raven.CheckError(m.Session.DownloadFile(
+			if err := m.Session.DownloadFile(
 				path.Join(viper.GetString("download.directory"),
 					m.Key(),
 					deviationItem.Author.Username,
 					deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Download.Src),
 				),
 				deviationItem.Download.Src,
-			))
+			); err != nil {
+				return err
+			}
 		}
 		if deviationItem.DeviationContent != nil {
 			text, err := html2text.FromString(deviationItem.DeviationContent.HTML)
-			raven.CheckError(err)
+			if err != nil {
+				return err
+			}
 
 			filePath := path.Join(viper.GetString("download.directory"),
 				m.Key(),
 				deviationItem.Author.Username,
 				deviationItem.PublishedTime+"_"+m.SanitizePath(deviationItem.Title, false)+".txt",
 			)
-			err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm)
-			raven.CheckError(err)
+			if err := ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+				return err
+			}
 		}
 
 		// download if one of these conditions match:
@@ -119,28 +138,33 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			// if we have an HTML story here we are downloading the content/thumbs too
 			switch {
 			case deviationItem.Content != nil:
-				raven.CheckError(m.Session.DownloadFile(
+				if err := m.Session.DownloadFile(
 					path.Join(viper.GetString("download.directory"),
 						m.Key(),
 						deviationItem.Author.Username,
 						deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Content.Src),
 					),
 					deviationItem.Content.Src,
-				))
+				); err != nil {
+					return err
+				}
 			case len(deviationItem.Thumbs) > 0:
 				// if no content is set we download the highest thumbnail
 				last := deviationItem.Thumbs[len(deviationItem.Thumbs)-1]
-				raven.CheckError(m.Session.DownloadFile(
+				if err := m.Session.DownloadFile(
 					path.Join(viper.GetString("download.directory"),
 						m.Key(),
 						deviationItem.Author.Username,
 						deviationItem.PublishedTime+"_"+m.GetFileName(last.Src),
 					),
 					last.Src,
-				))
+				); err != nil {
+					return err
+				}
 			}
 		}
 
 		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.DeviationID.String())
 	}
+	return nil
 }
