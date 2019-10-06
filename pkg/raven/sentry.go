@@ -37,7 +37,24 @@ func CheckError(err error) {
 	}
 }
 
+// CheckErrorNonFatal checks if the passed error is not nil and pass it to the sentry DSN, contrary to CheckError
+// the log will not be fatal resulting in the application to continue running
+func CheckErrorNonFatal(err error) {
+	if err != nil {
+		sentry.CaptureException(err)
+		// Since sentry emits events in the background we need to make sure
+		// they are sent before we warn the user and continue
+		sentry.Flush(time.Second * 5)
+		log.Warning(err)
+	}
+}
+
 // CheckClosure checks for errors on closeable objects
 func CheckClosure(obj io.Closer) {
 	CheckError(obj.Close())
+}
+
+// CheckClosureNonFatal checks for errors on closeable objects simply warning the user and not exiting the application
+func CheckClosureNonFatal(obj io.Closer) {
+	CheckErrorNonFatal(obj.Close())
 }
