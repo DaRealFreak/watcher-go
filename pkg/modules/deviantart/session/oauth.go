@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
@@ -103,7 +102,7 @@ func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 		APIClientID, RedirectURL, url.QueryEscape(scope),
 	)
 	// send request and wait for either a successful response or a timeout
-	go raven.CheckError(s.sendOAuth2AcceptRequest(tokenRequestApplication, oAuth2URL))
+	go s.sendOAuth2AcceptRequest(tokenRequestApplication, oAuth2URL)
 
 	select {
 	case <-tokenRequestApplication.granted:
@@ -124,7 +123,7 @@ func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 // sendOAuth2AcceptRequest sets the CheckRedirect function of the client to our custom function
 // and opens the OAuth2 URL. If the OAuth2 token fragments got found in the redirect it will cancel here
 // else it will try to authorize the application and check for the token fragments once again
-func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, oAuth2URL string) error {
+func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, oAuth2URL string) {
 	// save the previous CheckRedirect function for restoring it later and using it for checks in case
 	// that the token fragments are not set in the request URL
 	a.sessionRedirect = s.Client.CheckRedirect
@@ -133,12 +132,12 @@ func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, 
 	// open the passed OAuth2 URL
 	res, err := s.Get(oAuth2URL)
 	if err != nil {
-		return err
+		return
 	}
 
 	// the application is authorized already if we already got the OAuth2 token, so no need to go further
 	if a.token != nil {
-		return nil
+		return
 	}
 
 	// we are currently in the authorization step since the previous redirect function didn't contain a token
@@ -169,6 +168,5 @@ func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, 
 		"validate_key":   {authValues.ValidateKey},
 	}
 	// the custom redirect function is still active, so new check is executed here
-	_, err = s.Post("https://www.deviantart.com/settings/authorize_app", values)
-	return err
+	_, _ = s.Post("https://www.deviantart.com/settings/authorize_app", values)
 }
