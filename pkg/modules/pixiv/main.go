@@ -152,13 +152,13 @@ func (m *pixiv) Login(account *models.Account) bool {
 func (m *pixiv) Parse(item *models.TrackedItem) error {
 	switch {
 	case strings.Contains(item.URI, "illust_id=") || strings.Contains(item.URI, "artworks"):
-		return m.parseUserIllustration(item)
-	case strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php"):
-		err := m.parseUserIllustrations(item)
-		if err != nil {
+		err := m.parseUserIllustration(item)
+		if err == nil {
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		}
 		return err
+	case strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php"):
+		return m.parseUserIllustrations(item)
 	}
 	return nil
 }
