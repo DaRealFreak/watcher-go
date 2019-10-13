@@ -173,6 +173,11 @@ type userWorkResponse struct {
 	NextURL       string          `json:"next_url"`
 }
 
+// illustrationDetailResponse is the JSON struct of illust detail response objects returned by the API
+type illustrationDetailResponse struct {
+	Illustration *illustration `json:"illust"`
+}
+
 // ugoiraResponse is the JSON struct of ugoira response objects returned by the API
 type ugoiraResponse struct {
 	UgoiraMetadata *ugoiraMetadata `json:"ugoira_metadata"`
