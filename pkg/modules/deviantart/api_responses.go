@@ -1,9 +1,5 @@
 package deviantart
 
-import (
-	"encoding/json"
-)
-
 // loginInfo contains every JSON encoded information on the login page
 type loginInfo struct {
 	// ToDo: @@publicSession
@@ -53,68 +49,8 @@ type GalleryAllResponse struct {
 	DeviationPagination
 }
 
-// BrowseCategoryTreeResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/categorytree
-type BrowseCategoryTreeResponse struct {
-	Categories []*Category `json:"categories"`
-}
-
-// BrowseDailyDeviationsResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/dailydeviations
-type BrowseDailyDeviationsResponse struct {
-	Results []*Deviation `json:"results"`
-}
-
-// BrowseHotResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/hot
-type BrowseHotResponse struct {
-	DeviationPagination
-}
-
-// BrowseMoreLikeThisResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/morelikethis
-type BrowseMoreLikeThisResponse struct {
-	DeviationPagination
-}
-
-// BrowseMoreLikeThisPreviewResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/morelikethis/preview
-type BrowseMoreLikeThisPreviewResponse struct {
-	Seed           json.Number  `json:"seed"`
-	Author         *User        `json:"author"`
-	MoreFromArtist []*Deviation `json:"more_from_artist"`
-	MoreFromDa     []*Deviation `json:"more_from_da"`
-}
-
-// BrowseNewestResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/newest
-type BrowseNewestResponse struct {
-	DeviationPagination
-}
-
-// BrowsePopularResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/popular
-type BrowsePopularResponse struct {
-	DeviationPagination
-}
-
 // BrowseTagsResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags
 type BrowseTagsResponse struct {
-	DeviationPagination
-}
-
-// BrowseTagsSearchResponse is the struct for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags/search
-type BrowseTagsSearchResponse struct {
-	Results []*Tag `json:"results"`
-}
-
-// BrowseUndiscoveredResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/undiscovered
-type BrowseUndiscoveredResponse struct {
-	DeviationPagination
-}
-
-// BrowseUserJournalsResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/browse/user/journals
-type BrowseUserJournalsResponse struct {
 	DeviationPagination
 }
 
@@ -123,13 +59,6 @@ type DeviationContent struct {
 	HTML     string `json:"html"`
 	CSS      string `json:"css"`
 	CSSFonts string `json:"css_fonts"`
-}
-
-// GalleryFoldersCreateResponse is the struct
-// for API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders/create
-type GalleryFoldersCreateResponse struct {
-	FolderID json.Number `json:"folderid"`
-	Name     string      `json:"name"`
 }
 
 // FeedBucketResponse is the struct

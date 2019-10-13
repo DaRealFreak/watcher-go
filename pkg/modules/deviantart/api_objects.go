@@ -147,34 +147,12 @@ type Deviation struct {
 	IsDownloadable   bool            `json:"is_downloadable"`
 }
 
-// Category is the struct of the category API response
-type Category struct {
-	CategoryPath       string `json:"catpath"`
-	Title              string `json:"title"`
-	HasSubcategory     bool   `json:"has_subcategory"`
-	ParentCategoryPath string `json:"parent_catpath"`
-}
-
 // DeviationPagination is the struct of deviation pagination API responses
 type DeviationPagination struct {
 	HasMore        bool         `json:"has_more"`
 	NextOffset     json.Number  `json:"next_offset"`
 	Results        []*Deviation `json:"results"`
 	EstimatedTotal json.Number  `json:"estimated_total"`
-}
-
-// EmbeddedContentPagination is the struct of embedded content pagination API responses
-type EmbeddedContentPagination struct {
-	NextOffset json.Number  `json:"next_offset"`
-	PrevOffset json.Number  `json:"prev_offset"`
-	Results    []*Deviation `json:"results"`
-	HasMore    bool         `json:"has_more"`
-	HasLess    bool         `json:"has_less"`
-}
-
-// Tag is the struct of tag API responses
-type Tag struct {
-	TagName string `json:"tag_name"`
 }
 
 // FeedItem is the struct of feed items API responses
