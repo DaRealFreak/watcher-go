@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
@@ -151,7 +152,7 @@ func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) stri
 		data.Add("type", filter)
 	}
 	if offset > 0 {
-		data.Add("offset", string(offset))
+		data.Add("offset", strconv.Itoa(offset))
 	}
 	apiURL.RawQuery = data.Encode()
 	return apiURL.String()
