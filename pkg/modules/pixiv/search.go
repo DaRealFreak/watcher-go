@@ -18,7 +18,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 
 	var downloadQueue []*downloadQueueItem
 	foundCurrentItem := false
-	apiURL := m.getSearchURL(searchWord, SearchModePartialTagMatch, SearchOrderDateDescending)
+	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending)
 
 	for !foundCurrentItem {
 		response, err := m.getSearch(apiURL)
@@ -63,7 +63,7 @@ func (m *pixiv) getSearchURL(word string, searchMode string, searchOrder string)
 		"merge_plain_keyword_results":    {"true"},
 		"word":                           {word},
 		"sort":                           {searchOrder},
-		"search_target":                  {"partial_match_for_tags"},
+		"search_target":                  {searchMode},
 	}
 	apiURL.RawQuery = data.Encode()
 	return apiURL.String()
@@ -94,4 +94,21 @@ func (m *pixiv) getSearchWordFromURL(uri string) (string, error) {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"word\" tag", uri)
 	}
 	return q["word"][0], nil
+}
+
+// getSearchTargetFromURL returns the search mode based from the passed URI
+// default search mode is the partial tag match
+func (m *pixiv) getSearchTargetFromURL(uri string) string {
+	u, _ := url.Parse(uri)
+	q, _ := url.ParseQuery(u.RawQuery)
+	// no search mode or partial tag search mod got defined
+	if len(q["s_mode"]) == 0 || q["s_mode"][0] == "s_tag" {
+		return SearchModePartialTagMatch
+	}
+	// full tag search mode got defined
+	if q["s_mode"][0] == "s_tag_full" {
+		return SearchModeExactTagMatch
+	}
+	// last possible option
+	return SearchModeTitleAndCaption
 }
