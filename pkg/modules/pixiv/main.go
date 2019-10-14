@@ -45,8 +45,15 @@ const (
 	SearchFilterAll = ""
 
 	// order of the search results
-	SearchOrderAscending  = "asc"
-	SearchOrderDescending = "desc"
+	SearchOrderDateAscending        = "date_asc"
+	SearchOrderDateDescending       = "date_desc"
+	SearchOrderPopularityAscending  = "popular_asc"
+	SearchOrderPopularityDescending = "popular_desc"
+
+	// search mode
+	SearchModePartialTagMatch = "partial_match_for_tags"
+	SearchModeExactTagMatch   = "exact_match_for_tags"
+	SearchModeTitleAndCaption = "title_and_caption"
 )
 
 // NewModule generates new module and registers the URI schema
@@ -159,6 +166,8 @@ func (m *pixiv) Parse(item *models.TrackedItem) error {
 		return err
 	case strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php"):
 		return m.parseUserIllustrations(item)
+	case strings.Contains(item.URI, "/search.php"):
+		return m.parseSearch(item)
 	}
 	return nil
 }

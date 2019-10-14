@@ -167,6 +167,13 @@ type userDetailResponse struct {
 	Workspace        *workspace        `json:"workspace"`
 }
 
+// searchResponse is the JSON struct of search response objects returned by the API
+type searchResponse struct {
+	Illustrations   []*illustration `json:"illusts"`
+	NextURL         string          `json:"next_url"`
+	SearchSpanLimit json.Number     `json:"search_span_limit"`
+}
+
 // userWorkResponse is the JSON struct of user work response objects returned by the API
 type userWorkResponse struct {
 	Illustrations []*illustration `json:"illusts"`
