@@ -50,10 +50,20 @@ const (
 	SearchOrderPopularityAscending  = "popular_asc"
 	SearchOrderPopularityDescending = "popular_desc"
 
-	// search mode
+	// search mode new API
 	SearchModePartialTagMatch = "partial_match_for_tags"
 	SearchModeExactTagMatch   = "exact_match_for_tags"
 	SearchModeTitleAndCaption = "title_and_caption"
+
+	// search mode previous API
+	PublicAPISearchModePartialTagMatch = "tag"
+	PublicAPISearchModeExactTagMatch   = "exact_tag"
+	PublicAPISearchModeText            = "text"
+	PublicAPISearchModeCaption         = "caption"
+
+	PublicAPISearchFilterIllustration = "illustration"
+	PublicAPISearchFilterManga        = "manga"
+	PublicAPISearchFilterUgoira       = "ugoira"
 )
 
 // NewModule generates new module and registers the URI schema

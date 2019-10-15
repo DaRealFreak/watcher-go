@@ -36,6 +36,17 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 			fileURI,
 		)
 	}
+
+	// fallback for previous API search results
+	if len(downloadQueueItem.Illustration.ImageUrls) > 0 &&
+		len(downloadQueueItem.Illustration.MetaSinglePage) == 0 && len(downloadQueueItem.Illustration.MetaPages) == 0 {
+		fileName := m.GetFileName(downloadQueueItem.Illustration.ImageUrls["large"])
+		fileURI := downloadQueueItem.Illustration.ImageUrls["large"]
+		return m.Session.DownloadFile(
+			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			fileURI,
+		)
+	}
 	return nil
 }
 
