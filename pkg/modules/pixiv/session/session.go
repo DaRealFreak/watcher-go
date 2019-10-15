@@ -28,16 +28,17 @@ import (
 // PixivSession contains the implementation of the SessionInterface and custom required variables
 type PixivSession struct {
 	watcherHttp.Session
-	Module       models.ModuleInterface
-	HTTPClient   *http.Client
-	MobileClient *mobileClient
-	rateLimiter  *rate.Limiter
-	ctx          context.Context
-	MaxRetries   int
+	Module      models.ModuleInterface
+	HTTPClient  *http.Client
+	API         *pixivApi
+	PublicAPI   *APISession
+	rateLimiter *rate.Limiter
+	ctx         context.Context
+	MaxRetries  int
 }
 
-// mobileClient contains extracted variables of the official mobile application
-type mobileClient struct {
+// pixivApi contains extracted variables of the official mobile application
+type pixivApi struct {
 	OauthURL     string
 	headers      map[string]string
 	ClientID     string
@@ -63,12 +64,13 @@ type errorResponse struct {
 // NewSession initializes a new session and sets all the required headers etc
 func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
-	return &PixivSession{
+	session := &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
-		MobileClient: &mobileClient{
+		API: &pixivApi{
 			OauthURL:     "https://oauth.secure.pixiv.net/auth/token",
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
+			HashSecret:   "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c",
 			headers: map[string]string{
 				"User-Agent":      "PixivAndroidApp/5.0.156 (Android 9; ONEPLUS A6013)",
 				"Accept-Language": "en_US",
@@ -78,7 +80,6 @@ func NewSession() *PixivSession {
 				"Content-Type":    "application/x-www-form-urlencoded",
 				"Referer":         "https://app-api.pixiv.net/",
 			},
-			HashSecret:   "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c",
 			AccessToken:  "",
 			RefreshToken: "",
 		},
@@ -86,6 +87,11 @@ func NewSession() *PixivSession {
 		ctx:         context.Background(),
 		MaxRetries:  5,
 	}
+	// fallback for previous API session (Android App Version 4.x)
+	// useful for f.e. searches since the previous API does not impose limits on search queries
+	// while the new App API has a limit of 5000 results
+	session.PublicAPI = session.NewPublicAPISession()
+	return session
 }
 
 // Get is a custom GET function to set headers like the mobile app
@@ -99,7 +105,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("GET", uri, nil)
-		for headerKey, headerValue := range s.MobileClient.headers {
+		for headerKey, headerValue := range s.API.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
 		// add X-Client-Time and X-Client-Hash which are now getting validated server side
@@ -107,11 +113,11 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
 		req.Header.Add("X-Client-Hash", fmt.Sprintf(
 			// nolint: gosec
-			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.MobileClient.HashSecret)),
+			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.API.HashSecret)),
 		))
 
-		if s.MobileClient.AccessToken != "" {
-			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
+		if s.API.AccessToken != "" {
+			req.Header.Add("Authorization", "Bearer "+s.API.AccessToken)
 		}
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
@@ -148,7 +154,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
-		for headerKey, headerValue := range s.MobileClient.headers {
+		for headerKey, headerValue := range s.API.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
 		// add X-Client-Time and X-Client-Hash which are now getting validated server side
@@ -156,11 +162,11 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
 		req.Header.Add("X-Client-Hash", fmt.Sprintf(
 			// nolint: gosec
-			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.MobileClient.HashSecret)),
+			"%x", md5.Sum([]byte(localTime.Format(time.RFC3339)+s.API.HashSecret)),
 		))
 
-		if s.MobileClient.AccessToken != "" {
-			req.Header.Add("Authorization", "Bearer "+s.MobileClient.AccessToken)
+		if s.API.AccessToken != "" {
+			req.Header.Add("Authorization", "Bearer "+s.API.AccessToken)
 		}
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {

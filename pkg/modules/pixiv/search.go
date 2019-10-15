@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
@@ -18,7 +19,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 
 	var downloadQueue []*downloadQueueItem
 	foundCurrentItem := false
-	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending)
+	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending, 4980)
 
 	for !foundCurrentItem {
 		response, err := m.getSearch(apiURL)
@@ -56,7 +57,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 }
 
 // getSearchURL builds the search URL manually
-func (m *pixiv) getSearchURL(word string, searchMode string, searchOrder string) string {
+func (m *pixiv) getSearchURL(word string, searchMode string, searchOrder string, offset int) string {
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/search/illust")
 	data := url.Values{
 		"include_translated_tag_results": {"true"},
@@ -64,6 +65,9 @@ func (m *pixiv) getSearchURL(word string, searchMode string, searchOrder string)
 		"word":                           {word},
 		"sort":                           {searchOrder},
 		"search_target":                  {searchMode},
+	}
+	if offset > 0 {
+		data.Add("offset", strconv.Itoa(offset))
 	}
 	apiURL.RawQuery = data.Encode()
 	return apiURL.String()

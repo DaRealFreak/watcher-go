@@ -114,20 +114,20 @@ func (m *pixiv) Login(account *models.Account) bool {
 		"device_token":   {"pixiv"},
 		"get_secure_url": {"true"},
 		"include_policy": {"true"},
-		"client_id":      {m.pixivSession.MobileClient.ClientID},
-		"client_secret":  {m.pixivSession.MobileClient.ClientSecret},
+		"client_id":      {m.pixivSession.API.ClientID},
+		"client_secret":  {m.pixivSession.API.ClientSecret},
 	}
 
-	if m.pixivSession.MobileClient.RefreshToken != "" {
+	if m.pixivSession.API.RefreshToken != "" {
 		data.Set("grant_type", "refresh_token")
-		data.Set("refresh_token", m.pixivSession.MobileClient.RefreshToken)
+		data.Set("refresh_token", m.pixivSession.API.RefreshToken)
 	} else {
 		data.Set("grant_type", "password")
 		data.Set("username", account.Username)
 		data.Set("password", account.Password)
 	}
 
-	res, err := m.Session.Post(m.pixivSession.MobileClient.OauthURL, data)
+	res, err := m.Session.Post(m.pixivSession.API.OauthURL, data)
 	raven.CheckError(err)
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -139,8 +139,8 @@ func (m *pixiv) Login(account *models.Account) bool {
 	// check if the response could be parsed properly and save tokens
 	if response.Response != nil {
 		m.LoggedIn = true
-		m.pixivSession.MobileClient.RefreshToken = response.Response.RefreshToken
-		m.pixivSession.MobileClient.AccessToken = response.Response.AccessToken
+		m.pixivSession.API.RefreshToken = response.Response.RefreshToken
+		m.pixivSession.API.AccessToken = response.Response.AccessToken
 	} else {
 		var response errorResponse
 		_ = json.Unmarshal(body, &response)
