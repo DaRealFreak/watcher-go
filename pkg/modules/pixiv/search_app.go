@@ -10,8 +10,8 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
-// parseUserIllustrations parses search words
-func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
+// parseSearchApp parses search words for the current API (search limit of 5000 results)
+func (m *pixiv) parseSearchApp(item *models.TrackedItem) (err error) {
 	searchWord, err := m.getSearchWordFromURL(item.URI)
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 
 	var downloadQueue []*downloadQueueItem
 	foundCurrentItem := false
-	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending, 4980)
+	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending, 0)
 
 	for !foundCurrentItem {
 		response, err := m.getSearch(apiURL)
