@@ -28,7 +28,6 @@ type illustration struct {
 	Caption        string                         `json:"caption"`
 	Restrict       json.Number                    `json:"restrict"`
 	User           *user                          `json:"user"`
-	Tags           []*tag                         `json:"tags"`
 	Tools          []string                       `json:"tools"`
 	CreateDate     time.Time                      `json:"create_date"`
 	PageCount      json.Number                    `json:"page_count"`
@@ -45,6 +44,9 @@ type illustration struct {
 	Visible        bool                           `json:"visible"`
 	IsMuted        bool                           `json:"is_muted"`
 	TotalComments  json.Number                    `json:"total_comments"`
+	// tag is currently disabled since previous API returns these tags as string
+	// while newer API returns an associated array
+	//Tags           []*tag                         `json:"tags"`
 }
 
 // series is the JSON struct of series objects returned by the API
