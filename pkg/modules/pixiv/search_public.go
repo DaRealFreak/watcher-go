@@ -24,12 +24,17 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 		if err != nil {
 			return err
 		}
-		for _, userIllustration := range response.Illustrations {
-			if string(userIllustration.ID) == item.CurrentItem {
+		for _, publicIllustration := range response.Illustrations {
+			illustrationResponse, err := m.getIllustrationFromPublicIllustration(publicIllustration)
+			if err != nil {
+				return err
+			}
+
+			if string(illustrationResponse.Illustration.ID) == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
-			err = m.parseWork(userIllustration, &downloadQueue)
+			err = m.parseWork(illustrationResponse.Illustration, &downloadQueue)
 			if err != nil {
 				return err
 			}
@@ -88,6 +93,64 @@ func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRe
 
 	err = json.Unmarshal(response, &userWorks)
 	return &userWorks, err
+}
+
+// getIllustrationFromPublicIllustration converts an old API illustration response into an illustration response
+// like in the current newer API. As a result we can use the previous search API without any limitations.
+func (m *pixiv) getIllustrationFromPublicIllustration(publicIllustration *publicIllustration) (
+	apiRes *illustrationDetailResponse, err error,
+) {
+	// manga types don't return all pages in the search result, so we have to request the pages for each result
+	if publicIllustration.Type == PublicAPISearchFilterManga {
+		return m.getIllustDetail(publicIllustration.ID.String())
+	}
+	illustration := &illustration{
+		ID:             publicIllustration.ID,
+		Title:          publicIllustration.Title,
+		Type:           publicIllustration.Type,
+		ImageUrls:      publicIllustration.ImageUrls,
+		Caption:        publicIllustration.Caption,
+		Restrict:       publicIllustration.Restrict,
+		User:           publicIllustration.User,
+		Tags:           []*tag{},
+		Tools:          publicIllustration.Tools,
+		CreateDate:     publicIllustration.CreateDate,
+		PageCount:      publicIllustration.PageCount,
+		Width:          publicIllustration.Width,
+		Height:         publicIllustration.Height,
+		SanityLevel:    publicIllustration.SanityLevel,
+		XRestrict:      publicIllustration.XRestrict,
+		Series:         publicIllustration.Series,
+		MetaSinglePage: publicIllustration.MetaSinglePage,
+		MetaPages:      publicIllustration.MetaPages,
+		TotalView:      publicIllustration.TotalView,
+		TotalBookmarks: publicIllustration.TotalBookmarks,
+		IsBookmarked:   publicIllustration.IsBookmarked,
+		Visible:        publicIllustration.Visible,
+		IsMuted:        publicIllustration.IsMuted,
+		TotalComments:  publicIllustration.TotalComments,
+	}
+
+	if publicIllustration.Type == PublicAPISearchFilterIllustration {
+		// illustration got changed to illust
+		illustration.Type = SearchFilterIllustration
+		// ImageUrls -> large got changed to MetaSinglePage -> original_image_url
+		illustration.MetaSinglePage = map[string]string{
+			"original_image_url": publicIllustration.ImageUrls["large"],
+		}
+
+	}
+
+	// tags now got translations
+	for _, tagName := range publicIllustration.Tags {
+		illustration.Tags = append(illustration.Tags, &tag{
+			Name: tagName,
+		})
+	}
+
+	return &illustrationDetailResponse{
+		Illustration: illustration,
+	}, nil
 }
 
 // getSearchTargetFromURL returns the search mode based from the passed URI
