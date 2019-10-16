@@ -1,3 +1,5 @@
+// Package session acts as a normal http Client but respects and automatically includes all required OAuth2 details
+// and other API configurations/limitations
 package session
 
 import (
@@ -30,15 +32,15 @@ type PixivSession struct {
 	watcherHttp.Session
 	Module      models.ModuleInterface
 	HTTPClient  *http.Client
-	API         *pixivApi
+	API         *pixivAPI
 	PublicAPI   *APISession
 	rateLimiter *rate.Limiter
 	ctx         context.Context
 	MaxRetries  int
 }
 
-// pixivApi contains extracted variables of the official mobile application
-type pixivApi struct {
+// pixivAPI contains extracted variables of the official mobile application
+type pixivAPI struct {
 	OauthURL     string
 	headers      map[string]string
 	ClientID     string
@@ -66,7 +68,7 @@ func NewSession() *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	session := &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
-		API: &pixivApi{
+		API: &pixivAPI{
 			OauthURL:     "https://oauth.secure.pixiv.net/auth/token",
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
@@ -91,6 +93,7 @@ func NewSession() *PixivSession {
 	// useful for f.e. searches since the previous API does not impose limits on search queries
 	// while the new App API has a limit of 5000 results
 	session.PublicAPI = session.NewPublicAPISession()
+
 	return session
 }
 
@@ -105,9 +108,11 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening GET uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("GET", uri, nil)
+
 		for headerKey, headerValue := range s.API.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
+
 		// add X-Client-Time and X-Client-Hash which are now getting validated server side
 		localTime := time.Now()
 		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
@@ -119,6 +124,7 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 		if s.API.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.API.AccessToken)
 		}
+
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
@@ -129,11 +135,13 @@ func (s *PixivSession) Get(uri string) (res *http.Response, err error) {
 				if retry {
 					return s.Get(uri)
 				}
+
 				return nil, err
 			} else if !(res != nil && res.StatusCode != 200) {
 				// reset the response body to the original unread state
 				res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 				// break if we didn't reach any error state until the end of the loop
+
 				break
 			}
 		}
@@ -154,9 +162,11 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 
 		log.WithField("module", s.ModuleKey).Debug(fmt.Sprintf("opening POST uri %s (try: %d)", uri, try))
 		req, _ := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
+
 		for headerKey, headerValue := range s.API.headers {
 			req.Header.Add(headerKey, headerValue)
 		}
+
 		// add X-Client-Time and X-Client-Hash which are now getting validated server side
 		localTime := time.Now()
 		req.Header.Add("X-Client-Time", localTime.Format(time.RFC3339))
@@ -168,6 +178,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 		if s.API.AccessToken != "" {
 			req.Header.Add("Authorization", "Bearer "+s.API.AccessToken)
 		}
+
 		res, err = s.HTTPClient.Do(req)
 		if err == nil {
 			bodyBytes, _ := ioutil.ReadAll(res.Body)
@@ -178,11 +189,13 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 				if retry {
 					return s.Post(uri, data)
 				}
+
 				return nil, err
 			} else if !(res != nil && res.StatusCode != 200) {
 				// reset the response body to the original unread state
 				res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 				// break if we didn't reach any error state until the end of the loop
+
 				break
 			}
 		} else {
@@ -190,6 +203,7 @@ func (s *PixivSession) Post(uri string, data url.Values) (res *http.Response, er
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
+
 	return res, err
 }
 
@@ -199,13 +213,16 @@ func (s *PixivSession) DownloadFile(filepath string, uri string) (err error) {
 		log.WithField("module", s.ModuleKey).Debug(
 			fmt.Sprintf("downloading file: %s (uri: %s, try: %d)", filepath, uri, try),
 		)
+
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
 			return
 		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
+
 	return err
 }
 
@@ -217,6 +234,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
+
 	defer raven.CheckClosureNonFatal(resp.Body)
 
 	// return custom error if status code is 404 to skip the download
@@ -235,8 +253,7 @@ func (s *PixivSession) tryDownloadFile(filepath string, uri string) error {
 	}
 
 	// additional validation to compare sent headers with the written file
-	err = s.CheckDownloadedFileForErrors(written, resp.Header)
-	return err
+	return s.CheckDownloadedFileForErrors(written, resp.Header)
 }
 
 // WriteToFile writes the passed content to file and returns the written amount of bytes and possible occurred errors
@@ -249,6 +266,7 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	if err != nil {
 		return 0, err
 	}
+
 	defer raven.CheckClosureNonFatal(out)
 
 	// write the body to file
@@ -256,7 +274,8 @@ func (s *PixivSession) WriteToFile(filepath string, content []byte) (written int
 	if err != nil {
 		return 0, err
 	}
-	return
+
+	return written, err
 }
 
 // applyRateLimit waits for the leaky bucket to fill again
@@ -269,9 +288,11 @@ func (s *PixivSession) applyRateLimit() error {
 func (s *PixivSession) containsAPIError(response []byte) bool {
 	var errorResponse errorResponse
 	err := json.Unmarshal(response, &errorResponse)
+
 	if err == nil && errorResponse.Error != nil && errorResponse.Error.Message != "" {
 		return true
 	}
+
 	return false
 }
 
@@ -279,6 +300,7 @@ func (s *PixivSession) containsAPIError(response []byte) bool {
 func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	var errorResponse errorResponse
 	_ = json.Unmarshal(response, &errorResponse)
+
 	switch errorResponse.Error.Message {
 	case "Error occurred at the OAuth process. " +
 		"Please check your Access Token to fix this. " +
@@ -287,10 +309,12 @@ func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 			"access token expired, using refresh token to generate new token...",
 		)
 		s.Module.Login(nil)
+
 		return true, nil
 	case "Rate Limit":
 		log.WithField("module", s.ModuleKey).Info("rate limit got exceeded, sleeping for 60 seconds...")
 		time.Sleep(60 * time.Second)
+
 		return true, nil
 	}
 
@@ -300,5 +324,6 @@ func (s *PixivSession) handleAPIError(response []byte) (retry bool, err error) {
 	case "アクセスが制限されています。", "Your access is currently restricted.":
 		return false, fmt.Errorf("requested user got restricted")
 	}
-	return
+
+	return retry, err
 }

@@ -1,3 +1,4 @@
+// Package pixiv contains the implementation of the pixiv module
 package pixiv
 
 import (
@@ -93,6 +94,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 		Value: module.Key(),
 		Color: "232:33",
 	})
+
 	return &module
 }
 
@@ -162,6 +164,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 			),
 		)
 	}
+
 	return m.LoggedIn
 }
 
@@ -173,11 +176,13 @@ func (m *pixiv) Parse(item *models.TrackedItem) error {
 		if err == nil {
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		}
+
 		return err
 	case strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php"):
 		return m.parseUserIllustrations(item)
 	case strings.Contains(item.URI, "/search.php"):
 		return m.parseSearch(item)
 	}
+
 	return nil
 }

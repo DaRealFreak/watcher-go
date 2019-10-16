@@ -12,10 +12,11 @@ import (
 
 // parseUserIllustration parses a single illustration
 func (m *pixiv) parseUserIllustration(item *models.TrackedItem) (err error) {
-	illustID, err := m.getIllustIdFromURL(item.URI)
+	illustID, err := m.getIllustIDFromURL(item.URI)
 	if err != nil {
 		return err
 	}
+
 	apiRes, err := m.getIllustDetail(illustID)
 	if err != nil {
 		return err
@@ -32,11 +33,13 @@ func (m *pixiv) parseUserIllustration(item *models.TrackedItem) (err error) {
 // getUgoiraMetaData retrieves meta data of ugoira illustrations
 func (m *pixiv) getUgoiraMetaData(illustrationID string) (apiRes *ugoiraResponse, err error) {
 	var ugoiraMetadataResponse ugoiraResponse
+
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/ugoira/metadata")
 	data := url.Values{
 		"illust_id": {illustrationID},
 	}
 	apiURL.RawQuery = data.Encode()
+
 	res, err := m.Session.Get(apiURL.String())
 	if err != nil {
 		return nil, err
@@ -48,6 +51,7 @@ func (m *pixiv) getUgoiraMetaData(illustrationID string) (apiRes *ugoiraResponse
 	}
 
 	err = json.Unmarshal(response, &ugoiraMetadataResponse)
+
 	return &ugoiraMetadataResponse, err
 }
 
@@ -59,6 +63,7 @@ func (m *pixiv) getIllustDetail(illustID string) (apiRes *illustrationDetailResp
 	}
 	apiURL.RawQuery = data.Encode()
 	res, err := m.Session.Get(apiURL.String())
+
 	if err != nil {
 		return nil, err
 	}
@@ -75,19 +80,23 @@ func (m *pixiv) getIllustDetail(illustID string) (apiRes *illustrationDetailResp
 
 	var details illustrationDetailResponse
 	err = json.Unmarshal(response, &details)
+
 	return &details, err
 }
 
-// getUserIDFromURL extracts the user ID from the passed URL
-func (m *pixiv) getIllustIdFromURL(uri string) (string, error) {
+// getIllustIDFromURL extracts the illustration ID from the passed URL
+func (m *pixiv) getIllustIDFromURL(uri string) (string, error) {
 	u, _ := url.Parse(uri)
-	prettyUrlPattern := regexp.MustCompile(`/artworks/(?P<ID>\d+)(?:/|$|\?)`)
-	if prettyUrlPattern.MatchString(u.Path) {
-		return prettyUrlPattern.FindStringSubmatch(u.Path)[1], nil
+	prettyURLPattern := regexp.MustCompile(`/artworks/(?P<ID>\d+)(?:/|$|\?)`)
+
+	if prettyURLPattern.MatchString(u.Path) {
+		return prettyURLPattern.FindStringSubmatch(u.Path)[1], nil
 	}
+
 	q, _ := url.ParseQuery(u.RawQuery)
 	if len(q["illust_id"]) == 0 {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"illust_id\" tag", uri)
 	}
+
 	return q["illust_id"][0], nil
 }

@@ -19,6 +19,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 		image := downloadQueueItem.Illustration.MetaPages[i]
 		fileName := m.GetFileName(image["image_urls"]["original"])
 		fileURI := image["image_urls"]["original"]
+
 		if err := m.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
 			fileURI,
@@ -31,11 +32,13 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 	if len(downloadQueueItem.Illustration.MetaSinglePage) > 0 {
 		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
 		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
+
 		return m.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
 			fileURI,
 		)
 	}
+
 	return nil
 }
 
@@ -45,6 +48,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 	if err != nil {
 		return err
 	}
+
 	fileName := strings.TrimSuffix(m.GetFileName(apiRes.UgoiraMetadata.ZipUrls["medium"]), ".zip") + ".webp"
 	fileURI := apiRes.UgoiraMetadata.ZipUrls["medium"]
 
@@ -57,12 +61,14 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 	if err != nil {
 		return err
 	}
+
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	if err != nil {
 		return err
 	}
 
 	animationData := animation.FileData{}
+
 	for _, zipFile := range zipReader.File {
 		frame, err := m.getUgoiraFrame(zipFile.Name, apiRes.UgoiraMetadata)
 		if err != nil {
@@ -74,10 +80,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 			return err
 		}
 
-		delay, err := frame.Delay.Int64()
-		if err != nil {
-			return err
-		}
+		delay, _ := frame.Delay.Int64()
 
 		animationData.Frames = append(animationData.Frames, unzippedFileBytes)
 		animationData.MsDelays = append(animationData.MsDelays, int(delay))
@@ -93,8 +96,10 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 	log.WithField("module", m.Key()).Debug(
 		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
 	)
+
 	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
 		return err
 	}
+
 	return nil
 }

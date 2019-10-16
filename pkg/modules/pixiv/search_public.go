@@ -2,10 +2,11 @@ package pixiv
 
 import (
 	"encoding/json"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"io/ioutil"
 	"net/url"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
 // parseSearch parses search words using the previous API (no search limitations)
@@ -16,6 +17,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 	}
 
 	var downloadQueue []*downloadQueueItem
+
 	foundCurrentItem := false
 	page := 1
 
@@ -24,6 +26,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 		if err != nil {
 			return err
 		}
+
 		for _, publicIllustration := range response.Illustrations {
 			illustrationResponse, err := m.getIllustrationFromPublicIllustration(publicIllustration)
 			if err != nil {
@@ -34,6 +37,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 				foundCurrentItem = true
 				break
 			}
+
 			err = m.parseWork(illustrationResponse.Illustration, &downloadQueue)
 			if err != nil {
 				return err
@@ -59,10 +63,11 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 	for _, queueItem := range downloadQueue {
 		queueItem.DownloadTag = searchWord
 	}
+
 	return m.processDownloadQueue(downloadQueue, item)
 }
 
-// getSearch returns search results directly by URL since the API response returns the next page URL directly
+// getPublicSearch uses the previous API to retrieve search results for the passed search word
 func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRes *publicSearchResponse, err error) {
 	var userWorks publicSearchResponse
 
@@ -81,6 +86,7 @@ func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRe
 		"image_sizes":          {"px_128x128,px_480mw,large"},
 	}
 	apiURL.RawQuery = data.Encode()
+
 	res, err := m.pixivSession.PublicAPI.Get(apiURL.String())
 	if err != nil {
 		return nil, err
@@ -92,6 +98,7 @@ func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRe
 	}
 
 	err = json.Unmarshal(response, &userWorks)
+
 	return &userWorks, err
 }
 
@@ -104,6 +111,7 @@ func (m *pixiv) getIllustrationFromPublicIllustration(publicIllustration *public
 	if publicIllustration.Type == PublicAPISearchFilterManga {
 		return m.getIllustDetail(publicIllustration.ID.String())
 	}
+
 	illustration := &illustration{
 		ID:             publicIllustration.ID,
 		Title:          publicIllustration.Title,
@@ -138,7 +146,6 @@ func (m *pixiv) getIllustrationFromPublicIllustration(publicIllustration *public
 		illustration.MetaSinglePage = map[string]string{
 			"original_image_url": publicIllustration.ImageUrls["large"],
 		}
-
 	}
 
 	// tags now got translations
@@ -153,7 +160,7 @@ func (m *pixiv) getIllustrationFromPublicIllustration(publicIllustration *public
 	}, nil
 }
 
-// getSearchTargetFromURL returns the search mode based from the passed URI
+// getPublicSearchTargetFromURL returns the search mode based from the passed URI
 // default search mode is the partial tag match
 func (m *pixiv) getPublicSearchTargetFromURL(uri string) string {
 	u, _ := url.Parse(uri)

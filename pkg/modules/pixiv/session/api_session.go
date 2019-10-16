@@ -29,13 +29,16 @@ func (s *APISession) Get(uri string) (res *http.Response, err error) {
 	for key, value := range s.API.headers {
 		originalHeaders[key] = value
 	}
+
 	// append/overwrite our custom headers before using the default Get function
 	for headerKey, headerValue := range s.headers {
 		s.API.headers[headerKey] = headerValue
 	}
+
 	res, err = s.PixivSession.Get(uri)
 	// restore the original headers after usage
 	s.API.headers = originalHeaders
+
 	return res, err
 }
 
@@ -46,12 +49,15 @@ func (s *APISession) Post(uri string, data url.Values) (res *http.Response, err 
 	for key, value := range s.API.headers {
 		originalHeaders[key] = value
 	}
+
 	// append/overwrite our custom headers before using the default Get function
 	for headerKey, headerValue := range s.headers {
 		s.API.headers[headerKey] = headerValue
 	}
+
 	res, err = s.PixivSession.Post(uri, data)
 	// restore the original headers after usage
 	s.API.headers = originalHeaders
+
 	return res, err
 }

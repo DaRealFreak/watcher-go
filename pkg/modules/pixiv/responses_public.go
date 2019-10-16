@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// publicPagination is the struct for the previous API pagination response object
 type publicPagination struct {
 	Previous json.Number `json:"previous"`
 	Next     json.Number `json:"next"`
@@ -14,6 +15,7 @@ type publicPagination struct {
 	Pages    json.Number `json:"pages"`
 }
 
+// publicSearchResponse is the struct for the previous API search response object
 type publicSearchResponse struct {
 	Status        string                `json:"status"`
 	Illustrations []*publicIllustration `json:"response"`
@@ -21,6 +23,7 @@ type publicSearchResponse struct {
 	Pagination    *publicPagination     `json:"pagination"`
 }
 
+// publicIllustration is the struct for the previous API illustration response object
 type publicIllustration struct {
 	ID             json.Number                    `json:"id"`
 	Title          string                         `json:"title"`

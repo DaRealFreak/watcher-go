@@ -18,19 +18,23 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
 	if err != nil {
 		return err
 	}
+
 	userDetails, err := m.getUserDetail(userID)
 	if err != nil {
 		return err
 	}
+
 	if userDetails == nil {
 		log.WithField("module", m.Key()).Warning(
 			"couldn't retrieve user details, changing artist to complete",
 		)
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		return
+
+		return nil
 	}
 
 	var downloadQueue []*downloadQueueItem
+
 	foundCurrentItem := false
 	apiURL := m.getUserIllustsURL(userID, SearchFilterAll, 0)
 
@@ -39,12 +43,15 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
 		if err != nil {
 			return err
 		}
+
 		apiURL = response.NextURL
+
 		for _, userIllustration := range response.Illustrations {
 			if string(userIllustration.ID) == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
+
 			err = m.parseWork(userIllustration, &downloadQueue)
 			if err != nil {
 				return err
@@ -61,6 +68,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
+
 	return m.processDownloadQueue(downloadQueue, item)
 }
 
@@ -78,6 +86,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
+
 		switch data.Illustration.Type {
 		case SearchFilterIllustration, SearchFilterManga:
 			err = m.downloadIllustration(data)
@@ -97,8 +106,10 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				return err
 			}
 		}
+
 		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
+
 	return nil
 }
 
@@ -106,9 +117,11 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 func (m *pixiv) getUserIDFromURL(uri string) (string, error) {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
+
 	if len(q["id"]) == 0 {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"id\" tag", uri)
 	}
+
 	return q["id"][0], nil
 }
 
@@ -120,6 +133,7 @@ func (m *pixiv) getUserDetail(userID string) (apiRes *userDetailResponse, err er
 		"filter":  {"for_ios"},
 	}
 	apiURL.RawQuery = data.Encode()
+
 	res, err := m.Session.Get(apiURL.String())
 	if err != nil {
 		return nil, err
@@ -136,7 +150,9 @@ func (m *pixiv) getUserDetail(userID string) (apiRes *userDetailResponse, err er
 	}
 
 	var details userDetailResponse
+
 	err = json.Unmarshal(response, &details)
+
 	return &details, err
 }
 
@@ -152,16 +168,20 @@ func (m *pixiv) getUserIllustsURL(userID string, filter string, offset int) stri
 	if filter != "" {
 		data.Add("type", filter)
 	}
+
 	if offset > 0 {
 		data.Add("offset", strconv.Itoa(offset))
 	}
+
 	apiURL.RawQuery = data.Encode()
+
 	return apiURL.String()
 }
 
 // getUserIllusts returns user illustrations directly by URL since the API response returns the next page URL directly
 func (m *pixiv) getUserIllusts(apiURL string) (apiRes *userWorkResponse, err error) {
 	var userWorks userWorkResponse
+
 	res, err := m.Session.Get(apiURL)
 	if err != nil {
 		return nil, err
@@ -173,6 +193,7 @@ func (m *pixiv) getUserIllusts(apiURL string) (apiRes *userWorkResponse, err err
 	}
 
 	err = json.Unmarshal(response, &userWorks)
+
 	return &userWorks, err
 }
 
@@ -200,6 +221,7 @@ func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*down
 	default:
 		return fmt.Errorf("unknown illustration type: %s", userIllustration.Type)
 	}
+
 	return nil
 }
 
@@ -210,5 +232,6 @@ func (m *pixiv) getUgoiraFrame(fileName string, metadata *ugoiraMetadata) (*fram
 			return frame, nil
 		}
 	}
+
 	return nil, fmt.Errorf("no frame found for file: %s", fileName)
 }

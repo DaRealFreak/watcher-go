@@ -18,6 +18,7 @@ func (m *pixiv) parseSearchApp(item *models.TrackedItem) (err error) {
 	}
 
 	var downloadQueue []*downloadQueueItem
+
 	foundCurrentItem := false
 	apiURL := m.getSearchURL(searchWord, m.getSearchTargetFromURL(item.URI), SearchOrderDateDescending, 0)
 
@@ -26,12 +27,15 @@ func (m *pixiv) parseSearchApp(item *models.TrackedItem) (err error) {
 		if err != nil {
 			return err
 		}
+
 		apiURL = response.NextURL
+
 		for _, userIllustration := range response.Illustrations {
 			if string(userIllustration.ID) == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
+
 			err = m.parseWork(userIllustration, &downloadQueue)
 			if err != nil {
 				return err
@@ -53,6 +57,7 @@ func (m *pixiv) parseSearchApp(item *models.TrackedItem) (err error) {
 	for _, queueItem := range downloadQueue {
 		queueItem.DownloadTag = searchWord
 	}
+
 	return m.processDownloadQueue(downloadQueue, item)
 }
 
@@ -66,16 +71,20 @@ func (m *pixiv) getSearchURL(word string, searchMode string, searchOrder string,
 		"sort":                           {searchOrder},
 		"search_target":                  {searchMode},
 	}
+
 	if offset > 0 {
 		data.Add("offset", strconv.Itoa(offset))
 	}
+
 	apiURL.RawQuery = data.Encode()
+
 	return apiURL.String()
 }
 
 // getSearch returns search results directly by URL since the API response returns the next page URL directly
 func (m *pixiv) getSearch(apiURL string) (apiRes *searchResponse, err error) {
 	var userWorks searchResponse
+
 	res, err := m.Session.Get(apiURL)
 	if err != nil {
 		return nil, err
@@ -87,6 +96,7 @@ func (m *pixiv) getSearch(apiURL string) (apiRes *searchResponse, err error) {
 	}
 
 	err = json.Unmarshal(response, &userWorks)
+
 	return &userWorks, err
 }
 
@@ -94,9 +104,11 @@ func (m *pixiv) getSearch(apiURL string) (apiRes *searchResponse, err error) {
 func (m *pixiv) getSearchWordFromURL(uri string) (string, error) {
 	u, _ := url.Parse(uri)
 	q, _ := url.ParseQuery(u.RawQuery)
+
 	if len(q["word"]) == 0 {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"word\" tag", uri)
 	}
+
 	return q["word"][0], nil
 }
 
