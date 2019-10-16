@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/cmd/log/formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
