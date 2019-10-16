@@ -79,7 +79,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 			),
 		)
 		switch data.Illustration.Type {
-		case SearchFilterIllustration, SearchFilterManga, PublicAPISearchFilterIllustration:
+		case SearchFilterIllustration, SearchFilterManga:
 			err = m.downloadIllustration(data)
 		case SearchFilterUgoira:
 			err = m.downloadUgoira(data)
@@ -179,7 +179,7 @@ func (m *pixiv) getUserIllusts(apiURL string) (apiRes *userWorkResponse, err err
 // parseWork parses the different work types (illustration/manga/ugoira/novels) to append to the download queue
 func (m *pixiv) parseWork(userIllustration *illustration, downloadQueue *[]*downloadQueueItem) error {
 	switch userIllustration.Type {
-	case SearchFilterIllustration, SearchFilterManga, PublicAPISearchFilterIllustration:
+	case SearchFilterIllustration, SearchFilterManga:
 		downloadQueueItem := downloadQueueItem{
 			ItemID:       string(userIllustration.ID),
 			DownloadTag:  fmt.Sprintf("%s/%s", userIllustration.User.ID, m.SanitizePath(userIllustration.User.Name, false)),
