@@ -83,7 +83,7 @@ Flags:
   -h, --help              help for account
   -p, --password string   password of the user (required)
       --url string        url for the association of the account (required)
-  -u, --username string   username you want to add (required)
+  -u, --user string       username you want to add (required)
 ```
 
 Items can be added by executing following command:  

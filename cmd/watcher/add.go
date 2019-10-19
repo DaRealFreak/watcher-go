@@ -50,10 +50,10 @@ func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 			cli.watcher.AddAccountByURI(url, username, password)
 		},
 	}
-	accountCmd.Flags().StringVarP(&username, "username", "u", "", "username you want to add (required)")
+	accountCmd.Flags().StringVarP(&username, "user", "u", "", "username you want to add (required)")
 	accountCmd.Flags().StringVarP(&password, "password", "p", "", "password of the user (required)")
 	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the account (required)")
-	_ = accountCmd.MarkFlagRequired("username")
+	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
 	_ = accountCmd.MarkFlagRequired("url")
 	return accountCmd
