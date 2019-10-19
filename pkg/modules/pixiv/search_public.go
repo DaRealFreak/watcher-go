@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
@@ -22,7 +23,12 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 	page := 1
 
 	for !foundCurrentItem {
-		response, err := m.getPublicSearch(searchWord, m.getPublicSearchTargetFromURL(item.URI), page)
+		response, err := m.getPublicSearch(
+			searchWord,
+			m.getPublicSearchTargetFromURL(item.URI),
+			m.getPublicSearchTypesFromURL(item.URI),
+			page,
+		)
 		if err != nil {
 			return err
 		}
@@ -68,7 +74,9 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 }
 
 // getPublicSearch uses the previous API to retrieve search results for the passed search word
-func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRes *publicSearchResponse, err error) {
+func (m *pixiv) getPublicSearch(word string, searchMode string, searchTypes []string, page int) (
+	apiRes *publicSearchResponse, err error,
+) {
 	var userWorks publicSearchResponse
 
 	apiURL, _ := url.Parse("https://public-api.secure.pixiv.net/v1/search/works.json")
@@ -80,7 +88,7 @@ func (m *pixiv) getPublicSearch(word string, searchMode string, page int) (apiRe
 		"order":                {"desc"},
 		"sort":                 {"date"},
 		"mode":                 {searchMode},
-		"types":                {"illustration,manga,ugoira"},
+		"types":                {strings.Join(searchTypes, ",")},
 		"include_stats":        {"true"},
 		"include_sanity_level": {"true"},
 		"image_sizes":          {"px_128x128,px_480mw,large"},
@@ -175,4 +183,25 @@ func (m *pixiv) getPublicSearchTargetFromURL(uri string) string {
 	}
 	// current web doesn't differentiate between tag and description anymore, so we use text as default
 	return PublicAPISearchModeText
+}
+
+// getPublicSearchTypesFromURL returns the search type based from the passed URI
+// default search types are all types
+func (m *pixiv) getPublicSearchTypesFromURL(uri string) []string {
+	u, _ := url.Parse(uri)
+	q, _ := url.ParseQuery(u.RawQuery)
+
+	// if type specified return only the specified type
+	if len(q["type"]) > 0 {
+		switch q["type"][0] {
+		case "ugoira":
+			return []string{"ugoira"}
+		case "illust":
+			return []string{"illustration"}
+		case "manga":
+			return []string{"manga"}
+		}
+	}
+	// else return all types
+	return []string{"illustration", "manga", "ugoira"}
 }
