@@ -21,9 +21,11 @@ import (
 	"crypto/md5"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
+	watcherSession "github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 )
 
@@ -64,7 +66,7 @@ type errorResponse struct {
 }
 
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession() *PixivSession {
+func NewSession(proxySettings *watcherSession.ProxySettings) *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	session := &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
@@ -89,6 +91,21 @@ func NewSession() *PixivSession {
 		ctx:         context.Background(),
 		MaxRetries:  5,
 	}
+
+	if proxySettings != nil && proxySettings.Use {
+		auth := proxy.Auth{
+			User:     proxySettings.Username,
+			Password: proxySettings.Password,
+		}
+		dialer, _ := proxy.SOCKS5(
+			"tcp",
+			fmt.Sprintf("%s:%d", proxySettings.Address, proxySettings.Port),
+			&auth,
+			proxy.Direct,
+		)
+		session.HTTPClient.Transport = &http.Transport{Dial: dialer.Dial}
+	}
+
 	// fallback for previous API session (Android App Version 4.x)
 	// useful for f.e. searches since the previous API does not impose limits on search queries
 	// while the new App API has a limit of 5000 results

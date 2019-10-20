@@ -2,6 +2,8 @@ package models
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -113,4 +115,98 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	}
 	path = strings.Trim(path, "_")
 	return path
+}
+
+// getViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
+func (t *Module) getViperModuleKey() string {
+	return strings.ReplaceAll(t.Key(), ".", "_")
+}
+
+// addProxyCommands adds the module specific commands for the proxy server
+func (t *Module) AddProxyCommands(command *cobra.Command) {
+	var proxySettings session.ProxySettings
+
+	proxyCmd := &cobra.Command{
+		Use:   "proxy",
+		Short: "proxy configurations",
+		Long:  "options to configure proxy settings used for the module",
+		Run: func(cmd *cobra.Command, args []string) {
+			// enable proxy after changing the settings
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.getViperModuleKey()), true)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.getViperModuleKey()), proxySettings.Address)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Port", t.getViperModuleKey()), proxySettings.Port)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Username", t.getViperModuleKey()), proxySettings.Username)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Password", t.getViperModuleKey()), proxySettings.Password)
+			raven.CheckError(viper.WriteConfig())
+		},
+	}
+
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Address,
+		"host", "H", "",
+		"host of the proxy server (required)",
+	)
+	proxyCmd.Flags().IntVarP(
+		&proxySettings.Port,
+		"port", "P", 1080,
+		"port of the proxy server",
+	)
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Username,
+		"user", "u", "",
+		"username for the proxy server",
+	)
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Password,
+		"password", "p", "",
+		"password for the proxy server",
+	)
+
+	_ = proxyCmd.MarkFlagRequired("host")
+
+	// add sub commands for proxy command
+	t.addEnableProxyCommand(proxyCmd)
+	t.addDisableProxyCommand(proxyCmd)
+
+	// add proxy command to parent command
+	command.AddCommand(proxyCmd)
+}
+
+// addEnableProxyCommand adds the proxy enable sub command
+func (t *Module) addEnableProxyCommand(command *cobra.Command) {
+	enableCmd := &cobra.Command{
+		Use:   "enable",
+		Short: "enables proxy usage",
+		Long:  "option to enable proxy server usage again, after it got manually disabled",
+		Run: func(cmd *cobra.Command, args []string) {
+			viper.Set("Modules.ehentai.Proxy.Enable", true)
+			raven.CheckError(viper.WriteConfig())
+		},
+	}
+	command.AddCommand(enableCmd)
+}
+
+// addDisableProxyCommand adds the proxy disable sub command
+func (t *Module) addDisableProxyCommand(command *cobra.Command) {
+	enableCmd := &cobra.Command{
+		Use:   "disable",
+		Short: "disables proxy usage",
+		Long:  "option to disable proxy server usage",
+		Run: func(cmd *cobra.Command, args []string) {
+			viper.Set("Modules.ehentai.Proxy.Enable", false)
+			raven.CheckError(viper.WriteConfig())
+		},
+	}
+	command.AddCommand(enableCmd)
+}
+
+// getProxySettings returns the proxy settings for the module
+func (t *Module) GetProxySettings() *session.ProxySettings {
+	return &session.ProxySettings{
+		Use:      viper.GetBool(fmt.Sprintf("Modules.%s.Proxy.Enable", t.getViperModuleKey())),
+		Address:  viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Host", t.getViperModuleKey())),
+		Port:     viper.GetInt(fmt.Sprintf("Modules.%s.Proxy.Port", t.getViperModuleKey())),
+		Username: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Username", t.getViperModuleKey())),
+		Password: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Password", t.getViperModuleKey())),
+	}
 }

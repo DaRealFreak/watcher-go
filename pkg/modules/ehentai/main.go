@@ -3,12 +3,6 @@ package ehentai
 
 import (
 	"fmt"
-	"net/url"
-	"path"
-	"regexp"
-	"strings"
-	"time"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -16,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
+	"net/url"
+	"path"
+	"regexp"
+	"strings"
+	"time"
 )
 
 // ehentai contains the implementation of the ModuleInterface and extends it by custom required values
@@ -36,20 +35,20 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 		searchGalleryIDPattern:   regexp.MustCompile(`(\d+/\w+)`),
 	}
 
-	// set rate limiter on 1.5 seconds with burst limit of 1
-	ehSession := session.NewSession(subModule.getProxySettings())
-	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
-	ehSession.ModuleKey = subModule.Key()
-
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         ehSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+
+	// set rate limiter on 1.5 seconds with burst limit of 1
+	ehSession := session.NewSession(subModule.GetProxySettings())
+	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+	ehSession.ModuleKey = subModule.Key()
+	subModule.Session = ehSession
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -86,7 +85,7 @@ func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *ehentai) AddSettingsCommand(command *cobra.Command) {
-	m.addProxyCommands(command)
+	m.AddProxyCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available

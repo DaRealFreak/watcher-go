@@ -1,3 +1,4 @@
+// Package sankakucomplex contains the implementation of the sankakucomplex module
 package sankakucomplex
 
 import (
@@ -20,18 +21,18 @@ type sankakuComplex struct {
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = sankakuComplex{}
-	sankakuSession := session.NewSession(nil)
-	sankakuSession.ModuleKey = subModule.Key()
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         sankakuSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+	sankakuSession := session.NewSession(subModule.GetProxySettings())
+	sankakuSession.ModuleKey = subModule.Key()
+	subModule.Session = sankakuSession
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -68,6 +69,7 @@ func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regex
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *sankakuComplex) AddSettingsCommand(command *cobra.Command) {
+	m.AddProxyCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available

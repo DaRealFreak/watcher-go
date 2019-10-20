@@ -73,20 +73,20 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// register empty sub module to point to
 	var subModule = pixiv{
 		animationHelper: animation.NewAnimationHelper(),
-		pixivSession:    session.NewSession(),
 	}
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         subModule.pixivSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+	subModule.pixivSession = session.NewSession(subModule.GetProxySettings())
 	subModule.pixivSession.Module = &subModule
 	subModule.pixivSession.ModuleKey = subModule.Key()
+	subModule.Session = subModule.pixivSession
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -123,6 +123,7 @@ func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
+	m.AddProxyCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available

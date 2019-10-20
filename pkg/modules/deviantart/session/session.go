@@ -27,9 +27,9 @@ type DeviantArtSession struct {
 }
 
 // NewSession returns an initialized DeviantArtSession
-func NewSession() *DeviantArtSession {
+func NewSession(proxySettings *session.ProxySettings) *DeviantArtSession {
 	ses := &DeviantArtSession{
-		DefaultSession:    session.NewSession(nil),
+		DefaultSession:    session.NewSession(proxySettings),
 		TokenStore:        NewTokenStore(),
 		UseConsoleExploit: false,
 		DefaultHeaders: map[string]string{

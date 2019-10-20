@@ -1,3 +1,4 @@
+// Package deviantart contains the implementation of the deviantart module
 package deviantart
 
 import (
@@ -29,7 +30,6 @@ type deviantArt struct {
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = deviantArt{
-		deviantArtSession: session.NewSession(),
 		userGalleryPattern: regexp.MustCompile(
 			`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
 		),
@@ -38,13 +38,14 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// initialize the Module with the session/database and login status
 	module := models.Module{
 		DbIO:            dbIO,
-		Session:         subModule.deviantArtSession,
 		LoggedIn:        false,
 		ModuleInterface: &subModule,
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
+	subModule.deviantArtSession = session.NewSession(subModule.GetProxySettings())
 	subModule.deviantArtSession.ModuleKey = subModule.Key()
+	subModule.Session = subModule.deviantArtSession
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -81,6 +82,7 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *deviantArt) AddSettingsCommand(command *cobra.Command) {
+	m.AddProxyCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
