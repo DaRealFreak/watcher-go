@@ -13,6 +13,7 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 )
 
@@ -25,15 +26,41 @@ type DefaultSession struct {
 	ctx         context.Context
 }
 
+// ProxySettings are the proxy server settings for the session
+type ProxySettings struct {
+	Use      bool
+	Address  string
+	Port     int
+	Username string
+	Password string
+}
+
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession() *DefaultSession {
+func NewSession(proxySettings *ProxySettings) *DefaultSession {
 	jar, _ := cookiejar.New(nil)
 
 	app := DefaultSession{
-		Client:     &http.Client{Jar: jar},
+		Client: &http.Client{
+			Jar: jar,
+		},
 		MaxRetries: 5,
 		ctx:        context.Background(),
 	}
+
+	if proxySettings != nil && proxySettings.Use {
+		auth := proxy.Auth{
+			User:     proxySettings.Username,
+			Password: proxySettings.Password,
+		}
+		dialer, _ := proxy.SOCKS5(
+			"tcp",
+			fmt.Sprintf("%s:%d", proxySettings.Address, proxySettings.Port),
+			&auth,
+			proxy.Direct,
+		)
+		app.Client.Transport = &http.Transport{Dial: dialer.Dial}
+	}
+
 	return &app
 }
 

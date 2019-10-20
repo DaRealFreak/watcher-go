@@ -29,7 +29,7 @@ type DeviantArtSession struct {
 // NewSession returns an initialized DeviantArtSession
 func NewSession() *DeviantArtSession {
 	ses := &DeviantArtSession{
-		DefaultSession:    session.NewSession(),
+		DefaultSession:    session.NewSession(nil),
 		TokenStore:        NewTokenStore(),
 		UseConsoleExploit: false,
 		DefaultHeaders: map[string]string{

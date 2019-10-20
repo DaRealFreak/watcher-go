@@ -1,6 +1,7 @@
 package ehentai
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -8,12 +9,7 @@ import (
 
 // addProxyCommands adds the module specific commands for the proxy server
 func (m *ehentai) addProxyCommands(command *cobra.Command) {
-	var (
-		host     string
-		port     int
-		username string
-		password string
-	)
+	var proxySettings session.ProxySettings
 
 	proxyCmd := &cobra.Command{
 		Use:   "proxy",
@@ -22,18 +18,35 @@ func (m *ehentai) addProxyCommands(command *cobra.Command) {
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
 			viper.Set("Modules.ehentai.Proxy.Enable", true)
-			viper.Set("Modules.ehentai.Proxy.Host", host)
-			viper.Set("Modules.ehentai.Proxy.Port", port)
-			viper.Set("Modules.ehentai.Proxy.Username", username)
-			viper.Set("Modules.ehentai.Proxy.Password", password)
+			viper.Set("Modules.ehentai.Proxy.Host", proxySettings.Address)
+			viper.Set("Modules.ehentai.Proxy.Port", proxySettings.Port)
+			viper.Set("Modules.ehentai.Proxy.Username", proxySettings.Username)
+			viper.Set("Modules.ehentai.Proxy.Password", proxySettings.Password)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
 
-	proxyCmd.Flags().StringVarP(&host, "host", "H", "", "host of the proxy server (required)")
-	proxyCmd.Flags().IntVarP(&port, "port", "P", 1080, "port of the proxy server")
-	proxyCmd.Flags().StringVarP(&username, "user", "u", "", "username for the proxy server")
-	proxyCmd.Flags().StringVarP(&password, "password", "p", "", "password for the proxy server")
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Address,
+		"host", "H", "",
+		"host of the proxy server (required)",
+	)
+	proxyCmd.Flags().IntVarP(
+		&proxySettings.Port,
+		"port", "P", 1080,
+		"port of the proxy server",
+	)
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Username,
+		"user", "u", "",
+		"username for the proxy server",
+	)
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Password,
+		"password", "p", "",
+		"password for the proxy server",
+	)
+
 	_ = proxyCmd.MarkFlagRequired("host")
 
 	// add sub commands for proxy command
@@ -70,4 +83,15 @@ func (m *ehentai) addDisableProxyCommand(command *cobra.Command) {
 		},
 	}
 	command.AddCommand(enableCmd)
+}
+
+// getProxySettings returns the proxy settings for the module
+func (m *ehentai) getProxySettings() *session.ProxySettings {
+	return &session.ProxySettings{
+		Use:      viper.GetBool("Modules.ehentai.Proxy.Enable"),
+		Address:  viper.GetString("Modules.ehentai.Proxy.Host"),
+		Port:     viper.GetInt("Modules.ehentai.Proxy.Port"),
+		Username: viper.GetString("Modules.ehentai.Proxy.Username"),
+		Password: viper.GetString("Modules.ehentai.Proxy.Password"),
+	}
 }

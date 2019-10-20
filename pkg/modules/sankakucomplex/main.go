@@ -20,7 +20,7 @@ type sankakuComplex struct {
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
 	var subModule = sankakuComplex{}
-	sankakuSession := session.NewSession()
+	sankakuSession := session.NewSession(nil)
 	sankakuSession.ModuleKey = subModule.Key()
 
 	// initialize the Module with the session/database and login status
@@ -40,6 +40,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 		Value: module.Key(),
 		Color: "232:172",
 	})
+
 	return &module
 }
 
