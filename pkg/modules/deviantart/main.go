@@ -15,6 +15,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // deviantArt contains the implementation of the ModuleInterface
@@ -76,6 +77,10 @@ func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 		regexp.MustCompile(".*deviantart.com"),
 		regexp.MustCompile(`DeviantArt://.*`),
 	}
+}
+
+// AddSettingsCommand adds custom module specific settings and commands to our application
+func (m *deviantArt) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available

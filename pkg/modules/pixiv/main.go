@@ -15,6 +15,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // pixiv contains the implementation of the ModuleInterface and custom required variables
@@ -118,6 +119,10 @@ func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	uriSchemas[m.Key()] = []*regexp.Regexp{
 		regexp.MustCompile(".*pixiv.(co.jp|net)"),
 	}
+}
+
+// AddSettingsCommand adds custom module specific settings and commands to our application
+func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available

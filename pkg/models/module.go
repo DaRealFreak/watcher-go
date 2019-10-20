@@ -10,6 +10,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -23,6 +24,8 @@ type ModuleInterface interface {
 	IsLoggedIn() bool
 	// RegisterURISchema adds our pattern to the URI Schemas
 	RegisterURISchema(uriSchemas map[string][]*regexp.Regexp)
+	// option for the modules to register custom settings/commands
+	AddSettingsCommand(command *cobra.Command)
 	// Login logs us in for the current session if possible/account available
 	Login(account *Account) (success bool)
 	// Parse parses the tracked item

@@ -12,6 +12,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
 )
@@ -79,6 +80,10 @@ func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 	uriSchemas[m.Key()] = []*regexp.Regexp{
 		regexp.MustCompile(`.*e[\-x]hentai.org`),
 	}
+}
+
+// AddSettingsCommand adds custom module specific settings and commands to our application
+func (m *ehentai) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available

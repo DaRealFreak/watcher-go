@@ -8,6 +8,7 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/spf13/cobra"
 )
 
 // sankakuComplex contains the implementation of the ModuleInterface
@@ -62,6 +63,10 @@ func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regex
 	uriSchemas[m.Key()] = []*regexp.Regexp{
 		regexp.MustCompile(".*sankakucomplex.com"),
 	}
+}
+
+// AddSettingsCommand adds custom module specific settings and commands to our application
+func (m *sankakuComplex) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available

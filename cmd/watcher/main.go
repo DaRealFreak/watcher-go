@@ -48,6 +48,7 @@ func NewWatcherApplication() *CliApplication {
 	app.addUpdateCommand()
 	app.addBackupCommand()
 	app.addRestoreCommand()
+	app.addModulesCommand()
 	app.addGenerateAutoCompletionCommand()
 
 	// read in environment variables that match
