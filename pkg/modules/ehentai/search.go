@@ -20,10 +20,12 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	if err != nil {
 		return err
 	}
-	html, _ := m.Session.GetDocument(response).Html()
 
 	var itemQueue []searchGalleryItem
+
+	html, _ := m.Session.GetDocument(response).Html()
 	foundCurrentItem := false
+
 	for !foundCurrentItem {
 		for _, galleryItem := range m.getSearchGalleryUrls(html) {
 			if galleryItem.id != item.CurrentItem {
@@ -44,10 +46,12 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 			// no next page exists anymore, break here
 			break
 		}
+
 		response, err = m.Session.Get(nextPageURL)
 		if err != nil {
 			return err
 		}
+
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -55,12 +59,14 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	for i, j := 0, len(itemQueue)-1; i < j; i, j = i+1, j-1 {
 		itemQueue[i], itemQueue[j] = itemQueue[j], itemQueue[i]
 	}
+
 	// add items
 	for _, gallery := range itemQueue {
 		log.WithField("module", m.Key()).Info("added gallery to tracked items: " + gallery.uri)
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}
+
 	return nil
 }
 
@@ -85,5 +91,6 @@ func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
 	pages = pages.Slice(pages.Length()-1, pages.Length())
+
 	return pages.Find("a[href]").Attr("href")
 }

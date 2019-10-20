@@ -6,7 +6,7 @@ import (
 
 // addRestoreCommand adds the restore sub command
 func (cli *CliApplication) addRestoreCommand() {
-	var restoreCmd = &cobra.Command{
+	restoreCmd := &cobra.Command{
 		Use:   "restore [archive name]",
 		Short: "restores the current settings/database from the passed backup archive",
 		Long: "uses the passed archive file to restore the backed up setting/database file.\n" +
@@ -19,6 +19,7 @@ func (cli *CliApplication) addRestoreCommand() {
 			cli.watcher.Restore(args[0], cli.config)
 		},
 	}
+
 	restoreCmd.AddCommand(cli.getRestoreAccountsCommand())
 	restoreCmd.AddCommand(cli.getRestoreItemsCommand())
 	restoreCmd.AddCommand(cli.getRestoreSettingsCommand())
@@ -38,6 +39,7 @@ func (cli *CliApplication) getRestoreAccountsCommand() *cobra.Command {
 			cli.watcher.Restore(args[0], cli.config)
 		},
 	}
+
 	return restoreAccountsCmd
 }
 
@@ -54,6 +56,7 @@ func (cli *CliApplication) getRestoreItemsCommand() *cobra.Command {
 			cli.watcher.Restore(args[0], cli.config)
 		},
 	}
+
 	return backupItemsCmd
 }
 
@@ -68,5 +71,6 @@ func (cli *CliApplication) getRestoreSettingsCommand() *cobra.Command {
 			cli.watcher.Restore(args[0], cli.config)
 		},
 	}
+
 	return backupSettingsCmd
 }

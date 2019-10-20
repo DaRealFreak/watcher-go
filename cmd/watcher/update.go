@@ -26,9 +26,12 @@ func (cli *CliApplication) addUpdateCommand() {
 
 // getUpdateAccountCommand returns the command for the update account sub command
 func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
-	var url string
-	var user string
-	var password string
+	var (
+		url      string
+		user     string
+		password string
+	)
+
 	accountCmd := &cobra.Command{
 		Use:   "account",
 		Short: "updates the saved account",
@@ -37,21 +40,27 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 			cli.watcher.UpdateAccountByURI(url, user, password)
 		},
 	}
+
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	accountCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
 	accountCmd.Flags().StringVarP(&password, "password", "p", "", "new password (required)")
+
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
+
 	accountCmd.AddCommand(cli.getEnableAccountCommand())
 	accountCmd.AddCommand(cli.getDisableAccountCommand())
+
 	return accountCmd
 }
 
 // getEnableAccountCommand returns the command for the update account enable sub command
 func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
-	var url string
-	var user string
+	var (
+		url  string
+		user string
+	)
 
 	enableCmd := &cobra.Command{
 		Use:   "enable",
@@ -61,17 +70,22 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, false)
 		},
 	}
+
 	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	enableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+
 	_ = enableCmd.MarkFlagRequired("url")
 	_ = enableCmd.MarkFlagRequired("user")
+
 	return enableCmd
 }
 
 // getDisableAccountCommand returns the command for the update account disable sub command
 func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
-	var url string
-	var user string
+	var (
+		url  string
+		user string
+	)
 
 	disableCmd := &cobra.Command{
 		Use:   "disable",
@@ -81,17 +95,22 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, true)
 		},
 	}
+
 	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
 	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("user")
+
 	return disableCmd
 }
 
 // getUpdateItemCommand returns the command for the update item sub command
 func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
-	var url string
-	var current string
+	var (
+		url     string
+		current string
+	)
 
 	itemCmd := &cobra.Command{
 		Use:   "item",
@@ -103,12 +122,16 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 			cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
+
 	itemCmd.Flags().StringVar(&url, "url", "", "url of tracked item you want to update (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
+
 	_ = itemCmd.MarkFlagRequired("url")
 	_ = itemCmd.MarkFlagRequired("current")
+
 	itemCmd.AddCommand(cli.getEnableItemCommand())
 	itemCmd.AddCommand(cli.getDisableItemCommand())
+
 	return itemCmd
 }
 
@@ -127,6 +150,7 @@ func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 			}
 		},
 	}
+
 	return enableCmd
 }
 
@@ -145,5 +169,6 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 			}
 		},
 	}
+
 	return enableCmd
 }

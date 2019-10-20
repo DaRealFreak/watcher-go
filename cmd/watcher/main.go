@@ -1,3 +1,4 @@
+// Package watcher contains all configuration options for the command line interface
 package watcher
 
 import (
@@ -55,6 +56,7 @@ func NewWatcherApplication() *CliApplication {
 	viper.AutomaticEnv()
 	// parse all configurations before executing the main command
 	cobra.OnInitialize(app.initWatcher)
+
 	return app
 }
 
@@ -62,63 +64,52 @@ func NewWatcherApplication() *CliApplication {
 func (cli *CliApplication) addPersistentFlags() {
 	cli.rootCmd.PersistentFlags().StringVar(
 		&cli.config.ConfigurationFile,
-		"config",
-		"",
+		"config", "",
 		"config file (default is "+watcherApp.DefaultConfigurationPath+")",
 	)
 	cli.rootCmd.PersistentFlags().StringVar(
 		&cli.config.Database,
-		"database",
-		"",
+		"database", "",
 		"database file (default is "+watcherApp.DefaultDatabasePath+")",
 	)
 	cli.rootCmd.PersistentFlags().StringVarP(
 		&cli.config.LogLevel,
-		"verbosity",
-		"v",
-		log.InfoLevel.String(),
+		"verbosity", "v", log.InfoLevel.String(),
 		"log level (debug, info, warn, error, fatal, panic",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.EnableSentry,
-		"enable-sentry",
-		false,
+		"enable-sentry", false,
 		"use sentry to send usage statistics/errors to the developer",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.DisableSentry,
-		"disable-sentry",
-		false,
+		"disable-sentry", false,
 		"disable sentry and don't send usage statistics/errors to the developer",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.DisableColors,
-		"log-disable-colors",
-		false,
+		"log-disable-colors", false,
 		"disables colors even for tty terminals",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.ForceColors,
-		"log-force-colors",
-		false,
+		"log-force-colors", false,
 		"enforces colored output even for non-tty terminals",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.DisableTimestamp,
-		"log-disable-timestamp",
-		false,
+		"log-disable-timestamp", false,
 		"removes the time info of the log entries, useful if output is logged with a timestamp already",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.UseUppercaseLevel,
-		"log-level-uppercase",
-		false,
+		"log-level-uppercase", false,
 		"transforms the log levels into upper case",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
 		&cli.config.Cli.UseTimePassedAsTimestamp,
-		"log-timestamp-passed-time",
-		false,
+		"log-timestamp-passed-time", false,
 		"uses the passed time since the program is running in seconds instead of a formatted time",
 	)
 
@@ -152,9 +143,11 @@ func (cli *CliApplication) initWatcher() {
 	if cli.config.EnableSentry {
 		viper.Set("watcher.sentry", true)
 	}
+
 	if cli.config.DisableSentry {
 		viper.Set("watcher.sentry", false)
 	}
+
 	// setup sentry for error logging
 	raven.SetupSentry()
 
@@ -167,8 +160,7 @@ func (cli *CliApplication) initWatcher() {
 	cli.watcher = watcherApp.NewWatcher()
 
 	// save the configuration and check for errors
-	err := viper.WriteConfig()
-	raven.CheckError(err)
+	raven.CheckError(viper.WriteConfig())
 }
 
 // initLogger initializes the logger
@@ -194,6 +186,7 @@ func (cli *CliApplication) initConfig() {
 	if cli.config.ConfigurationFile == "" {
 		cli.config.ConfigurationFile = watcherApp.DefaultConfigurationPath
 	}
+
 	cli.ensureConfigurationFile()
 	viper.SetConfigFile(cli.config.ConfigurationFile)
 

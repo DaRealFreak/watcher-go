@@ -6,7 +6,7 @@ import (
 
 // addGenerateAutoCompletionCommand adds the generate-autocomplete sub command
 func (cli *CliApplication) addBackupCommand() {
-	var backupCmd = &cobra.Command{
+	backupCmd := &cobra.Command{
 		Use:   "backup [archive name]",
 		Short: "generates a backup of the current settings and database file",
 		Long: "generates a zip/tar.gz file of the current settings and database file.\n" +
@@ -19,6 +19,7 @@ func (cli *CliApplication) addBackupCommand() {
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
+
 	cli.addBackupArchiveFlags(backupCmd)
 	backupCmd.Flags().BoolVar(&cli.config.Backup.Database.SQL, "sql", false, "generate a .sql file")
 
@@ -47,6 +48,7 @@ func (cli *CliApplication) getBackupAccountsCommand() *cobra.Command {
 		},
 	}
 	cli.addBackupArchiveFlags(backupAccountsCmd)
+
 	return backupAccountsCmd
 }
 
@@ -62,6 +64,7 @@ func (cli *CliApplication) getBackupItemsCommand() *cobra.Command {
 		},
 	}
 	cli.addBackupArchiveFlags(backupItemsCmd)
+
 	return backupItemsCmd
 }
 
@@ -76,5 +79,6 @@ func (cli *CliApplication) getBackupSettingsCommand() *cobra.Command {
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
+
 	return backupSettingsCmd
 }

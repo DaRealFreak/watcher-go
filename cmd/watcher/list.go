@@ -25,6 +25,7 @@ func (cli *CliApplication) addListCommand() {
 // getListAccountsCommand returns the command for the list accounts sub command
 func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 	var url string
+
 	accountCmd := &cobra.Command{
 		Use:   "accounts",
 		Short: "displays all accounts",
@@ -34,13 +35,16 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 		},
 	}
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
+
 	return accountCmd
 }
 
 // getListItemsCommand returns the command for the list items sub command
 func (cli *CliApplication) getListItemsCommand() *cobra.Command {
-	var url string
-	var includeCompleted bool
+	var (
+		url              string
+		includeCompleted bool
+	)
 
 	itemCmd := &cobra.Command{
 		Use:   "items",
@@ -50,8 +54,10 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 			cli.watcher.ListTrackedItems(url, includeCompleted)
 		},
 	}
+
 	itemCmd.Flags().StringVar(&url, "url", "", "url of module")
 	itemCmd.Flags().BoolVar(&includeCompleted, "include-completed", true, "should completed items be included in the list")
+
 	return itemCmd
 }
 
@@ -72,6 +78,7 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 			cli.watcher.ListTrackedItems("", true)
 		},
 	}
+
 	return allCmd
 }
 
@@ -85,5 +92,6 @@ func (cli *CliApplication) getListModulesCommand() *cobra.Command {
 			cli.watcher.ListRegisteredModules()
 		},
 	}
+
 	return modulesCmd
 }

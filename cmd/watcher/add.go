@@ -32,14 +32,17 @@ func (cli *CliApplication) getAddItemCommand() *cobra.Command {
 			}
 		},
 	}
+
 	return itemCmd
 }
 
 // getAddAccountCommand returns the command for the add account sub command
 func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
-	var url string
-	var username string
-	var password string
+	var (
+		url      string
+		username string
+		password string
+	)
 
 	// add the account option, requires username, password and uri
 	accountCmd := &cobra.Command{
@@ -56,5 +59,6 @@ func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
 	_ = accountCmd.MarkFlagRequired("url")
+
 	return accountCmd
 }

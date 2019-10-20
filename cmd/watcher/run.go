@@ -8,7 +8,7 @@ import (
 // addRunCommand adds the run sub command
 func (cli *CliApplication) addRunCommand() {
 	// runs the main functionality to update all tracked items
-	var runCmd = &cobra.Command{
+	runCmd := &cobra.Command{
 		Use:   "run [items]",
 		Short: "update all tracked items or directly passed items",
 		Long: "update all tracked items if no direct items are passed.\n" +
@@ -18,27 +18,24 @@ func (cli *CliApplication) addRunCommand() {
 			cli.watcher.Run(cli.config)
 		},
 	}
+
 	runCmd.Flags().StringVarP(
 		&cli.config.Run.DownloadDirectory,
-		"directory",
-		"d",
-		"",
+		"directory", "d", "",
 		"download directory (will be saved in config file)",
 	)
 	runCmd.Flags().StringSliceVarP(
 		&cli.config.Run.ModuleURL,
-		"url",
-		"u",
-		[]string{},
+		"url", "u", []string{},
 		"url of module you want to run",
 	)
 	runCmd.Flags().BoolVarP(
 		&cli.config.Run.RunParallel,
-		"parallel",
-		"p",
-		false,
+		"parallel", "p", false,
 		"run modules parallel",
 	)
+
 	_ = viper.BindPFlag("download.directory", runCmd.Flags().Lookup("directory"))
+
 	cli.rootCmd.AddCommand(runCmd)
 }

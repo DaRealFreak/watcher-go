@@ -28,9 +28,10 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		return fmt.Errorf("gallery contains errors")
 	}
-	galleryTitle := m.extractGalleryTitle(html)
 
 	var downloadQueue []imageGalleryItem
+
+	galleryTitle := m.extractGalleryTitle(html)
 	foundCurrentItem := item.CurrentItem == ""
 
 	for {
@@ -49,6 +50,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 			// no previous page exists anymore, break here
 			break
 		}
+
 		response, _ = m.Session.Get(nextPageURL)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
@@ -62,6 +64,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		// if download limit got reached we didn't reach the final image and don't set the gallery as complete
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 	}
+
 	return nil
 }
 
@@ -70,12 +73,14 @@ func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
 	nextPageElement := pages.Slice(pages.Length()-1, pages.Length())
+
 	return nextPageElement.Find("a[href]").Attr("href")
 }
 
 // getGalleryImageUrls extracts all gallery image urls from the passed html
 func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
 	var imageUrls []imageGalleryItem
+
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find("div#gdt > div a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
@@ -85,6 +90,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 			galleryTitle: galleryTitle,
 		})
 	})
+
 	return imageUrls
 }
 
@@ -92,6 +98,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
 		log.WithField("module", m.Key()).Info("newer version of gallery available, updating uri of: " + item.URI)
+
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
 		// slice to retrieve only the latest gallery
@@ -103,11 +110,14 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 				log.WithField("module", m.Key()).Info("added gallery to tracked items: " + url)
 			}
 		})
+
 		return true
 	}
+
 	if strings.Contains(html, "This gallery has been removed or is unavailable.") {
 		return true
 	}
+
 	return false
 }
 
@@ -117,8 +127,10 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) (*models.DownloadQ
 	if err != nil {
 		return nil, err
 	}
+
 	document := m.Session.GetDocument(response)
 	imageURL, _ := document.Find("img#img").Attr("src")
+
 	return &models.DownloadQueueItem{
 		ItemID:      item.id,
 		DownloadTag: item.galleryTitle,
@@ -131,5 +143,6 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) (*models.DownloadQ
 func (m *ehentai) extractGalleryTitle(html string) (galleryTitle string) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	galleryTitle = document.Find("div#gd2 > h1#gn").Text()
+
 	return m.SanitizePath(galleryTitle, false)
 }
