@@ -1,3 +1,4 @@
+// Package ehentai contains the implementation of the e-hentai/exhentai module
 package ehentai
 
 import (
@@ -57,6 +58,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 		Value: module.Key(),
 		Color: "232:94",
 	})
+
 	return &module
 }
 
@@ -84,6 +86,7 @@ func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *ehentai) AddSettingsCommand(command *cobra.Command) {
+	m.addProxyCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
@@ -116,6 +119,7 @@ func (m *ehentai) Parse(item *models.TrackedItem) error {
 	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
 		return m.parseSearch(item)
 	}
+
 	return nil
 }
 
@@ -130,11 +134,13 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		if err != nil {
 			return err
 		}
+
 		// check for limit
 		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 			log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
 			m.downloadLimitReached = true
+
 			return fmt.Errorf("download limit reached")
 		}
 
@@ -145,6 +151,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
+
 		err = m.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"),
@@ -160,5 +167,6 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 		// if no error occurred update the tracked item
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
+
 	return nil
 }
