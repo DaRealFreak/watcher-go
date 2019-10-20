@@ -2,8 +2,6 @@ package models
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -11,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http"
+	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

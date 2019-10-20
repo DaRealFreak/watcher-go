@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/spf13/viper"
 )
 
 // SessionInterface of used functions from the application to eventually change the underlying library
@@ -73,4 +75,35 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	document, err := goquery.NewDocumentFromReader(reader)
 	raven.CheckError(err)
 	return document
+}
+
+// UpdateTreeFolderChangeTimes recursively updates the folder access and modification times
+// to indicate changes in the data for file explorers
+func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
+	filePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return
+	}
+
+	baseDirectory, err := filepath.Abs(viper.GetString("download.directory"))
+	if err != nil {
+		return
+	}
+
+	for {
+		parentDir := filepath.Dir(filePath)
+		// if we reached the top level or the module directory we break the update loop
+		if parentDir == filePath || parentDir == baseDirectory {
+			break
+		}
+
+		currentTime := time.Now().Local()
+		err = os.Chtimes(parentDir, currentTime, currentTime)
+		if err != nil {
+			return
+		}
+
+		// update our file path for the parent folder
+		filePath = parentDir
+	}
 }

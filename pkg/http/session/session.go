@@ -153,6 +153,9 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 		return err
 	}
 
+	// update parent folders access and modified times
+	s.UpdateTreeFolderChangeTimes(filepath)
+
 	// additional validation to compare sent headers with the written file
 	err = s.CheckDownloadedFileForErrors(written, resp.Header)
 	return err
