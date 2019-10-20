@@ -3,6 +3,12 @@ package ehentai
 
 import (
 	"fmt"
+	"net/url"
+	"path"
+	"regexp"
+	"strings"
+	"time"
+
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -10,11 +16,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
-	"net/url"
-	"path"
-	"regexp"
-	"strings"
-	"time"
 )
 
 // ehentai contains the implementation of the ModuleInterface and extends it by custom required values
@@ -32,7 +33,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	var subModule = ehentai{
 		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
-		searchGalleryIDPattern:   regexp.MustCompile(`(\d+/\w+)`),
+		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
 	}
 
 	// initialize the Module with the session/database and login status

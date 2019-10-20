@@ -1,6 +1,7 @@
 package ehentai
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -28,12 +29,20 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		for _, galleryItem := range m.getSearchGalleryUrls(html) {
-			if galleryItem.id != item.CurrentItem {
-				itemQueue = append(itemQueue, galleryItem)
-			} else {
+			// will return 0 on error, so fine for us too for the current item
+			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+			galleryItemID, err := strconv.ParseInt(galleryItem.id, 10, 64)
+
+			if err != nil {
+				return err
+			}
+
+			if !(item.CurrentItem == "" || galleryItemID > currentItemID) {
 				foundCurrentItem = true
 				break
 			}
+
+			itemQueue = append(itemQueue, galleryItem)
 		}
 
 		// break outer loop too if the current item got found
@@ -78,7 +87,7 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	document.Find("table.itg td.gl3c a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		items = append(items, searchGalleryItem{
-			id:  m.searchGalleryIDPattern.FindString(uri),
+			id:  m.searchGalleryIDPattern.FindStringSubmatch(uri)[1],
 			uri: uri,
 		})
 	})
