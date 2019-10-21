@@ -54,15 +54,9 @@ func (m *deviantArt) parseGalleryAll(item *models.TrackedItem) error {
 	for i, j := 0, len(deviations)-1; i < j; i, j = i+1, j-1 {
 		deviations[i], deviations[j] = deviations[j], deviations[i]
 	}
-	// retrieve all relevant details and parse the download queue
-	err := m.processDownloadQueue(item, deviations)
-	if err == nil {
-		results, _, err := m.GalleryAll(userName, uint(offset), 24)
-		if err == nil && results != nil {
-			m.DbIO.UpdateTrackedItem(item, results.Results[0].PublishedTime)
-		}
-	}
-	return err
+
+	// process the download queue
+	return m.processDownloadQueue(item, deviations)
 }
 
 func (m *deviantArt) parseGallery(appURL string, item *models.TrackedItem) error {
