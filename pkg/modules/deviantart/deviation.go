@@ -164,7 +164,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			}
 		}
 
-		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.DeviationID.String())
+		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.PublishedTime)
 	}
 	return nil
 }
