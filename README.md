@@ -15,16 +15,18 @@ If ImageMagick and FFmpeg are not available a fallback is implemented to generat
 These libraries can only generate a GIF file with 256 colors, so it is not recommended.
 
 ## Usage
-There are currently 7 available root commands with following functionality:
+These root commands are currently available with following functionality:
 ```  
 Available Commands:
-  run                   update all tracked items
   add                   add an item or account to the database
-  list                  lists items or accounts from the database
-  update                update the application or an item/account in the database
-  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
   backup                generates a backup of the current settings and database file
+  generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
+  help                  Help about any command
+  list                  lists items or accounts from the database
+  module                lists the module specific commands and settings
   restore               restores the current settings/database from the passed backup archive
+  run                   update all tracked items or directly passed items
+  update                update the application or an item/account in the database
 ```
 
 ### Global Flags
@@ -150,7 +152,7 @@ No flags are required for to enable/disable items.
 ### Enabling Auto Completion
 Auto Completion can be generated for the terminals bash, powershell and zsh.
 Simply run `watcher generate-autocomplete` with the following sub commands
-to generate a script in `~/.watcher/completion` and printing you the command to active it.
+to generate a script in `~/.watcher/completion` and printing you the command to activate it.
 ```
 Available Commands:
   bash        generates auto completion for Bash
@@ -191,6 +193,11 @@ Available Commands:
 The binary backup from the database will be preferred over the .sql files in the archive (only used in full restore)
 in case that the archive got manually modified (the backup command can either backup the binary file or .sql files,
 not both). Neither the binary file nor the .sql files are further checked for invalid/corrupted data.
+
+### Module Settings
+Each module can bring custom commands and settings.
+You can list all modules with custom commands/settings using `watcher module --help`.  
+Due to the modular structure with later planned external module support I'd recommend checking the commands/setting yourself.
 
 ## Development
 Want to contribute? Great!  
