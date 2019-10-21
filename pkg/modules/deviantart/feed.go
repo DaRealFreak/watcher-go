@@ -2,6 +2,7 @@ package deviantart
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
@@ -28,10 +29,15 @@ func (m *deviantArt) parseFeed(item *models.TrackedItem) error {
 		}
 		for _, itemFeed := range results.Items {
 			for _, result := range itemFeed.Deviations {
-				if result.DeviationID.String() == item.CurrentItem {
+				// will return 0 on error, so fine for us too
+				currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+				itemID, _ := strconv.ParseInt(result.PublishedTime, 10, 64)
+
+				if !(item.CurrentItem == "" || itemID > currentItemID) {
 					foundCurrentItem = true
 					break
 				}
+
 				deviations = append(deviations, result)
 			}
 			// break outer loop too if current item got found
