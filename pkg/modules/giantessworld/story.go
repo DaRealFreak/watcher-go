@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
@@ -115,6 +116,8 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 		return err
 	}
 
+	text = m.ensureUTF8(text)
+
 	// ensure download directory since we directly create the files
 	m.Session.EnsureDownloadDirectory(
 		path.Join(
@@ -144,23 +147,38 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 // getAuthor extracts the author from the page title
 func (m *giantessWorld) getAuthor(document *goquery.Document) string {
 	author := document.Find("div#pagetitle > a[href*='viewuser.php']")
-	return author.Text()
+	return strings.TrimSpace(m.ensureUTF8(author.Text()))
 }
 
 // getStoryTitle extracts the story name from the page title
 func (m *giantessWorld) getStoryName(document *goquery.Document) string {
 	story := document.Find("div#pagetitle > a[href*='viewstory.php']")
-	return story.Text()
+	return strings.TrimSpace(m.ensureUTF8(story.Text()))
 }
 
 // getChapterTitle extracts the chapter title from the jump selection
 func (m *giantessWorld) getChapterTitle(document *goquery.Document) string {
 	selectedChapter := document.Find("form[name='jump'] > select > option[selected]")
-	return selectedChapter.Text()
+	return strings.TrimSpace(m.ensureUTF8(selectedChapter.Text()))
 }
 
 // getChapterID extracts the chapter ID from the jump selection
 func (m *giantessWorld) getChapterID(document *goquery.Document) string {
-	val, _ := document.Find("form[name='jump'] > select > option[selected]").Attr("value")
-	return val
+	val, exists := document.Find("form[name='jump'] > select > option[selected]").Attr("value")
+	if !exists {
+		// one chapter story
+		return "1"
+	}
+	return strings.TrimSpace(val)
+}
+
+func (m *giantessWorld) ensureUTF8(s string) string {
+	fixUtf := func(r rune) rune {
+		if r == utf8.RuneError {
+			return -1
+		}
+		return r
+	}
+
+	return strings.Map(fixUtf, s)
 }
