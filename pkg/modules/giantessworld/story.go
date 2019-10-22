@@ -17,21 +17,21 @@ import (
 
 // parseStory parses single stories
 func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
-	m.addChapterToItemURI(item)
-
 	base, _ := url.Parse(item.URI)
 
-	res, err := m.Session.Get(item.URI)
-	if err != nil {
-		return err
-	}
-
-	htmlContent, err := ioutil.ReadAll(res.Body)
+	htmlContent, err := m.getChapterContent(base, item.CurrentItem)
 	if err != nil {
 		return err
 	}
 
 	if item.CurrentItem == "" {
+		log.WithField("module", m.Key()).Info(
+			fmt.Sprintf(
+				"downloading initial chapter for uri: \"%s\"",
+				item.URI,
+			),
+		)
+
 		err = m.downloadChapter(htmlContent, item)
 		if err != nil {
 			return err
@@ -39,45 +39,66 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 	}
 
 	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(string(htmlContent)))
+	newChapters := m.getNewChapters(doc)
 
-	nextChapterTag := doc.Find("div#next > a.next[href]")
-	if nextChapterTag.Length() > 0 {
-		nextChapterURI, _ := nextChapterTag.Attr("href")
-		nextChapterURL, _ := url.Parse(nextChapterURI)
-
-		res, err := m.Session.Get(base.ResolveReference(nextChapterURL).String())
-		if err != nil {
-			return err
-		}
-
-		htmlContent, err := ioutil.ReadAll(res.Body)
+	for index, chapter := range newChapters {
+		htmlContent, err := m.getChapterContent(base, chapter)
 		if err != nil {
 			return err
 		}
 
 		// download chapter updating the item and repeat the function for recursively going through story pages
+		log.WithField("module", m.Key()).Info(
+			fmt.Sprintf(
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				item.URI,
+				float64(index+1)/float64(len(newChapters))*100,
+			),
+		)
+
 		err = m.downloadChapter(htmlContent, item)
 		if err != nil {
 			return err
 		}
-
-		return m.parseStory(item)
 	}
 
 	return nil
 }
 
-// addChapterToItemURI updates the item URI to match the current item argument
-func (m *giantessWorld) addChapterToItemURI(item *models.TrackedItem) {
-	if item.CurrentItem != "" {
-		itemURI, _ := url.Parse(item.URI)
+// getChapterContent builds the chapter URI from the base URL and returns the HTML content
+func (m *giantessWorld) getChapterContent(base *url.URL, chapter string) (htmlContent []byte, err error) {
+	fragments := base.Query()
+	fragments.Set("chapter", chapter)
+	base.RawQuery = fragments.Encode()
 
-		// parse existing fragments and override with passed values (required for token)
-		fragments := itemURI.Query()
-		fragments.Set("chapter", item.CurrentItem)
-		itemURI.RawQuery = fragments.Encode()
-		item.URI = itemURI.String()
+	res, err := m.Session.Get(base.String())
+	if err != nil {
+		return nil, err
 	}
+
+	return ioutil.ReadAll(res.Body)
+}
+
+// getNewChapters returns new chapters from the jump navigation
+func (m *giantessWorld) getNewChapters(document *goquery.Document) []string {
+	var results []string
+
+	passedActiveSelection := false
+	options := document.Find("form[name='jump'] > select > option")
+
+	options.Each(func(i int, selection *goquery.Selection) {
+		_, exists := selection.Attr("selected")
+		if exists {
+			passedActiveSelection = true
+		}
+
+		if !exists && passedActiveSelection {
+			val, _ := selection.Attr("value")
+			results = append(results, val)
+		}
+	})
+
+	return results
 }
 
 // downloadChapter extracts the chapter from the html content and updates the item
@@ -115,9 +136,6 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 		return err
 	}
 
-	log.WithField("module", m.Key()).Info(
-		fmt.Sprintf("downloaded update for uri: %s", item.URI),
-	)
 	m.DbIO.UpdateTrackedItem(item, m.getChapterID(doc))
 
 	return nil
