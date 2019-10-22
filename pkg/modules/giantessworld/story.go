@@ -1,6 +1,7 @@
 package giantessworld
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/jaytaylor/html2text"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -113,6 +115,9 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 		return err
 	}
 
+	log.WithField("module", m.Key()).Info(
+		fmt.Sprintf("downloaded update for uri: %s", item.URI),
+	)
 	m.DbIO.UpdateTrackedItem(item, m.getChapterID(doc))
 
 	return nil
