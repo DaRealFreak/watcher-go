@@ -169,6 +169,7 @@ func (m *giantessWorld) getChapterID(document *goquery.Document) string {
 		// one chapter story
 		return "1"
 	}
+
 	return strings.TrimSpace(val)
 }
 
@@ -177,6 +178,7 @@ func (m *giantessWorld) ensureUTF8(s string) string {
 		if r == utf8.RuneError {
 			return -1
 		}
+
 		return r
 	}
 
