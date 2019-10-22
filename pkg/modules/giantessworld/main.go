@@ -115,6 +115,7 @@ func (m *giantessWorld) Parse(item *models.TrackedItem) error {
 	case strings.Contains(item.URI, "viewuser.php"):
 	case strings.Contains(item.URI, "browse.php"):
 	case strings.Contains(item.URI, "viewstory.php"):
+		return m.parseStory(item)
 	}
 
 	return nil
