@@ -18,12 +18,16 @@ import (
 // giantessWorld contains the implementation of the ModuleInterface
 type giantessWorld struct {
 	models.Module
+	baseURL              *url.URL
+	chapterUpdatePattern *regexp.Regexp
 }
 
 // NewModule generates new module and registers the URI schema
 func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
 	// register empty sub module to point to
-	var subModule = giantessWorld{}
+	var subModule = giantessWorld{
+		chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
+	}
 
 	// initialize the Module with the session/database and login status
 	module := models.Module{
@@ -33,6 +37,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 
 	// set the module implementation for access to the session, database, etc
+	subModule.baseURL, _ = url.Parse("http://giantessworld.net")
 	subModule.Module = module
 	gwSession := session.NewSession(subModule.GetProxySettings())
 	gwSession.ModuleKey = subModule.Key()
@@ -113,6 +118,7 @@ func (m *giantessWorld) Login(account *models.Account) bool {
 func (m *giantessWorld) Parse(item *models.TrackedItem) error {
 	switch {
 	case strings.Contains(item.URI, "viewuser.php"):
+		return m.parseUser(item)
 	case strings.Contains(item.URI, "browse.php"):
 	case strings.Contains(item.URI, "viewstory.php"):
 		return m.parseStory(item)
