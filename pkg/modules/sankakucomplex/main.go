@@ -39,7 +39,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
 		Value: module.Key(),
-		Color: "232:172",
+		Color: "232:208",
 	})
 
 	return &module
