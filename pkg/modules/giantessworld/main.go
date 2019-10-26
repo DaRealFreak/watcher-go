@@ -12,6 +12,7 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 
 	// set the module implementation for access to the session, database, etc
-	subModule.baseURL, _ = url.Parse("http://giantessworld.net")
+	subModule.baseURL, _ = url.Parse("http://www.giantessworld.net")
 	subModule.Module = module
 	gwSession := session.NewSession(subModule.GetProxySettings())
 	gwSession.ModuleKey = subModule.Key()
@@ -107,7 +108,10 @@ func (m *giantessWorld) Login(account *models.Account) bool {
 	req, _ := http.NewRequest("POST", "http://www.giantessworld.net/user.php?action=login", &b)
 
 	req.Header.Add("Content-Type", w.FormDataContentType())
-	res, _ := m.Session.GetClient().Do(req)
+
+	res, err := m.Session.GetClient().Do(req)
+	raven.CheckError(err)
+
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "Member Account")
 
@@ -117,9 +121,8 @@ func (m *giantessWorld) Login(account *models.Account) bool {
 // Parse parses the tracked item
 func (m *giantessWorld) Parse(item *models.TrackedItem) error {
 	switch {
-	case strings.Contains(item.URI, "viewuser.php"):
+	case strings.Contains(item.URI, "viewuser.php"), strings.Contains(item.URI, "browse.php"):
 		return m.parseUser(item)
-	case strings.Contains(item.URI, "browse.php"):
 	case strings.Contains(item.URI, "viewstory.php"):
 		return m.parseStory(item)
 	}

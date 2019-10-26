@@ -19,8 +19,6 @@ type storyMetaData struct {
 func (m *giantessWorld) parseUser(item *models.TrackedItem) error {
 	var newStories []storyMetaData
 
-	m.addSortingToItemURI(item)
-
 	if item.CurrentItem == "" {
 		// if no current item is set, set last update time to timestamp 0 for parsing
 		item.CurrentItem = "January 01 1970"
@@ -35,6 +33,8 @@ func (m *giantessWorld) parseUser(item *models.TrackedItem) error {
 	}
 
 	for !foundCurrent {
+		currentPageURI = m.addSortingToURI(currentPageURI)
+
 		res, err := m.Session.Get(currentPageURI)
 		if err != nil {
 			return err
@@ -89,12 +89,14 @@ func (m *giantessWorld) extractStories(doc *goquery.Document) (newStories []stor
 	return newStories
 }
 
-// addSortingToItemURI adds the sort argument to the URI to ensure the sorting for continual progress
-func (m *giantessWorld) addSortingToItemURI(item *models.TrackedItem) {
-	itemURL, _ := url.Parse(item.URI)
+// addSortingToURI adds the sort argument to the URI to ensure the sorting for continual progress
+func (m *giantessWorld) addSortingToURI(itemURI string) string {
+	itemURL, _ := url.Parse(itemURI)
 	fragments := itemURL.Query()
 	fragments.Set("sort", "update")
 	itemURL.RawQuery = fragments.Encode()
+
+	return itemURL.String()
 }
 
 // addNewStories adds the new stories to the database
