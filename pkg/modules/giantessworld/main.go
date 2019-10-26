@@ -114,6 +114,7 @@ func (m *giantessWorld) Login(account *models.Account) bool {
 
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "Member Account")
+	m.TriedLogin = true
 
 	return m.LoggedIn
 }

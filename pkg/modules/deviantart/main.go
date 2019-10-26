@@ -96,8 +96,11 @@ func (m *deviantArt) Login(account *models.Account) bool {
 
 	// call the utility endpoint function placebo to check the validity of the generated token
 	placebo, apiErr, err := m.Placebo()
+
 	// check placebo response if the token can be used
 	m.LoggedIn = apiErr == nil && err == nil && placebo.Status == "success"
+	m.TriedLogin = true
+
 	return m.LoggedIn
 }
 

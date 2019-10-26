@@ -103,6 +103,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	res, _ := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
+	m.TriedLogin = true
 
 	// copy the cookies for e-hentai to exhentai
 	ehURL, _ := url.Parse("https://e-hentai.org")

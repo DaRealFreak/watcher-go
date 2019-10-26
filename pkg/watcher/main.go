@@ -102,7 +102,7 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 	} else {
 		for _, item := range trackedItems {
 			module := app.ModuleFactory.GetModule(item.Module)
-			if !module.IsLoggedIn() {
+			if !module.IsLoggedIn() && !module.TriedLogin {
 				app.loginToModule(module)
 			}
 			log.WithField("module", module.Key()).Info(
@@ -158,7 +158,7 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.TrackedItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 	module := app.ModuleFactory.GetModule(moduleKey)
-	if !module.IsLoggedIn() {
+	if !module.IsLoggedIn() && !module.TriedLogin {
 		app.loginToModule(module)
 	}
 

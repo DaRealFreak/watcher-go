@@ -157,6 +157,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 	// check if the response could be parsed properly and save tokens
 	if response.Response != nil {
 		m.LoggedIn = true
+		m.TriedLogin = true
 		m.pixivSession.API.RefreshToken = response.Response.RefreshToken
 		m.pixivSession.API.AccessToken = response.Response.AccessToken
 	} else {

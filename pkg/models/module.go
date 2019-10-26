@@ -45,9 +45,10 @@ type DownloadQueueItem struct {
 // Module is an implementation to the ModuleInterface to provide basic functions/variables
 type Module struct {
 	ModuleInterface
-	DbIO     DatabaseInterface
-	Session  http.SessionInterface
-	LoggedIn bool
+	DbIO       DatabaseInterface
+	Session    http.SessionInterface
+	LoggedIn   bool
+	TriedLogin bool
 }
 
 // GetFileName retrieves the file name of a passed uri
