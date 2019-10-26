@@ -56,7 +56,12 @@ func (m *giantessWorld) parseUser(item *models.TrackedItem) error {
 		}
 
 		if link, exists := doc.Find("div#pagelinks > a#plnext[href]").First().Attr("href"); exists {
-			currentPageURI = link
+			nextPageURI, err := url.Parse(link)
+			if err != nil {
+				return err
+			}
+
+			currentPageURI = m.baseURL.ResolveReference(nextPageURI).String()
 		} else {
 			break
 		}
