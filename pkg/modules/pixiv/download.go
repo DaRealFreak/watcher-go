@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/pkg/animation"
+	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

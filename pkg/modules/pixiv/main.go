@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/pkg/animation"
+	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
