@@ -24,11 +24,14 @@ import (
 // If ImageMagick GIF creation fails we use a fallback method to retrieve a lower quality gif made with golang libraries
 func (h *Helper) CreateAnimationGif(fData *FileData) (content []byte, err error) {
 	log.Debugf("trying to create GIF animation with ImageMagick")
+
 	content, err = h.createAnimationGifImageMagick(fData)
 	if err != nil {
 		log.Debugf("trying to create GIF animation using go library fallback")
+
 		content, err = h.createAnimationGifGo(fData)
 	}
+
 	return
 }
 
@@ -45,6 +48,7 @@ func (h *Helper) createAnimationGifGo(fData *FileData) (content []byte, err erro
 	}
 
 	outGif := &gif.GIF{}
+
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		decodedImage, _, err := image.Decode(bytes.NewReader(fData.Frames[i]))
 		if err != nil {
@@ -58,9 +62,11 @@ func (h *Helper) createAnimationGifGo(fData *FileData) (content []byte, err erro
 		outGif.Image = append(outGif.Image, imageFilePaletted)
 		outGif.Delay = append(outGif.Delay, 0)
 	}
+
 	f := new(bytes.Buffer)
 	if err := gif.EncodeAll(f, outGif); err != nil {
 		return nil, err
 	}
+
 	return f.Bytes(), nil
 }

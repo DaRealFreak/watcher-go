@@ -1,19 +1,19 @@
+// Package animation contains the functionality to convert an array of images to animations
 package animation
 
 import (
 	"bytes"
 	"fmt"
 	"image"
-
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/pkg/imaging"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -67,7 +67,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 		}
 	}
 
-	executable, args := h.getImageMagickEnv()
+	executable, args := imaging.GetImageMagickEnv("convert")
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		args = append(args,
 			"-delay",
@@ -77,6 +77,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 			filepath.Base(fData.FilePaths[i]),
 		)
 	}
+
 	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
@@ -86,6 +87,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 			// fallback failed, return the error
 			return nil, err
 		}
+
 		// force convert frames from the source format with ImageMagick to PNG
 		// since FFmpeg had problems to convert some image formats into video formats
 		return h.imageFormatFallback(fData, fExt, del)
@@ -104,6 +106,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 		// clean up the created folder/files
 		err = os.RemoveAll(fData.WorkPath)
 	}
+
 	return content, err
 }
 
@@ -138,15 +141,19 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 		// guess the image format for the file extension
 		fType, err := h.guessImageFormat(bytes.NewReader(frame))
 		fPath := filepath.Join(fData.WorkPath, fmt.Sprintf("%d.%s", index, fType))
+
 		if err != nil {
 			return err
 		}
+
 		err = ioutil.WriteFile(fPath, frame, os.ModePerm)
 		if err != nil {
 			return err
 		}
+
 		fData.FilePaths = append(fData.FilePaths, fPath)
 	}
+
 	return nil
 }
 
@@ -161,29 +168,22 @@ func (h *Helper) guessImageFormat(r io.Reader) (format string, err error) {
 // So we convert frames to PNG with ImageMagick and try to create the video again
 func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]byte, error) {
 	log.Debug("using image format fallback to PNG")
+
 	for i := 0; i <= len(fData.Frames)-1; i++ {
-		executable, args := h.getImageMagickEnv()
+		executable, args := imaging.GetImageMagickEnv("convert")
 		newFilePath := filepath.Join(fData.WorkPath, strconv.Itoa(i)+".png")
 		args = append(args, fData.FilePaths[i], newFilePath)
 		fData.FilePaths[i] = newFilePath
+
 		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+
 		// #nosec
 		if err := exec.Command(executable, args...).Run(); err != nil {
 			return nil, err
 		}
 	}
-	fData.ConvertedFrames = true
-	return h.createAnimationImageMagick(fData, fExt, del)
-}
 
-// getImageMagickEnv retrieves the executable path and possible arguments for ImageMagick
-// based on the OS it is running on
-func (h *Helper) getImageMagickEnv() (executable string, args []string) {
-	if runtime.GOOS == "windows" {
-		executable = "magick"
-		args = append(args, "convert")
-	} else {
-		executable = "convert"
-	}
-	return
+	fData.ConvertedFrames = true
+
+	return h.createAnimationImageMagick(fData, fExt, del)
 }
