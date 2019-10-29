@@ -118,8 +118,8 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	return path
 }
 
-// getViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
-func (t *Module) getViperModuleKey() string {
+// GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
+func (t *Module) GetViperModuleKey() string {
 	return strings.ReplaceAll(t.Key(), ".", "_")
 }
 
@@ -133,11 +133,11 @@ func (t *Module) AddProxyCommands(command *cobra.Command) {
 		Long:  "options to configure proxy settings used for the module",
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.getViperModuleKey()), true)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.getViperModuleKey()), proxySettings.Address)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Port", t.getViperModuleKey()), proxySettings.Port)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Username", t.getViperModuleKey()), proxySettings.Username)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Password", t.getViperModuleKey()), proxySettings.Password)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey()), true)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey()), proxySettings.Address)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Port", t.GetViperModuleKey()), proxySettings.Port)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Username", t.GetViperModuleKey()), proxySettings.Username)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Password", t.GetViperModuleKey()), proxySettings.Password)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
@@ -204,10 +204,10 @@ func (t *Module) addDisableProxyCommand(command *cobra.Command) {
 // getProxySettings returns the proxy settings for the module
 func (t *Module) GetProxySettings() *session.ProxySettings {
 	return &session.ProxySettings{
-		Use:      viper.GetBool(fmt.Sprintf("Modules.%s.Proxy.Enable", t.getViperModuleKey())),
-		Address:  viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Host", t.getViperModuleKey())),
-		Port:     viper.GetInt(fmt.Sprintf("Modules.%s.Proxy.Port", t.getViperModuleKey())),
-		Username: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Username", t.getViperModuleKey())),
-		Password: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Password", t.getViperModuleKey())),
+		Use:      viper.GetBool(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey())),
+		Address:  viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey())),
+		Port:     viper.GetInt(fmt.Sprintf("Modules.%s.Proxy.Port", t.GetViperModuleKey())),
+		Username: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Username", t.GetViperModuleKey())),
+		Password: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Password", t.GetViperModuleKey())),
 	}
 }
