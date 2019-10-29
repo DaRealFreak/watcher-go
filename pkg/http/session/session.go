@@ -28,11 +28,11 @@ type DefaultSession struct {
 
 // ProxySettings are the proxy server settings for the session
 type ProxySettings struct {
-	Use      bool
-	Address  string
-	Port     int
-	Username string
-	Password string
+	Use      bool   `mapstructure:"enable"`
+	Address  string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 // NewSession initializes a new session and sets all the required headers etc

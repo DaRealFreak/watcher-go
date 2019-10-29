@@ -25,6 +25,7 @@ type ehentai struct {
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
+	settings                 *ProxyConfiguration
 }
 
 // NewModule generates new module and registers the URI schema
@@ -87,6 +88,7 @@ func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *ehentai) AddSettingsCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
+	m.addProxyLoopCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
