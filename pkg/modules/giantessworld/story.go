@@ -118,27 +118,21 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 
 	text = m.ensureUTF8(text)
 
-	// ensure download directory since we directly create the files
-	m.Session.EnsureDownloadDirectory(
-		path.Join(
-			viper.GetString("download.directory"),
-			m.Key(),
-			m.getAuthor(doc),
-			"tmp.txt",
-		),
-	)
-
 	filePath := path.Join(viper.GetString("download.directory"),
 		m.Key(),
 		m.getAuthor(doc),
 		m.SanitizePath(m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
 	)
 
+	// ensure download directory since we directly create the files
+	m.Session.EnsureDownloadDirectory(filePath)
+
 	err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
+	m.Session.UpdateTreeFolderChangeTimes(filePath)
 	m.DbIO.UpdateTrackedItem(item, m.getChapterID(doc))
 
 	return nil
