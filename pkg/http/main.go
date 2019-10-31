@@ -25,6 +25,7 @@ type SessionInterface interface {
 	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() *http.Client
+	UpdateTreeFolderChangeTimes(filePath string)
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
