@@ -147,7 +147,7 @@ Similar to the accounts is the command for enabling items:
 and the command for disabling items:  
 `watcher update item disable [url1] [url2] [url3] ...`
 
-No flags are required for to enable/disable items.
+No flags are required for enabling/disabling items.
 
 ### Enabling Auto Completion
 Auto Completion can be generated for the terminals bash, powershell and zsh.
