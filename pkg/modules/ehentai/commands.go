@@ -23,36 +23,44 @@ func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {
 		Long:  "options to configure proxy loops",
 	}
 
-	m.addProxyLoopCommand(proxiesCmd)
-	m.addProxyLoopProxiesCommand(proxiesCmd)
+	m.addProxiesLoopCommand(proxiesCmd)
+	m.addProxiesAddCommand(proxiesCmd)
+	m.addProxiesRemoveCommand(proxiesCmd)
 	command.AddCommand(proxiesCmd)
 }
 
-func (m *ehentai) addProxyLoopCommand(command *cobra.Command) {
-	var disableLoop bool
-
+func (m *ehentai) addProxiesLoopCommand(command *cobra.Command) {
 	loopCmd := &cobra.Command{
 		Use:   "loop",
 		Short: "configure loop",
 		Long:  "options to enable/disable proxy loops",
+	}
+
+	enableCmd := &cobra.Command{
+		Use:   "enable",
+		Short: "enables the proxy loop",
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
-			viper.Set(fmt.Sprintf("Modules.%s.Proxies.Loop", m.GetViperModuleKey()), !disableLoop)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxies.Loop", m.GetViperModuleKey()), true)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
 
-	loopCmd.Flags().BoolVar(
-		&disableLoop,
-		"disable",
-		false,
-		"host of the proxy server (required)",
-	)
+	disableCmd := &cobra.Command{
+		Use:   "disable",
+		Short: "disables the proxy loop",
+		Run: func(cmd *cobra.Command, args []string) {
+			// enable proxy after changing the settings
+			viper.Set(fmt.Sprintf("Modules.%s.Proxies.Loop", m.GetViperModuleKey()), false)
+			raven.CheckError(viper.WriteConfig())
+		},
+	}
 
+	loopCmd.AddCommand(enableCmd, disableCmd)
 	command.AddCommand(loopCmd)
 }
 
-func (m *ehentai) addProxyLoopProxiesCommand(command *cobra.Command) {
+func (m *ehentai) addProxiesAddCommand(command *cobra.Command) {
 	var proxySettings session.ProxySettings
 
 	proxyCmd := &cobra.Command{
@@ -83,6 +91,47 @@ func (m *ehentai) addProxyLoopProxiesCommand(command *cobra.Command) {
 		&proxySettings.Password,
 		"password", "p", "",
 		"password for the proxy server",
+	)
+
+	_ = proxyCmd.MarkFlagRequired("host")
+
+	command.AddCommand(proxyCmd)
+}
+
+func (m *ehentai) addProxiesRemoveCommand(command *cobra.Command) {
+	var (
+		proxySettings session.ProxySettings
+		proxyCfg      ProxyConfiguration
+	)
+
+	proxyCmd := &cobra.Command{
+		Use:   "remove",
+		Short: "removes a proxy from the looped proxies",
+		Long:  "options to remove a proxy server used in the proxy loop",
+		Run: func(cmd *cobra.Command, args []string) {
+			err := viper.UnmarshalKey(
+				fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+				&proxyCfg,
+			)
+			raven.CheckError(err)
+
+			for s, proxy := range proxyCfg.LoopProxies {
+				if proxy.Host == proxySettings.Host && proxy.Port == proxySettings.Port {
+					proxyCfg.LoopProxies = append(proxyCfg.LoopProxies[:s], proxyCfg.LoopProxies[s+1:]...)
+				}
+			}
+		},
+	}
+
+	proxyCmd.Flags().StringVarP(
+		&proxySettings.Host,
+		"host", "H", "",
+		"host of the proxy server (required)",
+	)
+	proxyCmd.Flags().IntVarP(
+		&proxySettings.Port,
+		"port", "P", 1080,
+		"port of the proxy server",
 	)
 
 	_ = proxyCmd.MarkFlagRequired("host")
