@@ -25,7 +25,7 @@ type ehentai struct {
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
-	settings                 *ProxyConfiguration
+	settings                 *ModuleConfiguration
 }
 
 // NewModule generates new module and registers the URI schema
