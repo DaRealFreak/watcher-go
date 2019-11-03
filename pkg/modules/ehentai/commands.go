@@ -2,12 +2,14 @@ package ehentai
 
 import (
 	"fmt"
+
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// ProxyConfiguration contains the custom proxy configuration for this module
 type ProxyConfiguration struct {
 	Loop        bool                    `mapstructure:"loop"`
 	Proxy       session.ProxySettings   `mapstructure:"proxy"`
@@ -51,46 +53,14 @@ func (m *ehentai) addProxyLoopCommand(command *cobra.Command) {
 }
 
 func (m *ehentai) addProxyLoopProxiesCommand(command *cobra.Command) {
-	var (
-		proxySettings   session.ProxySettings
-		existingProxies ProxyConfiguration
-	)
+	var proxySettings session.ProxySettings
 
 	proxyCmd := &cobra.Command{
 		Use:   "add",
 		Short: "adds proxy to looped proxies",
 		Long:  "options to add proxy server used in proxy loop",
 		Run: func(cmd *cobra.Command, args []string) {
-			// enable proxy after changing the settings
-			raven.CheckError(viper.WriteConfig())
-
-			err := viper.UnmarshalKey(
-				fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
-				&existingProxies,
-			)
-			raven.CheckError(err)
-
-			updated := false
-			for _, proxy := range existingProxies.LoopProxies {
-				if proxy.Host == proxySettings.Host && proxy.Port == proxySettings.Port {
-					// update existing proxy
-					proxy = proxySettings
-					updated = true
-					break
-				}
-			}
-
-			if !updated {
-				// add new proxy
-				existingProxies.LoopProxies = append(existingProxies.LoopProxies, proxySettings)
-			}
-
-
-			viper.Set(
-				fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
-				&existingProxies,
-			)
-			raven.CheckError(viper.WriteConfig())
+			m.addLoopProxy(proxySettings)
 		},
 	}
 
@@ -118,4 +88,39 @@ func (m *ehentai) addProxyLoopProxiesCommand(command *cobra.Command) {
 	_ = proxyCmd.MarkFlagRequired("host")
 
 	command.AddCommand(proxyCmd)
+}
+
+// addLoopProxy adds the loop proxy to the list or updates the proxy settings if already added
+func (m *ehentai) addLoopProxy(proxySettings session.ProxySettings) {
+	var existingProxies ProxyConfiguration
+
+	// enable proxy on adding action
+	proxySettings.Enable = true
+	err := viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&existingProxies,
+	)
+	raven.CheckError(err)
+
+	updated := false
+
+	for _, proxy := range existingProxies.LoopProxies {
+		if proxy.Host == proxySettings.Host && proxy.Port == proxySettings.Port {
+			proxy = proxySettings
+			updated = true
+
+			break
+		}
+	}
+
+	if !updated {
+		// add new proxy
+		existingProxies.LoopProxies = append(existingProxies.LoopProxies, proxySettings)
+	}
+
+	viper.Set(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&existingProxies,
+	)
+	raven.CheckError(viper.WriteConfig())
 }
