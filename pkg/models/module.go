@@ -180,7 +180,7 @@ func (t *Module) addEnableProxyCommand(command *cobra.Command) {
 		Short: "enables proxy usage",
 		Long:  "option to enable proxy server usage again, after it got manually disabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			viper.Set("Modules.ehentai.Proxy.Enable", true)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey()), true)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
@@ -194,20 +194,21 @@ func (t *Module) addDisableProxyCommand(command *cobra.Command) {
 		Short: "disables proxy usage",
 		Long:  "option to disable proxy server usage",
 		Run: func(cmd *cobra.Command, args []string) {
-			viper.Set("Modules.ehentai.Proxy.Enable", false)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey()), false)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
 	command.AddCommand(enableCmd)
 }
 
-// getProxySettings returns the proxy settings for the module
-func (t *Module) GetProxySettings() *session.ProxySettings {
-	return &session.ProxySettings{
-		Use:      viper.GetBool(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey())),
-		Address:  viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey())),
-		Port:     viper.GetInt(fmt.Sprintf("Modules.%s.Proxy.Port", t.GetViperModuleKey())),
-		Username: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Username", t.GetViperModuleKey())),
-		Password: viper.GetString(fmt.Sprintf("Modules.%s.Proxy.Password", t.GetViperModuleKey())),
-	}
+// GetProxySettings returns the proxy settings for the module
+func (t *Module) GetProxySettings() (proxySettings *session.ProxySettings) {
+	err := viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", t.GetViperModuleKey()),
+		&proxySettings,
+	)
+
+	raven.CheckError(err)
+
+	return proxySettings
 }
