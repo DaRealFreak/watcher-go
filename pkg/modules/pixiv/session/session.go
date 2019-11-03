@@ -92,14 +92,14 @@ func NewSession(proxySettings *watcherSession.ProxySettings) *PixivSession {
 		MaxRetries:  5,
 	}
 
-	if proxySettings != nil && proxySettings.Use {
+	if proxySettings != nil && proxySettings.Enable {
 		auth := proxy.Auth{
 			User:     proxySettings.Username,
 			Password: proxySettings.Password,
 		}
 		dialer, _ := proxy.SOCKS5(
 			"tcp",
-			fmt.Sprintf("%s:%d", proxySettings.Address, proxySettings.Port),
+			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
 			&auth,
 			proxy.Direct,
 		)

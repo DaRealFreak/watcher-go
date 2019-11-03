@@ -134,7 +134,7 @@ func (t *Module) AddProxyCommands(command *cobra.Command) {
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
 			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey()), true)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey()), proxySettings.Address)
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey()), proxySettings.Host)
 			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Port", t.GetViperModuleKey()), proxySettings.Port)
 			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Username", t.GetViperModuleKey()), proxySettings.Username)
 			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Password", t.GetViperModuleKey()), proxySettings.Password)
@@ -143,7 +143,7 @@ func (t *Module) AddProxyCommands(command *cobra.Command) {
 	}
 
 	proxyCmd.Flags().StringVarP(
-		&proxySettings.Address,
+		&proxySettings.Host,
 		"host", "H", "",
 		"host of the proxy server (required)",
 	)

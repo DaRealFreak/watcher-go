@@ -11,7 +11,7 @@ import (
 type ProxyConfiguration struct {
 	Loop        bool                    `mapstructure:"loop"`
 	Proxy       session.ProxySettings   `mapstructure:"proxy"`
-	LoopProxies []session.ProxySettings `mapstructure:"proxies"`
+	LoopProxies []session.ProxySettings `mapstructure:"loopproxies"`
 }
 
 func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {
@@ -63,16 +63,39 @@ func (m *ehentai) addProxyLoopProxiesCommand(command *cobra.Command) {
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
 			raven.CheckError(viper.WriteConfig())
+
 			err := viper.UnmarshalKey(
 				fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
 				&existingProxies,
 			)
-			fmt.Println(err)
+			raven.CheckError(err)
+
+			updated := false
+			for _, proxy := range existingProxies.LoopProxies {
+				if proxy.Host == proxySettings.Host && proxy.Port == proxySettings.Port {
+					// update existing proxy
+					proxy = proxySettings
+					updated = true
+					break
+				}
+			}
+
+			if !updated {
+				// add new proxy
+				existingProxies.LoopProxies = append(existingProxies.LoopProxies, proxySettings)
+			}
+
+
+			viper.Set(
+				fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+				&existingProxies,
+			)
+			raven.CheckError(viper.WriteConfig())
 		},
 	}
 
 	proxyCmd.Flags().StringVarP(
-		&proxySettings.Address,
+		&proxySettings.Host,
 		"host", "H", "",
 		"host of the proxy server (required)",
 	)
