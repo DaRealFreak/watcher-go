@@ -1,3 +1,4 @@
+// Package http contains the basic HTTP functionality of the application
 package http
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/spf13/viper"
+	"golang.org/x/net/proxy"
 )
 
 // SessionInterface of used functions from the application to eventually change the underlying library
@@ -26,12 +28,22 @@ type SessionInterface interface {
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() *http.Client
 	UpdateTreeFolderChangeTimes(filePath string)
+	SetProxy(proxySettings *ProxySettings) (err error)
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
 type Session struct {
 	SessionInterface
 	ModuleKey string
+}
+
+// ProxySettings are the proxy server settings for the session
+type ProxySettings struct {
+	Enable   bool   `mapstructure:"enable"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 // EnsureDownloadDirectory ensures that the download path already exists or creates it if not
@@ -57,24 +69,30 @@ func (s *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader
 			}
 		}
 	}
+
 	if writtenSize <= 0 {
 		err = fmt.Errorf("written content has a size of 0 bytes")
 	}
+
 	return err
 }
 
 // GetDocument converts the http response to a *goquery.Document
 func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	var reader io.ReadCloser
+
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, _ = gzip.NewReader(response.Body)
 	default:
 		reader = response.Body
 	}
+
 	defer raven.CheckClosure(reader)
+
 	document, err := goquery.NewDocumentFromReader(reader)
 	raven.CheckError(err)
+
 	return document
 }
 
@@ -99,6 +117,7 @@ func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
 		}
 
 		currentTime := time.Now().Local()
+
 		err = os.Chtimes(parentDir, currentTime, currentTime)
 		if err != nil {
 			return
@@ -107,4 +126,26 @@ func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
 		// update our file path for the parent folder
 		filePath = parentDir
 	}
+}
+
+// SetProxy sets the current proxy for the client
+func (s *Session) SetProxy(proxySettings *ProxySettings) (err error) {
+	auth := proxy.Auth{
+		User:     proxySettings.Username,
+		Password: proxySettings.Password,
+	}
+
+	dialer, err := proxy.SOCKS5(
+		"tcp",
+		fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
+		&auth,
+		proxy.Direct,
+	)
+	if err != nil {
+		return err
+	}
+
+	s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
+
+	return nil
 }

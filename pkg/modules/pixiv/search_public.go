@@ -42,6 +42,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 			// will return 0 on error, so fine for us too
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			itemID, _ := strconv.ParseInt(illustrationResponse.Illustration.ID.String(), 10, 64)
+
 			if item.CurrentItem == "" || itemID > currentItemID {
 				err = m.parseWork(illustrationResponse.Illustration, &downloadQueue)
 				if err != nil {

@@ -1,3 +1,4 @@
+// Package models contains structs and default functions used all over the application to avoid circular dependencies
 package models
 
 import (
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/http"
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -69,6 +69,7 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
+
 	return downloadQueue
 }
 
@@ -86,6 +87,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
 		)
+
 		err := t.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), t.Key(), data.DownloadTag, data.FileName),
 			data.FileURI,
@@ -93,8 +95,10 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 		if err != nil {
 			return err
 		}
+
 		t.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
 	}
+
 	return nil
 }
 
@@ -107,14 +111,18 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 	} else {
 		reservedCharacters = regexp.MustCompile("[\\\\/:\"*?<>|]+")
 	}
+
 	path = reservedCharacters.ReplaceAllString(path, "_")
 	for strings.Contains(path, "__") {
 		path = strings.Replace(path, "__", "_", -1)
 	}
+
 	for strings.Contains(path, "..") {
 		path = strings.Replace(path, "..", ".", -1)
 	}
+
 	path = strings.Trim(path, "_")
+
 	return path
 }
 
@@ -123,9 +131,9 @@ func (t *Module) GetViperModuleKey() string {
 	return strings.ReplaceAll(t.Key(), ".", "_")
 }
 
-// addProxyCommands adds the module specific commands for the proxy server
+// AddProxyCommands adds the module specific commands for the proxy server
 func (t *Module) AddProxyCommands(command *cobra.Command) {
-	var proxySettings session.ProxySettings
+	var proxySettings http.ProxySettings
 
 	proxyCmd := &cobra.Command{
 		Use:   "proxy",
@@ -133,11 +141,9 @@ func (t *Module) AddProxyCommands(command *cobra.Command) {
 		Long:  "options to configure proxy settings used for the module",
 		Run: func(cmd *cobra.Command, args []string) {
 			// enable proxy after changing the settings
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Enable", t.GetViperModuleKey()), true)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Host", t.GetViperModuleKey()), proxySettings.Host)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Port", t.GetViperModuleKey()), proxySettings.Port)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Username", t.GetViperModuleKey()), proxySettings.Username)
-			viper.Set(fmt.Sprintf("Modules.%s.Proxy.Password", t.GetViperModuleKey()), proxySettings.Password)
+			proxySettings.Enable = true
+
+			viper.Set(fmt.Sprintf("Modules.%s.Proxy", t.GetViperModuleKey()), proxySettings)
 			raven.CheckError(viper.WriteConfig())
 		},
 	}
@@ -202,7 +208,7 @@ func (t *Module) addDisableProxyCommand(command *cobra.Command) {
 }
 
 // GetProxySettings returns the proxy settings for the module
-func (t *Module) GetProxySettings() (proxySettings *session.ProxySettings) {
+func (t *Module) GetProxySettings() (proxySettings *http.ProxySettings) {
 	err := viper.UnmarshalKey(
 		fmt.Sprintf("Modules.%s", t.GetViperModuleKey()),
 		&proxySettings,

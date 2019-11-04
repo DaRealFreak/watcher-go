@@ -21,7 +21,6 @@ import (
 	"crypto/md5"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
-	watcherSession "github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
@@ -66,7 +65,7 @@ type errorResponse struct {
 }
 
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession(proxySettings *watcherSession.ProxySettings) *PixivSession {
+func NewSession(proxySettings *watcherHttp.ProxySettings) *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	session := &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},

@@ -12,6 +12,7 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,10 +48,18 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	subModule.Module = module
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
-	ehSession := session.NewSession(subModule.GetProxySettings())
+	ehSession := session.NewSession(nil)
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 	ehSession.ModuleKey = subModule.Key()
 	subModule.Session = ehSession
+	subModule.settings.ProxyLoopIndex = 0
+
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
+		&subModule.settings,
+	))
+
+	raven.CheckError(subModule.setProxyMethod())
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)
@@ -133,20 +142,6 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 	)
 
 	for index, data := range downloadQueue {
-		downloadQueueItem, err := m.getDownloadQueueItem(data)
-		if err != nil {
-			return err
-		}
-
-		// check for limit
-		if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
-			downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
-			log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
-			m.downloadLimitReached = true
-
-			return fmt.Errorf("download limit reached")
-		}
-
 		log.WithField("module", m.Key()).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
@@ -155,21 +150,75 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 			),
 		)
 
-		err = m.Session.DownloadFile(
-			path.Join(
-				viper.GetString("download.directory"),
-				m.Key(),
-				strings.TrimSpace(downloadQueueItem.DownloadTag),
-				strings.TrimSpace(downloadQueueItem.FileName),
-			),
-			downloadQueueItem.FileURI,
-		)
-		if err != nil {
+		if err := m.downloadItem(trackedItem, data); err != nil {
 			return err
 		}
-		// if no error occurred update the tracked item
-		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 	}
 
 	return nil
+}
+
+func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGalleryItem) error {
+	downloadQueueItem, err := m.getDownloadQueueItem(data)
+	if err != nil {
+		return err
+	}
+
+	// check for limit
+	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
+		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
+		if m.settings.Loop {
+			if err := m.setProxyMethod(); err != nil {
+				return err
+			}
+
+			return m.downloadItem(trackedItem, data)
+		}
+
+		log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
+		m.downloadLimitReached = true
+
+		return fmt.Errorf("download limit reached")
+	}
+
+	err = m.Session.DownloadFile(
+		path.Join(
+			viper.GetString("download.directory"),
+			m.Key(),
+			strings.TrimSpace(downloadQueueItem.DownloadTag),
+			strings.TrimSpace(downloadQueueItem.FileName),
+		),
+		downloadQueueItem.FileURI,
+	)
+	if err != nil {
+		return err
+	}
+
+	// if no error occurred update the tracked item
+	m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
+
+	return nil
+}
+
+// setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
+func (m *ehentai) setProxyMethod() error {
+	switch {
+	case m.settings == nil:
+		return nil
+	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
+		return fmt.Errorf("you need to at least register 2 proxies to loop")
+	case !m.settings.Loop && m.settings.Proxy.Enable:
+		return m.Session.SetProxy(&m.settings.Proxy)
+	case m.settings.Loop:
+		switch {
+		case m.settings.ProxyLoopIndex+1 == len(m.settings.LoopProxies):
+			m.settings.ProxyLoopIndex = 0
+		case m.settings.ProxyLoopIndex != 0:
+			m.settings.ProxyLoopIndex++
+		}
+
+		return m.Session.SetProxy(&m.settings.LoopProxies[m.settings.ProxyLoopIndex])
+	default:
+		return nil
+	}
 }

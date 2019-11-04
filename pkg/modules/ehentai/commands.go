@@ -3,7 +3,7 @@ package ehentai
 import (
 	"fmt"
 
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
+	"github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -11,9 +11,10 @@ import (
 
 // ModuleConfiguration contains the custom proxy configuration for this module
 type ModuleConfiguration struct {
-	Loop        bool                    `mapstructure:"loop"`
-	Proxy       session.ProxySettings   `mapstructure:"proxy"`
-	LoopProxies []session.ProxySettings `mapstructure:"loopproxies"`
+	Loop           bool                 `mapstructure:"loop"`
+	Proxy          http.ProxySettings   `mapstructure:"proxy"`
+	LoopProxies    []http.ProxySettings `mapstructure:"loopproxies"`
+	ProxyLoopIndex int
 }
 
 func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {
@@ -33,7 +34,7 @@ func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {
 
 func (m *ehentai) addProxiesEnableCommand(command *cobra.Command) {
 	var (
-		proxySettings session.ProxySettings
+		proxySettings http.ProxySettings
 		moduleCfg     ModuleConfiguration
 	)
 
@@ -74,7 +75,7 @@ func (m *ehentai) addProxiesEnableCommand(command *cobra.Command) {
 
 func (m *ehentai) addProxiesDisableCommand(command *cobra.Command) {
 	var (
-		proxySettings session.ProxySettings
+		proxySettings http.ProxySettings
 		moduleCfg     ModuleConfiguration
 	)
 
@@ -145,7 +146,7 @@ func (m *ehentai) addProxiesLoopCommand(command *cobra.Command) {
 }
 
 func (m *ehentai) addProxiesAddCommand(command *cobra.Command) {
-	var proxySettings session.ProxySettings
+	var proxySettings http.ProxySettings
 
 	proxyCmd := &cobra.Command{
 		Use:   "add",
@@ -184,7 +185,7 @@ func (m *ehentai) addProxiesAddCommand(command *cobra.Command) {
 
 func (m *ehentai) addProxiesRemoveCommand(command *cobra.Command) {
 	var (
-		proxySettings session.ProxySettings
+		proxySettings http.ProxySettings
 		moduleCfg     ModuleConfiguration
 	)
 
@@ -229,7 +230,7 @@ func (m *ehentai) addProxiesRemoveCommand(command *cobra.Command) {
 }
 
 // addLoopProxy adds the loop proxy to the list or updates the proxy settings if already added
-func (m *ehentai) addLoopProxy(proxySettings session.ProxySettings) {
+func (m *ehentai) addLoopProxy(proxySettings http.ProxySettings) {
 	var moduleCfg ModuleConfiguration
 
 	// enable proxy on adding action

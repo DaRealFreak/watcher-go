@@ -1,3 +1,4 @@
+// Package session contains a default implementation of the session browser
 package session
 
 import (
@@ -13,7 +14,6 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 )
 
@@ -26,17 +26,8 @@ type DefaultSession struct {
 	ctx         context.Context
 }
 
-// ProxySettings are the proxy server settings for the session
-type ProxySettings struct {
-	Enable   bool   `mapstructure:"enable"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-}
-
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession(proxySettings *ProxySettings) *DefaultSession {
+func NewSession(proxySettings *watcherHttp.ProxySettings) *DefaultSession {
 	jar, _ := cookiejar.New(nil)
 
 	app := DefaultSession{
@@ -48,17 +39,7 @@ func NewSession(proxySettings *ProxySettings) *DefaultSession {
 	}
 
 	if proxySettings != nil && proxySettings.Enable {
-		auth := proxy.Auth{
-			User:     proxySettings.Username,
-			Password: proxySettings.Password,
-		}
-		dialer, _ := proxy.SOCKS5(
-			"tcp",
-			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-			&auth,
-			proxy.Direct,
-		)
-		app.Client.Transport = &http.Transport{Dial: dialer.Dial}
+		raven.CheckError(app.SetProxy(proxySettings))
 	}
 
 	return &app
@@ -74,7 +55,9 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 		log.WithField("module", s.ModuleKey).Debug(
 			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
 		)
+
 		response, err = s.Client.Get(uri)
+
 		switch {
 		case err == nil && response.StatusCode < 400:
 			// if no error occurred and status code is okay too break out of the loop
@@ -85,6 +68,7 @@ func (s *DefaultSession) Get(uri string) (response *http.Response, err error) {
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
+
 	return response, err
 }
 
@@ -97,7 +81,9 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 		log.WithField("module", s.ModuleKey).Debug(
 			fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try),
 		)
+
 		response, err = s.Client.PostForm(uri, data)
+
 		switch {
 		case err == nil && response.StatusCode < 400:
 			// if no error occurred and status code is okay too break out of the loop
@@ -108,6 +94,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 			time.Sleep(time.Duration(try+1) * time.Second)
 		}
 	}
+
 	return response, err
 }
 
@@ -117,13 +104,16 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 		log.WithField("module", s.ModuleKey).Debug(
 			fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try),
 		)
+
 		err = s.tryDownloadFile(filepath, uri)
 		// if no error occurred return nil
 		if err == nil {
 			return
 		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
+
 	return err
 }
 
@@ -135,6 +125,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
+
 	defer raven.CheckClosure(resp.Body)
 
 	// ensure the directory
@@ -145,6 +136,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	if err != nil {
 		return err
 	}
+
 	defer raven.CheckClosure(out)
 
 	// write the body to file
@@ -157,8 +149,7 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	s.UpdateTreeFolderChangeTimes(filepath)
 
 	// additional validation to compare sent headers with the written file
-	err = s.CheckDownloadedFileForErrors(written, resp.Header)
-	return err
+	return s.CheckDownloadedFileForErrors(written, resp.Header)
 }
 
 // GetClient returns the used *http.Client, required f.e. to manually set cookies
