@@ -15,7 +15,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/spf13/viper"
-	"golang.org/x/net/proxy"
 )
 
 // SessionInterface of used functions from the application to eventually change the underlying library
@@ -126,26 +125,4 @@ func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
 		// update our file path for the parent folder
 		filePath = parentDir
 	}
-}
-
-// SetProxy sets the current proxy for the client
-func (s *Session) SetProxy(proxySettings *ProxySettings) (err error) {
-	auth := proxy.Auth{
-		User:     proxySettings.Username,
-		Password: proxySettings.Password,
-	}
-
-	dialer, err := proxy.SOCKS5(
-		"tcp",
-		fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-		&auth,
-		proxy.Direct,
-	)
-	if err != nil {
-		return err
-	}
-
-	s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
-
-	return nil
 }

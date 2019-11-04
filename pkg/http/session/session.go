@@ -4,6 +4,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"golang.org/x/net/proxy"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -165,4 +166,30 @@ func (s *DefaultSession) ApplyRateLimit() {
 		err := s.RateLimiter.Wait(s.ctx)
 		raven.CheckError(err)
 	}
+}
+
+// SetProxy sets the current proxy for the client
+func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err error) {
+	log.WithField("module", s.ModuleKey).Infof(
+		"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
+	)
+
+	auth := proxy.Auth{
+		User:     proxySettings.Username,
+		Password: proxySettings.Password,
+	}
+
+	dialer, err := proxy.SOCKS5(
+		"tcp",
+		fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
+		&auth,
+		proxy.Direct,
+	)
+	if err != nil {
+		return err
+	}
+
+	s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
+
+	return nil
 }

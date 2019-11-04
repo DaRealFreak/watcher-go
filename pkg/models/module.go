@@ -210,7 +210,7 @@ func (t *Module) addDisableProxyCommand(command *cobra.Command) {
 // GetProxySettings returns the proxy settings for the module
 func (t *Module) GetProxySettings() (proxySettings *http.ProxySettings) {
 	err := viper.UnmarshalKey(
-		fmt.Sprintf("Modules.%s", t.GetViperModuleKey()),
+		fmt.Sprintf("Modules.%s.Proxy", t.GetViperModuleKey()),
 		&proxySettings,
 	)
 

@@ -14,7 +14,6 @@ type ModuleConfiguration struct {
 	Loop           bool                 `mapstructure:"loop"`
 	Proxy          http.ProxySettings   `mapstructure:"proxy"`
 	LoopProxies    []http.ProxySettings `mapstructure:"loopproxies"`
-	ProxyLoopIndex int
 }
 
 func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {

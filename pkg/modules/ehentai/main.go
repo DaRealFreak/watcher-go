@@ -23,10 +23,12 @@ import (
 type ehentai struct {
 	models.Module
 	downloadLimitReached     bool
+	ProxyLoopIndex           int
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
 	settings                 *ModuleConfiguration
+	ehSession                *session.DefaultSession
 }
 
 // NewModule generates new module and registers the URI schema
@@ -48,11 +50,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	subModule.Module = module
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
-	ehSession := session.NewSession(nil)
-	ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
-	ehSession.ModuleKey = subModule.Key()
-	subModule.Session = ehSession
-	subModule.settings.ProxyLoopIndex = 0
+	subModule.ehSession = session.NewSession(nil)
+	subModule.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+	subModule.ehSession.ModuleKey = subModule.Key()
+	subModule.Session = subModule.ehSession
+	subModule.ProxyLoopIndex = 0
 
 	raven.CheckError(viper.UnmarshalKey(
 		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
@@ -208,16 +210,16 @@ func (m *ehentai) setProxyMethod() error {
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.settings.Proxy.Enable:
-		return m.Session.SetProxy(&m.settings.Proxy)
+		return m.ehSession.SetProxy(&m.settings.Proxy)
 	case m.settings.Loop:
 		switch {
-		case m.settings.ProxyLoopIndex+1 == len(m.settings.LoopProxies):
-			m.settings.ProxyLoopIndex = 0
-		case m.settings.ProxyLoopIndex != 0:
-			m.settings.ProxyLoopIndex++
+		case m.ProxyLoopIndex+1 == len(m.settings.LoopProxies):
+			m.ProxyLoopIndex = 0
+		case m.ProxyLoopIndex != 0:
+			m.ProxyLoopIndex++
 		}
 
-		return m.Session.SetProxy(&m.settings.LoopProxies[m.settings.ProxyLoopIndex])
+		return m.ehSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:
 		return nil
 	}
