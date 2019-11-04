@@ -32,12 +32,14 @@ func (a *zipArchiveWriter) AddFile(name string, fileContent []byte) (writtenSize
 	}
 	header.Method = zip.Deflate
 	header.SetMode(os.ModePerm)
+
 	writer, err := a.zipWriter.CreateHeader(header)
 	if err != nil {
 		return 0, err
 	}
 
 	writtenSizeInt, err := writer.Write(fileContent)
+
 	return int64(writtenSizeInt), err
 }
 
@@ -49,6 +51,7 @@ func (a *zipArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	if err != nil {
 		return 0, err
 	}
+
 	defer raven.CheckClosure(file)
 
 	// retrieve file stats for headers
@@ -62,6 +65,7 @@ func (a *zipArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	if err != nil {
 		return 0, err
 	}
+
 	header.Name = name
 	header.Method = zip.Deflate
 
@@ -70,7 +74,9 @@ func (a *zipArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	if err != nil {
 		return 0, err
 	}
+
 	writtenSize, err = io.Copy(w, file)
+
 	return writtenSize, err
 }
 

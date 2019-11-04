@@ -10,6 +10,7 @@ func (app *Watcher) AddAccountByURI(uri string, user string, password string) {
 func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(uri, module)
+
 	if currentItem != "" {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}

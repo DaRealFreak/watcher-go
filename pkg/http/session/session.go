@@ -4,7 +4,6 @@ package session
 import (
 	"context"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,6 +14,7 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 )
 

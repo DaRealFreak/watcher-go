@@ -71,16 +71,20 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 			if err != nil {
 				return err
 			}
+
 			content, err := ioutil.ReadAll(file)
 			if err != nil {
 				return err
 			}
+
 			err = ioutil.WriteFile(cfg.Database, content, os.ModePerm)
 			if err != nil {
 				return err
 			}
+
 			log.Info("restored database file from archive")
 		}
+
 		return app.restoreTablesFromArchive(reader, "accounts.sql", "tracked_items.sql")
 	case cfg.Restore.Database.Accounts.Enabled:
 		// check for accounts.sql in archive
@@ -89,8 +93,10 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 		// check for tracked_items.sql in archive
 		return app.restoreTablesFromArchive(reader, "tracked_items.sql")
 	}
+
 	// no restore option selected, should be unreachable from the command line options
 	log.Warning("no restore option selected")
+
 	return nil
 }
 
@@ -103,10 +109,12 @@ func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames .
 			if err != nil {
 				return err
 			}
+
 			reader, err := reader.GetFile(sqlFileName)
 			if err != nil {
 				return err
 			}
+
 			if _, err := io.Copy(file, reader); err != nil {
 				return err
 			}
@@ -114,9 +122,11 @@ func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames .
 			if err := app.DbCon.RestoreTableFromFile(file.Name()); err != nil {
 				return err
 			}
+
 			log.Infof("restored database settings from file %s", sqlFileName)
 		}
 	}
+
 	return nil
 }
 
@@ -133,15 +143,19 @@ func (app *Watcher) restoreSettings(reader archive.Reader, cfg *AppConfiguration
 		if err != nil {
 			return err
 		}
+
 		content, err := ioutil.ReadAll(file)
 		if err != nil {
 			return err
 		}
+
 		return ioutil.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
 	}
+
 	log.Warnf(
 		"the passed archive does not contain your current configuration file %s",
 		cfg.ConfigurationFile,
 	)
+
 	return nil
 }

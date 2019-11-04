@@ -1,3 +1,4 @@
+// Package raven implements the remote error tracking package using sentry.io
 package raven
 
 import (

@@ -11,8 +11,11 @@ import (
 // AddFile tests if a file can be added to the archive without errors
 // and that the written size equals to the byte size
 func AddFile(archive archive.Writer, t *testing.T) {
-	var assertion = assert.New(t)
-	var testFileContent = []byte("123456")
+	var (
+		assertion       = assert.New(t)
+		testFileContent = []byte("123456")
+	)
+
 	// add our test content to the archive and check the written size
 	written, err := archive.AddFile("testFile", testFileContent)
 	assertion.NoError(err)
@@ -25,8 +28,10 @@ func AddFile(archive archive.Writer, t *testing.T) {
 // AddFileByPath tests if a file can be added to the archive without errors
 // and that the written size equals to the byte size
 func AddFileByPath(archive archive.Writer, t *testing.T) {
-	var assertion = assert.New(t)
-	var testFileContent = []byte("123456")
+	var (
+		assertion       = assert.New(t)
+		testFileContent = []byte("123456")
+	)
 
 	// generate a temporary .test file
 	tmpFile, err := ioutil.TempFile("", "*.test")

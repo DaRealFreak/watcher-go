@@ -43,6 +43,7 @@ func (a *tarArchiveWriter) AddFile(name string, fileContent []byte) (writtenSize
 	}
 
 	writtenSizeInt, err := a.tarWriter.Write(fileContent)
+
 	return int64(writtenSizeInt), err
 }
 
@@ -54,6 +55,7 @@ func (a *tarArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	if err != nil {
 		return 0, err
 	}
+
 	defer raven.CheckClosure(file)
 
 	// retrieve file stats for headers
@@ -77,6 +79,7 @@ func (a *tarArchiveWriter) AddFileByPath(name string, filePath string) (writtenS
 	}
 
 	writtenSize, err = io.Copy(a.tarWriter, file)
+
 	return writtenSize, err
 }
 

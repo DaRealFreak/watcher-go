@@ -22,6 +22,7 @@ func NewReader(f io.Reader) archive.Reader {
 	buf := new(bytes.Buffer)
 	// copy the stream to the buffer
 	_, _ = io.Copy(buf, f)
+
 	return &gzipArchiveReader{
 		buffer: buf,
 	}
@@ -39,11 +40,14 @@ func (a *gzipArchiveReader) GetFiles() (files []string, err error) {
 			// end of archive
 			break
 		}
+
 		if err != nil {
 			return nil, err
 		}
+
 		files = append(files, hdr.Name)
 	}
+
 	return files, nil
 }
 
@@ -59,6 +63,7 @@ func (a *gzipArchiveReader) HasFile(fileName string) (exists bool, err error) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -74,6 +79,7 @@ func (a *gzipArchiveReader) GetFile(fileName string) (reader io.Reader, err erro
 			// end of archive
 			break
 		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -82,6 +88,7 @@ func (a *gzipArchiveReader) GetFile(fileName string) (reader io.Reader, err erro
 			return a.tarReader, nil
 		}
 	}
+
 	return nil, fmt.Errorf("file not found in archive")
 }
 
@@ -91,6 +98,8 @@ func (a *gzipArchiveReader) resetReader() (err error) {
 	if err != nil {
 		return err
 	}
+
 	a.tarReader = tar.NewReader(gzipReader)
+
 	return nil
 }

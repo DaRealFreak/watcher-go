@@ -16,14 +16,15 @@ func TestGetFiles(t *testing.T) {
 	// create the archive
 	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
 	assertion.NoError(err)
+
 	writer := NewWriter(tmpArchiveFile)
 	archivetest.GenerateTestFiles(t, writer)
 
 	// open the archive and create a reader for it
 	f, err := os.Open(tmpArchiveFile.Name())
 	assertion.NoError(err)
-	reader := NewReader(f)
 
+	reader := NewReader(f)
 	// archive
 	archivetest.GetFiles(t, reader)
 }
@@ -34,14 +35,15 @@ func TestGetFile(t *testing.T) {
 	// create the archive
 	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
 	assertion.NoError(err)
+
 	writer := NewWriter(tmpArchiveFile)
 	archivetest.GenerateTestFiles(t, writer)
 
 	// open the archive and create a reader for it
 	f, err := os.Open(tmpArchiveFile.Name())
 	assertion.NoError(err)
-	archiveReader := NewReader(f)
 
+	archiveReader := NewReader(f)
 	// test if all files exist and the content is equal
 	archivetest.GetFile(t, archiveReader)
 }

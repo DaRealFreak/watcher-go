@@ -11,9 +11,9 @@ import (
 
 // ModuleConfiguration contains the custom proxy configuration for this module
 type ModuleConfiguration struct {
-	Loop           bool                 `mapstructure:"loop"`
-	Proxy          http.ProxySettings   `mapstructure:"proxy"`
-	LoopProxies    []http.ProxySettings `mapstructure:"loopproxies"`
+	Loop        bool                 `mapstructure:"loop"`
+	Proxy       http.ProxySettings   `mapstructure:"proxy"`
+	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 }
 
 func (m *ehentai) addProxyLoopCommands(command *cobra.Command) {

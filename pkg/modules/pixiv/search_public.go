@@ -59,17 +59,14 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) (err error) {
 				page = int(page64)
 			}
 		} else {
-			// break if we don't have another page
 			break
 		}
 	}
 
-	// reverse download queue to download old items first
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
 
-	// update download tag to our search word
 	for _, queueItem := range downloadQueue {
 		queueItem.DownloadTag = searchWord
 	}

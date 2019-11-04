@@ -1,3 +1,4 @@
+// Package archive provides a reader and writer interface for the different archive types
 package archive
 
 import "io"

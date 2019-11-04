@@ -1,3 +1,4 @@
+// Package watcher is the implementation of the application regardless of CLI or UI
 package watcher
 
 import (
@@ -82,22 +83,28 @@ func NewWatcher() *Watcher {
 		DbCon:         dbIO,
 		ModuleFactory: modules.NewModuleFactory(dbIO),
 	}
+
 	return &watcher
 }
 
 // Run is the main functionality, updates all tracked items either parallel or linear
 func (app *Watcher) Run(cfg *AppConfiguration) {
 	trackedItems := app.getRelevantTrackedItems(cfg)
+
 	if cfg.Run.RunParallel {
 		groupedItems := make(map[string][]*models.TrackedItem)
 		for _, item := range trackedItems {
 			groupedItems[item.Module] = append(groupedItems[item.Module], item)
 		}
+
 		var wg sync.WaitGroup
+
 		wg.Add(len(groupedItems))
+
 		for moduleKey, items := range groupedItems {
 			go app.runForItems(moduleKey, items, &wg)
 		}
+
 		wg.Wait()
 	} else {
 		for _, item := range trackedItems {
@@ -105,9 +112,11 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 			if !module.IsLoggedIn() && !module.TriedLogin {
 				app.loginToModule(module)
 			}
+
 			log.WithField("module", module.Key()).Info(
 				fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 			)
+
 			if err := module.Parse(item); err != nil {
 				log.WithField("module", item.Module).Warningf(
 					"error occurred parsing item %s, skipping", item.URI,
@@ -120,27 +129,33 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 // getRelevantTrackedItems returns the relevant tracked items based on the passed app configuration
 func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.TrackedItem {
 	var trackedItems []*models.TrackedItem
+
 	switch {
 	case len(cfg.Run.Items) > 0:
 		for _, itemURL := range cfg.Run.Items {
 			module := app.ModuleFactory.GetModuleFromURI(itemURL)
+
 			if len(cfg.Run.ModuleURL) > 0 {
 				found := false
 				usedModules := app.ModuleFactory.GetModulesFromURIs(cfg.Run.ModuleURL...)
+
 				for _, usedModule := range usedModules {
 					if module.Key() == usedModule.Key() {
 						found = true
 						break
 					}
 				}
+
 				if !found {
 					log.WithField("module", module.Key()).Warningf(
 						"ignoring directly passed item %s due to not matching the active modules",
 						itemURL,
 					)
+
 					continue
 				}
 			}
+
 			trackedItems = append(trackedItems, app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module))
 		}
 	case len(cfg.Run.ModuleURL) > 0:
@@ -151,12 +166,14 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 	default:
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
 	}
+
 	return trackedItems
 }
 
 // runForItems is the go routine to parse run parallel for groups
 func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.TrackedItem, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	module := app.ModuleFactory.GetModule(moduleKey)
 	if !module.IsLoggedIn() && !module.TriedLogin {
 		app.loginToModule(module)
@@ -166,6 +183,7 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 		log.WithField("module", module.Key()).Info(
 			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 		)
+
 		if err := module.Parse(item); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s, skipping", item.URI,

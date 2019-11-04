@@ -24,6 +24,7 @@ func NewWriter(target io.Writer) archive.Writer {
 		gzipWriter: gzip.NewWriter(target),
 	}
 	writer.tarWriter = tar.NewWriter(writer.gzipWriter)
+
 	return writer
 }
 
@@ -47,6 +48,7 @@ func (a *gzipArchiveWriter) AddFile(name string, fileContent []byte) (writtenSiz
 	}
 
 	writtenSizeInt, err := a.tarWriter.Write(fileContent)
+
 	return int64(writtenSizeInt), err
 }
 
@@ -58,6 +60,7 @@ func (a *gzipArchiveWriter) AddFileByPath(name string, filePath string) (written
 	if err != nil {
 		return 0, err
 	}
+
 	defer raven.CheckClosure(file)
 
 	// retrieve file stats for headers
@@ -81,6 +84,7 @@ func (a *gzipArchiveWriter) AddFileByPath(name string, filePath string) (written
 	}
 
 	writtenSize, err = io.Copy(a.tarWriter, file)
+
 	return writtenSize, err
 }
 
@@ -89,5 +93,6 @@ func (a *gzipArchiveWriter) Close() error {
 	if err := a.tarWriter.Close(); err != nil {
 		return err
 	}
+
 	return a.gzipWriter.Close()
 }

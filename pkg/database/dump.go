@@ -31,6 +31,7 @@ func (db *DbIO) DumpTables(writer io.Writer, tableNames ...string) (err error) {
 		if _, err := writer.Write([]byte("DROP TABLE IF EXISTS " + tableSchema.Name + ";\n")); err != nil {
 			return err
 		}
+
 		if _, err := writer.Write([]byte(tableSchema.SQL + ";\n")); err != nil {
 			return err
 		}
@@ -46,7 +47,9 @@ func (db *DbIO) DumpTables(writer io.Writer, tableNames ...string) (err error) {
 			}
 		}
 	}
+
 	_, err = writer.Write([]byte("COMMIT;\n"))
+
 	return err
 }
 
@@ -78,23 +81,31 @@ func (db *DbIO) getTableRows(tableName string) (inserts []string, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(stmt)
+
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(rows)
 
 	inserts = []string{}
+
 	for rows.Next() {
 		var insert string
+
 		err = rows.Scan(&insert)
 		if err != nil {
 			return nil, err
 		}
+
 		inserts = append(inserts, insert)
 	}
+
 	err = rows.Err()
+
 	return inserts, err
 }
 
@@ -102,27 +113,35 @@ func (db *DbIO) getTableRows(tableName string) (inserts []string, err error) {
 func (db *DbIO) getPragmaTableInfo(tableName string) (columnNames []string, err error) {
 	// sqlite_master table contains the SQL CREATE statements for the database.
 	q := `PRAGMA table_info("` + tableName + `")`
+
 	stmt, err := db.connection.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(stmt)
+
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(rows)
 
 	columnNames = []string{}
+
 	for rows.Next() {
 		var arr []interface{}
+
 		for i := 0; i < 6; i++ {
 			arr = append(arr, new(interface{}))
 		}
+
 		err = rows.Scan(arr...)
 		if err != nil {
 			return nil, err
 		}
+
 		columnNames = append(columnNames,
 			func() (result string) {
 				// check the type
@@ -136,7 +155,9 @@ func (db *DbIO) getPragmaTableInfo(tableName string) (columnNames []string, err 
 			}(),
 		)
 	}
+
 	err = rows.Err()
+
 	return columnNames, err
 }
 
@@ -147,12 +168,11 @@ func (db *DbIO) getSchemas(names ...string) (schemas []*tableSchema, err error) 
 		tableNames[i] = v
 	}
 
-	query := `
-        SELECT "name", "type", "sql"
-        FROM "sqlite_master"
-            WHERE "sql" NOT NULL
-			%s
-            ORDER BY "name"`
+	query := `SELECT "name", "type", "sql"
+			  FROM "sqlite_master"
+			  WHERE "sql" NOT NULL
+			  %s
+			  ORDER BY "name"`
 	if len(names) > 0 {
 		query = fmt.Sprintf(query,
 			"AND name IN ("+
@@ -170,27 +190,37 @@ func (db *DbIO) getSchemas(names ...string) (schemas []*tableSchema, err error) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(stmt)
+
 	var rows *sql.Rows
+
 	if len(names) > 0 {
 		rows, err = stmt.Query(tableNames...)
 	} else {
 		rows, err = stmt.Query()
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer raven.CheckClosure(rows)
 
 	schemas = []*tableSchema{}
+
 	for rows.Next() {
 		s := &tableSchema{}
+
 		err = rows.Scan(&s.Name, &s.Type, &s.SQL)
 		if err != nil {
 			return nil, err
 		}
+
 		schemas = append(schemas, s)
 	}
+
 	err = rows.Err()
+
 	return schemas, err
 }

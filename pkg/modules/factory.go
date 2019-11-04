@@ -1,3 +1,4 @@
+// Package modules contains the management implementation of all different modules
 package modules
 
 import (
@@ -29,6 +30,7 @@ func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
 	factory.modules = append(factory.modules, pixiv.NewModule(dbIO, factory.uriSchemas))
 	factory.modules = append(factory.modules, deviantart.NewModule(dbIO, factory.uriSchemas))
 	factory.modules = append(factory.modules, giantessworld.NewModule(dbIO, factory.uriSchemas))
+
 	return &factory
 }
 
@@ -44,6 +46,7 @@ func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 			return module
 		}
 	}
+
 	return nil
 }
 
@@ -56,7 +59,9 @@ func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 			}
 		}
 	}
+
 	raven.CheckError(fmt.Errorf("no module is registered which can parse based on the url %s", uri))
+
 	return nil
 }
 
@@ -65,5 +70,6 @@ func (f ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Modu
 	for _, moduleURI := range uri {
 		modules = append(modules, f.GetModuleFromURI(moduleURI))
 	}
+
 	return modules
 }

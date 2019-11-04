@@ -85,6 +85,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	if err != nil {
 		return nil, err
 	}
+
 	page := 0
 	foundCurrentItem := false
 
@@ -95,19 +96,23 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			page,
 			url.QueryEscape(tag),
 		)
+
 		response, err := m.Session.Get(apiURI)
 		if err != nil {
 			return nil, err
 		}
+
 		apiItems, err := m.parseAPIResponse(response)
 		if err != nil {
 			return nil, err
 		}
+
 		for _, data := range apiItems {
 			itemID, err := data.ID.Int64()
 			if err != nil {
 				return nil, err
 			}
+
 			// will return 0 on error, so fine for us too
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			if item.CurrentItem == "" || itemID > currentItemID {
@@ -131,17 +136,21 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 
 	// reverse queue to get the oldest "new" item first and manually update it
 	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
+
 	return downloadQueue, nil
 }
 
 // parseAPIResponse parses the response from the API
 func (m *sankakuComplex) parseAPIResponse(response *http.Response) ([]apiItem, error) {
-	body, _ := ioutil.ReadAll(response.Body)
 	var apiItems []apiItem
+
+	body, _ := ioutil.ReadAll(response.Body)
+
 	err := json.Unmarshal(body, &apiItems)
 	if err != nil {
 		return nil, err
 	}
+
 	return apiItems, err
 }
 
@@ -149,9 +158,11 @@ func (m *sankakuComplex) parseAPIResponse(response *http.Response) ([]apiItem, e
 func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) (string, error) {
 	u, _ := url.Parse(item.URI)
 	q, _ := url.ParseQuery(u.RawQuery)
+
 	if len(q["tags"]) == 0 {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"tags\" tag", item.URI)
 	}
+
 	return q["tags"][0], nil
 }
 
@@ -162,5 +173,6 @@ func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
 			return "book"
 		}
 	}
+
 	return ""
 }

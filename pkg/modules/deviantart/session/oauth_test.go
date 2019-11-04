@@ -13,7 +13,7 @@ func TestRetrieveOAuth2TokenTimedOut(t *testing.T) {
 	assertion := assert.New(t)
 
 	da := &DeviantArtSession{
-		DefaultSession: session.NewSession(nil),
+		DefaultSession: session.NewSession(t.Name()),
 		TokenStore:     NewTokenStore(),
 	}
 

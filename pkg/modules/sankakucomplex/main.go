@@ -2,7 +2,6 @@
 package sankakucomplex
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"regexp"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 )
 

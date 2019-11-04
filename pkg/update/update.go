@@ -1,3 +1,4 @@
+// Package update implements the self updating mechanism
 package update
 
 import (
@@ -26,6 +27,7 @@ func (u *Checker) CheckForAvailableUpdates() {
 	// check for available updates
 	updateAvailable, err := u.isUpdateAvailable()
 	raven.CheckError(err)
+
 	if updateAvailable {
 		fmt.Println("new version detected, run \"watcher update\" to update your application.")
 	}
@@ -43,6 +45,7 @@ func (u *Checker) isUpdateAvailable() (updateAvailable bool, err error) {
 	if !found || latest.Version.LTE(v) {
 		return false, nil
 	}
+
 	return true, nil
 }
 
@@ -52,6 +55,7 @@ func (u *Checker) UpdateApplication() (err error) {
 	if err != nil {
 		return err
 	}
+
 	if !updateAvailable {
 		fmt.Println("current version is the latest")
 		return nil
@@ -83,9 +87,12 @@ func (u *Checker) UpdateApplication() (err error) {
 	if err != nil {
 		return fmt.Errorf("could not locate executable path")
 	}
+
 	if err := up.UpdateTo(latest, exe); err != nil {
 		return err
 	}
+
 	log.Info("successfully updated to version " + latest.Version.String())
+
 	return nil
 }

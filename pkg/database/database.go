@@ -1,3 +1,4 @@
+// Package database is the implementation of the DatabaseInterface using SQLite3
 package database
 
 import (
@@ -22,13 +23,16 @@ type DbIO struct {
 // Creates the database if the looked up file doesn't exist yet
 func NewConnection() *DbIO {
 	dbIO := DbIO{}
+
 	if _, err := os.Stat(viper.GetString("Database.Path")); os.IsNotExist(err) {
 		dbIO.createDatabase()
 	}
+
 	db, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
 
 	dbIO.connection = db
+
 	return &dbIO
 }
 
@@ -52,6 +56,7 @@ func RemoveDatabase() {
 func (db *DbIO) createDatabase() {
 	connection, err := sql.Open("sqlite3", viper.GetString("Database.Path")+"?_journal=WAL")
 	raven.CheckError(err)
+
 	defer raven.CheckClosure(connection)
 
 	sqlStatement := `

@@ -1,3 +1,4 @@
+// Package version contains the version and repository URL of the application
 package version
 
 // VERSION program version

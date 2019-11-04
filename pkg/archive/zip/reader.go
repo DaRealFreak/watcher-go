@@ -26,6 +26,7 @@ func NewReader(f io.Reader) archive.Reader {
 	reader := bytes.NewReader(buff.Bytes())
 	zipReader, err := zip.NewReader(reader, size)
 	raven.CheckError(err)
+
 	return &zipArchiveReader{
 		zipReader: zipReader,
 	}
@@ -36,6 +37,7 @@ func (a *zipArchiveReader) GetFiles() (files []string, err error) {
 	for _, f := range a.zipReader.File {
 		files = append(files, f.Name)
 	}
+
 	return files, nil
 }
 
@@ -51,6 +53,7 @@ func (a *zipArchiveReader) HasFile(fileName string) (exists bool, err error) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -62,8 +65,10 @@ func (a *zipArchiveReader) GetFile(fileName string) (reader io.Reader, err error
 			if err != nil {
 				return nil, err
 			}
+
 			return file, nil
 		}
 	}
+
 	return nil, fmt.Errorf("file not found in archive")
 }

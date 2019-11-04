@@ -15,6 +15,7 @@ func TestAddFile(t *testing.T) {
 	// create a new archive
 	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
 	assertion.NoError(err)
+
 	archive := NewWriter(tmpArchiveFile)
 	// run the test for the gzip implementation
 	archivetest.AddFile(archive, t)
@@ -27,6 +28,7 @@ func TestAddFileByPath(t *testing.T) {
 	// create a new archive
 	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
 	assertion.NoError(err)
+
 	archive := NewWriter(tmpArchiveFile)
 	// run the test for the gzip implementation
 	archivetest.AddFileByPath(archive, t)

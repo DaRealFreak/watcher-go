@@ -52,6 +52,7 @@ func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration)
 	case cfg.Backup.Database.Items.Enabled:
 		app.backupTableAsSQL(writer, "tracked_items")
 	}
+
 	return err
 }
 
@@ -59,8 +60,10 @@ func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration)
 func (app *Watcher) backupTableAsSQL(writer archive.Writer, table string) {
 	buffer := new(bytes.Buffer)
 	raven.CheckError(app.DbCon.DumpTables(buffer, table))
+
 	content, err := ioutil.ReadAll(buffer)
 	raven.CheckError(err)
+
 	_, err = writer.AddFile(table+".sql", content)
 	raven.CheckError(err)
 }
@@ -71,6 +74,7 @@ func (app *Watcher) backupSettings(writer archive.Writer, cfg *AppConfiguration)
 		path.Base(cfg.ConfigurationFile),
 		cfg.ConfigurationFile,
 	)
+
 	return err
 }
 
@@ -99,6 +103,7 @@ func (app *Watcher) getArchiveWriter(archiveName string, cfg *AppConfiguration) 
 	case zip.FileExt:
 		archiveWriter = zip.NewWriter(f)
 	}
+
 	return archiveWriter, nil
 }
 
@@ -116,6 +121,7 @@ func (app *Watcher) getArchiveExtension(cfg *AppConfiguration) (ext string) {
 		if runtime.GOOS == "windows" {
 			return zip.FileExt
 		}
+
 		return gzip.FileExt
 	}
 }
