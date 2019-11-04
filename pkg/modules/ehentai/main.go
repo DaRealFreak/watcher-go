@@ -50,9 +50,8 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	subModule.Module = module
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
-	subModule.ehSession = session.NewSession(nil)
+	subModule.ehSession = session.NewSession(subModule.Key())
 	subModule.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
-	subModule.ehSession.ModuleKey = subModule.Key()
 	subModule.Session = subModule.ehSession
 	subModule.ProxyLoopIndex = 0
 

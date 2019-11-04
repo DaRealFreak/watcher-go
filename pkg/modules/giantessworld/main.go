@@ -40,9 +40,10 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	// set the module implementation for access to the session, database, etc
 	subModule.baseURL, _ = url.Parse("http://www.giantessworld.net")
 	subModule.Module = module
-	gwSession := session.NewSession(subModule.GetProxySettings())
-	gwSession.ModuleKey = subModule.Key()
+	gwSession := session.NewSession(subModule.Key())
 	subModule.Session = gwSession
+
+	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)

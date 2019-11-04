@@ -83,10 +83,11 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
-	subModule.pixivSession = session.NewSession(subModule.GetProxySettings())
+	subModule.pixivSession = session.NewSession(subModule.Key())
 	subModule.pixivSession.Module = &subModule
-	subModule.pixivSession.ModuleKey = subModule.Key()
 	subModule.Session = subModule.pixivSession
+
+	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)

@@ -28,7 +28,7 @@ type DefaultSession struct {
 }
 
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession(proxySettings *watcherHttp.ProxySettings) *DefaultSession {
+func NewSession(moduleKey string) *DefaultSession {
 	jar, _ := cookiejar.New(nil)
 
 	app := DefaultSession{
@@ -39,9 +39,7 @@ func NewSession(proxySettings *watcherHttp.ProxySettings) *DefaultSession {
 		ctx:        context.Background(),
 	}
 
-	if proxySettings != nil && proxySettings.Enable {
-		raven.CheckError(app.SetProxy(proxySettings))
-	}
+	app.ModuleKey = moduleKey
 
 	return &app
 }
@@ -170,26 +168,28 @@ func (s *DefaultSession) ApplyRateLimit() {
 
 // SetProxy sets the current proxy for the client
 func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err error) {
-	log.WithField("module", s.ModuleKey).Infof(
-		"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
-	)
+	if proxySettings != nil && proxySettings.Enable {
+		log.WithField("module", s.ModuleKey).Infof(
+			"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
+		)
 
-	auth := proxy.Auth{
-		User:     proxySettings.Username,
-		Password: proxySettings.Password,
+		auth := proxy.Auth{
+			User:     proxySettings.Username,
+			Password: proxySettings.Password,
+		}
+
+		dialer, err := proxy.SOCKS5(
+			"tcp",
+			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
+			&auth,
+			proxy.Direct,
+		)
+		if err != nil {
+			return err
+		}
+
+		s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
 	}
-
-	dialer, err := proxy.SOCKS5(
-		"tcp",
-		fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-		&auth,
-		proxy.Direct,
-	)
-	if err != nil {
-		return err
-	}
-
-	s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
 
 	return nil
 }

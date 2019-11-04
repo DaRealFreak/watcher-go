@@ -43,9 +43,10 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
-	subModule.deviantArtSession = session.NewSession(subModule.GetProxySettings())
-	subModule.deviantArtSession.ModuleKey = subModule.Key()
+	subModule.deviantArtSession = session.NewSession(subModule.Key())
 	subModule.Session = subModule.deviantArtSession
+
+	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)

@@ -65,7 +65,7 @@ type errorResponse struct {
 }
 
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession(proxySettings *watcherHttp.ProxySettings) *PixivSession {
+func NewSession(moduleKey string) *PixivSession {
 	jar, _ := cookiejar.New(nil)
 	session := &PixivSession{
 		HTTPClient: &http.Client{Jar: jar},
@@ -91,19 +91,7 @@ func NewSession(proxySettings *watcherHttp.ProxySettings) *PixivSession {
 		MaxRetries:  5,
 	}
 
-	if proxySettings != nil && proxySettings.Enable {
-		auth := proxy.Auth{
-			User:     proxySettings.Username,
-			Password: proxySettings.Password,
-		}
-		dialer, _ := proxy.SOCKS5(
-			"tcp",
-			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-			&auth,
-			proxy.Direct,
-		)
-		session.HTTPClient.Transport = &http.Transport{Dial: dialer.Dial}
-	}
+	session.ModuleKey = moduleKey
 
 	// fallback for previous API session (Android App Version 4.x)
 	// useful for f.e. searches since the previous API does not impose limits on search queries
@@ -111,6 +99,34 @@ func NewSession(proxySettings *watcherHttp.ProxySettings) *PixivSession {
 	session.PublicAPI = session.NewPublicAPISession()
 
 	return session
+}
+
+// SetProxy sets the current proxy for the client
+func (s *PixivSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err error) {
+	if proxySettings != nil && proxySettings.Enable {
+		log.WithField("module", s.ModuleKey).Infof(
+			"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
+		)
+
+		auth := proxy.Auth{
+			User:     proxySettings.Username,
+			Password: proxySettings.Password,
+		}
+
+		dialer, err := proxy.SOCKS5(
+			"tcp",
+			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
+			&auth,
+			proxy.Direct,
+		)
+		if err != nil {
+			return err
+		}
+
+		s.HTTPClient.Transport = &http.Transport{Dial: dialer.Dial}
+	}
+
+	return nil
 }
 
 // Get is a custom GET function to set headers like the mobile app

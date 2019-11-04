@@ -2,6 +2,7 @@
 package sankakucomplex
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"net/url"
 	"regexp"
 	"strings"
@@ -30,9 +31,10 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	}
 	// set the module implementation for access to the session, database, etc
 	subModule.Module = module
-	sankakuSession := session.NewSession(subModule.GetProxySettings())
-	sankakuSession.ModuleKey = subModule.Key()
+	sankakuSession := session.NewSession(subModule.Key())
 	subModule.Session = sankakuSession
+
+	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register the uri schema
 	module.RegisterURISchema(uriSchemas)

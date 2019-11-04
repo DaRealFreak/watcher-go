@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
@@ -24,9 +23,9 @@ type DeviantArtSession struct {
 }
 
 // NewSession returns an initialized DeviantArtSession
-func NewSession(proxySettings *watcherHttp.ProxySettings) *DeviantArtSession {
+func NewSession(moduleKey string) *DeviantArtSession {
 	ses := &DeviantArtSession{
-		DefaultSession:    session.NewSession(proxySettings),
+		DefaultSession:    session.NewSession(moduleKey),
 		TokenStore:        NewTokenStore(),
 		UseConsoleExploit: false,
 		DefaultHeaders: map[string]string{
