@@ -1,17 +1,14 @@
+// Package session is the implementation for the session for DeviantArt
 package session
 
 import (
-	"bytes"
-	"compress/gzip"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +24,7 @@ type DeviantArtSession struct {
 }
 
 // NewSession returns an initialized DeviantArtSession
-func NewSession(proxySettings *session.ProxySettings) *DeviantArtSession {
+func NewSession(proxySettings *watcherHttp.ProxySettings) *DeviantArtSession {
 	ses := &DeviantArtSession{
 		DefaultSession:    session.NewSession(proxySettings),
 		TokenStore:        NewTokenStore(),
@@ -40,6 +37,7 @@ func NewSession(proxySettings *session.ProxySettings) *DeviantArtSession {
 		},
 	}
 	ses.RateLimiter = rate.NewLimiter(rate.Every(5000*time.Millisecond), 1)
+
 	return ses
 }
 
@@ -55,15 +53,19 @@ func (s *DeviantArtSession) post(uri string, data url.Values, scope string) (res
 	return s.handleRequest(uri, data, scope,
 		func(uri string, values url.Values) (res *http.Response, err error) {
 			log.WithField("module", s.ModuleKey).Debugf("POST request: %s", uri)
+
 			req, err := http.NewRequest("POST", uri, strings.NewReader(data.Encode()))
 			if err != nil {
 				return nil, err
 			}
+
 			for k, v := range s.DefaultHeaders {
 				req.Header.Set(k, v)
 			}
+
 			// CloudFlare wants to see Content-Type header for POST request, denied me access without them
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 			return s.Client.Do(req)
 		},
 	)
@@ -78,9 +80,11 @@ func (s *DeviantArtSession) APIPost(endpoint string, values url.Values, scopes .
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
 	}
+
 	if err := s.handleToken(&values, scope); err != nil {
 		return nil, err
 	}
+
 	// handle the request now as a normal POST request
 	return s.post("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
@@ -94,9 +98,11 @@ func (s *DeviantArtSession) APIGet(endpoint string, values url.Values, scopes ..
 	if s.UseConsoleExploit {
 		return s.handleRequest(endpoint, values, scope, s.APIConsoleExploit)
 	}
+
 	if err := s.handleToken(&values, scope); err != nil {
 		return nil, err
 	}
+
 	return s.get("https://www.deviantart.com/api/v1/oauth2"+endpoint, values, scope)
 }
 
@@ -116,22 +122,31 @@ func (s *DeviantArtSession) get(uri string, values url.Values, scope string) (re
 			if err != nil {
 				return nil, err
 			}
+
 			// parse existing fragments and override with passed values (required for token)
 			fragments := apiURL.Query()
+
 			for k, v := range values {
 				fragments.Set(k, v[0])
 			}
+
 			apiURL.RawQuery = fragments.Encode()
+
 			log.WithField("module", s.ModuleKey).Debugf("GET request: %s", apiURL.String())
+
 			req, err := http.NewRequest("GET", apiURL.String(), nil)
 			if err != nil {
 				return nil, err
 			}
+
 			for k, v := range s.DefaultHeaders {
 				req.Header.Set(k, v)
 			}
+
 			log.WithField("module", s.ModuleKey).Debugf("changing referer to: %s", apiURL.String())
+
 			s.DefaultHeaders["Referer"] = apiURL.String()
+
 			return s.Client.Do(req)
 		},
 	)
@@ -143,87 +158,21 @@ func (s *DeviantArtSession) RefreshOAuth2Token(scope string) (success bool) {
 	return s.TokenStore.GetToken(scope) != nil
 }
 
-// APIConsoleExploit uses the developer console in the DeviantArt backend to use twice of the API rate limit
-// and honestly, averaging 1 request every 180 seconds is horrendous for an API, even the now 1 request/90s is so low...
-func (s *DeviantArtSession) APIConsoleExploit(endpoint string, values url.Values) (res *http.Response, err error) {
-	values = url.Values{
-		"c[]": {
-			s.getDeveloperConsoleCommand(
-				endpoint,
-				values,
-			),
-		},
-		"t": {"json"},
-	}
-
-	// retrieve the user info cookie for the ui argument (validated by the server)
-	daURL, _ := url.Parse("https://deviantart.com")
-	for _, cookie := range s.GetClient().Jar.Cookies(daURL) {
-		if cookie.Name == "userinfo" {
-			ui, _ := url.QueryUnescape(cookie.Value)
-			values.Set("ui", ui)
-			break
-		}
-	}
-
-	log.WithField("module", s.ModuleKey).Debugf(
-		"using developer console exploit for endpoint: %s", endpoint,
-	)
-	// send the POST request to the developer console
-	res, err = s.post("https://www.deviantart.com/global/difi/?", values, "")
-	if err != nil {
-		return res, err
-	}
-
-	var reader io.ReadCloser
-	switch res.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(res.Body)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		reader = res.Body
-	}
-	content, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	// unmarshal the response into the DeveloperConsoleResponse struct
-	var consoleResponse DeveloperConsoleResponse
-	if err := json.Unmarshal(content, &consoleResponse); err != nil {
-		return nil, err
-	}
-
-	// if request was not successful we treat it as a 429 status code
-	// we want to switch back the API mode to default and we most likely won't get any other errors anyway
-	if consoleResponse.Response.Calls[0].Response.Status != "SUCCESS" {
-		res.StatusCode = 429
-	}
-
-	marshalledResponse, err := json.Marshal(consoleResponse.DiFi.Response.Calls[0].Response.Content)
-	if err != nil {
-		return nil, err
-	}
-	// since we had to parse the content already reset the Content-Encoding header to prevent duplicate decompressing
-	res.Header.Set("Content-Encoding", "")
-	// replace the response body with our marshalledResponse (equal to the direct OAuth2 application response)
-	res.Body = ioutil.NopCloser(bytes.NewReader(marshalledResponse))
-	return res, err
-}
-
 // getDeveloperConsoleCommand parses the endpoint and the values into the POST data for the development console request
 func (s *DeviantArtSession) getDeveloperConsoleCommand(endpoint string, values url.Values) string {
 	devConsoleCommand := "\"DeveloperConsole\",\"do_api_request\",[\"" + endpoint + "\",[%s]]"
+
 	values.Set("da_version", "")
 	values.Set("grant_type", "authorization_code")
 	values.Set("mature_content", "true")
 	values.Set("endpoint", endpoint)
+
 	requestValues := make([]string, 0, len(values))
+
 	for k, v := range values {
 		requestValues = append(requestValues, "{\"name\":\""+k+"\",\"value\":\""+v[0]+"\"}")
 	}
+
 	return fmt.Sprintf(devConsoleCommand, strings.Join(requestValues, ","))
 }
 
@@ -241,7 +190,9 @@ func (s *DeviantArtSession) handleRequest(
 		log.WithField("module", s.ModuleKey).Debug(
 			fmt.Sprintf("opening URL %s (try: %d, scope: %s)", url, try, scope),
 		)
+
 		res, err = getterFunc(url, values)
+
 		switch {
 		case err == nil && res.StatusCode < 401:
 			// normally everything < 400 is okay, but the API returns an error object on 400
@@ -253,6 +204,7 @@ func (s *DeviantArtSession) handleRequest(
 			log.WithField("module", s.ModuleKey).Infof(
 				"status code %d, refreshing OAuth2 Token", res.StatusCode,
 			)
+
 			if s.RefreshOAuth2Token(scope) {
 				values.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 			}
@@ -266,6 +218,7 @@ func (s *DeviantArtSession) handleRequest(
 		}
 	}
 	s.checkAPIModeSwitch(switchMode)
+
 	return res, err
 }
 
@@ -295,5 +248,6 @@ func (s *DeviantArtSession) handleToken(values *url.Values, scope string) error 
 	if values.Get("access_token") == "" {
 		values.Set("access_token", s.TokenStore.GetToken(scope).AccessToken)
 	}
+
 	return nil
 }

@@ -26,6 +26,7 @@ func (t *TokenStore) GetToken(scope string) *oauth2.Token {
 	if exists {
 		return val
 	}
+
 	return nil
 }
 

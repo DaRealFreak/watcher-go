@@ -67,8 +67,10 @@ func (a *tokenRequestApplication) checkRequestForTokenFragment(res *http.Request
 			Expiry:       time.Now().Add(time.Duration(expiration) * time.Second),
 		}
 		a.granted <- true
+
 		return true
 	}
+
 	return false
 }
 
@@ -85,10 +87,12 @@ func (a *tokenRequestApplication) checkRedirect(req *http.Request, via []*http.R
 	if a.sessionRedirect != nil {
 		return a.sessionRedirect(req, via)
 	}
+
 	// session redirect can be nil too, fallback to default http.Client -> defaultCheckRedirect
 	if len(via) >= 10 {
 		return errors.New("stopped after 10 redirects")
 	}
+
 	return nil
 }
 
@@ -115,8 +119,11 @@ func (s *DeviantArtSession) retrieveOAuth2Token(scope string) *oauth2.Token {
 			scope, int(Timeout.Seconds()),
 		)
 	}
+
 	log.WithField("module", s.ModuleKey).Debugf("restoring previous CheckRedirect function")
+
 	s.Client.CheckRedirect = tokenRequestApplication.sessionRedirect
+
 	return tokenRequestApplication.token
 }
 
@@ -144,6 +151,7 @@ func (s *DeviantArtSession) sendOAuth2AcceptRequest(a *tokenRequestApplication, 
 	log.WithField("module", s.ModuleKey).Info(
 		"application not authorized yet, sending authorization POST request",
 	)
+
 	doc := s.GetDocument(res)
 	form := doc.Find("form#authorize_form").First()
 
