@@ -15,7 +15,7 @@ func (cli *CliApplication) addModulesCommand() {
 		Long:  "lists the module specific commands and settings which are not shared across all modules.",
 	}
 
-	moduleFactory := modules.NewModuleFactory(nil)
+	moduleFactory := modules.GetModuleFactory(true)
 	for _, module := range moduleFactory.GetAllModules() {
 		moduleCmd := &cobra.Command{
 			Use:   module.Key(),

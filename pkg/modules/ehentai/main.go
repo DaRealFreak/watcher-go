@@ -12,6 +12,7 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -21,7 +22,7 @@ import (
 
 // ehentai contains the implementation of the ModuleInterface and extends it by custom required values
 type ehentai struct {
-	models.Module
+	*models.Module
 	downloadLimitReached     bool
 	ProxyLoopIndex           int
 	galleryImageIDPattern    *regexp.Regexp
@@ -31,46 +32,59 @@ type ehentai struct {
 	ehSession                *session.DefaultSession
 }
 
+// nolint: gochecknoinits
+// init function registers the bare and the normal module to the module factories
+func init() {
+	bare := modules.GetModuleFactory(true)
+	bare.RegisterModule(NewBareModule())
+
+	factory := modules.GetModuleFactory(false)
+	factory.RegisterModule(NewModule())
+}
+
+// NewBareModule returns a bare module implementation for the CLI options
+func NewBareModule() *models.Module {
+	return &models.Module{
+		ModuleInterface: &ehentai{},
+	}
+}
+
 // NewModule generates new module and registers the URI schema
-func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
-	// register empty sub module to point to
-	var subModule = ehentai{
+func NewModule() *models.Module {
+	// initialize module and set our module interface with our custom module
+	module := &models.Module{
+		LoggedIn: false,
+	}
+	subModule := &ehentai{
+		Module:                   module,
 		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
 		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
 		ProxyLoopIndex:           -1,
 	}
+	module.ModuleInterface = subModule
 
-	// initialize the Module with the session/database and login status
-	module := models.Module{
-		DbIO:            dbIO,
-		LoggedIn:        false,
-		ModuleInterface: &subModule,
-	}
-	// set the module implementation for access to the session, database, etc
-	subModule.Module = module
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
+		&subModule.settings,
+	))
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
 	subModule.ehSession = session.NewSession(subModule.Key())
 	subModule.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 	subModule.Session = subModule.ehSession
 
-	raven.CheckError(viper.UnmarshalKey(
-		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
-		&subModule.settings,
-	))
-
+	// set the proxy if requested
 	raven.CheckError(subModule.setProxyMethod())
 
-	// register the uri schema
-	module.RegisterURISchema(uriSchemas)
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: subModule.Key(),
 		Color: "232:94",
 	})
 
-	return &module
+	return module
 }
 
 // Key returns the module key

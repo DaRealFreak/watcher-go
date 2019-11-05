@@ -6,12 +6,13 @@ import (
 	"regexp"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+)
+
+// nolint: gochecknoglobals
+var (
+	bareModuleFactory *ModuleFactory
+	moduleFactory     *ModuleFactory
 )
 
 // ModuleFactory contains all registered modules and URI Schemas
@@ -20,27 +21,45 @@ type ModuleFactory struct {
 	uriSchemas map[string][]*regexp.Regexp
 }
 
-// NewModuleFactory generates a new module factory and register all modules
-func NewModuleFactory(dbIO models.DatabaseInterface) *ModuleFactory {
-	factory := ModuleFactory{
+// GetModuleFactory returns already generated or else previously generated module factory
+func GetModuleFactory(bare bool) *ModuleFactory {
+	if bare {
+		if bareModuleFactory == nil {
+			bareModuleFactory = newModuleFactory()
+		}
+
+		return bareModuleFactory
+	}
+
+	if moduleFactory == nil {
+		moduleFactory = newModuleFactory()
+	}
+
+	return moduleFactory
+}
+
+// newModuleFactory returns a module factory with empty uri schema and modules
+func newModuleFactory() *ModuleFactory {
+	return &ModuleFactory{
 		uriSchemas: make(map[string][]*regexp.Regexp),
 	}
-	factory.modules = append(factory.modules, sankakucomplex.NewModule(dbIO, factory.uriSchemas))
-	factory.modules = append(factory.modules, ehentai.NewModule(dbIO, factory.uriSchemas))
-	factory.modules = append(factory.modules, pixiv.NewModule(dbIO, factory.uriSchemas))
-	factory.modules = append(factory.modules, deviantart.NewModule(dbIO, factory.uriSchemas))
-	factory.modules = append(factory.modules, giantessworld.NewModule(dbIO, factory.uriSchemas))
+}
 
-	return &factory
+// RegisterModule registers a module and appends the URI schema to the known schemas
+func (f *ModuleFactory) RegisterModule(module *models.Module) {
+	// register URI schema for module
+	module.RegisterURISchema(f.uriSchemas)
+	// append module to retrievable modules
+	f.modules = append(f.modules, module)
 }
 
 // GetAllModules returns all available modules
-func (f ModuleFactory) GetAllModules() []*models.Module {
+func (f *ModuleFactory) GetAllModules() []*models.Module {
 	return f.modules
 }
 
 // GetModule returns a module by it's key
-func (f ModuleFactory) GetModule(moduleName string) *models.Module {
+func (f *ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
 		if module.Key() == moduleName {
 			return module
@@ -51,7 +70,7 @@ func (f ModuleFactory) GetModule(moduleName string) *models.Module {
 }
 
 // GetModuleFromURI checks the registered URI schemas for a match and returns the module
-func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
+func (f *ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 	for key, patternCollection := range f.uriSchemas {
 		for _, pattern := range patternCollection {
 			if pattern.MatchString(uri) {
@@ -66,7 +85,7 @@ func (f ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 }
 
 // GetModulesFromURIs returns the selected modules in bulk for urls
-func (f ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Module) {
+func (f *ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Module) {
 	for _, moduleURI := range uri {
 		modules = append(modules, f.GetModuleFromURI(moduleURI))
 	}

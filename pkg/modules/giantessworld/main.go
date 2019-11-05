@@ -12,48 +12,62 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
 )
 
 // giantessWorld contains the implementation of the ModuleInterface
 type giantessWorld struct {
-	models.Module
+	*models.Module
 	baseURL              *url.URL
 	chapterUpdatePattern *regexp.Regexp
 }
 
+// nolint: gochecknoinits
+// init function registers the bare and the normal module to the module factories
+func init() {
+	bare := modules.GetModuleFactory(true)
+	bare.RegisterModule(NewBareModule())
+
+	factory := modules.GetModuleFactory(false)
+	factory.RegisterModule(NewModule())
+}
+
+// NewBareModule returns a bare module implementation for the CLI options
+func NewBareModule() *models.Module {
+	return &models.Module{
+		ModuleInterface: &giantessWorld{},
+	}
+}
+
 // NewModule generates new module and registers the URI schema
-func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Regexp) *models.Module {
-	// register empty sub module to point to
-	var subModule = giantessWorld{
+func NewModule() *models.Module {
+	// initialize module and set our module interface with our custom module
+	module := &models.Module{
+		LoggedIn: false,
+	}
+	subModule := &giantessWorld{
+		Module:               module,
 		chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
 	}
-
-	// initialize the Module with the session/database and login status
-	module := models.Module{
-		DbIO:            dbIO,
-		LoggedIn:        false,
-		ModuleInterface: &subModule,
-	}
+	module.ModuleInterface = subModule
 
 	// set the module implementation for access to the session, database, etc
 	subModule.baseURL, _ = url.Parse("http://www.giantessworld.net")
-	subModule.Module = module
 	gwSession := session.NewSession(subModule.Key())
 	subModule.Session = gwSession
 
+	// set the proxy if requested
 	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
-	// register the uri schema
-	module.RegisterURISchema(uriSchemas)
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: subModule.Key(),
 		Color: "232:203",
 	})
 
-	return &module
+	return module
 }
 
 // Key returns the module key

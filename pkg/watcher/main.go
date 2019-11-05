@@ -10,6 +10,12 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
+
+	// registered modules imported for registering into the module factory
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 )
 
 // DefaultDatabasePath is the default path for the database file
@@ -78,13 +84,16 @@ type AppConfiguration struct {
 
 // NewWatcher initializes a new Watcher with the default settings
 func NewWatcher() *Watcher {
-	dbIO := database.NewConnection()
-	watcher := Watcher{
-		DbCon:         dbIO,
-		ModuleFactory: modules.NewModuleFactory(dbIO),
+	watcher := &Watcher{
+		DbCon:         database.NewConnection(),
+		ModuleFactory: modules.GetModuleFactory(false),
 	}
 
-	return &watcher
+	for _, module := range watcher.ModuleFactory.GetAllModules() {
+		module.SetDbIO(watcher.DbCon)
+	}
+
+	return watcher
 }
 
 // Run is the main functionality, updates all tracked items either parallel or linear

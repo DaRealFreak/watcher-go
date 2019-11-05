@@ -51,6 +51,11 @@ type Module struct {
 	TriedLogin bool
 }
 
+// SetDbIO sets the database IO implementation
+func (t *Module) SetDbIO(io DatabaseInterface) {
+	t.DbIO = io
+}
+
 // GetFileName retrieves the file name of a passed uri
 func (t *Module) GetFileName(uri string) string {
 	parsedURI, _ := url.Parse(uri)
