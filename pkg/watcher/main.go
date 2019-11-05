@@ -16,6 +16,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 )
 
 // DefaultDatabasePath is the default path for the database file
@@ -203,7 +204,9 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 // loginToModule handles the login for modules, if an account exists: login
 func (app *Watcher) loginToModule(module *models.Module) {
-	log.WithField("module", module.Key()).Info(fmt.Sprintf("logging in for module %s", module.Key()))
+	log.WithField("module", module.Key()).Info(
+		fmt.Sprintf("logging in for module %s", module.Key()),
+	)
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
