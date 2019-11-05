@@ -100,6 +100,7 @@ func NewModule() *models.Module {
 
 	// set the module implementation for access to the session, database, etc
 	subModule.pixivSession = session.NewSession(subModule.Key())
+	subModule.pixivSession.Module = subModule
 	subModule.Session = subModule.pixivSession
 
 	// set the proxy if requested
