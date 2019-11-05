@@ -38,6 +38,7 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
 		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
+		ProxyLoopIndex:           -1,
 	}
 
 	// initialize the Module with the session/database and login status
@@ -53,7 +54,6 @@ func NewModule(dbIO models.DatabaseInterface, uriSchemas map[string][]*regexp.Re
 	subModule.ehSession = session.NewSession(subModule.Key())
 	subModule.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 	subModule.Session = subModule.ehSession
-	subModule.ProxyLoopIndex = 0
 
 	raven.CheckError(viper.UnmarshalKey(
 		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
@@ -211,12 +211,11 @@ func (m *ehentai) setProxyMethod() error {
 	case !m.settings.Loop && m.settings.Proxy.Enable:
 		return m.ehSession.SetProxy(&m.settings.Proxy)
 	case m.settings.Loop:
-		switch {
-		case m.ProxyLoopIndex+1 == len(m.settings.LoopProxies):
-			m.ProxyLoopIndex = 0
-		case m.ProxyLoopIndex != 0:
-			m.ProxyLoopIndex++
+		// reset proxy loop index if we reach the limit with the next iteration
+		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+			m.ProxyLoopIndex = -1
 		}
+		m.ProxyLoopIndex++
 
 		return m.ehSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:
