@@ -90,8 +90,6 @@ func NewWatcher() *Watcher {
 		ModuleFactory: modules.GetModuleFactory(),
 	}
 
-	watcher.ModuleFactory.InitializeAllModules()
-
 	for _, module := range watcher.ModuleFactory.GetAllModules() {
 		module.SetDbIO(watcher.DbCon)
 	}
@@ -102,6 +100,8 @@ func NewWatcher() *Watcher {
 // Run is the main functionality, updates all tracked items either parallel or linear
 func (app *Watcher) Run(cfg *AppConfiguration) {
 	trackedItems := app.getRelevantTrackedItems(cfg)
+
+	app.initializeUsedModules(trackedItems)
 
 	if cfg.Run.RunParallel {
 		groupedItems := make(map[string][]*models.TrackedItem)
@@ -209,6 +209,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	log.WithField("module", module.Key()).Info(
 		fmt.Sprintf("logging in for module %s", module.Key()),
 	)
+
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
@@ -223,8 +224,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	}
 
 	// login into the module
-	success := module.Login(account)
-	if success {
+	if module.Login(account) {
 		log.WithField("module", module.Key()).Info("login successful")
 	} else {
 		if module.RequiresLogin() {
@@ -233,6 +233,32 @@ func (app *Watcher) loginToModule(module *models.Module) {
 			)
 		} else {
 			log.WithField("module", module.Key()).Warning("login not successful")
+		}
+	}
+}
+
+func (app *Watcher) initializeUsedModules(items []*models.TrackedItem) {
+	var initializedModules []string
+
+	for _, item := range items {
+		foundModule := false
+
+		for _, initializedModule := range initializedModules {
+			if item.Module == initializedModule {
+				foundModule = true
+				break
+			}
+		}
+
+		if !foundModule {
+			module := app.ModuleFactory.GetModuleFromURI(item.URI)
+
+			log.WithField("module", module.Key()).Debug(
+				"initializing module",
+			)
+			module.InitializeModule()
+
+			initializedModules = append(initializedModules, item.Module)
 		}
 	}
 }
