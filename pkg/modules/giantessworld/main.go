@@ -34,9 +34,10 @@ func init() {
 func NewBareModule() *models.Module {
 	module := &models.Module{
 		LoggedIn: false,
-		ModuleInterface: &giantessWorld{
-			chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
-		},
+	}
+	module.ModuleInterface = &giantessWorld{
+		Module: module,
+		chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
 	}
 
 	// register module to log formatter
@@ -50,11 +51,6 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *giantessWorld) InitializeModule() {
-	m.Module = NewBareModule()
-	m.ModuleInterface = &giantessWorld{
-		Module: m.Module,
-	}
-
 	// set the module implementation for access to the session, database, etc
 	m.baseURL, _ = url.Parse("http://www.giantessworld.net")
 	gwSession := session.NewSession(m.Key())

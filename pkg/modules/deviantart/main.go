@@ -37,11 +37,12 @@ func init() {
 func NewBareModule() *models.Module {
 	module := &models.Module{
 		LoggedIn: true,
-		ModuleInterface: &deviantArt{
-			userGalleryPattern: regexp.MustCompile(
-				`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
-			),
-		},
+	}
+	module.ModuleInterface = &deviantArt{
+		Module: module,
+		userGalleryPattern: regexp.MustCompile(
+			`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
+		),
 	}
 
 	// register module to log formatter
@@ -55,11 +56,6 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *deviantArt) InitializeModule() {
-	m.Module = NewBareModule()
-	m.ModuleInterface = &deviantArt{
-		Module: m.Module,
-	}
-
 	// set the module implementation for access to the session, database, etc
 	m.deviantArtSession = session.NewSession(m.Key())
 	m.Session = m.deviantArtSession

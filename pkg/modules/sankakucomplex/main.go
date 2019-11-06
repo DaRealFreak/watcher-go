@@ -28,8 +28,10 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn:        false,
-		ModuleInterface: &sankakuComplex{},
+		LoggedIn: false,
+	}
+	module.ModuleInterface = &sankakuComplex{
+		Module: module,
 	}
 
 	// register module to log formatter
@@ -43,14 +45,8 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *sankakuComplex) InitializeModule() {
-	m.Module = NewBareModule()
-	m.ModuleInterface = &sankakuComplex{
-		Module: m.Module,
-	}
-
 	// set the module implementation for access to the session, database, etc
-	sankakuSession := session.NewSession(m.Key())
-	m.Session = sankakuSession
+	m.Session = session.NewSession(m.Key())
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

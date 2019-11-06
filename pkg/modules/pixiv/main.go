@@ -79,9 +79,10 @@ func init() {
 func NewBareModule() *models.Module {
 	module := &models.Module{
 		LoggedIn: false,
-		ModuleInterface: &pixiv{
-			animationHelper: animation.NewAnimationHelper(),
-		},
+	}
+	module.ModuleInterface = &pixiv{
+		Module: module,
+		animationHelper: animation.NewAnimationHelper(),
 	}
 
 	// register module to log formatter
@@ -95,11 +96,6 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *pixiv) InitializeModule() {
-	m.Module = NewBareModule()
-	m.ModuleInterface = &pixiv{
-		Module: m.Module,
-	}
-
 	// set the module implementation for access to the session, database, etc
 	m.pixivSession = session.NewSession(m.Key())
 	m.pixivSession.Module = m

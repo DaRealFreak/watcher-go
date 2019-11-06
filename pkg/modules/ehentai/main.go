@@ -42,12 +42,13 @@ func init() {
 func NewBareModule() *models.Module {
 	module := &models.Module{
 		LoggedIn: false,
-		ModuleInterface: &ehentai{
-			galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
-			galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
-			searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
-			ProxyLoopIndex:           -1,
-		},
+	}
+	module.ModuleInterface = &ehentai{
+		Module: module,
+		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
+		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
+		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
+		ProxyLoopIndex:           -1,
 	}
 
 	// register module to log formatter
@@ -61,11 +62,6 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *ehentai) InitializeModule() {
-	m.Module = NewBareModule()
-	m.ModuleInterface = &ehentai{
-		Module: m.Module,
-	}
-
 	// initialize settings
 	raven.CheckError(viper.UnmarshalKey(
 		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),

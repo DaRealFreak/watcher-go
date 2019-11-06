@@ -90,11 +90,11 @@ func NewWatcher() *Watcher {
 		ModuleFactory: modules.GetModuleFactory(),
 	}
 
+	watcher.ModuleFactory.InitializeAllModules()
+
 	for _, module := range watcher.ModuleFactory.GetAllModules() {
 		module.SetDbIO(watcher.DbCon)
 	}
-
-	watcher.ModuleFactory.InitializeAllModules()
 
 	return watcher
 }
