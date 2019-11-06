@@ -36,7 +36,7 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: true,
+		LoggedIn: false,
 	}
 	module.ModuleInterface = &deviantArt{
 		Module: module,
