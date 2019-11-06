@@ -10,10 +10,7 @@ import (
 )
 
 // nolint: gochecknoglobals
-var (
-	bareModuleFactory *ModuleFactory
-	moduleFactory     *ModuleFactory
-)
+var moduleFactory *ModuleFactory
 
 // ModuleFactory contains all registered modules and URI Schemas
 type ModuleFactory struct {
@@ -22,15 +19,7 @@ type ModuleFactory struct {
 }
 
 // GetModuleFactory returns already generated or else previously generated module factory
-func GetModuleFactory(bare bool) *ModuleFactory {
-	if bare {
-		if bareModuleFactory == nil {
-			bareModuleFactory = newModuleFactory()
-		}
-
-		return bareModuleFactory
-	}
-
+func GetModuleFactory() *ModuleFactory {
 	if moduleFactory == nil {
 		moduleFactory = newModuleFactory()
 	}
@@ -91,4 +80,11 @@ func (f *ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Mod
 	}
 
 	return modules
+}
+
+// InitializeAllModules initializes all bare modules
+func (f *ModuleFactory) InitializeAllModules() {
+	for _, module := range f.modules {
+		module.InitializeModule()
+	}
 }

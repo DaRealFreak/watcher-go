@@ -18,6 +18,8 @@ import (
 
 // ModuleInterface of used functions from the application for all modules
 type ModuleInterface interface {
+	// initializes the registered bare module
+	InitializeModule()
 	// Key returns the module key
 	Key() (key string)
 	// RequiresLogin checks if this module requires a login to work

@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 
 	// initialize the database
 	dbIO = NewConnection()
-	factory := modules.GetModuleFactory(true)
+	factory := modules.GetModuleFactory()
 	test := factory.GetAllModules()[0]
 	dbIO.GetFirstOrCreateAccount("test_user", "test_pass", test)
 	dbIO.GetFirstOrCreateTrackedItem(test.Key(), test)

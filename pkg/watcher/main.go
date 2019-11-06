@@ -87,12 +87,14 @@ type AppConfiguration struct {
 func NewWatcher() *Watcher {
 	watcher := &Watcher{
 		DbCon:         database.NewConnection(),
-		ModuleFactory: modules.GetModuleFactory(false),
+		ModuleFactory: modules.GetModuleFactory(),
 	}
 
 	for _, module := range watcher.ModuleFactory.GetAllModules() {
 		module.SetDbIO(watcher.DbCon)
 	}
+
+	watcher.ModuleFactory.InitializeAllModules()
 
 	return watcher
 }

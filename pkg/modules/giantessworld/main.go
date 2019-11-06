@@ -27,47 +27,41 @@ type giantessWorld struct {
 // nolint: gochecknoinits
 // init function registers the bare and the normal module to the module factories
 func init() {
-	bare := modules.GetModuleFactory(true)
-	bare.RegisterModule(NewBareModule())
-
-	factory := modules.GetModuleFactory(false)
-	factory.RegisterModule(NewModule())
+	modules.GetModuleFactory().RegisterModule(NewBareModule())
 }
 
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
-	return &models.Module{
-		ModuleInterface: &giantessWorld{},
-	}
-}
-
-// NewModule generates new module and registers the URI schema
-func NewModule() *models.Module {
-	// initialize module and set our module interface with our custom module
 	module := &models.Module{
 		LoggedIn: false,
+		ModuleInterface: &giantessWorld{
+			chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
+		},
 	}
-	subModule := &giantessWorld{
-		Module:               module,
-		chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
-	}
-	module.ModuleInterface = subModule
-
-	// set the module implementation for access to the session, database, etc
-	subModule.baseURL, _ = url.Parse("http://www.giantessworld.net")
-	gwSession := session.NewSession(subModule.Key())
-	subModule.Session = gwSession
-
-	// set the proxy if requested
-	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: subModule.Key(),
+		Value: module.Key(),
 		Color: "232:203",
 	})
 
 	return module
+}
+
+// InitializeModule initializes the module
+func (m *giantessWorld) InitializeModule() {
+	m.Module = NewBareModule()
+	m.ModuleInterface = &giantessWorld{
+		Module: m.Module,
+	}
+
+	// set the module implementation for access to the session, database, etc
+	m.baseURL, _ = url.Parse("http://www.giantessworld.net")
+	gwSession := session.NewSession(m.Key())
+	m.Session = gwSession
+
+	// set the proxy if requested
+	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
 
 // Key returns the module key

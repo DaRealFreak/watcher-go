@@ -35,56 +35,50 @@ type ehentai struct {
 // nolint: gochecknoinits
 // init function registers the bare and the normal module to the module factories
 func init() {
-	bare := modules.GetModuleFactory(true)
-	bare.RegisterModule(NewBareModule())
-
-	factory := modules.GetModuleFactory(false)
-	factory.RegisterModule(NewModule())
+	modules.GetModuleFactory().RegisterModule(NewBareModule())
 }
 
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
-	return &models.Module{
-		ModuleInterface: &ehentai{},
-	}
-}
-
-// NewModule generates new module and registers the URI schema
-func NewModule() *models.Module {
-	// initialize module and set our module interface with our custom module
 	module := &models.Module{
 		LoggedIn: false,
+		ModuleInterface: &ehentai{
+			galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
+			galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
+			searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
+			ProxyLoopIndex:           -1,
+		},
 	}
-	subModule := &ehentai{
-		Module:                   module,
-		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
-		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
-		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
-		ProxyLoopIndex:           -1,
-	}
-	module.ModuleInterface = subModule
-
-	// initialize settings
-	raven.CheckError(viper.UnmarshalKey(
-		fmt.Sprintf("Modules.%s", subModule.GetViperModuleKey()),
-		&subModule.settings,
-	))
-
-	// set rate limiter on 1.5 seconds with burst limit of 1
-	subModule.ehSession = session.NewSession(subModule.Key())
-	subModule.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
-	subModule.Session = subModule.ehSession
-
-	// set the proxy if requested
-	raven.CheckError(subModule.setProxyMethod())
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: subModule.Key(),
+		Value: module.Key(),
 		Color: "232:94",
 	})
 
 	return module
+}
+
+// InitializeModule initializes the module
+func (m *ehentai) InitializeModule() {
+	m.Module = NewBareModule()
+	m.ModuleInterface = &ehentai{
+		Module: m.Module,
+	}
+
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
+	// set rate limiter on 1.5 seconds with burst limit of 1
+	m.ehSession = session.NewSession(m.Key())
+	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+	m.Session = m.ehSession
+
+	// set the proxy if requested
+	raven.CheckError(m.setProxyMethod())
 }
 
 // Key returns the module key

@@ -72,39 +72,17 @@ const (
 // nolint: gochecknoinits
 // init function registers the bare and the normal module to the module factories
 func init() {
-	bare := modules.GetModuleFactory(true)
-	bare.RegisterModule(NewBareModule())
-
-	factory := modules.GetModuleFactory(false)
-	factory.RegisterModule(NewModule())
+	modules.GetModuleFactory().RegisterModule(NewBareModule())
 }
 
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
-	return &models.Module{
-		ModuleInterface: &pixiv{},
-	}
-}
-
-// NewModule generates new module and registers the URI schema
-func NewModule() *models.Module {
-	// initialize module and set our module interface with our custom module
 	module := &models.Module{
 		LoggedIn: false,
+		ModuleInterface: &pixiv{
+			animationHelper: animation.NewAnimationHelper(),
+		},
 	}
-	subModule := &pixiv{
-		Module:          module,
-		animationHelper: animation.NewAnimationHelper(),
-	}
-	module.ModuleInterface = subModule
-
-	// set the module implementation for access to the session, database, etc
-	subModule.pixivSession = session.NewSession(subModule.Key())
-	subModule.pixivSession.Module = subModule
-	subModule.Session = subModule.pixivSession
-
-	// set the proxy if requested
-	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
@@ -113,6 +91,22 @@ func NewModule() *models.Module {
 	})
 
 	return module
+}
+
+// InitializeModule initializes the module
+func (m *pixiv) InitializeModule() {
+	m.Module = NewBareModule()
+	m.ModuleInterface = &pixiv{
+		Module: m.Module,
+	}
+
+	// set the module implementation for access to the session, database, etc
+	m.pixivSession = session.NewSession(m.Key())
+	m.pixivSession.Module = m
+	m.Session = m.pixivSession
+
+	// set the proxy if requested
+	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
 
 // Key returns the module key

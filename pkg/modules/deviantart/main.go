@@ -30,48 +30,42 @@ type deviantArt struct {
 // nolint: gochecknoinits
 // init function registers the bare and the normal module to the module factories
 func init() {
-	bare := modules.GetModuleFactory(true)
-	bare.RegisterModule(NewBareModule())
-
-	factory := modules.GetModuleFactory(false)
-	factory.RegisterModule(NewModule())
+	modules.GetModuleFactory().RegisterModule(NewBareModule())
 }
 
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
-	return &models.Module{
-		ModuleInterface: &deviantArt{},
-	}
-}
-
-// NewModule generates new module and registers the URI schema
-func NewModule() *models.Module {
-	// initialize module and set our module interface with our custom module
 	module := &models.Module{
-		LoggedIn: false,
+		LoggedIn: true,
+		ModuleInterface: &deviantArt{
+			userGalleryPattern: regexp.MustCompile(
+				`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
+			),
+		},
 	}
-	subModule := &deviantArt{
-		Module: module,
-		userGalleryPattern: regexp.MustCompile(
-			`https://www\.deviantart\.com/([^/?&]+)(/gallery((/|/\?catpath=/)?))?$`,
-		),
-	}
-	module.ModuleInterface = subModule
-
-	// set the module implementation for access to the session, database, etc
-	subModule.deviantArtSession = session.NewSession(subModule.Key())
-	subModule.Session = subModule.deviantArtSession
-
-	// set the proxy if requested
-	raven.CheckError(subModule.Session.SetProxy(subModule.GetProxySettings()))
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: subModule.Key(),
+		Value: module.Key(),
 		Color: "232:34",
 	})
 
 	return module
+}
+
+// InitializeModule initializes the module
+func (m *deviantArt) InitializeModule() {
+	m.Module = NewBareModule()
+	m.ModuleInterface = &deviantArt{
+		Module: m.Module,
+	}
+
+	// set the module implementation for access to the session, database, etc
+	m.deviantArtSession = session.NewSession(m.Key())
+	m.Session = m.deviantArtSession
+
+	// set the proxy if requested
+	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
 
 // Key returns the module key
@@ -198,6 +192,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 			return nil
 		}
 	}
+
 	switch {
 	case strings.HasPrefix(appURL, "DeviantArt://collection/"):
 		return m.parseCollection(appURL, item)
@@ -210,6 +205,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case strings.HasPrefix(appURL, "DeviantArt://watchfeed"):
 		return m.parseFeed(item)
 	}
+
 	return nil
 }
 
