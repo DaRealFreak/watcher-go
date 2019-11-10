@@ -80,6 +80,7 @@ type AppConfiguration struct {
 		Items             []string
 		DownloadDirectory string
 		ModuleURL         []string
+		DisableURL        []string
 	}
 }
 
