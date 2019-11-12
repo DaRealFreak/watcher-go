@@ -88,3 +88,35 @@ func (f *ModuleFactory) InitializeAllModules() {
 		module.InitializeModule()
 	}
 }
+
+// IsModuleIncluded checks if the passed module is in the list of enabled URIs
+func (f *ModuleFactory) IsModuleIncluded(module *models.Module, enabledURIs []string) bool {
+	if len(enabledURIs) > 0 {
+		usedModules := f.GetModulesFromURIs(enabledURIs...)
+		for _, usedModule := range usedModules {
+			if module.Key() == usedModule.Key() {
+				return true
+			}
+		}
+		// module didn't get found
+		return false
+	}
+	// default return value is true if no module got specified
+	return true
+}
+
+// IsModuleExcluded checks if the passed module is in the list of disabled URIs
+func (f *ModuleFactory) IsModuleExcluded(module *models.Module, disabledURIs []string) bool {
+	if len(disabledURIs) > 0 {
+		disabledModules := f.GetModulesFromURIs(disabledURIs...)
+		for _, disabledModule := range disabledModules {
+			if module.Key() == disabledModule.Key() {
+				return true
+			}
+		}
+		// module isn't excluded
+		return false
+	}
+	// no modules got explicitly disabled
+	return false
+}

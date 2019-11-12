@@ -30,8 +30,8 @@ func (cli *CliApplication) addRunCommand() {
 		"url of module you want to run",
 	)
 	runCmd.Flags().StringSliceVarP(
-		&cli.config.Run.ModuleURL,
-		"disable", "d", []string{},
+		&cli.config.Run.DisableURL,
+		"disable", "x", []string{},
 		"url of module you want don't want to run",
 	)
 	runCmd.Flags().BoolVarP(
