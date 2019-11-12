@@ -61,6 +61,7 @@ Flags for the `run` command are:
 Flags:
   -d, --directory string   download directory (will be saved in config file)
   -u, --url strings        url of module you want to run
+  -x, --disable strings    url of module you want don't want to run
   -p, --parallel           run modules parallel
 ```
 
@@ -69,7 +70,8 @@ so you don't have to pass the argument every time.
 You can also specify which module to run by passing an example url to retrieve the module from.  
 Modules can be run parallel to each other with the `--parallel` flag, causing each module
 to run independently from each other, ignoring possible rate limits from other modules.  
-It is also possible to run only specific modules by attaching the repeated flag `--url`.
+It is also possible to run only specific modules by attaching the repeated flag `--url`.  
+In case you want to disable modules from being run you can attach the repeated flag `--disable`.
 
 ### Adding Accounts/Items
 Accounts and tracked items be added by attaching to the add command (f.e. `watcher add item`)
