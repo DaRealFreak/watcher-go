@@ -44,7 +44,7 @@ func NewBareModule() *models.Module {
 		LoggedIn: false,
 	}
 	module.ModuleInterface = &ehentai{
-		Module: module,
+		Module:                   module,
 		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
 		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),

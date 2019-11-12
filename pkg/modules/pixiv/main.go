@@ -81,7 +81,7 @@ func NewBareModule() *models.Module {
 		LoggedIn: false,
 	}
 	module.ModuleInterface = &pixiv{
-		Module: module,
+		Module:          module,
 		animationHelper: animation.NewAnimationHelper(),
 	}
 

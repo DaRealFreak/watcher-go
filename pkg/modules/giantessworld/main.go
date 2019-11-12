@@ -36,7 +36,7 @@ func NewBareModule() *models.Module {
 		LoggedIn: false,
 	}
 	module.ModuleInterface = &giantessWorld{
-		Module: module,
+		Module:               module,
 		chapterUpdatePattern: regexp.MustCompile(`Updated:\s+(\w+ \d{2} \d{4})+`),
 	}
 
