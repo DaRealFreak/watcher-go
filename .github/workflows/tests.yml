@@ -1,9 +1,9 @@
-name: Go Build Project
+name: Go Test Project
 on: [push]
 jobs:
 
   build:
-    name: Build
+    name: Tests
     runs-on: ubuntu-latest
     steps:
 
@@ -24,5 +24,5 @@ jobs:
             dep ensure
         fi
 
-    - name: Build Project
-      run: go build -v .
+    - name: Run Tests
+      run: go test ./...
