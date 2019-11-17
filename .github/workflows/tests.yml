@@ -2,7 +2,7 @@ name: Go Test Project
 on: [push]
 jobs:
 
-  build:
+  tests:
     name: Tests
     runs-on: ubuntu-latest
     steps:
