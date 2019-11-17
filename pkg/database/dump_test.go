@@ -10,6 +10,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/viper"
+
+	// import for side effects for factory
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 )
 
 // nolint: gochecknoglobals
