@@ -1,9 +1,9 @@
-name: Go Test Project
+name: tests
 on: [push]
 jobs:
 
   tests:
-    name: Tests
+    name: tests
     runs-on: ubuntu-latest
     steps:
 

@@ -1,9 +1,9 @@
-name: Go Build Project
+name: build
 on: [push]
 jobs:
 
   build:
-    name: Build
+    name: build
     runs-on: ubuntu-latest
     steps:
 
