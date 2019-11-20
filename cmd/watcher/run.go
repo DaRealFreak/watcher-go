@@ -15,7 +15,7 @@ func (cli *CliApplication) addRunCommand() {
 			"If items are directly passed only these will be updated.",
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Run.Items = args
-			cli.watcher.Run(cli.config)
+			cli.watcher.Run()
 		},
 	}
 

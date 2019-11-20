@@ -157,7 +157,7 @@ func (cli *CliApplication) initWatcher() {
 	}
 
 	// initialize the watcher now after we parsed the configuration
-	cli.watcher = watcherApp.NewWatcher()
+	cli.watcher = watcherApp.NewWatcher(cli.config)
 
 	// save the configuration and check for errors
 	raven.CheckError(viper.WriteConfig())

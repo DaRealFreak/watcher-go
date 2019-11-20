@@ -29,6 +29,7 @@ const DefaultConfigurationPath = "./.watcher.yaml"
 type Watcher struct {
 	DbCon         *database.DbIO
 	ModuleFactory *modules.ModuleFactory
+	Cfg           *AppConfiguration
 }
 
 // BackupSettings are the possible configuration settings for backups and recoveries
@@ -85,10 +86,11 @@ type AppConfiguration struct {
 }
 
 // NewWatcher initializes a new Watcher with the default settings
-func NewWatcher() *Watcher {
+func NewWatcher(cfg *AppConfiguration) *Watcher {
 	watcher := &Watcher{
 		DbCon:         database.NewConnection(),
 		ModuleFactory: modules.GetModuleFactory(),
+		Cfg:           cfg,
 	}
 
 	for _, module := range watcher.ModuleFactory.GetAllModules() {
@@ -99,12 +101,12 @@ func NewWatcher() *Watcher {
 }
 
 // Run is the main functionality, updates all tracked items either parallel or linear
-func (app *Watcher) Run(cfg *AppConfiguration) {
-	trackedItems := app.getRelevantTrackedItems(cfg)
+func (app *Watcher) Run() {
+	trackedItems := app.getRelevantTrackedItems()
 
 	app.initializeUsedModules(trackedItems)
 
-	if cfg.Run.RunParallel {
+	if app.Cfg.Run.RunParallel {
 		groupedItems := make(map[string][]*models.TrackedItem)
 		for _, item := range trackedItems {
 			groupedItems[item.Module] = append(groupedItems[item.Module], item)
@@ -140,15 +142,15 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 }
 
 // getRelevantTrackedItems returns the relevant tracked items based on the passed app configuration
-func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.TrackedItem {
+func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 	var trackedItems []*models.TrackedItem
 
 	switch {
-	case len(cfg.Run.Items) > 0:
-		for _, itemURL := range cfg.Run.Items {
+	case len(app.Cfg.Run.Items) > 0:
+		for _, itemURL := range app.Cfg.Run.Items {
 			module := app.ModuleFactory.GetModuleFromURI(itemURL)
-			if !app.ModuleFactory.IsModuleIncluded(module, cfg.Run.ModuleURL) ||
-				app.ModuleFactory.IsModuleExcluded(module, cfg.Run.DisableURL) {
+			if !app.ModuleFactory.IsModuleIncluded(module, app.Cfg.Run.ModuleURL) ||
+				app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
 				log.WithField("module", module.Key).Warningf(
 					"ignoring directly passed item %s due to not matching the module constraints",
 					itemURL,
@@ -159,10 +161,10 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 
 			trackedItems = append(trackedItems, app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module))
 		}
-	case len(cfg.Run.ModuleURL) > 0:
-		for _, moduleURL := range cfg.Run.ModuleURL {
+	case len(app.Cfg.Run.ModuleURL) > 0:
+		for _, moduleURL := range app.Cfg.Run.ModuleURL {
 			module := app.ModuleFactory.GetModuleFromURI(moduleURL)
-			if app.ModuleFactory.IsModuleExcluded(module, cfg.Run.DisableURL) {
+			if app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
 				continue
 			}
 
@@ -180,6 +182,11 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 	defer wg.Done()
 
 	module := app.ModuleFactory.GetModule(moduleKey)
+	if app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
+		// don't run for excluded modules
+		return
+	}
+
 	if !module.LoggedIn && !module.TriedLogin {
 		app.loginToModule(module)
 	}
@@ -245,6 +252,10 @@ func (app *Watcher) initializeUsedModules(items []*models.TrackedItem) {
 
 		if !foundModule {
 			module := app.ModuleFactory.GetModuleFromURI(item.URI)
+			if app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
+				// don't initialize excluded modules
+				continue
+			}
 
 			log.WithField("module", module.Key).Debug(
 				"initializing module",
