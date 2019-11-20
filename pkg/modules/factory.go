@@ -82,13 +82,6 @@ func (f *ModuleFactory) GetModulesFromURIs(uri ...string) (modules []*models.Mod
 	return modules
 }
 
-// InitializeAllModules initializes all bare modules
-func (f *ModuleFactory) InitializeAllModules() {
-	for _, module := range f.modules {
-		module.InitializeModule()
-	}
-}
-
 // IsModuleIncluded checks if the passed module is in the list of enabled URIs
 func (f *ModuleFactory) IsModuleIncluded(module *models.Module, enabledURIs []string) bool {
 	if len(enabledURIs) > 0 {
