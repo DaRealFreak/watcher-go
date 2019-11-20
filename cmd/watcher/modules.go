@@ -18,8 +18,8 @@ func (cli *CliApplication) addModulesCommand() {
 	moduleFactory := modules.GetModuleFactory()
 	for _, module := range moduleFactory.GetAllModules() {
 		moduleCmd := &cobra.Command{
-			Use:   module.Key(),
-			Short: fmt.Sprintf("specific commands and settings of module: %s", module.Key()),
+			Use:   module.Key,
+			Short: fmt.Sprintf("specific commands and settings of module: %s", module.Key),
 		}
 		module.AddSettingsCommand(moduleCmd)
 		modulesCmd.AddCommand(moduleCmd)

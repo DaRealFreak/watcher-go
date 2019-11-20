@@ -50,7 +50,7 @@ func (f *ModuleFactory) GetAllModules() []*models.Module {
 // GetModule returns a module by it's key
 func (f *ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
-		if module.Key() == moduleName {
+		if module.Key == moduleName {
 			return module
 		}
 	}
@@ -94,7 +94,7 @@ func (f *ModuleFactory) IsModuleIncluded(module *models.Module, enabledURIs []st
 	if len(enabledURIs) > 0 {
 		usedModules := f.GetModulesFromURIs(enabledURIs...)
 		for _, usedModule := range usedModules {
-			if module.Key() == usedModule.Key() {
+			if module.Key == usedModule.Key {
 				return true
 			}
 		}
@@ -110,7 +110,7 @@ func (f *ModuleFactory) IsModuleExcluded(module *models.Module, disabledURIs []s
 	if len(disabledURIs) > 0 {
 		disabledModules := f.GetModulesFromURIs(disabledURIs...)
 		for _, disabledModule := range disabledModules {
-			if module.Key() == disabledModule.Key() {
+			if module.Key == disabledModule.Key {
 				return true
 			}
 		}

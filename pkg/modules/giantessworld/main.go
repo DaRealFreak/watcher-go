@@ -33,7 +33,12 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: false,
+		Key:           "giantessworld.net",
+		RequiresLogin: false,
+		LoggedIn:      false,
+		UriSchemas: []*regexp.Regexp{
+			regexp.MustCompile("giantessworld.net"),
+		},
 	}
 	module.ModuleInterface = &giantessWorld{
 		Module:               module,
@@ -42,7 +47,7 @@ func NewBareModule() *models.Module {
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: module.Key,
 		Color: "232:203",
 	})
 
@@ -53,33 +58,11 @@ func NewBareModule() *models.Module {
 func (m *giantessWorld) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
 	m.baseURL, _ = url.Parse("http://www.giantessworld.net")
-	gwSession := session.NewSession(m.Key())
+	gwSession := session.NewSession(m.Key)
 	m.Session = gwSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-}
-
-// Key returns the module key
-func (m *giantessWorld) Key() (key string) {
-	return "giantessworld.net"
-}
-
-// RequiresLogin checks if this module requires a login to work
-func (m *giantessWorld) RequiresLogin() (requiresLogin bool) {
-	return false
-}
-
-// IsLoggedIn returns the logged in status
-func (m *giantessWorld) IsLoggedIn() bool {
-	return m.LoggedIn
-}
-
-// RegisterURISchema adds our pattern to the URI Schemas
-func (m *giantessWorld) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	uriSchemas[m.Key()] = []*regexp.Regexp{
-		regexp.MustCompile("giantessworld.net"),
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application

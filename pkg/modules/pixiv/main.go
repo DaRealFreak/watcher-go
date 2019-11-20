@@ -78,7 +78,12 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: false,
+		Key:           "pixiv.net",
+		RequiresLogin: true,
+		LoggedIn:      false,
+		UriSchemas: []*regexp.Regexp{
+			regexp.MustCompile(".*pixiv.(co.jp|net)"),
+		},
 	}
 	module.ModuleInterface = &pixiv{
 		Module:          module,
@@ -87,7 +92,7 @@ func NewBareModule() *models.Module {
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: module.Key,
 		Color: "232:31",
 	})
 
@@ -97,34 +102,12 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *pixiv) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.pixivSession = session.NewSession(m.Key())
+	m.pixivSession = session.NewSession(m.Key)
 	m.pixivSession.Module = m
 	m.Session = m.pixivSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-}
-
-// Key returns the module key
-func (m *pixiv) Key() (key string) {
-	return "pixiv.net"
-}
-
-// RequiresLogin checks if this module requires a login to work
-func (m *pixiv) RequiresLogin() (requiresLogin bool) {
-	return true
-}
-
-// IsLoggedIn returns the logged in status
-func (m *pixiv) IsLoggedIn() bool {
-	return m.LoggedIn
-}
-
-// RegisterURISchema adds our pattern to the URI Schemas
-func (m *pixiv) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	uriSchemas[m.Key()] = []*regexp.Regexp{
-		regexp.MustCompile(".*pixiv.(co.jp|net)"),
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -169,7 +152,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 	} else {
 		var response errorResponse
 		_ = json.Unmarshal(body, &response)
-		log.WithField("module", m.Key()).Warning("login not successful.")
+		log.WithField("module", m.Key).Warning("login not successful.")
 		raven.CheckError(
 			fmt.Errorf("message: %s (code: %s)",
 				response.Errors.System.Message,

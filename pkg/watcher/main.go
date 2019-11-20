@@ -122,11 +122,11 @@ func (app *Watcher) Run(cfg *AppConfiguration) {
 	} else {
 		for _, item := range trackedItems {
 			module := app.ModuleFactory.GetModule(item.Module)
-			if !module.IsLoggedIn() && !module.TriedLogin {
+			if !module.LoggedIn && !module.TriedLogin {
 				app.loginToModule(module)
 			}
 
-			log.WithField("module", module.Key()).Info(
+			log.WithField("module", module.Key).Info(
 				fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 			)
 
@@ -149,7 +149,7 @@ func (app *Watcher) getRelevantTrackedItems(cfg *AppConfiguration) []*models.Tra
 			module := app.ModuleFactory.GetModuleFromURI(itemURL)
 			if !app.ModuleFactory.IsModuleIncluded(module, cfg.Run.ModuleURL) ||
 				app.ModuleFactory.IsModuleExcluded(module, cfg.Run.DisableURL) {
-				log.WithField("module", module.Key()).Warningf(
+				log.WithField("module", module.Key).Warningf(
 					"ignoring directly passed item %s due to not matching the module constraints",
 					itemURL,
 				)
@@ -180,12 +180,12 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 	defer wg.Done()
 
 	module := app.ModuleFactory.GetModule(moduleKey)
-	if !module.IsLoggedIn() && !module.TriedLogin {
+	if !module.LoggedIn && !module.TriedLogin {
 		app.loginToModule(module)
 	}
 
 	for _, item := range trackedItems {
-		log.WithField("module", module.Key()).Info(
+		log.WithField("module", module.Key).Info(
 			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 		)
 
@@ -199,17 +199,17 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 // loginToModule handles the login for modules, if an account exists: login
 func (app *Watcher) loginToModule(module *models.Module) {
-	log.WithField("module", module.Key()).Info(
-		fmt.Sprintf("logging in for module %s", module.Key()),
+	log.WithField("module", module.Key).Info(
+		fmt.Sprintf("logging in for module %s", module.Key),
 	)
 
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
 	if account == nil {
-		if module.RequiresLogin() {
+		if module.RequiresLogin {
 			raven.CheckError(
-				fmt.Errorf("module \"%s\" requires a login, but no account could be found", module.Key()),
+				fmt.Errorf("module \"%s\" requires a login, but no account could be found", module.Key),
 			)
 		} else {
 			return
@@ -218,14 +218,14 @@ func (app *Watcher) loginToModule(module *models.Module) {
 
 	// login into the module
 	if module.Login(account) {
-		log.WithField("module", module.Key()).Info("login successful")
+		log.WithField("module", module.Key).Info("login successful")
 	} else {
-		if module.RequiresLogin() {
+		if module.RequiresLogin {
 			raven.CheckError(
-				fmt.Errorf("module \"%s\" requires a login, but the login failed", module.Key()),
+				fmt.Errorf("module \"%s\" requires a login, but the login failed", module.Key),
 			)
 		} else {
-			log.WithField("module", module.Key()).Warning("login not successful")
+			log.WithField("module", module.Key).Warning("login not successful")
 		}
 	}
 }
@@ -246,7 +246,7 @@ func (app *Watcher) initializeUsedModules(items []*models.TrackedItem) {
 		if !foundModule {
 			module := app.ModuleFactory.GetModuleFromURI(item.URI)
 
-			log.WithField("module", module.Key()).Debug(
+			log.WithField("module", module.Key).Debug(
 				"initializing module",
 			)
 			module.InitializeModule()

@@ -18,16 +18,10 @@ import (
 
 // ModuleInterface of used functions from the application for all modules
 type ModuleInterface interface {
+	// retrieve the module key
+	ModuleKey() string
 	// initializes the registered bare module
 	InitializeModule()
-	// Key returns the module key
-	Key() (key string)
-	// RequiresLogin checks if this module requires a login to work
-	RequiresLogin() (requiresLogin bool)
-	// IsLoggedIn returns the logged in status
-	IsLoggedIn() bool
-	// RegisterURISchema adds our pattern to the URI Schemas
-	RegisterURISchema(uriSchemas map[string][]*regexp.Regexp)
 	// option for the modules to register custom settings/commands
 	AddSettingsCommand(command *cobra.Command)
 	// Login logs us in for the current session if possible/account available
@@ -47,10 +41,22 @@ type DownloadQueueItem struct {
 // Module is an implementation to the ModuleInterface to provide basic functions/variables
 type Module struct {
 	ModuleInterface
-	DbIO       DatabaseInterface
-	Session    http.SessionInterface
-	LoggedIn   bool
-	TriedLogin bool
+	DbIO          DatabaseInterface
+	Session       http.SessionInterface
+	Key           string
+	RequiresLogin bool
+	LoggedIn      bool
+	TriedLogin    bool
+	UriSchemas    []*regexp.Regexp
+}
+
+func (t *Module) ModuleKey() string {
+	return t.Key
+}
+
+// RegisterURISchema registers the URI schemas of the module to the passed map
+func (t *Module) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
+	uriSchemas[t.Key] = t.UriSchemas
 }
 
 // SetDbIO sets the database IO implementation
@@ -82,12 +88,12 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
 func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) error {
-	log.WithField("module", t.Key()).Info(
+	log.WithField("module", t.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
 	for index, data := range downloadQueue {
-		log.WithField("module", t.Key()).Info(
+		log.WithField("module", t.Key).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
@@ -96,7 +102,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 		)
 
 		err := t.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), t.Key(), data.DownloadTag, data.FileName),
+			path.Join(viper.GetString("download.directory"), t.Key, data.DownloadTag, data.FileName),
 			data.FileURI,
 		)
 		if err != nil {
@@ -135,7 +141,7 @@ func (t *Module) SanitizePath(path string, allowSeparator bool) string {
 
 // GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
 func (t *Module) GetViperModuleKey() string {
-	return strings.ReplaceAll(t.Key(), ".", "_")
+	return strings.ReplaceAll(t.Key, ".", "_")
 }
 
 // AddProxyCommands adds the module specific commands for the proxy server

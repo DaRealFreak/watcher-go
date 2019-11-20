@@ -19,8 +19,8 @@ func (app *Watcher) ListRegisteredModules() {
 			w,
 			"%d\t%s\t%t\n",
 			index,
-			module.Key(),
-			module.RequiresLogin(),
+			module.Key,
+			module.RequiresLogin,
 		)
 	}
 

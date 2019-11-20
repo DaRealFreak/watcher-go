@@ -71,7 +71,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	// add items
 	for _, gallery := range itemQueue {
-		log.WithField("module", m.Key()).Info("added gallery to tracked items: " + gallery.uri)
+		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
 		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}

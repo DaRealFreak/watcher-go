@@ -72,12 +72,12 @@ func (m *deviantArt) retrieveDeviationDetails(deviation *Deviation) (completedDe
 
 // processDownloadQueue retrieves the deviation details and proceeds to download the relevant information
 func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, deviations []*Deviation) error {
-	log.WithField("module", m.Key()).Info(
+	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(deviations), trackedItem.URI),
 	)
 
 	for index, item := range deviations {
-		log.WithField("module", m.Key()).Info(
+		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: %s (%0.2f%%)",
 				trackedItem.URI,
@@ -94,7 +94,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 		m.Session.EnsureDownloadDirectory(
 			path.Join(
 				viper.GetString("download.directory"),
-				m.Key(),
+				m.Key,
 				deviationItem.Author.Username,
 				"tmp.txt",
 			),
@@ -102,7 +102,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 		if deviationItem.Download != nil {
 			if err := m.Session.DownloadFile(
 				path.Join(viper.GetString("download.directory"),
-					m.Key(),
+					m.Key,
 					deviationItem.Author.Username,
 					deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Download.Src),
 				),
@@ -118,7 +118,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			}
 
 			filePath := path.Join(viper.GetString("download.directory"),
-				m.Key(),
+				m.Key,
 				deviationItem.Author.Username,
 				deviationItem.PublishedTime+"_"+m.SanitizePath(deviationItem.Title, false)+".txt",
 			)
@@ -140,7 +140,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 			case deviationItem.Content != nil:
 				if err := m.Session.DownloadFile(
 					path.Join(viper.GetString("download.directory"),
-						m.Key(),
+						m.Key,
 						deviationItem.Author.Username,
 						deviationItem.PublishedTime+"_"+m.GetFileName(deviationItem.Content.Src),
 					),
@@ -153,7 +153,7 @@ func (m *deviantArt) processDownloadQueue(trackedItem *models.TrackedItem, devia
 				last := deviationItem.Thumbs[len(deviationItem.Thumbs)-1]
 				if err := m.Session.DownloadFile(
 					path.Join(viper.GetString("download.directory"),
-						m.Key(),
+						m.Key,
 						deviationItem.Author.Username,
 						deviationItem.PublishedTime+"_"+m.GetFileName(last.Src),
 					),

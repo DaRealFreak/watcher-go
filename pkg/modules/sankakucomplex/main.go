@@ -28,7 +28,12 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: false,
+		Key:           "chan.sankakucomplex.com",
+		RequiresLogin: false,
+		LoggedIn:      false,
+		UriSchemas: []*regexp.Regexp{
+			regexp.MustCompile(".*sankakucomplex.com"),
+		},
 	}
 	module.ModuleInterface = &sankakuComplex{
 		Module: module,
@@ -36,7 +41,7 @@ func NewBareModule() *models.Module {
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: module.Key,
 		Color: "232:208",
 	})
 
@@ -46,32 +51,10 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *sankakuComplex) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.Session = session.NewSession(m.Key())
+	m.Session = session.NewSession(m.Key)
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-}
-
-// Key returns the module key
-func (m *sankakuComplex) Key() (key string) {
-	return "chan.sankakucomplex.com"
-}
-
-// RequiresLogin checks if this module requires a login to work
-func (m *sankakuComplex) RequiresLogin() (requiresLogin bool) {
-	return false
-}
-
-// IsLoggedIn returns the logged in status
-func (m *sankakuComplex) IsLoggedIn() bool {
-	return m.LoggedIn
-}
-
-// RegisterURISchema adds our pattern to the URI Schemas
-func (m *sankakuComplex) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	uriSchemas[m.Key()] = []*regexp.Regexp{
-		regexp.MustCompile(".*sankakucomplex.com"),
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application

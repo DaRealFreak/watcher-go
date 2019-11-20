@@ -41,7 +41,12 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: false,
+		Key:           "e-hentai.org",
+		RequiresLogin: false,
+		LoggedIn:      false,
+		UriSchemas: []*regexp.Regexp{
+			regexp.MustCompile(`.*e[\-x]hentai.org`),
+		},
 	}
 	module.ModuleInterface = &ehentai{
 		Module:                   module,
@@ -53,7 +58,7 @@ func NewBareModule() *models.Module {
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: module.Key,
 		Color: "232:94",
 	})
 
@@ -69,34 +74,12 @@ func (m *ehentai) InitializeModule() {
 	))
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
-	m.ehSession = session.NewSession(m.Key())
+	m.ehSession = session.NewSession(m.Key)
 	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 	m.Session = m.ehSession
 
 	// set the proxy if requested
 	raven.CheckError(m.setProxyMethod())
-}
-
-// Key returns the module key
-func (m *ehentai) Key() (key string) {
-	return "e-hentai.org"
-}
-
-// RequiresLogin checks if this module requires a login to work
-func (m *ehentai) RequiresLogin() (requiresLogin bool) {
-	return false
-}
-
-// IsLoggedIn returns the logged in status
-func (m *ehentai) IsLoggedIn() bool {
-	return m.LoggedIn
-}
-
-// RegisterURISchema adds our pattern to the URI Schemas
-func (m *ehentai) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	uriSchemas[m.Key()] = []*regexp.Regexp{
-		regexp.MustCompile(`.*e[\-x]hentai.org`),
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -142,12 +125,12 @@ func (m *ehentai) Parse(item *models.TrackedItem) error {
 
 // processDownloadQueue processes the download queue consisting of gallery items
 func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) error {
-	log.WithField("module", m.Key()).Info(
+	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key()).Info(
+		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
@@ -180,7 +163,7 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGaller
 			return m.downloadItem(trackedItem, data)
 		}
 
-		log.WithField("module", m.Key()).Info("download limit reached, skipping galleries from now on")
+		log.WithField("module", m.Key).Info("download limit reached, skipping galleries from now on")
 		m.downloadLimitReached = true
 
 		return fmt.Errorf("download limit reached")
@@ -189,7 +172,7 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGaller
 	err = m.Session.DownloadFile(
 		path.Join(
 			viper.GetString("download.directory"),
-			m.Key(),
+			m.Key,
 			strings.TrimSpace(downloadQueueItem.DownloadTag),
 			strings.TrimSpace(downloadQueueItem.FileName),
 		),

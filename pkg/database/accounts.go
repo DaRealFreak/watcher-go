@@ -15,7 +15,7 @@ func (db *DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")
 	raven.CheckError(err)
 
-	rows, err := stmt.Query(module.Key())
+	rows, err := stmt.Query(module.ModuleKey())
 	raven.CheckError(err)
 
 	defer raven.CheckClosure(rows)
@@ -42,7 +42,7 @@ func (db *DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*model
 		stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY module, uid")
 		raven.CheckError(err)
 
-		rows, err = stmt.Query(module.Key())
+		rows, err = stmt.Query(module.ModuleKey())
 		raven.CheckError(err)
 	} else {
 		rows, err = db.connection.Query("SELECT * FROM accounts WHERE NOT disabled ORDER BY module, uid")
@@ -67,7 +67,7 @@ func (db *DbIO) GetFirstOrCreateAccount(user string, password string, module mod
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE user = ? AND module = ?")
 	raven.CheckError(err)
 
-	rows, err := stmt.Query(user, module.Key())
+	rows, err := stmt.Query(user, module.ModuleKey())
 	raven.CheckError(err)
 
 	defer raven.CheckClosure(rows)
@@ -94,7 +94,7 @@ func (db *DbIO) CreateAccount(user string, password string, module models.Module
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(user, password, module.Key())
+	_, err = stmt.Exec(user, password, module.ModuleKey())
 	raven.CheckError(err)
 }
 
@@ -105,7 +105,7 @@ func (db *DbIO) UpdateAccount(user string, password string, module models.Module
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(password, user, module.Key())
+	_, err = stmt.Exec(password, user, module.ModuleKey())
 	raven.CheckError(err)
 }
 
@@ -124,6 +124,6 @@ func (db *DbIO) UpdateAccountDisabledStatus(user string, disabled bool, module m
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(disabledInt, user, module.Key())
+	_, err = stmt.Exec(disabledInt, user, module.ModuleKey())
 	raven.CheckError(err)
 }

@@ -36,7 +36,7 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 
 		raven.CheckError(err)
 
-		rows, err = stmt.Query(module.Key())
+		rows, err = stmt.Query(module.ModuleKey())
 	}
 
 	raven.CheckError(err)
@@ -61,7 +61,7 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInte
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
 	raven.CheckError(err)
 
-	rows, err := stmt.Query(uri, module.Key())
+	rows, err := stmt.Query(uri, module.ModuleKey())
 	raven.CheckError(err)
 
 	defer raven.CheckClosure(rows)
@@ -88,7 +88,7 @@ func (db *DbIO) CreateTrackedItem(uri string, module models.ModuleInterface) {
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(uri, module.Key())
+	_, err = stmt.Exec(uri, module.ModuleKey())
 	raven.CheckError(err)
 }
 

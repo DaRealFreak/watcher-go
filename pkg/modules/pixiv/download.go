@@ -21,7 +21,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 		fileURI := image["image_urls"]["original"]
 
 		if err := m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
 			fileURI,
 		); err != nil {
 			// if download was not successful return the occurred error here
@@ -34,7 +34,7 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
 
 		return m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName),
+			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
 			fileURI,
 		)
 	}
@@ -92,8 +92,8 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
-	filepath := path.Join(viper.GetString("download.directory"), m.Key(), downloadQueueItem.DownloadTag, fileName)
-	log.WithField("module", m.Key()).Debug(
+	filepath := path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName)
+	log.WithField("module", m.Key).Debug(
 		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
 	)
 

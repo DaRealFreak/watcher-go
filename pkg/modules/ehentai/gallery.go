@@ -97,7 +97,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 // hasGalleryErrors checks if the gallery has any errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		log.WithField("module", m.Key()).Info("newer version of gallery available, updating uri of: " + item.URI)
+		log.WithField("module", m.Key).Info("newer version of gallery available, updating uri of: " + item.URI)
 
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
@@ -107,7 +107,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 			url, exists := row.Attr("href")
 			if exists {
 				m.DbIO.GetFirstOrCreateTrackedItem(url, m)
-				log.WithField("module", m.Key()).Info("added gallery to tracked items: " + url)
+				log.WithField("module", m.Key).Info("added gallery to tracked items: " + url)
 			}
 		})
 

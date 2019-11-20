@@ -36,7 +36,13 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		LoggedIn: false,
+		Key:           "deviantart.com",
+		RequiresLogin: true,
+		LoggedIn:      false,
+		UriSchemas: []*regexp.Regexp{
+			regexp.MustCompile(".*deviantart.com"),
+			regexp.MustCompile(`DeviantArt://.*`),
+		},
 	}
 	module.ModuleInterface = &deviantArt{
 		Module: module,
@@ -47,7 +53,7 @@ func NewBareModule() *models.Module {
 
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
-		Value: module.Key(),
+		Value: module.Key,
 		Color: "232:34",
 	})
 
@@ -57,34 +63,11 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *deviantArt) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.deviantArtSession = session.NewSession(m.Key())
+	m.deviantArtSession = session.NewSession(m.Key)
 	m.Session = m.deviantArtSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-}
-
-// Key returns the module key
-func (m *deviantArt) Key() (key string) {
-	return "deviantart.com"
-}
-
-// RequiresLogin checks if this module requires a login to work
-func (m *deviantArt) RequiresLogin() (requiresLogin bool) {
-	return true
-}
-
-// IsLoggedIn returns the logged in status
-func (m *deviantArt) IsLoggedIn() bool {
-	return m.LoggedIn
-}
-
-// RegisterURISchema adds our pattern to the URI Schemas
-func (m *deviantArt) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
-	uriSchemas[m.Key()] = []*regexp.Regexp{
-		regexp.MustCompile(".*deviantart.com"),
-		regexp.MustCompile(`DeviantArt://.*`),
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -95,7 +78,7 @@ func (m *deviantArt) AddSettingsCommand(command *cobra.Command) {
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
 	if !m.prepareSessionForOAuth2(account) {
-		log.WithField("module", m.Key()).Warning(
+		log.WithField("module", m.Key).Warning(
 			"preparing session for OAuth2 Token generation failed, please check your account",
 		)
 		return false
@@ -183,7 +166,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 			return err
 		}
 		if !exists {
-			log.WithField("module", m.Key()).Warnf("couldn't extract app url from page %s", item.URI)
+			log.WithField("module", m.Key).Warnf("couldn't extract app url from page %s", item.URI)
 			// couldn't extract url from passed uri
 			return nil
 		}

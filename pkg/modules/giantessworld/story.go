@@ -26,7 +26,7 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 	}
 
 	if item.CurrentItem == "" {
-		log.WithField("module", m.Key()).Info(
+		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"downloading initial chapter for uri: \"%s\"",
 				item.URI,
@@ -49,7 +49,7 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 		}
 
 		// download chapter updating the item and repeat the function for recursively going through story pages
-		log.WithField("module", m.Key()).Info(
+		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				item.URI,
@@ -119,7 +119,7 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 	text = m.ensureUTF8(text)
 
 	filePath := path.Join(viper.GetString("download.directory"),
-		m.Key(),
+		m.Key,
 		m.getAuthor(doc),
 		m.SanitizePath(m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
 	)

@@ -25,7 +25,7 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
 	}
 
 	if userDetails == nil {
-		log.WithField("module", m.Key()).Warning(
+		log.WithField("module", m.Key).Warning(
 			"couldn't retrieve user details, changing artist to complete",
 		)
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
@@ -74,12 +74,12 @@ func (m *pixiv) parseUserIllustrations(item *models.TrackedItem) (err error) {
 
 // processDownloadQueue processes the download queue of user illustration download queue items
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) (err error) {
-	log.WithField("module", m.Key()).Info(
+	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key()).Info(
+		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"downloading updates for uri: %s (%0.2f%%)",
 				trackedItem.URI,
@@ -98,7 +98,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		if err != nil {
 			switch err.(type) {
 			case *session.FileNotFoundError:
-				log.WithField("module", m.Key()).Warningf(
+				log.WithField("module", m.Key).Warningf(
 					"404 status code received for ID %s, skipping item",
 					data.ItemID,
 				)
