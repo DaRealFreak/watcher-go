@@ -8,13 +8,13 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/database"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 
 	// registered modules imported for registering into the module factory
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/patreon"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
 )
@@ -208,8 +208,8 @@ func (app *Watcher) loginToModule(module *models.Module) {
 	// no account available but module requires a login
 	if account == nil {
 		if module.RequiresLogin {
-			raven.CheckError(
-				fmt.Errorf("module \"%s\" requires a login, but no account could be found", module.Key),
+			log.WithField("module", module.Key).Errorf(
+				"module requires a login, but no account could be found",
 			)
 		} else {
 			return
@@ -221,8 +221,8 @@ func (app *Watcher) loginToModule(module *models.Module) {
 		log.WithField("module", module.Key).Info("login successful")
 	} else {
 		if module.RequiresLogin {
-			raven.CheckError(
-				fmt.Errorf("module \"%s\" requires a login, but the login failed", module.Key),
+			log.WithField("module", module.Key).Errorf(
+				"module requires a login, but the login failed",
 			)
 		} else {
 			log.WithField("module", module.Key).Warning("login not successful")
