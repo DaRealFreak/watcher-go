@@ -82,6 +82,25 @@ func (db *DbIO) createDatabase() {
 			complete     BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
+
+	_, err = connection.Exec(sqlStatement)
+	raven.CheckError(err)
+
+	sqlStatement = `
+		CREATE TABLE oauth_clients
+		(
+			uid           INTEGER PRIMARY KEY AUTOINCREMENT,
+			client_id     VARCHAR(255) DEFAULT '',
+			client_secret VARCHAR(255) DEFAULT '',
+			access_token  VARCHAR(255) DEFAULT '',
+			refresh_token VARCHAR(255) DEFAULT '',
+			auth_url      VARCHAR(255) DEFAULT '',
+			token_url     VARCHAR(255) DEFAULT '',
+			module        VARCHAR(255) DEFAULT '' NOT NULL ,
+			disabled      BOOLEAN      DEFAULT FALSE NOT NULL
+		);
+	`
+
 	_, err = connection.Exec(sqlStatement)
 	raven.CheckError(err)
 }
