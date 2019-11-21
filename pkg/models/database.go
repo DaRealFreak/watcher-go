@@ -13,6 +13,15 @@ type DatabaseInterface interface {
 	GetFirstOrCreateAccount(user string, password string, module ModuleInterface) *Account
 	GetAccount(module ModuleInterface) *Account
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
+
+	// OAuth client functions
+	CreateOAuthClient(
+		clientID string, clientSecret string, accessToken string, refreshToken string, module ModuleInterface,
+	)
+	GetFirstOrCreateOAuthClient(
+		clientID string, clientSecret string, accessToken string, refreshToken string, module ModuleInterface,
+	) *OAuthClient
+	GetOAuthClient(module ModuleInterface) *OAuthClient
 }
 
 // Account contains all required data from accounts in the application
