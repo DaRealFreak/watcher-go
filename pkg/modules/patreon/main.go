@@ -2,13 +2,16 @@
 package patreon
 
 import (
+	"os"
+	"regexp"
+
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"regexp"
 )
 
 // patreon contains the implementation of the ModuleInterface
@@ -26,7 +29,7 @@ func init() {
 func NewBareModule() *models.Module {
 	module := &models.Module{
 		Key:           "patreon.com",
-		RequiresLogin: true,
+		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile("www.patreon.com"),
@@ -47,6 +50,15 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *patreon) InitializeModule() {
+	oAuthClient := m.DbIO.GetOAuthClient(m)
+	if oAuthClient == nil {
+		log.WithField("module", m.Key).Errorf(
+			"module requires OAuth2 credentials, but no credentials got found",
+		)
+		// error log will exit already so actually not needed but IDE complained
+		os.Exit(1)
+	}
+
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
 
