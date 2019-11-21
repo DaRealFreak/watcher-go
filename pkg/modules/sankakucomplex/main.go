@@ -31,7 +31,7 @@ func NewBareModule() *models.Module {
 		Key:           "chan.sankakucomplex.com",
 		RequiresLogin: false,
 		LoggedIn:      false,
-		UriSchemas: []*regexp.Regexp{
+		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*sankakucomplex.com"),
 		},
 	}

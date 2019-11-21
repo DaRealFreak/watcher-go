@@ -81,7 +81,7 @@ func NewBareModule() *models.Module {
 		Key:           "pixiv.net",
 		RequiresLogin: true,
 		LoggedIn:      false,
-		UriSchemas: []*regexp.Regexp{
+		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*pixiv.(co.jp|net)"),
 		},
 	}

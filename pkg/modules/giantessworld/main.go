@@ -36,7 +36,7 @@ func NewBareModule() *models.Module {
 		Key:           "giantessworld.net",
 		RequiresLogin: false,
 		LoggedIn:      false,
-		UriSchemas: []*regexp.Regexp{
+		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile("giantessworld.net"),
 		},
 	}

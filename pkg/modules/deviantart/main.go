@@ -39,7 +39,7 @@ func NewBareModule() *models.Module {
 		Key:           "deviantart.com",
 		RequiresLogin: true,
 		LoggedIn:      false,
-		UriSchemas: []*regexp.Regexp{
+		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*deviantart.com"),
 			regexp.MustCompile(`DeviantArt://.*`),
 		},

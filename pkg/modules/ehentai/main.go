@@ -44,7 +44,7 @@ func NewBareModule() *models.Module {
 		Key:           "e-hentai.org",
 		RequiresLogin: false,
 		LoggedIn:      false,
-		UriSchemas: []*regexp.Regexp{
+		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*e[\-x]hentai.org`),
 		},
 	}
