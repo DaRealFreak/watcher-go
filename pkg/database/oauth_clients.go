@@ -11,7 +11,7 @@ import (
 )
 
 // GetOAuthClient retrieves the first not disabled OAuth client of the passed module
-func (db *DbIO) GetOAuthClient(module models.ModuleInterface) *models.Account {
+func (db *DbIO) GetOAuthClient(module models.ModuleInterface) *models.OAuthClient {
 	stmt, err := db.connection.Prepare(
 		"SELECT * FROM oauth_clients WHERE NOT disabled AND module = ? ORDER BY uid",
 	)
@@ -23,11 +23,14 @@ func (db *DbIO) GetOAuthClient(module models.ModuleInterface) *models.Account {
 	defer raven.CheckClosure(rows)
 
 	if rows.Next() {
-		account := models.Account{}
-		err = rows.Scan(&account.ID, &account.Username, &account.Password, &account.Module, &account.Disabled)
-		raven.CheckError(err)
+		oAuthClient := models.OAuthClient{}
+		raven.CheckError(rows.Scan(
+			&oAuthClient.ID, &oAuthClient.ClientID, &oAuthClient.ClientSecret,
+			&oAuthClient.AccessToken, &oAuthClient.RefreshToken,
+			&oAuthClient.Module, &oAuthClient.Disabled,
+		))
 
-		return &account
+		return &oAuthClient
 	}
 
 	return nil
