@@ -94,8 +94,6 @@ func (db *DbIO) createDatabase() {
 			client_secret VARCHAR(255) DEFAULT '',
 			access_token  VARCHAR(255) DEFAULT '',
 			refresh_token VARCHAR(255) DEFAULT '',
-			auth_url      VARCHAR(255) DEFAULT '',
-			token_url     VARCHAR(255) DEFAULT '',
 			module        VARCHAR(255) DEFAULT '' NOT NULL ,
 			disabled      BOOLEAN      DEFAULT FALSE NOT NULL
 		);
