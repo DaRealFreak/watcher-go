@@ -76,7 +76,9 @@ func (db *DbIO) GetAllOAuthClients(module models.ModuleInterface) (oAuthClients 
 func (db *DbIO) GetFirstOrCreateOAuthClient(
 	clientID string, clientSecret string, accessToken string, refreshToken string, module models.ModuleInterface,
 ) *models.OAuthClient {
-	stmt, err := db.connection.Prepare("SELECT * FROM oauth_clients WHERE client_id = ? AND module = ?")
+	stmt, err := db.connection.Prepare(
+		"SELECT * FROM oauth_clients WHERE client_id = ? AND access_token = ? AND module = ?",
+	)
 	raven.CheckError(err)
 
 	rows, err := stmt.Query(clientID, module.ModuleKey())
@@ -119,7 +121,9 @@ func (db *DbIO) CreateOAuthClient(
 }
 
 // UpdateOAuthClientDisabledStatus disables the OAuth client of the passed client ID/module
-func (db *DbIO) UpdateOAuthClientDisabledStatus(clientID string, disabled bool, module models.ModuleInterface) {
+func (db *DbIO) UpdateOAuthClientDisabledStatus(
+	clientID string, accessToken string, disabled bool, module models.ModuleInterface,
+) {
 	var disabledInt int8
 
 	if disabled {
@@ -129,12 +133,12 @@ func (db *DbIO) UpdateOAuthClientDisabledStatus(clientID string, disabled bool, 
 	}
 
 	stmt, err := db.connection.Prepare(
-		"UPDATE oauth_clients SET disabled = ? WHERE client_id = ? AND module = ?",
+		"UPDATE oauth_clients SET disabled = ? WHERE client_id = ? AND access_token = ? AND module = ?",
 	)
 	raven.CheckError(err)
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(disabledInt, clientID, module.ModuleKey())
+	_, err = stmt.Exec(disabledInt, clientID, accessToken, module.ModuleKey())
 	raven.CheckError(err)
 }
