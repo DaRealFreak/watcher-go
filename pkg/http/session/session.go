@@ -173,22 +173,35 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 			"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
 		)
 
-		auth := proxy.Auth{
-			User:     proxySettings.Username,
-			Password: proxySettings.Password,
-		}
+		switch proxySettings.Port {
+		case 1080:
+			auth := proxy.Auth{
+				User:     proxySettings.Username,
+				Password: proxySettings.Password,
+			}
 
-		dialer, err := proxy.SOCKS5(
-			"tcp",
-			fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-			&auth,
-			proxy.Direct,
-		)
-		if err != nil {
-			return err
-		}
+			dialer, err := proxy.SOCKS5(
+				"tcp",
+				fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
+				&auth,
+				proxy.Direct,
+			)
+			if err != nil {
+				return err
+			}
 
-		s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
+			s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
+		default:
+			proxyURL, _ := url.Parse(
+				fmt.Sprintf(
+					"http://%s:%s@%s:%d",
+					url.QueryEscape(proxySettings.Username), url.QueryEscape(proxySettings.Password),
+					url.QueryEscape(proxySettings.Host), proxySettings.Port,
+				),
+			)
+
+			s.GetClient().Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+		}
 	}
 
 	return nil
