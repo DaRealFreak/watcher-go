@@ -192,13 +192,24 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 
 			s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
 		default:
-			proxyURL, _ := url.Parse(
-				fmt.Sprintf(
-					"http://%s:%s@%s:%d",
-					url.QueryEscape(proxySettings.Username), url.QueryEscape(proxySettings.Password),
-					url.QueryEscape(proxySettings.Host), proxySettings.Port,
-				),
-			)
+			var proxyURL *url.URL
+
+			if proxySettings.Username != "" && proxySettings.Password != "" {
+				proxyURL, _ = url.Parse(
+					fmt.Sprintf(
+						"http://%s:%s@%s:%d",
+						url.QueryEscape(proxySettings.Username), url.QueryEscape(proxySettings.Password),
+						url.QueryEscape(proxySettings.Host), proxySettings.Port,
+					),
+				)
+			} else {
+				proxyURL, _ = url.Parse(
+					fmt.Sprintf(
+						"http://%s:%d",
+						url.QueryEscape(proxySettings.Host), proxySettings.Port,
+					),
+				)
+			}
 
 			s.GetClient().Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
 		}
