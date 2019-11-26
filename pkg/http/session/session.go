@@ -156,6 +156,11 @@ func (s *DefaultSession) GetClient() *http.Client {
 	return s.Client
 }
 
+// SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
+func (s *DefaultSession) SetClient(client *http.Client) {
+	s.Client = client
+}
+
 // ApplyRateLimit waits for the leaky bucket to fill again
 func (s *DefaultSession) ApplyRateLimit() {
 	// if no rate limiter is defined we don't have to wait
