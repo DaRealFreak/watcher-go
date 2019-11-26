@@ -28,6 +28,7 @@ type SessionInterface interface {
 	GetClient() *http.Client
 	UpdateTreeFolderChangeTimes(filePath string)
 	SetProxy(proxySettings *ProxySettings) (err error)
+	SetClient(client *http.Client)
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
