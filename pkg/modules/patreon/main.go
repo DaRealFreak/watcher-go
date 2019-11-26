@@ -2,6 +2,7 @@
 package patreon
 
 import (
+	"context"
 	"os"
 	"regexp"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 // patreon contains the implementation of the ModuleInterface
@@ -32,7 +34,7 @@ func NewBareModule() *models.Module {
 		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile("www.patreon.com"),
+			regexp.MustCompile(".*patreon.com"),
 		},
 	}
 	module.ModuleInterface = &patreon{
@@ -51,19 +53,27 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *patreon) InitializeModule() {
 	oAuthClient := m.DbIO.GetOAuthClient(m)
-	if oAuthClient == nil {
+	if oAuthClient == nil || oAuthClient.AccessToken == "" {
 		log.WithField("module", m.Key).Errorf(
-			"module requires OAuth2 credentials, but no credentials got found",
+			"module requires an OAuth2 access token, but no access token got found",
 		)
-		// error log will exit already so actually not needed but IDE complained
+		// Errorf will already exit with code 1, this line is just for the IDE
 		os.Exit(1)
 	}
 
-	// set the module implementation for access to the session, database, etc
+	// initialize session
 	m.Session = session.NewSession(m.Key)
-
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	// set context with own http client for OAuth2 library to use
+	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, m.Session.GetClient())
+
+	// create static token source and retrieve routed http client
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: oAuthClient.AccessToken})
+	tc := oauth2.NewClient(httpClientContext, ts)
+
+	m.Session.SetClient(tc)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
