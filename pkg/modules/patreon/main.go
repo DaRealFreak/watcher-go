@@ -5,12 +5,14 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -73,7 +75,19 @@ func (m *patreon) InitializeModule() {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: oAuthClient.AccessToken})
 	tc := oauth2.NewClient(httpClientContext, ts)
 
+	// add round tripper to set user agent and headers to pass CloudFlare checks
+	tc.Transport = m.SetUserAgent(tc.Transport, browser.Chrome())
+	tc.Transport = m.SetCloudFlareHeaders(tc.Transport)
+
 	m.Session.SetClient(tc)
+
+	res, err := m.Session.Get("https://www.patreon.com/api/oauth2/api/current_user")
+	raven.CheckError(err)
+
+	doc := m.Session.GetDocument(res)
+	if !strings.Contains(doc.Text(), "\"id\":\"") {
+		log.WithField("module", m.Key).Errorf("your token got revoked or is invalid")
+	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
