@@ -31,6 +31,10 @@ func (m *patreon) SetUserAgent(inner http.RoundTripper, userAgent string) http.R
 // RoundTrip adds the custom user agent to request headers
 func (ug *userAgentRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Header.Set("User-Agent", ug.Agent)
+
+	if ug.inner == nil {
+		return http.DefaultTransport.RoundTrip(r)
+	}
 	return ug.inner.RoundTrip(r)
 }
 
@@ -40,5 +44,8 @@ func (ug *cloudFlareRoundTripper) RoundTrip(r *http.Request) (*http.Response, er
 	r.Header.Set("Accept-Encoding", "gzip, deflate, br")
 	r.Header.Set("Accept-Language", "en-US,en;q=0.5")
 
+	if ug.inner == nil {
+		return http.DefaultTransport.RoundTrip(r)
+	}
 	return ug.inner.RoundTrip(r)
 }
