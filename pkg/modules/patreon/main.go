@@ -2,10 +2,7 @@
 package patreon
 
 import (
-	"context"
-	"os"
 	"regexp"
-	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -13,14 +10,13 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	browser "github.com/EDDYCJY/fake-useragent"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 )
 
 // patreon contains the implementation of the ModuleInterface
 type patreon struct {
 	*models.Module
+	creatorIPattern *regexp.Regexp
 }
 
 // nolint: gochecknoinits
@@ -40,7 +36,8 @@ func NewBareModule() *models.Module {
 		},
 	}
 	module.ModuleInterface = &patreon{
-		Module: module,
+		Module:          module,
+		creatorIPattern: regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
 	}
 
 	// register module to log formatter
@@ -54,40 +51,15 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *patreon) InitializeModule() {
-	oAuthClient := m.DbIO.GetOAuthClient(m)
-	if oAuthClient == nil || oAuthClient.AccessToken == "" {
-		log.WithField("module", m.Key).Errorf(
-			"module requires an OAuth2 access token, but no access token got found",
-		)
-		// Errorf will already exit with code 1, this line is just for the IDE
-		os.Exit(1)
-	}
-
 	// initialize session
 	m.Session = session.NewSession(m.Key)
+
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 
-	// set context with own http client for OAuth2 library to use
-	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, m.Session.GetClient())
-
-	// create static token source and retrieve routed http client
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: oAuthClient.AccessToken})
-	tc := oauth2.NewClient(httpClientContext, ts)
-
-	// add round tripper to set user agent and headers to pass CloudFlare checks
-	tc.Transport = m.SetUserAgent(tc.Transport, browser.Chrome())
-	tc.Transport = m.SetCloudFlareHeaders(tc.Transport)
-
-	m.Session.SetClient(tc)
-
-	res, err := m.Session.Get("https://www.patreon.com/api/oauth2/api/current_user")
-	raven.CheckError(err)
-
-	doc := m.Session.GetDocument(res)
-	if !strings.Contains(doc.Text(), "\"id\":\"") {
-		log.WithField("module", m.Key).Errorf("your token got revoked or is invalid")
-	}
+	client := m.Session.GetClient()
+	client.Transport = m.SetUserAgent(client.Transport, browser.Firefox())
+	client.Transport = m.SetCloudFlareHeaders(client.Transport)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -102,5 +74,5 @@ func (m *patreon) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *patreon) Parse(item *models.TrackedItem) error {
-	return nil
+	return m.parseCampaign(item)
 }
