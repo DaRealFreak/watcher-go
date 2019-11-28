@@ -1,9 +1,30 @@
 package patreon
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 )
+
+// userResponse contains not all but the relevant data of the user response of the public API
+type userResponse struct {
+	Data struct {
+		Attributes struct {
+			FullName string `json:"full_name"`
+			Vanity   string `json:"vanity"`
+		} `json:"attributes"`
+		ID            json.Number `json:"id"`
+		Relationships struct {
+			Campaign struct {
+				Data *struct {
+					ID   json.Number `json:"id"`
+					Type string      `json:"type"`
+				} `json:"data"`
+			} `json:"campaign"`
+		} `json:"relationships"`
+		Type string `json:"type"`
+	} `json:"data"`
+}
 
 // getCreatorID extracts the creator ID from the campaign URI
 func (m *patreon) getCreatorID(campaignURI string) (int, error) {
@@ -20,4 +41,28 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 	creatorID, _ := strconv.ParseInt(creatorIDMatches[1], 10, 64)
 
 	return int(creatorID), nil
+}
+
+// getCreatorCampaign returns the campaign ID of the creator ID
+func (m *patreon) getCreatorCampaign(creatorID int) (int, error) {
+	res, err := m.Session.Get(fmt.Sprintf("https://www.patreon.com/api/user/%d", creatorID))
+	if err != nil {
+		return 0, err
+	}
+
+	var userResponse userResponse
+	if err := json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &userResponse); err != nil {
+		return 0, err
+	}
+
+	if userResponse.Data.Relationships.Campaign.Data == nil {
+		return 0, fmt.Errorf("user has no campaign")
+	}
+
+	campaignID, err := userResponse.Data.Relationships.Campaign.Data.ID.Int64()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(campaignID), nil
 }
