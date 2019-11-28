@@ -3,6 +3,7 @@ package patreon
 import (
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,8 @@ import (
 // postDownload is the struct used for downloading post contents
 type postDownload struct {
 	PostID      int
+	CreatorID   int
+	CreatorName string
 	Attachments []*campaignInclude
 }
 
@@ -34,6 +37,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				path.Join(
 					viper.GetString("download.directory"),
 					m.Key,
+					fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
 					fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name),
 				),
 				attachment.Attributes.URL,
@@ -43,7 +47,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			}
 		}
 
-		m.DbIO.UpdateTrackedItem(item, string(data.PostID))
+		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(data.PostID))
 	}
 
 	return nil
