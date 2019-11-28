@@ -2,6 +2,8 @@
 package patreon
 
 import (
+	"crypto/tls"
+	"net/http"
 	"regexp"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -56,6 +58,13 @@ func (m *patreon) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	// set TLS configuration for transport layer of client to pass CloudFlare checks
+	if trans, ok := m.Session.GetClient().Transport.(*http.Transport); ok {
+		trans.TLSClientConfig = &tls.Config{
+			PreferServerCipherSuites: true,
+		}
+	}
 
 	client := m.Session.GetClient()
 	client.Transport = m.SetUserAgent(client.Transport, browser.Firefox())
