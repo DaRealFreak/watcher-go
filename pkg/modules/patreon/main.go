@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -41,6 +40,20 @@ type loginData struct {
 // loginData is the json struct for the JSON login form
 type loginFormData struct {
 	Data loginData `json:"data"`
+}
+
+type loginErrorResponse struct {
+	Errors []*struct {
+		Code     json.Number `json:"code"`
+		CodeName string      `json:"code_name"`
+		Detail   string      `json:"detail"`
+	} `json:"errors"`
+}
+
+type loginSuccessResponse struct {
+	Data struct {
+		ID json.Number `json:"id"`
+	} `json:"data"`
 }
 
 // nolint: gochecknoinits
@@ -125,10 +138,30 @@ func (m *patreon) Login(account *models.Account) bool {
 		log.WithField("module", m.Key).Error(err)
 	}
 
-	m.LoggedIn = strings.Contains(
-		m.Session.GetDocument(res).Text(),
-		fmt.Sprintf(`"email":"%s"`, account.Username),
+	loginRes := m.Session.GetDocument(res).Text()
+
+	var (
+		loginError   loginErrorResponse
+		loginSuccess loginSuccessResponse
 	)
+
+	if err := json.Unmarshal([]byte(loginRes), &loginError); err != nil {
+		log.WithField("module", m.Key).Error(err)
+	}
+
+	if len(loginError.Errors) > 0 {
+		for _, err := range loginError.Errors {
+			log.WithField("module", m.Key).Fatal(
+				fmt.Errorf("error occurred during login (code: %s): %s", err.Code, err.Detail),
+			)
+		}
+	}
+
+	if err := json.Unmarshal([]byte(loginRes), &loginSuccess); err != nil {
+		log.WithField("module", m.Key).Error(err)
+	}
+
+	m.LoggedIn = loginSuccess.Data.ID.String() != ""
 
 	return m.LoggedIn
 }
