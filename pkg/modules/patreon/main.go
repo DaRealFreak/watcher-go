@@ -10,14 +10,13 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	browser "github.com/EDDYCJY/fake-useragent"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
