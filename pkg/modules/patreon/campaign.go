@@ -41,9 +41,6 @@ type campaignInclude struct {
 		// attributes of attachment types
 		Name string `json:"name"`
 		URL  string `json:"url"`
-		// attributes of media types
-		DownloadURL string `json:"download_url"`
-		FileName    string `json:"file_name"`
 		// attributes of tiered/locked rewards
 		AccessRuleType string `json:"access_rule_type"`
 	} `json:"attributes"`
@@ -69,7 +66,7 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		return err
 	}
 
-	var campaignIncludes []*campaignInclude
+	var postDownloads []*postDownload
 
 	foundCurrentItem := false
 	campaignPostsURI := m.getCampaignPostsURI(campaignID)
@@ -82,11 +79,23 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		}
 
 		for _, post := range postsData.Posts {
+			postID, _ := strconv.ParseInt(post.ID.String(), 10, 64)
+			if !(item.CurrentItem == "" || postID > currentItemID) {
+				foundCurrentItem = true
+				break
+			}
+
+			postDownload := &postDownload{
+				PostID: int(postID),
+			}
+
 			for _, attachment := range post.Relationships.AttachmentSection.Attachments {
 				if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
-					campaignIncludes = append(campaignIncludes, include)
+					postDownload.Attachments = append(postDownload.Attachments, include)
 				}
 			}
+
+			postDownloads = append(postDownloads, postDownload)
 		}
 
 		// we are already on the last page
@@ -97,9 +106,12 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		campaignPostsURI = postsData.Links.Next
 	}
 
-	fmt.Println(campaignIncludes, currentItemID)
+	// reverse to add oldest posts first
+	for i, j := 0, len(postDownloads)-1; i < j; i, j = i+1, j-1 {
+		postDownloads[i], postDownloads[j] = postDownloads[j], postDownloads[i]
+	}
 
-	return nil
+	return m.processDownloadQueue(postDownloads, item)
 }
 
 // getCampaignPostsURI returns the post public API URI for the first page
