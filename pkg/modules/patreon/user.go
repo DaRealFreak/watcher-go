@@ -43,26 +43,21 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 	return int(creatorID), nil
 }
 
-// getCreatorCampaign returns the campaign ID of the creator ID
-func (m *patreon) getCreatorCampaign(creatorID int) (int, error) {
+// getCreatorCampaign returns the campaign data of the creator ID
+func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 	res, err := m.Session.Get(fmt.Sprintf("https://www.patreon.com/api/user/%d", creatorID))
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var userResponse userResponse
 	if err := json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &userResponse); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if userResponse.Data.Relationships.Campaign.Data == nil {
-		return 0, fmt.Errorf("user has no campaign")
+		return nil, fmt.Errorf("user has no campaign")
 	}
 
-	campaignID, err := userResponse.Data.Relationships.Campaign.Data.ID.Int64()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(campaignID), nil
+	return &userResponse, nil
 }
