@@ -33,7 +33,8 @@ func NewSession(moduleKey string) *DefaultSession {
 
 	app := DefaultSession{
 		Client: &http.Client{
-			Jar: jar,
+			Jar:       jar,
+			Transport: http.DefaultTransport,
 		},
 		MaxRetries: 5,
 		ctx:        context.Background(),
