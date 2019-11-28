@@ -17,6 +17,7 @@ type campaignResponse struct {
 	} `json:"links"`
 }
 
+// campaignPost is the struct of the posts of the campaign
 type campaignPost struct {
 	Attributes struct {
 		URL      string `json:"url"`
@@ -26,13 +27,15 @@ type campaignPost struct {
 		} `json:"post_file"`
 	} `json:"attributes"`
 	Relationships struct {
-		Attachments struct {
+		AttachmentSection struct {
+			Attachments []*attachmentData `json:"data"`
 		} `json:"attachments"`
 	} `json:"relationships"`
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
 }
 
+// campaignInclude is the struct of all includes related to the posts
 type campaignInclude struct {
 	Attributes struct {
 		// attributes of attachment types
@@ -44,6 +47,12 @@ type campaignInclude struct {
 		// attributes of tiered/locked rewards
 		AccessRuleType string `json:"access_rule_type"`
 	} `json:"attributes"`
+	ID   json.Number `json:"id"`
+	Type string      `json:"type"`
+}
+
+// attachmentData is the struct of the attachment in the post data
+type attachmentData struct {
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
 }
@@ -73,7 +82,11 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		}
 
 		for _, post := range postsData.Posts {
-			fmt.Println(post.ID)
+			for _, attachment := range post.Relationships.AttachmentSection.Attachments {
+				if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
+					campaignIncludes = append(campaignIncludes, include)
+				}
+			}
 		}
 
 		// we are already on the last page
@@ -123,4 +136,15 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 	err = json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &postsData)
 
 	return &postsData, err
+}
+
+// findAttachmentInIncludes looks for an included attachments by the attachment ID
+func (m *patreon) findAttachmentInIncludes(attachment *attachmentData, includes []*campaignInclude) *campaignInclude {
+	for _, include := range includes {
+		if include.ID == attachment.ID {
+			return include
+		}
+	}
+
+	return nil
 }
