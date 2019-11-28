@@ -61,7 +61,12 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		return err
 	}
 
-	campaignID, err := m.getCreatorCampaign(creatorID)
+	campaign, err := m.getCreatorCampaign(creatorID)
+	if err != nil {
+		return err
+	}
+
+	campaignID, err := strconv.ParseInt(campaign.Data.Relationships.Campaign.Data.ID.String(), 10, 64)
 	if err != nil {
 		return err
 	}
@@ -69,7 +74,7 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 	var postDownloads []*postDownload
 
 	foundCurrentItem := false
-	campaignPostsURI := m.getCampaignPostsURI(campaignID)
+	campaignPostsURI := m.getCampaignPostsURI(int(campaignID))
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 
 	for !foundCurrentItem {
@@ -86,7 +91,9 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 			}
 
 			postDownload := &postDownload{
-				PostID: int(postID),
+				CreatorID:   creatorID,
+				CreatorName: campaign.Data.Attributes.Vanity,
+				PostID:      int(postID),
 			}
 
 			for _, attachment := range post.Relationships.AttachmentSection.Attachments {
