@@ -18,5 +18,6 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 	}
 
 	creatorID, _ := strconv.ParseInt(creatorIDMatches[1], 10, 64)
+
 	return int(creatorID), nil
 }

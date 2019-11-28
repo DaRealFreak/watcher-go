@@ -35,6 +35,7 @@ func (ug *userAgentRoundTripper) RoundTrip(r *http.Request) (*http.Response, err
 	if ug.inner == nil {
 		return http.DefaultTransport.RoundTrip(r)
 	}
+
 	return ug.inner.RoundTrip(r)
 }
 
@@ -47,5 +48,6 @@ func (ug *cloudFlareRoundTripper) RoundTrip(r *http.Request) (*http.Response, er
 	if ug.inner == nil {
 		return http.DefaultTransport.RoundTrip(r)
 	}
+
 	return ug.inner.RoundTrip(r)
 }
