@@ -2,9 +2,15 @@
 package patreon
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -19,6 +25,23 @@ import (
 type patreon struct {
 	*models.Module
 	creatorIPattern *regexp.Regexp
+}
+
+type loginAttributes struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type loginData struct {
+	Relationships struct {
+	} `json:"relationships"`
+	Type       string          `json:"type"`
+	Attributes loginAttributes `json:"attributes"`
+}
+
+// loginData is the json struct for the JSON login form
+type loginFormData struct {
+	Data loginData `json:"data"`
 }
 
 // nolint: gochecknoinits
@@ -78,6 +101,36 @@ func (m *patreon) AddSettingsCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *patreon) Login(account *models.Account) bool {
+	loginData := loginFormData{
+		Data: loginData{
+			Type: "user",
+			Attributes: loginAttributes{
+				Email:    account.Username,
+				Password: account.Password,
+			},
+			Relationships: struct{}{},
+		},
+	}
+
+	data, err := json.Marshal(loginData)
+	if err != nil {
+		log.WithField("module", m.Key).Error(err)
+	}
+
+	res, err := m.Session.GetClient().Post(
+		"https://www.patreon.com/api/login?include=campaign,user_location&json-api-version=1.0",
+		"application/vnd.api+json",
+		bytes.NewReader(data),
+	)
+	if err != nil {
+		log.WithField("module", m.Key).Error(err)
+	}
+
+	m.LoggedIn = strings.Contains(
+		m.Session.GetDocument(res).Text(),
+		fmt.Sprintf(`"email":"%s"`, account.Username),
+	)
+
 	return m.LoggedIn
 }
 
