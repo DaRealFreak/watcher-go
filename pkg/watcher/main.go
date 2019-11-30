@@ -14,6 +14,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/jinjamodoki"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/patreon"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
