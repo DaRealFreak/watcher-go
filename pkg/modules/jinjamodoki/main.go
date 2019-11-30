@@ -2,15 +2,20 @@
 package jinjamodoki
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/url"
 	"regexp"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/time/rate"
 )
 
 // jinjaModoki contains the implementation of the ModuleInterface
@@ -51,10 +56,14 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *jinjaModoki) InitializeModule() {
-	m.Session = session.NewSession(m.Key)
-
+	moduleSession := session.NewSession(m.Key)
+	moduleSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
+	m.Session = moduleSession
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	client := m.Session.GetClient()
+	client.Transport = m.SetReferer(client.Transport)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -69,5 +78,12 @@ func (m *jinjaModoki) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *jinjaModoki) Parse(item *models.TrackedItem) error {
+	res, err := m.Session.Get(item.URI)
+	if err != nil {
+		log.WithField("module", m.Key).Fatal(err)
+	}
+
+	test, err := ioutil.ReadAll(res.Body)
+	fmt.Println(string(test))
 	return nil
 }
