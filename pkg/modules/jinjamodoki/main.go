@@ -62,6 +62,15 @@ func (m *jinjaModoki) InitializeModule() {
 
 	client := m.Session.GetClient()
 	client.Transport = m.SetReferer(client.Transport)
+
+	// disable browsing access restrictions
+	_, err := m.Session.Post("https://gs-uploader.jinja-modoki.com/upld-index.php?", url.Values{
+		"mode":          {"complete"},
+		"prev_mode":     {"top"},
+		"item":          {"restriction"},
+		"restriction[]": {"0", "1", "2", "3", "4"},
+	})
+	raven.CheckError(err)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
