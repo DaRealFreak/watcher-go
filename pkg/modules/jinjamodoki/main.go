@@ -1,9 +1,7 @@
-// jinjamodoki contains the implementation of the jinjamodoki module
+// Package jinjamodoki contains the implementation of the jinjamodoki module
 package jinjamodoki
 
 import (
-	"fmt"
-	"io/ioutil"
 	"net/url"
 	"regexp"
 	"time"
@@ -13,7 +11,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/time/rate"
 )
@@ -21,8 +18,7 @@ import (
 // jinjaModoki contains the implementation of the ModuleInterface
 type jinjaModoki struct {
 	*models.Module
-	baseURL              *url.URL
-	chapterUpdatePattern *regexp.Regexp
+	baseURL *url.URL
 }
 
 // nolint: gochecknoinits
@@ -56,6 +52,8 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *jinjaModoki) InitializeModule() {
+	m.baseURL, _ = url.Parse("https://gs-uploader.jinja-modoki.com/")
+
 	moduleSession := session.NewSession(m.Key)
 	moduleSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
 	m.Session = moduleSession
@@ -78,12 +76,5 @@ func (m *jinjaModoki) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *jinjaModoki) Parse(item *models.TrackedItem) error {
-	res, err := m.Session.Get(item.URI)
-	if err != nil {
-		log.WithField("module", m.Key).Fatal(err)
-	}
-
-	test, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(test))
-	return nil
+	return m.parsePage(item)
 }
