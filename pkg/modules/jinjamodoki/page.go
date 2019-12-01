@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/PuerkitoBio/goquery"
@@ -19,6 +20,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 
 	foundCurrent := false
 	currentPageURI := item.URI
+	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 
 	for !foundCurrent {
 		res, err := m.Session.Get(currentPageURI)
@@ -32,8 +34,8 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 		doc.Find(`table.list > tbody > tr[class]`).Each(func(i int, selection *goquery.Selection) {
 			if !foundCurrent {
 				if downloadQueueItem, err := m.parseItem(selection); err == nil {
-					currentItemID, _ := strconv.ParseInt(downloadQueueItem.ItemID, 10, 64)
-					if int(currentItemID) == item.ID {
+					itemID, _ := strconv.ParseInt(downloadQueueItem.ItemID, 10, 64)
+					if itemID <= currentItemID {
 						foundCurrent = true
 						return
 					}
@@ -76,11 +78,27 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem models.DownloadQueueItem, err error) {
 	link := selection.Find(`td:nth-child(2) > a[href*="?file="]`).First()
 	id := selection.Find(`td:nth-child(4) > input[name="did[]"][value]`).First()
+	restrictions := selection.Find(`td:nth-child(10)`).First()
 	relativeURI, _ := link.Attr("href")
 
 	u, err := url.Parse(relativeURI)
 	if err != nil {
 		return downloadItem, err
+	}
+
+	if strings.TrimSpace(restrictions.Text()) != "" {
+		res, err := m.Session.Get(m.baseURL.ResolveReference(u).String())
+		if err != nil {
+			return downloadItem, err
+		}
+
+		link = m.Session.GetDocument(res).Find(`table.info tr:nth-child(3) a[href*="/documents/"]`).First()
+		relativeURI, _ = link.Attr("href")
+
+		u, err = url.Parse(relativeURI)
+		if err != nil {
+			return downloadItem, err
+		}
 	}
 
 	downloadItem.ItemID, _ = id.Attr("value")
