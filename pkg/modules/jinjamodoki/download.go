@@ -33,25 +33,37 @@ func (m *jinjaModoki) processDownloadQueue(queue []models.DownloadQueueItem, ite
 			),
 		)
 
-		filePath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, data.FileName)
-
-		err := m.defaultSession.DownloadFile(
-			filePath,
-			data.FileURI,
-		)
-		if err != nil {
+		if err := m.downloadItem(data, item); err != nil {
 			return err
 		}
-
-		if err := m.checkDownloadedFileForErrors(filePath); err != nil {
-			return err
-		}
-
-		m.DbIO.UpdateTrackedItem(item, data.ItemID)
 	}
 
 	// remove rate limiter again for next item
 	m.defaultSession.RateLimiter = nil
+
+	return nil
+}
+
+func (m *jinjaModoki) downloadItem(data models.DownloadQueueItem, item *models.TrackedItem) error {
+	filePath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, data.FileName)
+
+	err := m.defaultSession.DownloadFile(
+		filePath,
+		data.FileURI,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := m.checkDownloadedFileForErrors(filePath); err != nil {
+		if err := m.setProxyMethod(); err != nil {
+			return err
+		}
+
+		return m.downloadItem(data, item)
+	}
+
+	m.DbIO.UpdateTrackedItem(item, data.ItemID)
 
 	return nil
 }
@@ -66,6 +78,7 @@ func (m *jinjaModoki) processDownloadQueue(queue []models.DownloadQueueItem, ite
 // - 20 GB/60 min
 // - 800 GB/24 hours
 func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
+	// #nosec
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		// error reading file, not downloaded properly?
