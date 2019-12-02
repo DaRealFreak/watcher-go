@@ -2,7 +2,7 @@
 package version
 
 // VERSION program version
-const VERSION = "1.4.0"
+const VERSION = "1.4.1"
 
 // RepositoryURL repository url to check for new versions
 const RepositoryURL = "DaRealFreak/watcher-go"
