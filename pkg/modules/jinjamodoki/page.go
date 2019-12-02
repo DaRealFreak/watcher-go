@@ -72,7 +72,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 		}
 	}
 
-	return m.ProcessDownloadQueue(downloadQueue, item)
+	return m.processDownloadQueue(downloadQueue, item)
 }
 
 func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem models.DownloadQueueItem, err error) {
