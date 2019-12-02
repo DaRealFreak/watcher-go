@@ -4,7 +4,6 @@ package jinjamodoki
 import (
 	"net/url"
 	"regexp"
-	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -12,13 +11,13 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
-	"golang.org/x/time/rate"
 )
 
 // jinjaModoki contains the implementation of the ModuleInterface
 type jinjaModoki struct {
 	*models.Module
-	baseURL *url.URL
+	baseURL        *url.URL
+	defaultSession *session.DefaultSession
 }
 
 // nolint: gochecknoinits
@@ -55,8 +54,8 @@ func (m *jinjaModoki) InitializeModule() {
 	m.baseURL, _ = url.Parse("https://gs-uploader.jinja-modoki.com/")
 
 	moduleSession := session.NewSession(m.Key)
-	moduleSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
-	m.Session = moduleSession
+	m.defaultSession = moduleSession
+	m.Session = m.defaultSession
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 
