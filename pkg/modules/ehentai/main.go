@@ -24,11 +24,10 @@ import (
 type ehentai struct {
 	*models.Module
 	downloadLimitReached     bool
-	ProxyLoopIndex           int
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
-	settings                 *ModuleConfiguration
+	settings                 *models.ProxyLoopConfiguration
 	ehSession                *session.DefaultSession
 }
 
@@ -47,13 +46,13 @@ func NewBareModule() *models.Module {
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*e[\-x]hentai.org`),
 		},
+		ProxyLoopIndex: -1,
 	}
 	module.ModuleInterface = &ehentai{
 		Module:                   module,
 		galleryImageIDPattern:    regexp.MustCompile(`(\w+-\d+)`),
 		galleryImageIndexPattern: regexp.MustCompile(`\w+-(?P<Number>\d+)`),
 		searchGalleryIDPattern:   regexp.MustCompile(`(\d+)/\w+`),
-		ProxyLoopIndex:           -1,
 	}
 
 	// register module to log formatter
@@ -85,7 +84,7 @@ func (m *ehentai) InitializeModule() {
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *ehentai) AddSettingsCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
-	m.addProxyLoopCommands(command)
+	m.AddProxyLoopCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
