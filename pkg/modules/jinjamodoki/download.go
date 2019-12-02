@@ -77,6 +77,8 @@ func (m *jinjaModoki) downloadItem(data models.DownloadQueueItem, item *models.T
 // - 5 GB/5 min
 // - 20 GB/60 min
 // - 800 GB/24 hours
+// possible proxy limitations:
+// - website doesn't allow public proxies, maybe list got updated
 func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
 	// #nosec
 	content, err := ioutil.ReadFile(filePath)
