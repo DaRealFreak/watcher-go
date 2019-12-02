@@ -13,14 +13,16 @@ import (
 
 // parsePage parses a user page for contributions
 func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
-	var (
-		downloadQueue []models.DownloadQueueItem
-		err           error
-	)
+	var downloadQueue []models.DownloadQueueItem
 
 	foundCurrent := false
 	currentPageURI := item.URI
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+	downloadTag, err := m.getDownloadTagFromItemURI(item.URI)
+
+	if err != nil {
+		return err
+	}
 
 	for !foundCurrent {
 		res, err := m.Session.Get(currentPageURI)
@@ -34,6 +36,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 		doc.Find(`table.list > tbody > tr[class]`).Each(func(i int, selection *goquery.Selection) {
 			if !foundCurrent {
 				if downloadQueueItem, err := m.parseItem(selection); err == nil {
+					downloadQueueItem.DownloadTag = downloadTag
 					itemID, _ := strconv.ParseInt(downloadQueueItem.ItemID, 10, 64)
 					if itemID <= currentItemID {
 						foundCurrent = true
@@ -65,11 +68,6 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
-		downloadQueue[i].DownloadTag, err = m.getDownloadTagFromItemURI(item.URI)
-
-		if err != nil {
-			return err
-		}
 	}
 
 	return m.processDownloadQueue(downloadQueue, item)
