@@ -1,6 +1,8 @@
 package watcher
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +18,7 @@ func (cli *CliApplication) addAddCommand() {
 	cli.rootCmd.AddCommand(addCmd)
 	addCmd.AddCommand(cli.getAddAccountCommand())
 	addCmd.AddCommand(cli.getAddItemCommand())
+	addCmd.AddCommand(cli.getAddOAuthClientCommand())
 }
 
 // getAddItemCommand returns the command for the add item sub command
@@ -58,6 +61,42 @@ func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the account (required)")
 	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
+	_ = accountCmd.MarkFlagRequired("url")
+
+	return accountCmd
+}
+
+// getAddOAuthClientCommand returns the command for the add oauth sub command
+func (cli *CliApplication) getAddOAuthClientCommand() *cobra.Command {
+	var (
+		url          string
+		clientID     string
+		clientSecret string
+		accessToken  string
+		refreshToken string
+	)
+
+	// add the account option, requires username, password and uri
+	accountCmd := &cobra.Command{
+		Use:   "oauth",
+		Short: "adds an OAuth2 client to the database",
+		Long:  "checks the passed url to assign the passed OAuth2 client to a module and save it to the database",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if clientID == "" && refreshToken == "" {
+				return fmt.Errorf("either clientID or accessToken is required as argument")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.AddOAuthClientByURI(url, clientID, clientSecret, accessToken, refreshToken)
+		},
+	}
+	accountCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
+	accountCmd.Flags().StringVar(&clientSecret, "client-secret", "", "OAuth2 client secret")
+	accountCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
+	accountCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
+	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the OAuth2 client (required)")
 	_ = accountCmd.MarkFlagRequired("url")
 
 	return accountCmd

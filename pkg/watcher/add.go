@@ -15,3 +15,11 @@ func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
 	}
 }
+
+// AddOAuthClientByURI adds an OAuth2 client based on the uri
+func (app *Watcher) AddOAuthClientByURI(
+	uri string, clientID string, clientSecret string, accessToken string, refreshToken string,
+) {
+	module := app.ModuleFactory.GetModuleFromURI(uri)
+	app.DbCon.GetFirstOrCreateOAuthClient(clientID, clientSecret, accessToken, refreshToken, module)
+}
