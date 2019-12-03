@@ -61,6 +61,8 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 			if nextPageOffset <= currentPageOffset {
 				break
 			}
+		} else {
+			break
 		}
 	}
 
