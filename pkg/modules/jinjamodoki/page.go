@@ -17,7 +17,6 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 
 	foundCurrent := false
 	currentPageURI := item.URI
-	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	downloadTag, err := m.getDownloadTagFromItemURI(item.URI)
 
 	if err != nil {
@@ -37,8 +36,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 			if !foundCurrent {
 				if downloadQueueItem, err := m.parseItem(selection); err == nil {
 					downloadQueueItem.DownloadTag = downloadTag
-					itemID, _ := strconv.ParseInt(downloadQueueItem.ItemID, 10, 64)
-					if itemID <= currentItemID {
+					if downloadQueueItem.ItemID == item.CurrentItem {
 						foundCurrent = true
 						return
 					}
@@ -75,9 +73,8 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 
 func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem models.DownloadQueueItem, err error) {
 	link := selection.Find(`td:nth-child(2) > a[href*="?file="]`).First()
-	id := selection.Find(`td:nth-child(4) > input[name="did[]"][value]`).First()
-	restrictions := selection.Find(`td:nth-child(10)`).First()
 	relativeURI, _ := link.Attr("href")
+	restrictions := selection.Find(`td:last-child`).First()
 
 	u, err := url.Parse(relativeURI)
 	if err != nil {
@@ -99,16 +96,16 @@ func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem mode
 		}
 	}
 
-	downloadItem.ItemID, _ = id.Attr("value")
 	downloadItem.FileURI = m.baseURL.ResolveReference(u).String()
-	downloadItem.FileName, err = m.getFileNameFromFileURI(downloadItem.ItemID, downloadItem.FileURI)
+	downloadItem.FileName, err = m.getFileNameFromFileURI(downloadItem.FileURI)
+	downloadItem.ItemID = downloadItem.FileName
 
 	return downloadItem, err
 }
 
 // findNextPage returns the HTML selection to the next page if existing
 func (m *jinjaModoki) findNextPage(doc *goquery.Document) *goquery.Selection {
-	return doc.Find("div.list_all > form a[href*='offset']:last-child")
+	return doc.Find(`div.list_all a[href*="offset"]:last-child`)
 }
 
 // getNavigationOffset returns the navigation offset from the passed URI GET parameters (0 if not set)
@@ -126,15 +123,15 @@ func (m *jinjaModoki) getNavigationOffset(navigationURI string) int {
 	return int(offset)
 }
 
-func (m *jinjaModoki) getFileNameFromFileURI(itemID string, fileURI string) (string, error) {
+func (m *jinjaModoki) getFileNameFromFileURI(fileURI string) (string, error) {
 	u, _ := url.Parse(fileURI)
-
 	q, _ := url.ParseQuery(u.RawQuery)
+
 	if len(q["file"]) == 0 {
 		return "", fmt.Errorf("parsed uri(%s) does not contain any \"file\" tag", fileURI)
 	}
 
-	return fmt.Sprintf("%s_%s", itemID, filepath.Base(q["file"][0])), nil
+	return filepath.Base(q["file"][0]), nil
 }
 
 func (m *jinjaModoki) getDownloadTagFromItemURI(fileURI string) (string, error) {
