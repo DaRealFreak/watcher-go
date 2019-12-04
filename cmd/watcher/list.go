@@ -17,6 +17,7 @@ func (cli *CliApplication) addListCommand() {
 
 	cli.rootCmd.AddCommand(listCmd)
 	listCmd.AddCommand(cli.getListAccountsCommand())
+	listCmd.AddCommand(cli.getListOAuthClientsCommand())
 	listCmd.AddCommand(cli.getListItemsCommand())
 	listCmd.AddCommand(cli.getListModulesCommand())
 	listCmd.AddCommand(cli.getListAllCommand())
@@ -32,6 +33,23 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 		Long:  "displays all accounts currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.watcher.ListAccounts(url)
+		},
+	}
+	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
+
+	return accountCmd
+}
+
+// getListOAuthClientsCommand returns the command for the list oauth sub command
+func (cli *CliApplication) getListOAuthClientsCommand() *cobra.Command {
+	var url string
+
+	accountCmd := &cobra.Command{
+		Use:   "oauth",
+		Short: "displays all OAuth2 clients",
+		Long:  "displays all OAuth2 clients currently in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.ListOAuthClients(url)
 		},
 	}
 	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
@@ -63,6 +81,8 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 
 // getListAllCommand returns the command for the list all sub command
 func (cli *CliApplication) getListAllCommand() *cobra.Command {
+	var url string
+
 	allCmd := &cobra.Command{
 		Use:   "all",
 		Short: "displays modules, accounts and items in the database",
@@ -72,12 +92,17 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 			cli.watcher.ListRegisteredModules()
 			fmt.Println("\n ")
 			fmt.Println("Accounts:")
-			cli.watcher.ListAccounts("")
+			cli.watcher.ListAccounts(url)
+			fmt.Println("\n ")
+			fmt.Println("OAuth2 Clients:")
+			cli.watcher.ListOAuthClients(url)
 			fmt.Println("\n ")
 			fmt.Println("Tracked Items:")
-			cli.watcher.ListTrackedItems("", true)
+			cli.watcher.ListTrackedItems(url, true)
 		},
 	}
+
+	allCmd.Flags().StringVar(&url, "url", "", "url of module")
 
 	return allCmd
 }

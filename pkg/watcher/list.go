@@ -86,3 +86,35 @@ func (app *Watcher) ListAccounts(uri string) {
 
 	_ = w.Flush()
 }
+
+// ListOAuthClients lists all OAuth2 clients with the option to limit it to a module
+func (app *Watcher) ListOAuthClients(uri string) {
+	var oAuthClients []*models.OAuthClient
+	if uri == "" {
+		oAuthClients = app.DbCon.GetAllOAuthClients(nil)
+	} else {
+		module := app.ModuleFactory.GetModuleFromURI(uri)
+		oAuthClients = app.DbCon.GetAllOAuthClients(module)
+	}
+
+	// initialize tab writer
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	_, _ = fmt.Fprintln(w, "ID\tClient ID\tClient Secret\tAccess Token\tRefresh Token\tModule\tDisabled")
+
+	for _, oAuthClient := range oAuthClients {
+		_, _ = fmt.Fprintf(
+			w,
+			"%d\t%s\t%s\t%s\t%s\t%s\t%t\n",
+			oAuthClient.ID,
+			oAuthClient.ClientID,
+			oAuthClient.ClientSecret,
+			oAuthClient.AccessToken,
+			oAuthClient.RefreshToken,
+			oAuthClient.Module,
+			oAuthClient.Disabled,
+		)
+	}
+
+	_ = w.Flush()
+}
