@@ -82,7 +82,7 @@ func (cli *CliApplication) getAddOAuthClientCommand() *cobra.Command {
 		Short: "adds an OAuth2 client to the database",
 		Long:  "checks the passed url to assign the passed OAuth2 client to a module and save it to the database",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if clientID == "" && refreshToken == "" {
+			if clientID == "" && accessToken == "" {
 				return fmt.Errorf("either clientID or accessToken is required as argument")
 			}
 
