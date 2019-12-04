@@ -1,6 +1,8 @@
 package watcher
 
 import (
+	"fmt"
+
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/update"
 	"github.com/spf13/cobra"
@@ -21,6 +23,7 @@ func (cli *CliApplication) addUpdateCommand() {
 
 	cli.rootCmd.AddCommand(addCmd)
 	addCmd.AddCommand(cli.getUpdateAccountCommand())
+	addCmd.AddCommand(cli.getUpdateOAuthClientCommand())
 	addCmd.AddCommand(cli.getUpdateItemCommand())
 }
 
@@ -103,6 +106,109 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 	_ = disableCmd.MarkFlagRequired("user")
 
 	return disableCmd
+}
+
+// getUpdateAccountCommand returns the command for the update oauth sub command
+func (cli *CliApplication) getUpdateOAuthClientCommand() *cobra.Command {
+	var (
+		url          string
+		clientID     string
+		clientSecret string
+		accessToken  string
+		refreshToken string
+	)
+
+	accountCmd := &cobra.Command{
+		Use:   "oauth",
+		Short: "updates the saved OAuth2 client",
+		Long:  "updates the saved OAuth2 client in the database (new client secret/access token/refresh token)",
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.UpdateOAuthClientByURI(url, clientID, clientSecret, accessToken, refreshToken)
+		},
+	}
+
+	accountCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
+	accountCmd.Flags().StringVar(&clientSecret, "client-secret", "", "OAuth2 client secret")
+	accountCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
+	accountCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
+
+	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+
+	_ = accountCmd.MarkFlagRequired("url")
+	_ = accountCmd.MarkFlagRequired("client-id")
+
+	accountCmd.AddCommand(cli.getEnableOAuthClientCommand())
+	accountCmd.AddCommand(cli.getDisableOAuthClientCommand())
+
+	return accountCmd
+}
+
+// getEnableOAuthClientCommand returns the command for the update oauth enable sub command
+// nolint: dupl
+func (cli *CliApplication) getEnableOAuthClientCommand() *cobra.Command {
+	var (
+		url         string
+		clientID    string
+		accessToken string
+	)
+
+	disableCmd := &cobra.Command{
+		Use:   "disable",
+		Short: "disable an OAuth2 client based on the client ID or access token",
+		Long:  "update the database to set the OAuth2 client of the module to disabled",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if clientID == "" && accessToken == "" {
+				return fmt.Errorf("either clientID or accessToken is required as argument")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.UpdateOAuthClientDisabledStatusByURI(url, clientID, accessToken, true)
+		},
+	}
+
+	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	disableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
+	disableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
+
+	_ = disableCmd.MarkFlagRequired("url")
+
+	return disableCmd
+}
+
+// getDisableOAuthClientCommand returns the command for the update oauth disable sub command
+// nolint: dupl
+func (cli *CliApplication) getDisableOAuthClientCommand() *cobra.Command {
+	var (
+		url         string
+		clientID    string
+		accessToken string
+	)
+
+	enableCmd := &cobra.Command{
+		Use:   "enable",
+		Short: "enables an OAuth2 client based on the client ID or access token",
+		Long:  "update the database to set the OAuth2 client of the module to enabled",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if clientID == "" && accessToken == "" {
+				return fmt.Errorf("either clientID or accessToken is required as argument")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.UpdateOAuthClientDisabledStatusByURI(url, clientID, accessToken, false)
+		},
+	}
+
+	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	enableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
+	enableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
+
+	_ = enableCmd.MarkFlagRequired("url")
+
+	return enableCmd
 }
 
 // getUpdateItemCommand returns the command for the update item sub command
