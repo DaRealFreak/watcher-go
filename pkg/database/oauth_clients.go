@@ -81,7 +81,7 @@ func (db *DbIO) GetFirstOrCreateOAuthClient(
 	)
 	raven.CheckError(err)
 
-	rows, err := stmt.Query(clientID, module.ModuleKey())
+	rows, err := stmt.Query(clientID, accessToken, module.ModuleKey())
 	raven.CheckError(err)
 
 	defer raven.CheckClosure(rows)
