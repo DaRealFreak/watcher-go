@@ -89,7 +89,7 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 		Long:  "displays all modules, accounts and items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Modules:")
-			cli.watcher.ListRegisteredModules()
+			cli.watcher.ListRegisteredModules(url)
 			fmt.Println("\n ")
 			fmt.Println("Accounts:")
 			cli.watcher.ListAccounts(url)
@@ -109,14 +109,18 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 
 // getListModulesCommand returns the command for the list modules sub command
 func (cli *CliApplication) getListModulesCommand() *cobra.Command {
+	var url string
+
 	modulesCmd := &cobra.Command{
 		Use:   "modules",
 		Short: "shows all registered modules",
 		Long:  "shows all currently implemented and registered modules",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.ListRegisteredModules()
+			cli.watcher.ListRegisteredModules(url)
 		},
 	}
+
+	modulesCmd.Flags().StringVar(&url, "url", "", "url of module")
 
 	return modulesCmd
 }
