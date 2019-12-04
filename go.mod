@@ -14,6 +14,7 @@ require (
 	github.com/jaytaylor/html2text v0.0.0-20190408195923-01ec452cbe43
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.4
+	github.com/mattn/go-runewidth v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.12.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.3 // indirect
@@ -30,9 +31,9 @@ require (
 	github.com/tcnksm/go-gitconfig v0.1.2
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
-	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933
-	golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c
-	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
+	golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a
+	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
+	golang.org/x/sys v0.0.0-20191204072324-ce4227a45e2e // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
