@@ -9,12 +9,20 @@ import (
 )
 
 // ListRegisteredModules lists all registered modules
-func (app *Watcher) ListRegisteredModules() {
+func (app *Watcher) ListRegisteredModules(uri string) {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
 	_, _ = fmt.Fprintln(w, "ID\tModule Key\tRequires Login")
 
-	for index, module := range app.ModuleFactory.GetAllModules() {
+	var modules []*models.Module
+
+	if uri == "" {
+		modules = app.ModuleFactory.GetAllModules()
+	} else {
+		modules = []*models.Module{app.ModuleFactory.GetModuleFromURI(uri)}
+	}
+
+	for index, module := range modules {
 		_, _ = fmt.Fprintf(
 			w,
 			"%d\t%s\t%t\n",
