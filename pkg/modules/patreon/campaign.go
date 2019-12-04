@@ -113,12 +113,16 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		campaignPostsURI = postsData.Links.Next
 	}
 
+	return m.processDownloadQueue(m.reverseDownloadQueue(postDownloads), item)
+}
+
+func (m *patreon) reverseDownloadQueue(downloadQueue []*postDownload) []*postDownload {
 	// reverse to add oldest posts first
-	for i, j := 0, len(postDownloads)-1; i < j; i, j = i+1, j-1 {
-		postDownloads[i], postDownloads[j] = postDownloads[j], postDownloads[i]
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
 
-	return m.processDownloadQueue(postDownloads, item)
+	return downloadQueue
 }
 
 // getCampaignPostsURI returns the post public API URI for the first page
