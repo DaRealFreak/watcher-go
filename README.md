@@ -205,6 +205,7 @@ It is also possible to further specify more precisely what you want to backup us
 Available Commands:
   accounts    generates a backup of the current accounts
   items       generates a backup of the current items
+  oauth       generates a backup of the current OAuth2 clients
   settings    generates a backup of the current settings
 ```
 
@@ -225,6 +226,7 @@ As with the backup command it is possible to further specify what you want to re
 Available Commands:
   accounts    restores the accounts table from the passed archive
   items       restores the tracked_items table from the passed archive
+  oauth       restores the oauth_clients table from the passed archive
   settings    restores the settings file from the passed archive
 ```
 

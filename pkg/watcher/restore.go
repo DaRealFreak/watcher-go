@@ -37,7 +37,9 @@ func (app *Watcher) Restore(archiveName string, cfg *AppConfiguration) {
 		log.Info("settings restored successfully")
 	}
 
-	if cfg.Restore.Database.Accounts.Enabled || cfg.Restore.Database.Items.Enabled {
+	if cfg.Restore.Database.Accounts.Enabled ||
+		cfg.Restore.Database.Items.Enabled ||
+		cfg.Restore.Database.OAuth2Clients.Enabled {
 		raven.CheckError(app.restoreDatabase(reader, cfg))
 	}
 }
@@ -64,7 +66,9 @@ func (app *Watcher) getArchiveReader(archiveName string) (reader archive.Reader,
 // if items and accounts are exported and SQL mode is not active we just archive the db file
 func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration) (err error) {
 	switch {
-	case cfg.Restore.Database.Accounts.Enabled && cfg.Restore.Database.Items.Enabled:
+	case cfg.Restore.Database.Accounts.Enabled &&
+		cfg.Restore.Database.Items.Enabled &&
+		cfg.Restore.Database.OAuth2Clients.Enabled:
 		// check if [database] exists in archive, else check for accounts.sql and tracked_items.sql
 		if exists, _ := reader.HasFile(filepath.Base(cfg.Database)); exists {
 			file, err := reader.GetFile(filepath.Base(cfg.Database))
@@ -85,13 +89,16 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 			log.Info("restored database file from archive")
 		}
 
-		return app.restoreTablesFromArchive(reader, "accounts.sql", "tracked_items.sql")
+		return app.restoreTablesFromArchive(reader, "accounts.sql", "tracked_items.sql", "oauth_clients.sql")
 	case cfg.Restore.Database.Accounts.Enabled:
 		// check for accounts.sql in archive
 		return app.restoreTablesFromArchive(reader, "accounts.sql")
 	case cfg.Restore.Database.Items.Enabled:
 		// check for tracked_items.sql in archive
 		return app.restoreTablesFromArchive(reader, "tracked_items.sql")
+	case cfg.Restore.Database.OAuth2Clients.Enabled:
+		// check for oauth_clients.sql in archive
+		return app.restoreTablesFromArchive(reader, "oauth_clients.sql")
 	}
 
 	// no restore option selected, should be unreachable from the command line options

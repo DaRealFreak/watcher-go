@@ -25,7 +25,9 @@ func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
 		raven.CheckError(app.backupSettings(writer, cfg))
 	}
 
-	if cfg.Backup.Database.Accounts.Enabled || cfg.Backup.Database.Items.Enabled {
+	if cfg.Backup.Database.Accounts.Enabled ||
+		cfg.Backup.Database.Items.Enabled ||
+		cfg.Backup.Database.OAuth2Clients.Enabled {
 		raven.CheckError(app.backupDatabase(writer, cfg))
 	}
 
@@ -36,9 +38,11 @@ func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
 // if items and accounts are exported and SQL mode is not active we just archive the db file
 func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration) (err error) {
 	switch {
-	case cfg.Backup.Database.Accounts.Enabled && cfg.Backup.Database.Items.Enabled:
+	case cfg.Backup.Database.Accounts.Enabled &&
+		cfg.Backup.Database.Items.Enabled &&
+		cfg.Backup.Database.OAuth2Clients.Enabled:
 		if cfg.Backup.Database.SQL {
-			for _, table := range []string{"accounts", "tracked_items"} {
+			for _, table := range []string{"accounts", "tracked_items", "oauth_clients"} {
 				app.backupTableAsSQL(writer, table)
 			}
 		} else {
@@ -51,6 +55,8 @@ func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration)
 		app.backupTableAsSQL(writer, "accounts")
 	case cfg.Backup.Database.Items.Enabled:
 		app.backupTableAsSQL(writer, "tracked_items")
+	case cfg.Backup.Database.OAuth2Clients.Enabled:
+		app.backupTableAsSQL(writer, "oauth_clients")
 	}
 
 	return err
