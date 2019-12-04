@@ -120,6 +120,24 @@ func (db *DbIO) CreateOAuthClient(
 	raven.CheckError(err)
 }
 
+// UpdateOAuthClient updates the OAuth client of the passed client ID & module
+// updating static token sources is currently not supported, disabling and adding a new one would make more sense
+func (db *DbIO) UpdateOAuthClient(
+	clientID string, clientSecret string, accessToken string, refreshToken string, module models.ModuleInterface,
+) {
+	stmt, err := db.connection.Prepare(
+		"UPDATE oauth_clients " +
+			"SET client_id = ?, client_secret = ?, access_token = ?, refresh_token = ? " +
+			"WHERE client_id = ? AND module = ?",
+	)
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(clientID, clientSecret, accessToken, refreshToken, clientID, module.ModuleKey())
+	raven.CheckError(err)
+}
+
 // UpdateOAuthClientDisabledStatus disables the OAuth client of the passed client ID/module
 func (db *DbIO) UpdateOAuthClientDisabledStatus(
 	clientID string, accessToken string, disabled bool, module models.ModuleInterface,
