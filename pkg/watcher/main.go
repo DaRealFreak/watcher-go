@@ -18,6 +18,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/patreon"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/sankakucomplex"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/twitter"
 )
 
 // DefaultDatabasePath is the default path for the database file
