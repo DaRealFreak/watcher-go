@@ -15,6 +15,7 @@ func (cli *CliApplication) addRestoreCommand() {
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Restore.Database.Accounts.Enabled = true
 			cli.config.Restore.Database.Items.Enabled = true
+			cli.config.Restore.Database.OAuth2Clients.Enabled = true
 			cli.config.Restore.Settings = true
 			cli.watcher.Restore(args[0], cli.config)
 		},
@@ -22,6 +23,7 @@ func (cli *CliApplication) addRestoreCommand() {
 
 	restoreCmd.AddCommand(cli.getRestoreAccountsCommand())
 	restoreCmd.AddCommand(cli.getRestoreItemsCommand())
+	restoreCmd.AddCommand(cli.getRestoreOAuthClientsCommand())
 	restoreCmd.AddCommand(cli.getRestoreSettingsCommand())
 	cli.rootCmd.AddCommand(restoreCmd)
 }
@@ -45,7 +47,7 @@ func (cli *CliApplication) getRestoreAccountsCommand() *cobra.Command {
 
 // getRestoreItemsCommand returns the command for the restore items sub command
 func (cli *CliApplication) getRestoreItemsCommand() *cobra.Command {
-	backupItemsCmd := &cobra.Command{
+	restoreItemsCmd := &cobra.Command{
 		Use:   "items [archive name]",
 		Short: "restores the tracked_items table from the passed archive",
 		Long: "restores only the tracked_items table from the passed archive.\n" +
@@ -57,7 +59,24 @@ func (cli *CliApplication) getRestoreItemsCommand() *cobra.Command {
 		},
 	}
 
-	return backupItemsCmd
+	return restoreItemsCmd
+}
+
+// getRestoreOAuthClientsCommand returns the command for the restore oauth sub command
+func (cli *CliApplication) getRestoreOAuthClientsCommand() *cobra.Command {
+	restoreOauthClientsCmd := &cobra.Command{
+		Use:   "oauth [archive name]",
+		Short: "restores the oauth_clients table from the passed archive",
+		Long: "restores only the oauth_clients table from the passed archive.\n" +
+			"Requires a oauth_clients.sql file in the backup archive",
+		Args: cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.config.Restore.Database.OAuth2Clients.Enabled = true
+			cli.watcher.Restore(args[0], cli.config)
+		},
+	}
+
+	return restoreOauthClientsCmd
 }
 
 // getRestoreSettingsCommand returns the command for the restore settings sub command
