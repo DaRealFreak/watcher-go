@@ -73,12 +73,13 @@ to run independently from each other, ignoring possible rate limits from other m
 It is also possible to run only specific modules by attaching the repeated flag `--url`.  
 In case you want to disable modules from being run you can attach the repeated flag `--disable`.
 
-### Adding Accounts/Items
-Accounts and tracked items be added by attaching to the add command (f.e. `watcher add item`)
+### Adding Accounts/Items/OAuth2 Clients
+Accounts, tracked items and OAuth2 clients can be added by attaching to the add command (f.e. `watcher add item`)
 ```
 Available Commands:
   account     adds an account to the database
   item        adds an item to the database
+  oauth       adds an OAuth2 client to the database
 ```
 
 Following flags are available for the `watcher add account` command
@@ -93,19 +94,32 @@ Flags:
 Items can be added by executing following command:  
 `watcher add item [url1] [url2] [url3] ...`
 
-### List Accounts/Items/Modules 
+OAuth2 clients have following flags and require either a client ID for the normal authentication or an access token
+for a static token source:
+```
+Flags:
+      --client-id string       OAuth2 client ID
+      --client-secret string   OAuth2 client secret
+      --access-token string    OAuth2 access token
+      --refresh-token string   OAuth2 refresh token
+      --url string             url for the association of the OAuth2 client (required)
+```
+
+### List Accounts/OAuth2 Clients/Items/Modules
 To see what accounts, items and modules are available you can add following sub commands to the list command
 ```
 Available Commands:
   all         displays modules, accounts and items in the database
   accounts    displays all accounts
   items       displays all items
+  oauth       displays all OAuth2 clients
   modules     shows all registered modules
 ``` 
 
-watcher list items got the extra flag `--include-completed` if you also want to display completed items into the list.
+You can attach a `--url` flag to specify the module of all sub commands in the list category.  
+Watcher list items got the extra flag `--include-completed` if you also want to display completed items into the list.
 
-### Updating Application/Accounts/Items
+### Updating Application/Accounts/Items/OAuth2 Clients
 The update sub command will check for available updates of the application and download it.
 In case you want to update an account or tracked item you can add the following sub commands:
 ```
@@ -113,6 +127,7 @@ Available Commands:
   -           updates the application
   account     updates the saved account
   item        updates the saved current item
+  oauth       updates the saved OAuth2 client
 ```
 
 accounts got the following flags:
@@ -133,8 +148,22 @@ items got the following flags:
       --url string       url of tracked item you want to update (required)
 ```
 
-### Enabling/Disabling Accounts/Items
-You can also enable/disable accounts and items individually with the update sub command.  
+oauth got the following flags:
+```
+Available Commands:
+  disable     disable an OAuth2 client based on the client ID or access token
+  enable      enables an OAuth2 client based on the client ID or access token
+
+Flags:
+      --client-id string       OAuth2 client ID
+      --client-secret string   OAuth2 client secret
+      --access-token string    OAuth2 access token
+      --refresh-token string   OAuth2 refresh token
+      --url string             url of module (required)
+```
+
+### Enabling/Disabling Accounts/Items/OAuth2 Clients
+You can also enable/disable accounts, OAuth2 clients and items individually with the update sub command.  
 To enable accounts run `watcher update account enable`, to disable accounts `watcher update account disable`.  
 
 Accounts need the following flags:
@@ -142,6 +171,13 @@ Accounts need the following flags:
 Flags:
       --url string    url of module (required)
   -u, --user string   username (required)
+```
+
+OAuth2 clients requires the following flags (either client ID or Access Token has to be passed to the function):
+```
+      --client-id string      OAuth2 client ID
+      --access-token string   OAuth2 access token
+      --url string            url of module (required)
 ```
 
 Similar to the accounts is the command for enabling items:  
