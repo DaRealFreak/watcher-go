@@ -2,7 +2,7 @@ package twitter
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/url"
 	"regexp"
 
@@ -15,20 +15,24 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return err
 	}
 
-	resp, err := m.Session.Get(fmt.Sprintf(
-		"https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=%s&trim_user=true&count=200",
-		url.QueryEscape(screenName),
-	))
-	if err != nil {
-		return err
+	values := url.Values{
+		"screen_name": {screenName},
+		"trim_user":   {"1"},
+		"count":       {"200"},
+		"include_rts": {"1"},
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	res, apiErr, err := m.getUserTimeline(values)
 	if err != nil {
-		fmt.Printf("Error: %s", err)
+		log.Fatal(err)
+		return nil
 	}
 
-	fmt.Println(string(body))
+	if apiErr != nil {
+		return fmt.Errorf("api error occurred")
+	}
+
+	fmt.Println(res)
 
 	return nil
 }
