@@ -114,7 +114,8 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
 		return true
 	}
 
-	if strings.Contains(html, "This gallery has been removed or is unavailable.") {
+	if strings.Contains(html, "This gallery has been removed or is unavailable.") ||
+		strings.Contains(html, "Gallery not found.") {
 		return true
 	}
 
