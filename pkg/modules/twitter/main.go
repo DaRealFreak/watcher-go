@@ -93,5 +93,5 @@ func (m *twitter) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *twitter) Parse(item *models.TrackedItem) error {
-	return nil
+	return m.parsePage(item)
 }
