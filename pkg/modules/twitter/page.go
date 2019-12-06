@@ -20,20 +20,52 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		"count":       {"200"},
 		"include_rts": {"1"},
 	}
+	maxID := ""
+	latestTweetID := ""
 
-	tweets, apiErr, err := m.getUserTimeline(values)
-	if err != nil {
-		return nil
+	var newMetaTweets []*Tweet
+
+	for {
+		if maxID != "" {
+			values.Set("max_id", maxID)
+		}
+
+		if item.CurrentItem != "" {
+			values.Set("since_id", item.CurrentItem)
+		}
+
+		tweets, apiErr, err := m.getUserTimeline(values)
+		if err != nil {
+			return nil
+		}
+
+		if apiErr != nil {
+			return fmt.Errorf("api error occurred")
+		}
+
+		if maxID != "" {
+			// remove the first element which is our current max_id
+			tweets = tweets[1:]
+		} else {
+			latestTweetID = tweets[0].ID.String()
+		}
+
+		mediaTweets := m.filterRetweet(m.filterMediaTweets(tweets), false)
+		newMetaTweets = append(newMetaTweets, mediaTweets...)
+
+		// break if we don't have at least one new tweet to navigate to the next page
+		if len(tweets) < 1 {
+			break
+		}
+
+		maxID = tweets[len(tweets)-1].ID.String()
 	}
 
-	if apiErr != nil {
-		return fmt.Errorf("api error occurred")
-	}
+	// download meta from tweets
+	fmt.Println(newMetaTweets)
 
-	// only find original tweets with media elements attached to it
-	mediaTweets := m.filterRetweet(m.filterMediaTweets(tweets), false)
-
-	fmt.Println(mediaTweets)
+	// set to the latest tweet ID
+	fmt.Println(latestTweetID)
 
 	return nil
 }
