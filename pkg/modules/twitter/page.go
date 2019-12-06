@@ -61,7 +61,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		maxID = tweets[len(tweets)-1].ID.String()
 	}
 
-	if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
+	if err := m.processDownloadQueue(m.reverseTweets(newMediaTweets), item); err != nil {
 		return err
 	}
 
