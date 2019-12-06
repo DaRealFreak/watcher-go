@@ -211,10 +211,6 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 // loginToModule handles the login for modules, if an account exists: login
 func (app *Watcher) loginToModule(module *models.Module) {
-	log.WithField("module", module.Key).Info(
-		fmt.Sprintf("logging in for module %s", module.Key),
-	)
-
 	account := app.DbCon.GetAccount(module)
 
 	// no account available but module requires a login
@@ -227,6 +223,10 @@ func (app *Watcher) loginToModule(module *models.Module) {
 			return
 		}
 	}
+
+	log.WithField("module", module.Key).Info(
+		fmt.Sprintf("logging in for module %s", module.Key),
+	)
 
 	// login into the module
 	if module.Login(account) {
