@@ -48,3 +48,11 @@ func (m *twitter) processDownloadQueue(downloadQueue []*Tweet, trackedItem *mode
 
 	return nil
 }
+
+func (m *twitter) reverseTweets(tweets []*Tweet) []*Tweet {
+	for i, j := 0, len(tweets)-1; i < j; i, j = i+1, j-1 {
+		tweets[i], tweets[j] = tweets[j], tweets[i]
+	}
+
+	return tweets
+}
