@@ -25,13 +25,14 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 
 	var newMetaTweets []*Tweet
 
+	// if we previously checked the user already we include the since_id to retrieve only new tweets
+	if item.CurrentItem != "" {
+		values.Set("since_id", item.CurrentItem)
+	}
+
 	for {
 		if maxID != "" {
 			values.Set("max_id", maxID)
-		}
-
-		if item.CurrentItem != "" {
-			values.Set("since_id", item.CurrentItem)
 		}
 
 		tweets, apiErr, err := m.getUserTimeline(values)
