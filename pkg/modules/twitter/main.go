@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
@@ -15,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	"golang.org/x/time/rate"
 )
 
 // twitter contains the implementation of the ModuleInterface
@@ -33,7 +35,7 @@ func NewBareModule() *models.Module {
 	module := &models.Module{
 		Key:           "twitter.com",
 		RequiresLogin: false,
-		LoggedIn:      false,
+		LoggedIn:      true,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*twitter.com"),
 		},
@@ -63,7 +65,10 @@ func (m *twitter) InitializeModule() {
 	}
 
 	// initialize session
-	m.Session = session.NewSession(m.Key)
+	twitterSession := session.NewSession(m.Key)
+	// twitter rate limits: 900 requests per 15 minutes
+	twitterSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 900)
+	m.Session = twitterSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
@@ -87,7 +92,7 @@ func (m *twitter) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available
-func (m *twitter) Login(account *models.Account) bool {
+func (m *twitter) Login(_ *models.Account) bool {
 	return m.LoggedIn
 }
 
