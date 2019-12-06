@@ -23,7 +23,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 	maxID := ""
 	latestTweetID := ""
 
-	var newMetaTweets []*Tweet
+	var newMediaTweets []*Tweet
 
 	// if we previously checked the user already we include the since_id to retrieve only new tweets
 	if item.CurrentItem != "" {
@@ -52,9 +52,8 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		}
 
 		mediaTweets := m.filterRetweet(m.filterMediaTweets(tweets), false)
-		newMetaTweets = append(newMetaTweets, mediaTweets...)
+		newMediaTweets = append(newMediaTweets, mediaTweets...)
 
-		// break if we don't have at least one new tweet to navigate to the next page
 		if len(tweets) < 1 {
 			break
 		}
@@ -62,11 +61,12 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		maxID = tweets[len(tweets)-1].ID.String()
 	}
 
-	// download meta from tweets
-	fmt.Println(newMetaTweets)
+	if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
+		return err
+	}
 
-	// set to the latest tweet ID
-	fmt.Println(latestTweetID)
+	// update to the latest tweet ID which doesn't have to contain media elements for less required checks next run
+	m.DbIO.UpdateTrackedItem(item, latestTweetID)
 
 	return nil
 }
