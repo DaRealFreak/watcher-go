@@ -25,7 +25,6 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 
 	var newMediaTweets []*Tweet
 
-	// if we previously checked the user already we include the since_id to retrieve only new tweets
 	if item.CurrentItem != "" {
 		values.Set("since_id", item.CurrentItem)
 	}
@@ -47,7 +46,9 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		if maxID != "" {
 			// remove the first element which is our current max_id
 			tweets = tweets[1:]
-		} else {
+		}
+
+		if latestTweetID == "" && len(tweets) > 0 {
 			latestTweetID = tweets[0].ID.String()
 		}
 
@@ -65,7 +66,6 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return err
 	}
 
-	// update to the latest tweet ID which doesn't have to contain media elements for less required checks next run
 	m.DbIO.UpdateTrackedItem(item, latestTweetID)
 
 	return nil
@@ -84,7 +84,7 @@ func (m *twitter) extractScreenName(uri string) (string, error) {
 // only filters the indexed tweets of 6-9 days and is unreliable
 func (m *twitter) filterMediaTweets(tweets []*Tweet) (mediaTweets []*Tweet) {
 	for _, tweet := range tweets {
-		if len(tweet.Entities.MediaElement) > 0 {
+		if len(tweet.ExtendedEntities.Media) > 0 {
 			mediaTweets = append(mediaTweets, tweet)
 		}
 	}
