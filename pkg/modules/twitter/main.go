@@ -67,7 +67,7 @@ func (m *twitter) InitializeModule() {
 	// initialize session
 	twitterSession := session.NewSession(m.Key)
 	// twitter rate limits: 900 requests per 15 minutes
-	twitterSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 900)
+	twitterSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
 	m.Session = twitterSession
 
 	// set the proxy if requested
