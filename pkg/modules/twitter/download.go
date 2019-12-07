@@ -29,7 +29,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []*Tweet, trackedItem *mode
 			),
 		)
 
-		for _, entity := range tweet.Entities.MediaElement {
+		for _, entity := range tweet.ExtendedEntities.Media {
 			if err := m.Session.DownloadFile(
 				path.Join(
 					viper.GetString("download.directory"),
