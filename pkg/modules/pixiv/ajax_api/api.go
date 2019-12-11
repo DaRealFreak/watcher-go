@@ -4,6 +4,7 @@ package ajaxapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -49,13 +50,20 @@ func (a *AjaxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err er
 	content := a.Session.GetDocument(res).Text()
 
 	if res.StatusCode >= 400 {
-		var apiErr APIError
-		// unmarshal the request content into the error struct
-		if err := json.Unmarshal([]byte(content), &apiErr); err != nil {
-			return err
+		var (
+			apiErr    APIError
+			apiReqErr APIRequestError
+		)
+
+		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+			return apiErr
 		}
 
-		return apiErr
+		if err := json.Unmarshal([]byte(content), &apiReqErr); err == nil {
+			return &apiReqErr
+		}
+
+		return fmt.Errorf(`unknown error response: "%s"`, content)
 	}
 
 	// unmarshal the request content into the response struct
