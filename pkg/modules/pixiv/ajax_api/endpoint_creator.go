@@ -73,12 +73,11 @@ func (a *AjaxAPI) GetPostList(userID int) (*PostInfo, error) {
 		"maxId":                {strconv.Itoa(math.MaxUint32)},
 		"limit":                {"200"},
 	}
-
 	apiURL := fmt.Sprintf("https://fanbox.pixiv.net/api/post.listCreator?%s", values.Encode())
 
 	res, err := a.Session.Get(apiURL)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := a.mapAPIResponse(res, &postInfo); err != nil {
