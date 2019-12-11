@@ -1,8 +1,9 @@
-// Package ajax_api handles the AJAX functionality which is not usable from neither the public or the mobile API
+// Package ajaxapi handles the AJAX functionality which is not usable from neither the public or the mobile API
 // such as the fanboxes or possibly the like functionality
-package ajax_api
+package ajaxapi
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 )
 
+// AjaxAPI is the implementation of the not reachable but required endpoints not in the public or mobile API
 type AjaxAPI struct {
 	StorageURL *url.URL
 	Session    watcherHttp.SessionInterface
@@ -36,7 +38,30 @@ func (a *AjaxAPI) SetCookies() {
 	)
 }
 
+// SetPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
 func (a *AjaxAPI) SetPixivRoundTripper() {
 	client := a.Session.GetClient()
 	client.Transport = SetPixivWebHeaders(client.Transport, a.LoginData)
+}
+
+// mapAPIResponse maps the API response into the passed APIResponse type
+func (a *AjaxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
+	content := a.Session.GetDocument(res).Text()
+
+	if res.StatusCode >= 400 {
+		var apiErr APIError
+		// unmarshal the request content into the error struct
+		if err := json.Unmarshal([]byte(content), &apiErr); err != nil {
+			return err
+		}
+
+		return apiErr
+	}
+
+	// unmarshal the request content into the response struct
+	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+		return err
+	}
+
+	return nil
 }
