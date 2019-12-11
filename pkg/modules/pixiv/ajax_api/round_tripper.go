@@ -1,9 +1,10 @@
-package ajax_api
+package ajaxapi
 
 import (
 	"fmt"
-	browser "github.com/EDDYCJY/fake-useragent"
 	"net/http"
+
+	browser "github.com/EDDYCJY/fake-useragent"
 )
 
 type pixivRoundTripper struct {
@@ -11,12 +12,13 @@ type pixivRoundTripper struct {
 	loginData LoginData
 }
 
+// LoginData contains the required cookie data which is additionally added in the header
 type LoginData struct {
 	SessionID   string
 	DeviceToken string
 }
 
-// SetPixivWebHeaders
+// SetPixivWebHeaders returns the round tripper for the pixiv web headers
 func SetPixivWebHeaders(inner http.RoundTripper, loginData LoginData) http.RoundTripper {
 	return &pixivRoundTripper{
 		inner:     inner,
