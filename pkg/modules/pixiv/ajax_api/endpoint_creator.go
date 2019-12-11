@@ -3,6 +3,10 @@ package ajaxapi
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net/url"
+	"strconv"
+	"time"
 )
 
 // FanboxUser contains the relevant information of the user passed from the API
@@ -38,10 +42,8 @@ type CreatorInfo struct {
 // PostInfo contains all relevant pixiv fanbox post info
 type PostInfo struct {
 	Body struct {
-		Post struct {
-			Items   []FanboxPost `json:"items"`
-			NextURL string       `json:"nextUrl"`
-		} `json:"post"`
+		Items   []FanboxPost `json:"items"`
+		NextURL string       `json:"nextUrl"`
 	} `json:"body"`
 }
 
@@ -65,9 +67,16 @@ func (a *AjaxAPI) GetCreator(userID int) (*CreatorInfo, error) {
 func (a *AjaxAPI) GetPostList(userID int) (*PostInfo, error) {
 	var postInfo PostInfo
 
-	url := fmt.Sprintf("https://fanbox.pixiv.net/api/post.listCreator?userId=%d", userID)
+	values := url.Values{
+		"userId":               {strconv.Itoa(userID)},
+		"maxPublishedDatetime": {time.Now().Format("2006-01-02 15:04:05")},
+		"maxId":                {strconv.Itoa(math.MaxUint32)},
+		"limit":                {"200"},
+	}
 
-	res, err := a.Session.Get(url)
+	apiURL := fmt.Sprintf("https://fanbox.pixiv.net/api/post.listCreator?%s", values.Encode())
+
+	res, err := a.Session.Get(apiURL)
 	if err != nil {
 		panic(err)
 	}
