@@ -17,7 +17,8 @@ func TestLogin(t *testing.T) {
 	ajaxAPI.SetCookies()
 	ajaxAPI.SetPixivRoundTripper()
 
-	res, err := ajaxAPI.Session.Get("https://www.pixiv.net/setting_user.php")
+	// https://www.pixiv.net/ajax/fanbox/creator?userId=12345
+	res, err := ajaxAPI.Session.Get("https://fanbox.pixiv.net/api/post.info?postId=12345")
 	if err != nil {
 		panic(err)
 	}

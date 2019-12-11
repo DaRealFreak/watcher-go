@@ -13,10 +13,7 @@ import (
 type AjaxAPI struct {
 	StorageURL *url.URL
 	Session    watcherHttp.SessionInterface
-	LoginData  struct {
-		SessionID   string
-		DeviceToken string
-	}
+	LoginData  LoginData
 }
 
 // NewAjaxAPI initializes the module
@@ -24,7 +21,7 @@ func NewAjaxAPI(moduleKey string) *AjaxAPI {
 	ajaxAPI := &AjaxAPI{
 		Session: session.NewSession(moduleKey),
 	}
-	ajaxAPI.StorageURL, _ = url.Parse(".pixiv.net")
+	ajaxAPI.StorageURL, _ = url.Parse("https://pixiv.net")
 
 	return ajaxAPI
 }
@@ -41,5 +38,5 @@ func (a *AjaxAPI) SetCookies() {
 
 func (a *AjaxAPI) SetPixivRoundTripper() {
 	client := a.Session.GetClient()
-	client.Transport = SetPixivWebHeaders(client.Transport)
+	client.Transport = SetPixivWebHeaders(client.Transport, a.LoginData)
 }
