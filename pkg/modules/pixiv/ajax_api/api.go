@@ -16,7 +16,7 @@ import (
 type AjaxAPI struct {
 	StorageURL *url.URL
 	Session    watcherHttp.SessionInterface
-	LoginData  LoginData
+	Cookies    Cookies
 }
 
 // NewAjaxAPI initializes the module
@@ -33,8 +33,8 @@ func NewAjaxAPI(moduleKey string) *AjaxAPI {
 func (a *AjaxAPI) SetCookies() {
 	a.Session.GetClient().Jar.SetCookies(a.StorageURL,
 		[]*http.Cookie{
-			{Name: "device_token", Value: a.LoginData.DeviceToken},
-			{Name: "PHPSESSID", Value: a.LoginData.SessionID},
+			{Name: "device_token", Value: a.Cookies.DeviceToken},
+			{Name: "PHPSESSID", Value: a.Cookies.SessionID},
 		},
 	)
 }
@@ -42,7 +42,7 @@ func (a *AjaxAPI) SetCookies() {
 // SetPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
 func (a *AjaxAPI) SetPixivRoundTripper() {
 	client := a.Session.GetClient()
-	client.Transport = SetPixivWebHeaders(client.Transport, a.LoginData)
+	client.Transport = SetPixivWebHeaders(client.Transport, a.Cookies)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

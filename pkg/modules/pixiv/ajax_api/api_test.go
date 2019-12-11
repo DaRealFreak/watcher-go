@@ -10,8 +10,8 @@ import (
 // TestGetFiles tests if an archive can retrieve all file names/paths from the generated archive
 func TestLogin(t *testing.T) {
 	ajaxAPI := NewAjaxAPI("pixiv AJAX API")
-	ajaxAPI.LoginData.SessionID = os.Getenv("PIXIV_SESSION_ID")
-	ajaxAPI.LoginData.DeviceToken = os.Getenv("PIXIV_DEVICE_TOKEN")
+	ajaxAPI.Cookies.SessionID = os.Getenv("PIXIV_SESSION_ID")
+	ajaxAPI.Cookies.DeviceToken = os.Getenv("PIXIV_DEVICE_TOKEN")
 
 	ajaxAPI.SetCookies()
 	ajaxAPI.SetPixivRoundTripper()
