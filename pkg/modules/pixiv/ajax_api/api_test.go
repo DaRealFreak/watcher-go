@@ -1,9 +1,10 @@
 package ajaxapi
 
 import (
-	"fmt"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestGetFiles tests if an archive can retrieve all file names/paths from the generated archive
@@ -16,20 +17,14 @@ func TestLogin(t *testing.T) {
 	ajaxAPI.SetPixivRoundTripper()
 
 	creatorInfo, err := ajaxAPI.GetCreator(12345)
-	if err != nil {
-		panic(err)
-	}
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(creatorInfo)
 
 	postInfo, err := ajaxAPI.GetPostList(12345)
-	if err != nil {
-		panic(err)
-	}
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(postInfo)
 
 	nextPagePostInfo, err := ajaxAPI.GetPostListByURL(creatorInfo.Body.Post.NextURL)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(postInfo)
-	fmt.Println(nextPagePostInfo)
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(nextPagePostInfo)
 }
