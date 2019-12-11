@@ -1,9 +1,7 @@
-package ajax_api
+package ajaxapi
 
 import (
-	"compress/gzip"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -17,13 +15,21 @@ func TestLogin(t *testing.T) {
 	ajaxAPI.SetCookies()
 	ajaxAPI.SetPixivRoundTripper()
 
-	// https://www.pixiv.net/ajax/fanbox/creator?userId=12345
-	res, err := ajaxAPI.Session.Get("https://fanbox.pixiv.net/api/post.info?postId=12345")
+	creatorInfo, err := ajaxAPI.GetCreator(12345)
 	if err != nil {
 		panic(err)
 	}
 
-	out, _ := gzip.NewReader(res.Body)
-	outText, _ := ioutil.ReadAll(out)
-	fmt.Println(string(outText))
+	postInfo, err := ajaxAPI.GetPostList(12345)
+	if err != nil {
+		panic(err)
+	}
+
+	nextPagePostInfo, err := ajaxAPI.GetPostListByURL(creatorInfo.Body.Post.NextURL)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(postInfo)
+	fmt.Println(nextPagePostInfo)
 }
