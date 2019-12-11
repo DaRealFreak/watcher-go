@@ -8,21 +8,21 @@ import (
 )
 
 type pixivRoundTripper struct {
-	inner     http.RoundTripper
-	loginData LoginData
+	inner   http.RoundTripper
+	cookies Cookies
 }
 
-// LoginData contains the required cookie data which is additionally added in the header
-type LoginData struct {
+// Cookies contains the required cookie data which is additionally added in the header
+type Cookies struct {
 	SessionID   string
 	DeviceToken string
 }
 
 // SetPixivWebHeaders returns the round tripper for the pixiv web headers
-func SetPixivWebHeaders(inner http.RoundTripper, loginData LoginData) http.RoundTripper {
+func SetPixivWebHeaders(inner http.RoundTripper, loginData Cookies) http.RoundTripper {
 	return &pixivRoundTripper{
-		inner:     inner,
-		loginData: loginData,
+		inner:   inner,
+		cookies: loginData,
 	}
 }
 
@@ -36,7 +36,7 @@ func (rt *pixivRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 	r.Header.Set("Origin", "https://www.pixiv.net")
 	r.Header.Set(
 		"Cookie",
-		fmt.Sprintf("PHPSESSID=%s; device_token=%s", rt.loginData.SessionID, rt.loginData.DeviceToken),
+		fmt.Sprintf("PHPSESSID=%s; device_token=%s", rt.cookies.SessionID, rt.cookies.DeviceToken),
 	)
 
 	if rt.inner == nil {
