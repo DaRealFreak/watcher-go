@@ -33,17 +33,31 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 		)
 
 		for _, attachment := range data.Attachments {
-			err := m.Session.DownloadFile(
-				path.Join(
-					viper.GetString("download.directory"),
-					m.Key,
-					fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
-					fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name),
-				),
-				attachment.Attributes.URL,
-			)
-			if err != nil {
-				return err
+			switch attachment.Type {
+			case "attachment":
+				if err := m.Session.DownloadFile(
+					path.Join(
+						viper.GetString("download.directory"),
+						m.Key,
+						fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
+						fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name),
+					),
+					attachment.Attributes.URL,
+				); err != nil {
+					return err
+				}
+			default:
+				if err := m.Session.DownloadFile(
+					path.Join(
+						viper.GetString("download.directory"),
+						m.Key,
+						fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
+						fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.FileName),
+					),
+					attachment.Attributes.DownloadURL,
+				); err != nil {
+					return err
+				}
 			}
 		}
 
