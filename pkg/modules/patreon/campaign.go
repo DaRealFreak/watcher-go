@@ -3,6 +3,7 @@ package patreon
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -30,6 +31,9 @@ type campaignPost struct {
 		AttachmentSection struct {
 			Attachments []*attachmentData `json:"data"`
 		} `json:"attachments"`
+		ImageSection struct {
+			ImageAttachments []*attachmentData `json:"data"`
+		} `json:"images"`
 	} `json:"relationships"`
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
@@ -41,8 +45,9 @@ type campaignInclude struct {
 		// attributes of attachment types
 		Name string `json:"name"`
 		URL  string `json:"url"`
-		// attributes of tiered/locked rewards
-		AccessRuleType string `json:"access_rule_type"`
+		// attributes of media types
+		DownloadURL string `json:"download_url"`
+		FileName    string `json:"file_name"`
 	} `json:"attributes"`
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
@@ -90,17 +95,7 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 				break
 			}
 
-			postDownload := &postDownload{
-				CreatorID:   creatorID,
-				CreatorName: campaign.Data.Attributes.Vanity,
-				PostID:      int(postID),
-			}
-
-			for _, attachment := range post.Relationships.AttachmentSection.Attachments {
-				if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
-					postDownload.Attachments = append(postDownload.Attachments, include)
-				}
-			}
+			postDownload := m.extractPostDownload(creatorID, campaign, postID, post, postsData)
 
 			postDownloads = append(postDownloads, postDownload)
 		}
@@ -116,6 +111,32 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 	return m.processDownloadQueue(m.reverseDownloadQueue(postDownloads), item)
 }
 
+// extractPostDownload extracts the relevant download data for from the passed post
+func (m *patreon) extractPostDownload(
+	creatorID int, campaign *userResponse, postID int64, post *campaignPost, postsData *campaignResponse,
+) *postDownload {
+	postDownload := &postDownload{
+		CreatorID:   creatorID,
+		CreatorName: campaign.Data.Attributes.Vanity,
+		PostID:      int(postID),
+	}
+
+	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
+		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
+			postDownload.Attachments = append(postDownload.Attachments, include)
+		}
+	}
+
+	for _, attachment := range post.Relationships.ImageSection.ImageAttachments {
+		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
+			postDownload.Attachments = append(postDownload.Attachments, include)
+		}
+	}
+
+	return postDownload
+}
+
+// reverseDownloadQueue reverses the download queue to download the oldest items first
 func (m *patreon) reverseDownloadQueue(downloadQueue []*postDownload) []*postDownload {
 	// reverse to add oldest posts first
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
@@ -127,25 +148,32 @@ func (m *patreon) reverseDownloadQueue(downloadQueue []*postDownload) []*postDow
 
 // getCampaignPostsURI returns the post public API URI for the first page
 func (m *patreon) getCampaignPostsURI(campaignID int) string {
-	return fmt.Sprintf("https://www.patreon.com/api/posts"+
-		"?include=user,attachments,user_defined_tags,campaign,poll.choices,poll.current_user_responses.user,"+
-		"poll.current_user_responses.choice,poll.current_user_responses.poll,access_rules.tier.null,images.null,"+
-		"audio.null"+
-		"&fields[post]=change_visibility_at,comment_count,content,current_user_can_delete,current_user_can_view,"+
-		"current_user_has_liked,embed,image,is_paid,like_count,min_cents_pledged_to_view,post_file,post_metadata,"+
-		"published_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url,teaser_text,title,upgrade_url,url,"+
-		"was_posted_by_campaign_owner"+
-		"&fields[user]=image_url,full_name,url"+
-		"&fields[campaign]=currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,"+
-		"is_monthly,name,url"+
-		"&fields[access_rule]=access_rule_type,amount_cents"+
-		"&fields[media]=id,image_urls,download_url,metadata,file_name"+
-		"&sort=-published_at"+
-		"&filter[campaign_id]=%d"+
-		"&filter[is_draft]=false"+
-		"&filter[contains_exclusive_posts]=true"+
-		"&json-api-use-default-includes=false"+
-		"&json-api-version=1.0", campaignID)
+	values := url.Values{
+		"include": {
+			"user,attachments,user_defined_tags,campaign,poll.choices,poll.current_user_responses.user," +
+				"poll.current_user_responses.choice,poll.current_user_responses.poll,access_rules.tier.null," +
+				"images.null,audio.null",
+		},
+		"fields[post]": {
+			"change_visibility_at,comment_count,content,current_user_can_delete,current_user_can_view," +
+				"current_user_has_liked,embed,image,is_paid,like_count,min_cents_pledged_to_view,post_file," +
+				"post_metadata,published_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url," +
+				"teaser_text,title,upgrade_url,url,was_posted_by_campaign_owner",
+		},
+		"fields[user]": {"image_url,full_name,url"},
+		"fields[campaign]": {
+			"currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,is_monthly,name,url",
+		},
+		"fields[access_rule]":                {"access_rule_type,amount_cents"},
+		"fields[media]":                      {"id,image_urls,download_url,metadata,file_name"},
+		"sort":                               {"-published_at"},
+		"filter[campaign_id]":                {strconv.Itoa(campaignID)},
+		"filter[exclude_inaccessible_posts]": {"true"},
+		"json-api-use-default-includes":      {"false"},
+		"json-api-version":                   {"1.0"},
+	}
+
+	return fmt.Sprintf("https://www.patreon.com/api/posts?%s", values.Encode())
 }
 
 // getCampaignData returns the campaign data extracted from the passed campaignPostsUri
