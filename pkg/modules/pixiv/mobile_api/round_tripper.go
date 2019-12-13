@@ -1,6 +1,7 @@
-package mobile_api
+package mobileapi
 
 import (
+	// nolint: gosec
 	"crypto/md5"
 	"fmt"
 	"net/http"

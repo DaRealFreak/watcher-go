@@ -1,12 +1,13 @@
-package mobile_api
+package mobileapi
 
 import (
 	"encoding/json"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 // tokenResponse is the OAuth2 Token response from the Pixiv OAuth2 Token URL
