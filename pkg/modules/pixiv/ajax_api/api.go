@@ -19,7 +19,7 @@ type AjaxAPI struct {
 	Cookies    Cookies
 }
 
-// NewAjaxAPI initializes the module
+// NewAjaxAPI initializes the AJAX API and handles the whole auth and round tripper procedures
 func NewAjaxAPI(moduleKey string) *AjaxAPI {
 	ajaxAPI := &AjaxAPI{
 		Session: session.NewSession(moduleKey),
