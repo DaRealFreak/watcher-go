@@ -37,10 +37,12 @@ func (a *AjaxAPI) SetCookies() {
 			{Name: "PHPSESSID", Value: a.Cookies.SessionID},
 		},
 	)
+	// apply cookies for our cookie header in the round trip
+	a.setPixivRoundTripper()
 }
 
-// SetPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
-func (a *AjaxAPI) SetPixivRoundTripper() {
+// setPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
+func (a *AjaxAPI) setPixivRoundTripper() {
 	client := a.Session.GetClient()
 	client.Transport = SetPixivWebHeaders(client.Transport, a.Cookies)
 }

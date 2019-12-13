@@ -12,7 +12,6 @@ func getTestAjaxAPI() *AjaxAPI {
 	ajaxAPI.Cookies.DeviceToken = os.Getenv("PIXIV_DEVICE_TOKEN")
 
 	ajaxAPI.SetCookies()
-	ajaxAPI.SetPixivRoundTripper()
 
 	return ajaxAPI
 }
