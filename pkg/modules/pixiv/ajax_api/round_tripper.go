@@ -18,8 +18,8 @@ type Cookies struct {
 	DeviceToken string
 }
 
-// SetPixivWebHeaders returns the round tripper for the pixiv web headers
-func SetPixivWebHeaders(inner http.RoundTripper, loginData Cookies) http.RoundTripper {
+// setPixivWebHeaders returns the round tripper for the pixiv web headers
+func (a *AjaxAPI) setPixivWebHeaders(inner http.RoundTripper, loginData Cookies) http.RoundTripper {
 	return &pixivRoundTripper{
 		inner:   inner,
 		cookies: loginData,
