@@ -44,7 +44,7 @@ func (a *AjaxAPI) SetCookies() {
 // setPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
 func (a *AjaxAPI) setPixivRoundTripper() {
 	client := a.Session.GetClient()
-	client.Transport = SetPixivWebHeaders(client.Transport, a.Cookies)
+	client.Transport = a.setPixivWebHeaders(client.Transport, a.Cookies)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type
