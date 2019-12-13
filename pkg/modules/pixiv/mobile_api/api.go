@@ -1,19 +1,26 @@
-package mobile_api
+// Package mobileapi handles the default API functionality reverse engineered from the mobile application
+// since the API is not documented or intended to be used outside of the mobile application
+package mobileapi
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"golang.org/x/oauth2"
 )
 
-// AjaxAPI is the implementation of the API used in the mobile applications
+// MobileAPI is the implementation of the API used in the mobile applications
 type MobileAPI struct {
 	Session      watcherHttp.SessionInterface
 	OAuth2Config *oauth2.Config
 }
 
+// NewMobileAPI initializes the mobile API and handles the whole OAuth2 and round tripper procedures
 func NewMobileAPI(moduleKey string, account models.Account) (*MobileAPI, error) {
 	mobileAPI := &MobileAPI{
 		Session: session.NewSession(moduleKey),
@@ -42,4 +49,33 @@ func NewMobileAPI(moduleKey string, account models.Account) (*MobileAPI, error) 
 	mobileAPI.Session.SetClient(client)
 
 	return mobileAPI, nil
+}
+
+// mapAPIResponse maps the API response into the passed APIResponse type
+func (a *MobileAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
+	content := a.Session.GetDocument(res).Text()
+
+	if res.StatusCode >= 400 {
+		var (
+			apiErr    APIError
+			apiReqErr APIRequestError
+		)
+
+		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+			return apiErr
+		}
+
+		if err := json.Unmarshal([]byte(content), &apiReqErr); err == nil {
+			return &apiReqErr
+		}
+
+		return fmt.Errorf(`unknown error response: "%s"`, content)
+	}
+
+	// unmarshal the request content into the response struct
+	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+		return err
+	}
+
+	return nil
 }
