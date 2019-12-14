@@ -21,8 +21,9 @@ type campaignResponse struct {
 // campaignPost is the struct of the posts of the campaign
 type campaignPost struct {
 	Attributes struct {
-		URL      string `json:"url"`
-		PostFile struct {
+		URL        string `json:"url"`
+		PatreonURL string `json:"patreon_url"`
+		PostFile   struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		} `json:"post_file"`
@@ -48,6 +49,9 @@ type campaignInclude struct {
 		// attributes of media types
 		DownloadURL string `json:"download_url"`
 		FileName    string `json:"file_name"`
+		ImageURLs   struct {
+			Original string `json:"original"`
+		} `json:"image_urls"`
 	} `json:"attributes"`
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
@@ -119,6 +123,7 @@ func (m *patreon) extractPostDownload(
 		CreatorID:   creatorID,
 		CreatorName: campaign.Data.Attributes.Vanity,
 		PostID:      int(postID),
+		PatreonURL:  post.Attributes.PatreonURL,
 	}
 
 	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
