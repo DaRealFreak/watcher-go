@@ -23,6 +23,7 @@ type campaignPost struct {
 	Attributes struct {
 		URL        string `json:"url"`
 		PatreonURL string `json:"patreon_url"`
+		PostType   string `json:"post_type"`
 		PostFile   struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
@@ -49,9 +50,6 @@ type campaignInclude struct {
 		// attributes of media types
 		DownloadURL string `json:"download_url"`
 		FileName    string `json:"file_name"`
-		ImageURLs   struct {
-			Original string `json:"original"`
-		} `json:"image_urls"`
 	} `json:"attributes"`
 	ID   json.Number `json:"id"`
 	Type string      `json:"type"`
@@ -99,9 +97,9 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 				break
 			}
 
-			postDownload := m.extractPostDownload(creatorID, campaign, postID, post, postsData)
-
-			postDownloads = append(postDownloads, postDownload)
+			if download := m.extractPostDownload(creatorID, campaign, postID, post, postsData); download != nil {
+				postDownloads = append(postDownloads, download)
+			}
 		}
 
 		// we are already on the last page
@@ -121,9 +119,14 @@ func (m *patreon) extractPostDownload(
 ) *postDownload {
 	postDownload := &postDownload{
 		CreatorID:   creatorID,
-		CreatorName: campaign.Data.Attributes.Vanity,
+		CreatorName: campaign.Data.Attributes.FullName,
 		PostID:      int(postID),
 		PatreonURL:  post.Attributes.PatreonURL,
+	}
+
+	// ignore embedded videos
+	if post.Attributes.PostType == "video_embed" {
+		return nil
 	}
 
 	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
