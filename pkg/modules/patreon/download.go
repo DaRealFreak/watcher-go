@@ -15,6 +15,7 @@ type postDownload struct {
 	PostID      int
 	CreatorID   int
 	CreatorName string
+	PatreonURL  string
 	Attachments []*campaignInclude
 }
 
@@ -47,6 +48,17 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					return err
 				}
 			default:
+				// if no download URL is returned from the API we don't have the reward unlocked and can't download it
+				if attachment.Attributes.DownloadURL == "" {
+					log.WithField("module", m.Key).Warningf(
+						"post %s not unlocked, skipping attachment %s",
+						"https://www.patreon.com"+data.PatreonURL,
+						attachment.ID.String(),
+					)
+
+					continue
+				}
+
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
