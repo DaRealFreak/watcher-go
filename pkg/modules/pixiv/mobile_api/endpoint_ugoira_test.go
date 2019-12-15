@@ -9,7 +9,7 @@ import (
 func TestMobileAPI_GetUgoiraMetadata(t *testing.T) {
 	mobileAPI := getTestMobileAPI()
 
-	illustDetail, err := mobileAPI.GetUgoiraMetadata(78315530)
+	ugoiraMetadata, err := mobileAPI.GetUgoiraMetadata(78315530)
 	assert.New(t).NoError(err)
-	assert.New(t).NotNil(illustDetail)
+	assert.New(t).NotNil(ugoiraMetadata)
 }
