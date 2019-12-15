@@ -11,13 +11,13 @@ type APIRequestError struct {
 	ErrorMessage string `json:"error"`
 }
 
-// DeletedIllustrationError will get returned from the illustration detail API request if the illustration got deleted
-type DeletedIllustrationError struct {
+// IllustrationUnavailableError will get returned from the illustration detail API request if the illustration got deleted
+type IllustrationUnavailableError struct {
 	APIError
 }
 
-// DeletedUserError will get returned from the user information API request if the user got deleted
-type DeletedUserError struct {
+// UserUnavailableError will get returned from the user information API request if the user got deleted
+type UserUnavailableError struct {
 	APIError
 }
 
