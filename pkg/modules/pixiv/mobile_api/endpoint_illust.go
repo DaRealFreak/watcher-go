@@ -40,7 +40,9 @@ func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
 
 	// user got deleted or deactivated his account
 	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
-		return nil, DeletedIllustrationError{APIError{ErrorMessage: "Illustration could not be found"}}
+		return nil, IllustrationUnavailableError{
+			APIError{ErrorMessage: "illustration got either deleted or is unavailable"},
+		}
 	}
 
 	if err := a.mapAPIResponse(res, &illustDetail); err != nil {
