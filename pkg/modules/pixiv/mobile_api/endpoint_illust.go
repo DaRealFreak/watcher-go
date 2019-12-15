@@ -6,21 +6,24 @@ import (
 	"strconv"
 )
 
-// IllustDetail contains all relevant information regarding the illustration details
+// Illustration contains all relevant information of an illustration
+type Illustration struct {
+	ID             json.Number `json:"id"`
+	Title          string      `json:"title"`
+	Type           string      `json:"type"`
+	MetaSinglePage struct {
+		OriginalImageURL *string `json:"original_image_url"`
+	} `json:"meta_single_page"`
+	MetaPages []*struct {
+		ImageURLs struct {
+			Original string `json:"original"`
+		} `json:"image_urls"`
+	} `json:"meta_pages"`
+}
+
+// IllustDetail contains all relevant information regarding an illustration detail API request
 type IllustDetail struct {
-	Illustration struct {
-		ID             json.Number `json:"id"`
-		Title          string      `json:"title"`
-		Type           string      `json:"type"`
-		MetaSinglePage struct {
-			OriginalImageURL *string `json:"original_image_url"`
-		} `json:"meta_single_page"`
-		MetaPages []*struct {
-			ImageURLs struct {
-				Original string `json:"original"`
-			} `json:"image_urls"`
-		} `json:"meta_pages"`
-	} `json:"illust"`
+	Illustration Illustration `json:"illust"`
 }
 
 // GetIllustDetail returns the illustration details from the API
