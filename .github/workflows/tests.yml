@@ -4,6 +4,8 @@ on: [push, pull_request]
 env:
   PIXIV_SESSION_ID: ${{ secrets.PIXIV_SESSION_ID }}
   PIXIV_DEVICE_TOKEN: ${{ secrets.PIXIV_DEVICE_TOKEN }}
+  PIXIV_USER: ${{ secrets.PIXIV_USER }}
+  PIXIV_PASS: ${{ secrets.PIXIV_PASS }}
 
 jobs:
   test:
