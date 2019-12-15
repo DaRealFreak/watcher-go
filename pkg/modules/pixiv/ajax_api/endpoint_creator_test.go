@@ -19,7 +19,7 @@ func TestAjaxAPI_GetPostList(t *testing.T) {
 }
 
 func TestAjaxAPI_GetPostListByURL(t *testing.T) {
-	// retrieve next URL from previous Post List (we are using 200 items as limit, we need a creator with > 200 items)
+	// retrieve next URL from previous Post List (user requires to have >= 40 fanbox posts for unit tests to pass)
 	postList, err := getTestAjaxAPI().GetPostList(8189060, 20)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
