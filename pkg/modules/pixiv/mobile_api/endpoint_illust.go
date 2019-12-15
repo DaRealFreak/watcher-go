@@ -13,10 +13,13 @@ type IllustDetail struct {
 		Title          string      `json:"title"`
 		Type           string      `json:"type"`
 		MetaSinglePage struct {
-			OriginalImageURL string `json:"original_image_url"`
+			OriginalImageURL *string `json:"original_image_url"`
 		} `json:"meta_single_page"`
-		// ToDo: mapping instead of map
-		MetaPages []map[string]map[string]string `json:"meta_pages"`
+		MetaPages []*struct {
+			ImageURLs struct {
+				Original string `json:"original"`
+			} `json:"image_urls"`
+		} `json:"meta_pages"`
 	} `json:"illust"`
 }
 
