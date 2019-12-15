@@ -65,8 +65,6 @@ func (a *AjaxAPI) GetCreator(userID int) (*CreatorInfo, error) {
 
 // GetPostList returns the initial post list of the passed user
 func (a *AjaxAPI) GetPostList(userID int, limit int) (*PostInfo, error) {
-	var postInfo PostInfo
-
 	values := url.Values{
 		"userId":               {strconv.Itoa(userID)},
 		"maxPublishedDatetime": {time.Now().Format("2006-01-02 15:04:05")},
@@ -75,16 +73,7 @@ func (a *AjaxAPI) GetPostList(userID int, limit int) (*PostInfo, error) {
 	}
 	apiURL := fmt.Sprintf("https://fanbox.pixiv.net/api/post.listCreator?%s", values.Encode())
 
-	res, err := a.Session.Get(apiURL)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := a.mapAPIResponse(res, &postInfo); err != nil {
-		return nil, err
-	}
-
-	return &postInfo, nil
+	return a.GetPostListByURL(apiURL)
 }
 
 // GetPostListByURL returns the post info solely by the URL since the PostInfo objects contain a NextURL string
