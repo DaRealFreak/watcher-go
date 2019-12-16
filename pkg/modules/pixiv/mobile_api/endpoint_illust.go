@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+
+	pixivapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/pixiv_api"
 )
 
 // Illustration contains all relevant information of an illustration
@@ -43,12 +45,12 @@ func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
 
 	// user got deleted or deactivated his account
 	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
-		return nil, IllustrationUnavailableError{
-			APIError{ErrorMessage: "illustration got either deleted or is unavailable"},
+		return nil, pixivapi.IllustrationUnavailableError{
+			APIError: pixivapi.APIError{ErrorMessage: "illustration got either deleted or is unavailable"},
 		}
 	}
 
-	if err := a.mapAPIResponse(res, &illustDetail); err != nil {
+	if err := a.MapAPIResponse(res, &illustDetail); err != nil {
 		return nil, err
 	}
 

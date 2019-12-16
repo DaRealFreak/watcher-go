@@ -1,4 +1,4 @@
-package mobileapi
+package pixivapi
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ type tokenResponse struct {
 
 // passwordCredentialsToken is a custom implementation of the oauth2 PasswordCredentialsToken since additional
 // post values are required and checked server side from pixiv
-func (a *MobileAPI) passwordCredentialsToken(username string, password string) (*oauth2.Token, error) {
+func (a *PixivAPI) passwordCredentialsToken(username string, password string) (*oauth2.Token, error) {
 	v := url.Values{
 		"device_token":   {"pixiv"},
 		"get_secure_url": {"true"},
@@ -46,7 +46,7 @@ func (a *MobileAPI) passwordCredentialsToken(username string, password string) (
 }
 
 // retrieveTokenFromResponse extracts the OAuth2 Token from the passed http Response
-func (a *MobileAPI) retrieveTokenFromResponse(response *http.Response) (*oauth2.Token, error) {
+func (a *PixivAPI) retrieveTokenFromResponse(response *http.Response) (*oauth2.Token, error) {
 	var token tokenResponse
 
 	bytes, err := ioutil.ReadAll(response.Body)
