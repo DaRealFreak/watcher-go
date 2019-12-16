@@ -14,6 +14,7 @@ type PublicIllustration struct {
 	ImageURLs struct {
 		Large string `json:"large"`
 	} `json:"image_urls"`
+	PageCount int `json:"page_count"`
 }
 
 // SearchIllust contains all relevant information regarding the illustration search
