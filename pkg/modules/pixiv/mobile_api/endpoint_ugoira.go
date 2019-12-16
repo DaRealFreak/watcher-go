@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+
+	pixivapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/pixiv_api"
 )
 
 // UgoiraMetadata contains all relevant information regarding the animation details (ugoira)
@@ -36,12 +38,12 @@ func (a *MobileAPI) GetUgoiraMetadata(illustID int) (*UgoiraMetadata, error) {
 
 	// user got deleted or deactivated his account
 	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
-		return nil, IllustrationUnavailableError{
-			APIError{ErrorMessage: "illustration got either deleted or is unavailable"},
+		return nil, pixivapi.IllustrationUnavailableError{
+			APIError: pixivapi.APIError{ErrorMessage: "illustration got either deleted or is unavailable"},
 		}
 	}
 
-	if err := a.mapAPIResponse(res, &ugoiraMetadata); err != nil {
+	if err := a.MapAPIResponse(res, &ugoiraMetadata); err != nil {
 		return nil, err
 	}
 

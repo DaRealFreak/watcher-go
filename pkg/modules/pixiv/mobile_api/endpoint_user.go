@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+
+	pixivapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/pixiv_api"
 )
 
 // UserDetail contains all relevant information regarding the user details
@@ -38,10 +40,12 @@ func (a *MobileAPI) GetUserDetail(userID int) (*UserDetail, error) {
 
 	// user got deleted or deactivated his account
 	if res != nil && (res.StatusCode == 403 || res.StatusCode == 404) {
-		return nil, UserUnavailableError{APIError{ErrorMessage: "user got either deleted or is unavailable"}}
+		return nil, pixivapi.UserUnavailableError{
+			APIError: pixivapi.APIError{ErrorMessage: "user got either deleted or is unavailable"},
+		}
 	}
 
-	if err := a.mapAPIResponse(res, &userDetail); err != nil {
+	if err := a.MapAPIResponse(res, &userDetail); err != nil {
 		return nil, err
 	}
 

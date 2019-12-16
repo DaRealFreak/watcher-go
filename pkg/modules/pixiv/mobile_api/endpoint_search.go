@@ -56,7 +56,7 @@ func (a *MobileAPI) GetSearchIllustByURL(url string) (*SearchIllust, error) {
 		panic(err)
 	}
 
-	if err := a.mapAPIResponse(res, &searchIllust); err != nil {
+	if err := a.MapAPIResponse(res, &searchIllust); err != nil {
 		return nil, err
 	}
 

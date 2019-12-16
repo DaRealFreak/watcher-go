@@ -1,4 +1,4 @@
-package mobileapi
+package pixivapi
 
 import (
 	// nolint: gosec
@@ -9,13 +9,15 @@ import (
 )
 
 type pixivPublicAPIRoundTripper struct {
-	inner http.RoundTripper
+	inner   http.RoundTripper
+	referer string
 }
 
 // SetPixivMobileAPIHeaders returns the round tripper for the pixiv mobile API headers
-func (a *MobileAPI) setPixivMobileAPIHeaders(inner http.RoundTripper) http.RoundTripper {
+func (a *PixivAPI) setPixivMobileAPIHeaders(inner http.RoundTripper, referer string) http.RoundTripper {
 	return &pixivPublicAPIRoundTripper{
-		inner: inner,
+		inner:   inner,
+		referer: referer,
 	}
 }
 
@@ -26,7 +28,7 @@ func (rt *pixivPublicAPIRoundTripper) RoundTrip(r *http.Request) (*http.Response
 	r.Header.Set("App-OS-Version", "9")
 	r.Header.Set("App-Version", "5.0.156")
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Set("Referer", "https://app-api.pixiv.net/")
+	r.Header.Set("Referer", rt.referer)
 	r.Header.Set("User-Agent", "PixivAndroidApp/5.0.156 (Android 9; ONEPLUS A6013)")
 
 	// add X-Client-Time and X-Client-Hash which are now getting validated server side

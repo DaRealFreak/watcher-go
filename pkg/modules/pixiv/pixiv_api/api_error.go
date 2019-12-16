@@ -1,4 +1,4 @@
-package mobileapi
+package pixivapi
 
 // APIError contains error messages of the API
 type APIError struct {
