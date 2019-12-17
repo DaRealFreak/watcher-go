@@ -20,6 +20,7 @@ type Illustration struct {
 			Original string `json:"original"`
 		} `json:"image_urls"`
 	} `json:"meta_pages"`
+	User UserInfo `json:"user"`
 }
 
 // IllustDetail contains all relevant information regarding an illustration detail API request
