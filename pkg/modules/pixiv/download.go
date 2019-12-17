@@ -118,14 +118,21 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 		return err
 	}
 
-	fileName := strings.TrimSuffix(m.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip") + ".webp"
+	fileName := fmt.Sprintf(
+		"%s%s",
+		strings.TrimSuffix(m.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip"),
+		m.settings.Animation.Format,
+	)
 
 	resp, err := m.mobileAPI.Session.Get(apiRes.Metadata.ZipURLs.Medium)
 	if err != nil {
 		return err
 	}
 
-	body := []byte(m.mobileAPI.Session.GetDocument(resp).Text())
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	if err != nil {
@@ -144,8 +151,8 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
 	case animation.FILE_FORMAT_GIF:
 		fileContent, err = m.animationHelper.CreateAnimationGif(&animationData)
-	case animation.FILE_FORMAT_MKV:
-		fileContent, err = m.animationHelper.CreateAnimationMkv(&animationData)
+	default:
+		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
 	}
 
 	if err != nil && m.settings.Animation.LowQualityGifFallback {
