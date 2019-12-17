@@ -27,6 +27,12 @@ type UserDetail struct {
 	} `json:"profile"`
 }
 
+// UserIllusts contains all relevant information regarding the user illustrations and navigation
+type UserIllusts struct {
+	Illustrations []Illustration `json:"illusts"`
+	NextURL       string         `json:"next_url"`
+}
+
 // GetUserTag returns the default download tag for illustrations of the user context
 func (u *UserInfo) GetUserTag() string {
 	return fmt.Sprintf("%d/%s", u.ID, models.Module{}.SanitizePath(u.Name, false))
@@ -60,4 +66,42 @@ func (a *MobileAPI) GetUserDetail(userID int) (*UserDetail, error) {
 	}
 
 	return &userDetail, nil
+}
+
+// GetUserIllusts returns the user illustration results from the API
+func (a *MobileAPI) GetUserIllusts(userID int, filter string, offset int) (*UserIllusts, error) {
+	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/illusts")
+	data := url.Values{
+		"user_id": {strconv.Itoa(userID)},
+	}
+
+	// add passed options to the url values
+	if filter != "" {
+		data.Add("type", filter)
+	}
+
+	if offset > 0 {
+		data.Add("offset", strconv.Itoa(offset))
+	}
+
+	apiURL.RawQuery = data.Encode()
+
+	return a.GetUserIllustsByURL(apiURL.String())
+}
+
+// GetUserIllustsByURL returns the user illustration results from the API by passed URL
+func (a *MobileAPI) GetUserIllustsByURL(url string) (*UserIllusts, error) {
+	a.ApplyRateLimit()
+
+	res, err := a.Session.Get(url)
+	if err != nil {
+		panic(err)
+	}
+
+	var userIllusts UserIllusts
+	if err := a.MapAPIResponse(res, &userIllusts); err != nil {
+		return nil, err
+	}
+
+	return &userIllusts, nil
 }
