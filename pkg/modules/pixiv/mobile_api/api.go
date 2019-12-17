@@ -13,7 +13,7 @@ type MobileAPI struct {
 }
 
 // NewMobileAPI initializes the mobile API and handles the whole OAuth2 and round tripper procedures
-func NewMobileAPI(moduleKey string, account models.Account) (*MobileAPI, error) {
+func NewMobileAPI(moduleKey string, account *models.Account) (*MobileAPI, error) {
 	pixivAPI, err := pixivapi.NewPixivAPI(moduleKey, account, "https://app-api.pixiv.net/")
 	if err != nil {
 		return nil, err
