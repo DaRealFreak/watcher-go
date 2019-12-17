@@ -9,7 +9,7 @@ import (
 )
 
 func getTestMobileAPI() *PublicAPI {
-	testAccount := models.Account{
+	testAccount := &models.Account{
 		Username: os.Getenv("PIXIV_USER"),
 		Password: os.Getenv("PIXIV_PASS"),
 	}
@@ -20,7 +20,7 @@ func getTestMobileAPI() *PublicAPI {
 }
 
 func TestLogin(t *testing.T) {
-	testAccount := models.Account{
+	testAccount := &models.Account{
 		Username: os.Getenv("PIXIV_USER"),
 		Password: os.Getenv("PIXIV_PASS"),
 	}
