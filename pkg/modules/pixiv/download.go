@@ -50,7 +50,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 			var err error
 
 			switch item.Type {
-			case "ugoira":
+			case Ugoira:
 				err = m.downloadUgoira(data, item.ID)
 			default:
 				err = m.downloadIllustration(data, item)
@@ -80,7 +80,7 @@ func (m *pixiv) downloadPublicIllustration(data *downloadQueueItem, illust publi
 		}
 
 		return m.downloadIllustration(data, illustration.Illustration)
-	case illust.Type == "ugoira":
+	case illust.Type == Ugoira:
 		return m.downloadUgoira(data, illust.ID)
 	default:
 		if err := m.mobileAPI.Session.DownloadFile(
