@@ -1,7 +1,6 @@
 package ajaxapi
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"net/url"
@@ -11,16 +10,16 @@ import (
 
 // FanboxUser contains the relevant information of the user passed from the API
 type FanboxUser struct {
-	UserID string `json:"userId"`
+	UserID int    `json:"userId"`
 	Name   string `json:"name"`
 }
 
 // FanboxPost contains the relevant information on posts in the fanbox
 type FanboxPost struct {
-	ID    json.Number `json:"id"`
-	Title string      `json:"title"`
-	Type  string      `json:"type"`
-	User  FanboxUser  `json:"user"`
+	ID    int        `json:"id"`
+	Title string     `json:"title"`
+	Type  string     `json:"type"`
+	User  FanboxUser `json:"user"`
 }
 
 // CreatorInfo contains all relevant information on the creator
