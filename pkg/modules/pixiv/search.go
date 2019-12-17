@@ -52,9 +52,10 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 		if err != nil {
 			if err.Error() == `{"offset":["Offset must be no more than 5000"]}` {
 				log.WithField("module", m.Key).Warningf(
-					"search %s has more than 5000 results. The mobile API is limited to 5000 search results, "+
-						"if you want to download more than 5000 results consider switching to the public search API",
-					item.URI,
+					"search \"%\"s has more than 5000 results."+
+						"The mobile API is limited to 5000 search results, if you want to download "+
+						"more than 5000 results consider switching to the public search API",
+					searchWord,
 				)
 
 				break
