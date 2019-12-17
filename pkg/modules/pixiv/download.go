@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -13,46 +14,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-// downloadIllustration handles the download process of Illustration and Manga illustration types
-func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err error) {
-	for i := len(downloadQueueItem.Illustration.MetaPages) - 1; i >= 0; i-- {
-		image := downloadQueueItem.Illustration.MetaPages[i]
-		fileName := m.GetFileName(image["image_urls"]["original"])
-		fileURI := image["image_urls"]["original"]
-
-		if err := m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
-			fileURI,
-		); err != nil {
-			// if download was not successful return the occurred error here
-			return err
-		}
-	}
-
-	if len(downloadQueueItem.Illustration.MetaSinglePage) > 0 {
-		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
-		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
-
-		return m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
-			fileURI,
-		)
-	}
-
-	return nil
-}
-
 // downloadUgoira handles the download process of ugoira illustration types
-func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
-	apiRes, err := m.getUgoiraMetaData(downloadQueueItem.ItemID)
+func (m *pixiv) downloadUgoira(illustID int) (err error) {
+	apiRes, err := m.mobileAPI.GetUgoiraMetadata(illustID)
 	if err != nil {
 		return err
 	}
 
-	fileName := strings.TrimSuffix(m.GetFileName(apiRes.UgoiraMetadata.ZipUrls["medium"]), ".zip") + ".webp"
-	fileURI := apiRes.UgoiraMetadata.ZipUrls["medium"]
+	fileName := strings.TrimSuffix(m.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip") + ".webp"
 
-	resp, err := m.Session.Get(fileURI)
+	resp, err := m.Session.Get(apiRes.Metadata.ZipURLs.Medium)
 	if err != nil {
 		return err
 	}
@@ -70,7 +41,7 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 	animationData := animation.FileData{}
 
 	for _, zipFile := range zipReader.File {
-		frame, err := m.getUgoiraFrame(zipFile.Name, apiRes.UgoiraMetadata)
+		frame, err := apiRes.GetUgoiraFrame(zipFile.Name)
 		if err != nil {
 			return err
 		}
@@ -92,12 +63,13 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
-	filepath := path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName)
+	// ToDo: replace downloadTag with real download tag
+	filepath := path.Join(viper.GetString("download.directory"), m.Key, "downloadTag", fileName)
 	log.WithField("module", m.Key).Debug(
 		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
 	)
 
-	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
+	if err := ioutil.WriteFile(filepath, fileContent, os.ModePerm); err != nil {
 		return err
 	}
 
