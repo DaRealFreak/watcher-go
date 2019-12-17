@@ -118,7 +118,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 
 // SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
 // and trims the result
-func (t *Module) SanitizePath(path string, allowSeparator bool) string {
+func (t Module) SanitizePath(path string, allowSeparator bool) string {
 	var reservedCharacters *regexp.Regexp
 	if allowSeparator {
 		reservedCharacters = regexp.MustCompile("[:\"*?<>|]+")
