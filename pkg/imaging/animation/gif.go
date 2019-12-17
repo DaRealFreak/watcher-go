@@ -20,6 +20,8 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
+const FILE_FORMAT_GIF = ".gif"
+
 // CreateAnimationGif creates a .gif (Graphics Interchange Format) file from the passed fileData.
 // If ImageMagick GIF creation fails we use a fallback method to retrieve a lower quality gif made with golang libraries
 func (h *Helper) CreateAnimationGif(fData *FileData) (content []byte, err error) {
