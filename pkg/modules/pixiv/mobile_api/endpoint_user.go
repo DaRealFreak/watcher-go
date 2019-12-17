@@ -25,7 +25,7 @@ type UserDetail struct {
 
 // GetUserDetail returns the user details from the API
 func (a *MobileAPI) GetUserDetail(userID int) (*UserDetail, error) {
-	var userDetail UserDetail
+	a.ApplyRateLimit()
 
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/user/detail")
 	data := url.Values{
@@ -45,6 +45,7 @@ func (a *MobileAPI) GetUserDetail(userID int) (*UserDetail, error) {
 		}
 	}
 
+	var userDetail UserDetail
 	if err := a.MapAPIResponse(res, &userDetail); err != nil {
 		return nil, err
 	}

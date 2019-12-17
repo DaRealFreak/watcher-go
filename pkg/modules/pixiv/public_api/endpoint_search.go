@@ -47,6 +47,8 @@ const (
 func (a *PublicAPI) GetSearchIllust(
 	word string, searchMode string, searchOrder string, page int,
 ) (*SearchIllust, error) {
+	a.ApplyRateLimit()
+
 	apiURL, _ := url.Parse("https://public-api.secure.pixiv.net/v1/search/works.json")
 	data := url.Values{
 		"q":                    {word},
