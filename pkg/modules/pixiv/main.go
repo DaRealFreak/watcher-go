@@ -2,72 +2,36 @@
 package pixiv
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/url"
 	"regexp"
-	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
-	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/session"
+	ajaxapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/ajax_api"
+	mobileapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/mobile_api"
+	publicapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/public_api"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+type pixivPattern struct {
+	searchPattern       *regexp.Regexp
+	illustrationPattern *regexp.Regexp
+	fanboxPattern       *regexp.Regexp
+	memberPattern       *regexp.Regexp
+}
 
 // pixiv contains the implementation of the ModuleInterface and custom required variables
 type pixiv struct {
 	*models.Module
-	pixivSession    *session.PixivSession
 	animationHelper *animation.Helper
+	publicAPI       *publicapi.PublicAPI
+	mobileAPI       *mobileapi.MobileAPI
+	ajaxAPI         *ajaxapi.AjaxAPI
+	patterns        pixivPattern
 }
-
-// downloadQueueItem contains the required variables to download items
-type downloadQueueItem struct {
-	ItemID       string
-	DownloadTag  string
-	Illustration *illustration
-}
-
-// search options
-//noinspection GoUnusedConst
-const (
-	// single image
-	SearchFilterIllustration = "illust"
-	// multiple images
-	SearchFilterManga = "manga"
-	// multiple images concatenated by javascript in the frontend looking like an animation
-	SearchFilterUgoira = "ugoira"
-	// novels/text
-	SearchFilterNovel = "novels"
-	// everything
-	SearchFilterAll = ""
-
-	// order of the search results
-	SearchOrderDateAscending        = "date_asc"
-	SearchOrderDateDescending       = "date_desc"
-	SearchOrderPopularityAscending  = "popular_asc"
-	SearchOrderPopularityDescending = "popular_desc"
-
-	// search mode new API
-	SearchModePartialTagMatch = "partial_match_for_tags"
-	SearchModeExactTagMatch   = "exact_match_for_tags"
-	SearchModeTitleAndCaption = "title_and_caption"
-
-	// search mode previous API
-	PublicAPISearchModePartialTagMatch = "tag"
-	PublicAPISearchModeExactTagMatch   = "exact_tag"
-	PublicAPISearchModeText            = "text"
-	PublicAPISearchModeCaption         = "caption"
-
-	PublicAPISearchFilterIllustration = "illustration"
-	PublicAPISearchFilterManga        = "manga"
-	PublicAPISearchFilterUgoira       = "ugoira"
-)
 
 // nolint: gochecknoinits
 // init function registers the bare and the normal module to the module factories
@@ -88,6 +52,12 @@ func NewBareModule() *models.Module {
 	module.ModuleInterface = &pixiv{
 		Module:          module,
 		animationHelper: animation.NewAnimationHelper(),
+		patterns: pixivPattern{
+			searchPattern:       regexp.MustCompile(`(?:/tags/(\w*)?|/search.php.*word=(\w*)?)`),
+			illustrationPattern: regexp.MustCompile(`(?:/artworks/(\d*)?|/member_illust.php?.*illust_id=(\d*)?)`),
+			fanboxPattern:       regexp.MustCompile(`/fanbox/creator/(\d*)?`),
+			memberPattern:       regexp.MustCompile(`(?:/member.php?.*id=(\d*)?|/member_illust.php?.*id=(\d*)?)`),
+		},
 	}
 
 	// register module to log formatter
@@ -101,11 +71,6 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *pixiv) InitializeModule() {
-	// set the module implementation for access to the session, database, etc
-	m.pixivSession = session.NewSession(m.Key)
-	m.pixivSession.Module = m
-	m.Session = m.pixivSession
-
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
@@ -117,49 +82,19 @@ func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *pixiv) Login(account *models.Account) bool {
-	data := url.Values{
-		"device_token":   {"pixiv"},
-		"get_secure_url": {"true"},
-		"include_policy": {"true"},
-		"client_id":      {m.pixivSession.API.ClientID},
-		"client_secret":  {m.pixivSession.API.ClientSecret},
+	var err error
+
+	m.mobileAPI, err = mobileapi.NewMobileAPI(m.Key, account)
+	if err != nil {
+		return false
 	}
 
-	if m.pixivSession.API.RefreshToken != "" {
-		data.Set("grant_type", "refresh_token")
-		data.Set("refresh_token", m.pixivSession.API.RefreshToken)
-	} else {
-		data.Set("grant_type", "password")
-		data.Set("username", account.Username)
-		data.Set("password", account.Password)
+	m.publicAPI, err = publicapi.NewPublicAPI(m.Key, account)
+	if err != nil {
+		return false
 	}
 
-	res, err := m.Session.Post(m.pixivSession.API.OauthURL, data)
-	raven.CheckError(err)
-
-	body, err := ioutil.ReadAll(res.Body)
-	raven.CheckError(err)
-
-	var response loginResponse
-	_ = json.Unmarshal(body, &response)
-
-	// check if the response could be parsed properly and save tokens
-	if response.Response != nil {
-		m.LoggedIn = true
-		m.TriedLogin = true
-		m.pixivSession.API.RefreshToken = response.Response.RefreshToken
-		m.pixivSession.API.AccessToken = response.Response.AccessToken
-	} else {
-		var response errorResponse
-		_ = json.Unmarshal(body, &response)
-		log.WithField("module", m.Key).Warning("login not successful.")
-		raven.CheckError(
-			fmt.Errorf("message: %s (code: %s)",
-				response.Errors.System.Message,
-				response.Errors.System.Code.String(),
-			),
-		)
-	}
+	m.LoggedIn = true
 
 	return m.LoggedIn
 }
@@ -167,17 +102,20 @@ func (m *pixiv) Login(account *models.Account) bool {
 // Parse parses the tracked item
 func (m *pixiv) Parse(item *models.TrackedItem) error {
 	switch {
-	case strings.Contains(item.URI, "illust_id=") || strings.Contains(item.URI, "artworks"):
-		err := m.parseUserIllustration(item)
-		if err == nil {
-			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		}
-
-		return err
-	case strings.Contains(item.URI, "/member.php") || strings.Contains(item.URI, "/member_illust.php"):
-		return m.parseUserIllustrations(item)
-	case strings.Contains(item.URI, "/search.php"):
-		return m.parseSearch(item)
+	case m.patterns.searchPattern.MatchString(item.URI):
+		fmt.Println("parse search: " + item.URI)
+		fmt.Println(m.patterns.searchPattern.FindStringSubmatch(item.URI))
+	case m.patterns.illustrationPattern.MatchString(item.URI):
+		fmt.Println("parse illustration: " + item.URI)
+		fmt.Println(m.patterns.illustrationPattern.FindStringSubmatch(item.URI))
+	case m.patterns.fanboxPattern.MatchString(item.URI):
+		fmt.Println("parse fanbox: " + item.URI)
+		fmt.Println(m.patterns.fanboxPattern.FindStringSubmatch(item.URI))
+	case m.patterns.memberPattern.MatchString(item.URI):
+		fmt.Println("parse user: " + item.URI)
+		fmt.Println(m.patterns.memberPattern.FindStringSubmatch(item.URI))
+	default:
+		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
 
 	return nil
