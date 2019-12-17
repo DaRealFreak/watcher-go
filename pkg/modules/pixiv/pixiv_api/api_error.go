@@ -11,6 +11,15 @@ type APIRequestError struct {
 	ErrorMessage string `json:"error"`
 }
 
+// MobileAPIError is the error struct of the mobile API
+type MobileAPIError struct {
+	ErrorDetails struct {
+		UserMessage string `json:"user_message"`
+		Message     string `json:"message"`
+		Reason      string `json:"reason"`
+	} `json:"error"`
+}
+
 // IllustrationUnavailableError will get returned from the illustration detail API request
 // if the illustration got either deleted or made unavailable in general
 type IllustrationUnavailableError struct {
@@ -31,4 +40,13 @@ func (e APIError) Error() string {
 // Error returns the occurred API error message
 func (e APIRequestError) Error() string {
 	return e.ErrorMessage
+}
+
+// Error returns the occurred API error message
+func (e MobileAPIError) Error() string {
+	if e.ErrorDetails.UserMessage != "" {
+		return e.ErrorDetails.UserMessage
+	}
+
+	return e.ErrorDetails.Message
 }
