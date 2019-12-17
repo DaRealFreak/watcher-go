@@ -14,14 +14,15 @@ import (
 	publicapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/public_api"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-type pixivPattern struct {
-	searchPattern       *regexp.Regexp
-	illustrationPattern *regexp.Regexp
-	fanboxPattern       *regexp.Regexp
-	memberPattern       *regexp.Regexp
-}
+const (
+	// SearchAPIPublic is the key constant for the public search API (no limitations)
+	SearchAPIPublic = "public"
+	//SearchAPIMobile is the key constant for the mobile search API (limited to 5000 results)
+	SearchAPIMobile = "mobile"
+)
 
 // pixiv contains the implementation of the ModuleInterface and custom required variables
 type pixiv struct {
@@ -31,6 +32,22 @@ type pixiv struct {
 	mobileAPI       *mobileapi.MobileAPI
 	ajaxAPI         *ajaxapi.AjaxAPI
 	patterns        pixivPattern
+	settings        pixivSettings
+}
+
+type pixivSettings struct {
+	SearchAPI string `mapstructure:"search_api"`
+	Animation struct {
+		Format                string `mapstructure:"format"`
+		LowQualityGifFallback bool   `mapstructure:"fallback_gif"`
+	} `mapstructure:"animation"`
+}
+
+type pixivPattern struct {
+	searchPattern       *regexp.Regexp
+	illustrationPattern *regexp.Regexp
+	fanboxPattern       *regexp.Regexp
+	memberPattern       *regexp.Regexp
 }
 
 // nolint: gochecknoinits
@@ -71,8 +88,21 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *pixiv) InitializeModule() {
-	// set the proxy if requested
-	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
+	if m.settings.Animation.Format == "" {
+		m.settings.Animation.Format = animation.FILE_FORMAT_WEBP
+	}
+
+	if m.settings.SearchAPI == "" {
+		m.settings.SearchAPI = SearchAPIPublic
+	}
+
+	raven.CheckError(viper.WriteConfig())
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -100,11 +130,15 @@ func (m *pixiv) Login(account *models.Account) bool {
 }
 
 // Parse parses the tracked item
-func (m *pixiv) Parse(item *models.TrackedItem) error {
+func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	switch {
 	case m.patterns.searchPattern.MatchString(item.URI):
-		fmt.Println("parse search: " + item.URI)
-		fmt.Println(m.patterns.searchPattern.FindStringSubmatch(item.URI))
+		switch m.settings.SearchAPI {
+		case SearchAPIPublic:
+			return m.parseSearchPublic(item)
+		case SearchAPIMobile:
+			return m.parseSearch(item)
+		}
 	case m.patterns.illustrationPattern.MatchString(item.URI):
 		fmt.Println("parse illustration: " + item.URI)
 		fmt.Println(m.patterns.illustrationPattern.FindStringSubmatch(item.URI))
