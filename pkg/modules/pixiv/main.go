@@ -101,8 +101,6 @@ func (m *pixiv) InitializeModule() {
 	if m.settings.SearchAPI == "" {
 		m.settings.SearchAPI = SearchAPIPublic
 	}
-
-	raven.CheckError(viper.WriteConfig())
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
