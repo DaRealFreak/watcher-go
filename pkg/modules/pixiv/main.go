@@ -22,6 +22,9 @@ const (
 	SearchAPIPublic = "public"
 	//SearchAPIMobile is the key constant for the mobile search API (limited to 5000 results)
 	SearchAPIMobile = "mobile"
+
+	// Ugoira is the returned API type for animations
+	Ugoira = "ugoira"
 )
 
 // pixiv contains the implementation of the ModuleInterface and custom required variables
@@ -151,8 +154,7 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 		fmt.Println("parse fanbox: " + item.URI)
 		fmt.Println(m.patterns.fanboxPattern.FindStringSubmatch(item.URI))
 	case m.patterns.memberPattern.MatchString(item.URI):
-		fmt.Println("parse user: " + item.URI)
-		fmt.Println(m.patterns.memberPattern.FindStringSubmatch(item.URI))
+		return m.parseUser(item)
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}

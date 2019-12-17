@@ -20,7 +20,7 @@ func (m *pixiv) parseIllustration(item *models.TrackedItem) error {
 		DownloadItem: details.Illustration,
 	}
 
-	if details.Illustration.Type == "ugoira" {
+	if details.Illustration.Type == Ugoira {
 		return m.downloadUgoira(downloadQueueItem, details.Illustration.ID)
 	}
 
