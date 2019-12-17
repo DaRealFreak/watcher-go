@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const FILE_FORMAT_WEBP = ".webp"
+const FileFormatWebp = ".webp"
 
 // CreateAnimationWebp tries create a .webp animated picture from the passed file data
 func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error) {
