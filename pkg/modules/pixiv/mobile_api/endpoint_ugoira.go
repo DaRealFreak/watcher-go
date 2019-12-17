@@ -38,7 +38,7 @@ func (m *UgoiraMetadata) GetUgoiraFrame(fileName string) (*UgoiraFrame, error) {
 
 // GetUgoiraMetadata returns the animation details from the API
 func (a *MobileAPI) GetUgoiraMetadata(illustID int) (*UgoiraMetadata, error) {
-	var ugoiraMetadata UgoiraMetadata
+	a.ApplyRateLimit()
 
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/ugoira/metadata")
 	data := url.Values{
@@ -58,6 +58,7 @@ func (a *MobileAPI) GetUgoiraMetadata(illustID int) (*UgoiraMetadata, error) {
 		}
 	}
 
+	var ugoiraMetadata UgoiraMetadata
 	if err := a.MapAPIResponse(res, &ugoiraMetadata); err != nil {
 		return nil, err
 	}

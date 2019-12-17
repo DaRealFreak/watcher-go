@@ -30,7 +30,7 @@ type IllustDetail struct {
 
 // GetIllustDetail returns the illustration details from the API
 func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
-	var illustDetail IllustDetail
+	a.ApplyRateLimit()
 
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/illust/detail")
 	data := url.Values{
@@ -50,6 +50,7 @@ func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
 		}
 	}
 
+	var illustDetail IllustDetail
 	if err := a.MapAPIResponse(res, &illustDetail); err != nil {
 		return nil, err
 	}

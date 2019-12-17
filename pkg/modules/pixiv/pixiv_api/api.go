@@ -6,17 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"golang.org/x/oauth2"
+	"golang.org/x/time/rate"
 )
 
 // PixivAPI is the struct offering shared functionality for the public API and the mobile API
 type PixivAPI struct {
 	Session      watcherHttp.SessionInterface
 	OAuth2Config *oauth2.Config
+	rateLimiter  *rate.Limiter
+	ctx          context.Context
 }
 
 // NewPixivAPI returned a pixiv API struct with already configured round trips
@@ -30,6 +35,8 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) (Pix
 				TokenURL: "https://oauth.secure.pixiv.net/auth/token",
 			},
 		},
+		rateLimiter: rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
+		ctx:         context.Background(),
 	}
 
 	client := pixivAPI.Session.GetClient()
@@ -77,4 +84,9 @@ func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err e
 	}
 
 	return nil
+}
+
+// ApplyRateLimit waits until the leaky bucket can pass another request again
+func (a *PixivAPI) ApplyRateLimit() {
+	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }

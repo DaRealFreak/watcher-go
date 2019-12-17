@@ -49,13 +49,14 @@ func (a *MobileAPI) GetSearchIllust(
 
 // GetSearchIllustByURL returns the illustration search results from the API by passed URL
 func (a *MobileAPI) GetSearchIllustByURL(url string) (*SearchIllust, error) {
-	var searchIllust SearchIllust
+	a.ApplyRateLimit()
 
 	res, err := a.Session.Get(url)
 	if err != nil {
 		panic(err)
 	}
 
+	var searchIllust SearchIllust
 	if err := a.MapAPIResponse(res, &searchIllust); err != nil {
 		return nil, err
 	}
