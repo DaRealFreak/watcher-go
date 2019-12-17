@@ -47,7 +47,20 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 
 			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
 		case mobileapi.Illustration:
-			fmt.Println("mobile illustration")
+			var err error
+
+			switch item.Type {
+			case "ugoira":
+				err = m.downloadUgoira(data, item.ID)
+			default:
+				err = m.downloadIllustration(data, item)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
 		case ajaxapi.FanboxPostInfo:
 			fmt.Println("fanbox post")
 		}
