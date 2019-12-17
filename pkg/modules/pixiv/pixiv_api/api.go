@@ -20,7 +20,7 @@ type PixivAPI struct {
 }
 
 // NewPixivAPI returned a pixiv API struct with already configured round trips
-func NewPixivAPI(moduleKey string, account models.Account, referer string) (PixivAPI, error) {
+func NewPixivAPI(moduleKey string, account *models.Account, referer string) (PixivAPI, error) {
 	pixivAPI := PixivAPI{
 		Session: session.NewSession(moduleKey),
 		OAuth2Config: &oauth2.Config{
