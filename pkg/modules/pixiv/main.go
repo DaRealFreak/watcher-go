@@ -141,8 +141,12 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 			return m.parseSearch(item)
 		}
 	case m.patterns.illustrationPattern.MatchString(item.URI):
-		fmt.Println("parse illustration: " + item.URI)
-		fmt.Println(m.patterns.illustrationPattern.FindStringSubmatch(item.URI))
+		err := m.parseIllustration(item)
+		if err == nil {
+			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+		}
+
+		return err
 	case m.patterns.fanboxPattern.MatchString(item.URI):
 		fmt.Println("parse fanbox: " + item.URI)
 		fmt.Println(m.patterns.fanboxPattern.FindStringSubmatch(item.URI))
