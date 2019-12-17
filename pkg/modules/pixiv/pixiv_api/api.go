@@ -63,8 +63,9 @@ func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err e
 
 	if res.StatusCode >= 400 {
 		var (
-			apiErr    APIError
-			apiReqErr APIRequestError
+			apiErr         APIError
+			apiReqErr      APIRequestError
+			mobileAPIError MobileAPIError
 		)
 
 		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
@@ -73,6 +74,10 @@ func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err e
 
 		if err := json.Unmarshal([]byte(content), &apiReqErr); err == nil {
 			return &apiReqErr
+		}
+
+		if err := json.Unmarshal([]byte(content), &mobileAPIError); err == nil {
+			return &mobileAPIError
 		}
 
 		return fmt.Errorf(`unknown error response: "%s"`, content)
