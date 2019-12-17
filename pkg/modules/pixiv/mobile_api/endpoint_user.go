@@ -1,26 +1,35 @@
 package mobileapi
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	pixivapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/pixiv_api"
 )
 
+// UserInfo contains the ID, displayed name and the follow status
+type UserInfo struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	IsFollowed bool   `json:"is_followed"`
+}
+
 // UserDetail contains all relevant information regarding the user details
 type UserDetail struct {
-	User struct {
-		ID         json.Number `json:"id"`
-		Name       string      `json:"name"`
-		IsFollowed bool        `json:"is_followed"`
-	} `json:"user"`
+	User    UserInfo `json:"user"`
 	Profile struct {
-		Website            string      `json:"webpage"`
-		TotalIllustrations json.Number `json:"total_illusts"`
-		TotalManga         json.Number `json:"total_manga"`
-		TotalNovels        json.Number `json:"total_novels"`
+		Website            string `json:"webpage"`
+		TotalIllustrations int    `json:"total_illusts"`
+		TotalManga         int    `json:"total_manga"`
+		TotalNovels        int    `json:"total_novels"`
 	} `json:"profile"`
+}
+
+// GetUserTag returns the default download tag for illustrations of the user context
+func (u *UserInfo) GetUserTag() string {
+	return fmt.Sprintf("%d/%s", u.ID, models.Module{}.SanitizePath(u.Name, false))
 }
 
 // GetUserDetail returns the user details from the API
