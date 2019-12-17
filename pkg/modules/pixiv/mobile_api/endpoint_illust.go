@@ -1,7 +1,6 @@
 package mobileapi
 
 import (
-	"encoding/json"
 	"net/url"
 	"strconv"
 
@@ -10,9 +9,9 @@ import (
 
 // Illustration contains all relevant information of an illustration
 type Illustration struct {
-	ID             json.Number `json:"id"`
-	Title          string      `json:"title"`
-	Type           string      `json:"type"`
+	ID             int    `json:"id"`
+	Title          string `json:"title"`
+	Type           string `json:"type"`
 	MetaSinglePage struct {
 		OriginalImageURL *string `json:"original_image_url"`
 	} `json:"meta_single_page"`
