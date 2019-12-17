@@ -8,9 +8,9 @@ import (
 
 // PublicIllustration is the illustration response from the public API search
 type PublicIllustration struct {
-	ID        json.Number `json:"id"`
-	Title     string      `json:"title"`
-	Type      string      `json:"type"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Type      string `json:"type"`
 	ImageURLs struct {
 		Large string `json:"large"`
 	} `json:"image_urls"`
