@@ -18,15 +18,18 @@ import (
 
 // PixivAPI is the struct offering shared functionality for the public API and the mobile API
 type PixivAPI struct {
-	Session      watcherHttp.SessionInterface
-	OAuth2Config *oauth2.Config
-	rateLimiter  *rate.Limiter
-	ctx          context.Context
+	Session       watcherHttp.SessionInterface
+	rateLimiter   *rate.Limiter
+	ctx           context.Context
+	OAuth2Config  *oauth2.Config
+	oAuth2Account *models.Account
+	referer       string
+	token         *oauth2.Token
 }
 
 // NewPixivAPI returned a pixiv API struct with already configured round trips
-func NewPixivAPI(moduleKey string, account *models.Account, referer string) (PixivAPI, error) {
-	pixivAPI := PixivAPI{
+func NewPixivAPI(moduleKey string, account *models.Account, referer string) *PixivAPI {
+	return &PixivAPI{
 		Session: session.NewSession(moduleKey),
 		OAuth2Config: &oauth2.Config{
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
@@ -35,26 +38,31 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) (Pix
 				TokenURL: "https://oauth.secure.pixiv.net/auth/token",
 			},
 		},
-		rateLimiter: rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
-		ctx:         context.Background(),
+		oAuth2Account: account,
+		referer:       referer,
+		rateLimiter:   rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
+		ctx:           context.Background(),
+	}
+}
+
+// AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
+func (a *PixivAPI) AddRoundTrippers() (err error) {
+	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(a.Session.GetClient().Transport, a.referer)
+
+	if a.token == nil {
+		a.token, err = a.passwordCredentialsToken(a.oAuth2Account.Username, a.oAuth2Account.Password)
+		if err != nil {
+			return err
+		}
 	}
 
-	client := pixivAPI.Session.GetClient()
-	client.Transport = pixivAPI.setPixivMobileAPIHeaders(client.Transport, referer)
-	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, client)
-
-	token, err := pixivAPI.passwordCredentialsToken(account.Username, account.Password)
-	if err != nil {
-		return pixivAPI, err
-	}
+	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, a.Session.GetClient())
 
 	// set context with own http client for OAuth2 library to use
 	// retrieve new client with applied OAuth2 round tripper
-	client = pixivAPI.OAuth2Config.Client(httpClientContext, token)
+	a.Session.SetClient(a.OAuth2Config.Client(httpClientContext, a.token))
 
-	pixivAPI.Session.SetClient(client)
-
-	return pixivAPI, nil
+	return nil
 }
 
 // MapAPIResponse maps the API response into the passed APIResponse type

@@ -20,9 +20,10 @@ const CookieSession = "PHPSESSID"
 
 // AjaxAPI is the implementation of the not reachable but required endpoints not in the public or mobile API
 type AjaxAPI struct {
-	StorageURL *url.URL
-	Session    watcherHttp.SessionInterface
-	Key        string
+	StorageURL    *url.URL
+	Session       watcherHttp.SessionInterface
+	Key           string
+	SessionCookie *models.Cookie
 }
 
 // NewAjaxAPI initializes the AJAX API and handles the whole auth and round tripper procedures
@@ -36,9 +37,10 @@ func NewAjaxAPI(moduleKey string) *AjaxAPI {
 	return ajaxAPI
 }
 
-// SetCookies sets the required pixiv session sessionCookie required for the AJAX API
-func (a *AjaxAPI) SetCookies(sessionCookie *models.Cookie) {
-	if sessionCookie == nil {
+// AddRoundTrippers sets the required pixiv session sessionCookie required for the AJAX API
+// and adds the round trippers to the session client
+func (a *AjaxAPI) AddRoundTrippers() {
+	if a.SessionCookie == nil {
 		log.WithField("module", a.Key).Fatalf(
 			"required cookie %s does not exist or expired", CookieSession,
 		)
@@ -47,18 +49,18 @@ func (a *AjaxAPI) SetCookies(sessionCookie *models.Cookie) {
 
 	a.Session.GetClient().Jar.SetCookies(a.StorageURL,
 		[]*http.Cookie{
-			{Name: CookieSession, Value: sessionCookie.Value},
+			{Name: CookieSession, Value: a.SessionCookie.Value},
 		},
 	)
 
 	// also apply sessionCookie for our cookie header in the round trip
-	a.setPixivRoundTripper(sessionCookie)
+	a.setPixivRoundTripper()
 }
 
 // setPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
-func (a *AjaxAPI) setPixivRoundTripper(sessionCookie *models.Cookie) {
+func (a *AjaxAPI) setPixivRoundTripper() {
 	client := a.Session.GetClient()
-	client.Transport = a.setPixivWebHeaders(client.Transport, sessionCookie)
+	client.Transport = a.setPixivWebHeaders(client.Transport, a.SessionCookie)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

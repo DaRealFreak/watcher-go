@@ -8,15 +8,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestMobileAPI() *PublicAPI {
+func getTestPublicAPI() *PublicAPI {
 	testAccount := &models.Account{
 		Username: os.Getenv("PIXIV_USER"),
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	mobileAPI, _ := NewPublicAPI("pixiv Mobile API", testAccount)
+	publicAPI := NewPublicAPI("pixiv Mobile API", testAccount)
+	if err := publicAPI.AddRoundTrippers(); err != nil {
+		return nil
+	}
 
-	return mobileAPI
+	return publicAPI
 }
 
 func TestLogin(t *testing.T) {
@@ -25,7 +28,6 @@ func TestLogin(t *testing.T) {
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	mobileAPI, err := NewPublicAPI("pixiv Mobile API", testAccount)
-	assert.New(t).NoError(err)
+	mobileAPI := NewPublicAPI("pixiv Mobile API", testAccount)
 	assert.New(t).NotNil(mobileAPI)
 }

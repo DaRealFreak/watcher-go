@@ -14,7 +14,10 @@ func getTestMobileAPI() *MobileAPI {
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	mobileAPI, _ := NewMobileAPI("pixiv Mobile API", testAccount)
+	mobileAPI := NewMobileAPI("pixiv Mobile API", testAccount)
+	if err := mobileAPI.AddRoundTrippers(); err != nil {
+		return nil
+	}
 
 	return mobileAPI
 }
@@ -25,7 +28,6 @@ func TestLogin(t *testing.T) {
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	mobileAPI, err := NewMobileAPI("pixiv Mobile API", testAccount)
-	assert.New(t).NoError(err)
+	mobileAPI := NewMobileAPI("pixiv Mobile API", testAccount)
 	assert.New(t).NotNil(mobileAPI)
 }
