@@ -59,6 +59,13 @@ func (db *DbIO) createDatabase() {
 
 	defer raven.CheckClosure(connection)
 
+	raven.CheckError(db.createAccountsTable(connection))
+	raven.CheckError(db.createTrackedItemsTable(connection))
+	raven.CheckError(db.createOAuthClientsTable(connection))
+	raven.CheckError(db.createCookiesTable(connection))
+}
+
+func (db *DbIO) createAccountsTable(connection *sql.DB) (err error) {
 	sqlStatement := `
 		CREATE TABLE accounts
 		(
@@ -70,9 +77,12 @@ func (db *DbIO) createDatabase() {
 		);
 	`
 	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
 
-	sqlStatement = `
+	return err
+}
+
+func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
+	sqlStatement := `
 		CREATE TABLE tracked_items
 		(
 			uid          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,11 +92,13 @@ func (db *DbIO) createDatabase() {
 			complete     BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
-
 	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
 
-	sqlStatement = `
+	return err
+}
+
+func (db *DbIO) createOAuthClientsTable(connection *sql.DB) (err error) {
+	sqlStatement := `
 		CREATE TABLE oauth_clients
 		(
 			uid           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +110,24 @@ func (db *DbIO) createDatabase() {
 			disabled      BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
-
 	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
+
+	return err
+}
+
+func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
+	sqlStatement := `
+		CREATE TABLE cookies
+		(
+			uid 		INTEGER PRIMARY KEY AUTOINCREMENT,
+			name 		VARCHAR(255) 	DEFAULT '',
+			value 		VARCHAR(255) 	DEFAULT '',
+			expiration 	DATETIME 		DEFAULT CURRENT_TIMESTAMP,
+			module 		VARCHAR(255) 	DEFAULT '' NOT NULL,
+			disabled 	BOOLEAN 		DEFAULT FALSE NOT NULL
+		);
+	`
+	_, err = connection.Exec(sqlStatement)
+
+	return err
 }
