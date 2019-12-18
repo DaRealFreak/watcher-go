@@ -1,6 +1,7 @@
 package pixiv
 
 import (
+	"path"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -26,7 +27,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 			if item.CurrentItem == "" || postID > currentItemID {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
 					ItemID:       int(postID),
-					DownloadTag:  fanboxPost.User.GetUserTag(),
+					DownloadTag:  path.Join(fanboxPost.User.GetUserTag(), "fanbox"),
 					DownloadItem: fanboxPost,
 				})
 			} else {
