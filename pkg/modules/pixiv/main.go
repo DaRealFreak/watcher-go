@@ -153,6 +153,8 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	case m.patterns.fanboxPattern.MatchString(item.URI):
 		if m.ajaxAPI == nil {
 			m.ajaxAPI = ajaxapi.NewAjaxAPI(m.Key)
+
+			m.ajaxAPI.SetCookies(m.DbIO.GetCookie(ajaxapi.CookieSession, m))
 		}
 
 		return m.parseFanbox(item)
