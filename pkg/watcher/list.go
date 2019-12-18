@@ -126,3 +126,34 @@ func (app *Watcher) ListOAuthClients(uri string) {
 
 	_ = w.Flush()
 }
+
+// ListCookies lists all cookies with the option to limit it to a module
+func (app *Watcher) ListCookies(uri string) {
+	var cookies []*models.Cookie
+	if uri == "" {
+		cookies = app.DbCon.GetAllCookies(nil)
+	} else {
+		module := app.ModuleFactory.GetModuleFromURI(uri)
+		cookies = app.DbCon.GetAllCookies(module)
+	}
+
+	// initialize tab writer
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	_, _ = fmt.Fprintln(w, "ID\tName\tValue\tExpiration\tModule\tDisabled")
+
+	for _, cookie := range cookies {
+		_, _ = fmt.Fprintf(
+			w,
+			"%d\t%s\t%s\t%s\t%s\t%t\n",
+			cookie.ID,
+			cookie.Name,
+			cookie.Value,
+			cookie.GetDisplayExpirationDate(),
+			cookie.Module,
+			cookie.Disabled,
+		)
+	}
+
+	_ = w.Flush()
+}
