@@ -53,3 +53,33 @@ func (db *DbIO) GetCookies(module models.ModuleInterface) (cookies []*models.Coo
 
 	return cookies
 }
+
+// GetCookie retrieves a specific cookie associated to the passed module which is not expired or disabled
+func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Cookie {
+	stmt, err := db.connection.Prepare(`
+		SELECT * FROM cookies
+		WHERE NOT disabled
+		  AND CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch')
+		  AND name = ?
+		  AND module = ?
+		ORDER BY uid
+	`)
+	raven.CheckError(err)
+
+	rows, err := stmt.Query(name, module.ModuleKey())
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(rows)
+
+	if rows.Next() {
+		var cookie models.Cookie
+
+		raven.CheckError(rows.Scan(
+			&cookie.ID, &cookie.Name, &cookie.Value, &cookie.Expiration, &cookie.Module, &cookie.Disabled,
+		))
+
+		return &cookie
+	}
+
+	return nil
+}
