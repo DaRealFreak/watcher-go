@@ -2,6 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
@@ -14,7 +16,7 @@ func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
 			uid 		INTEGER PRIMARY KEY AUTOINCREMENT,
 			name 		VARCHAR(255) 	DEFAULT '',
 			value 		VARCHAR(255) 	DEFAULT '',
-			expiration 	TIMESTAMP 		DEFAULT NULL,
+			expiration 	DATETIME 		DEFAULT NULL,
 			module 		VARCHAR(255) 	DEFAULT '' NOT NULL,
 			disabled 	BOOLEAN 		DEFAULT FALSE NOT NULL
 		);
@@ -35,7 +37,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 		stmt, err := db.connection.Prepare(`
 			SELECT * FROM cookies
 			WHERE NOT disabled
-			  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
+			  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
 			  AND module = ?
 			ORDER BY uid
 		`)
@@ -48,7 +50,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 			SELECT * 
 			FROM cookies 
 			WHERE NOT disabled
-			  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
+			  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
 			ORDER BY module, uid`)
 	}
 
@@ -72,7 +74,7 @@ func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Co
 	stmt, err := db.connection.Prepare(`
 		SELECT * FROM cookies
 		WHERE NOT disabled
-		  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
+		  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
 		  AND name = ?
 		  AND module = ?
 		ORDER BY uid
@@ -95,4 +97,74 @@ func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Co
 	}
 
 	return nil
+}
+
+// GetFirstOrCreateCookie checks if a cookie exists already, else creates it
+// returns the already persisted or the newly created cookie
+func (db *DbIO) GetFirstOrCreateCookie(
+	name string, value string, expirationString string, module models.ModuleInterface,
+) *models.Cookie {
+	expiration := db.getNullTimeFromString(expirationString)
+
+	stmt, err := db.connection.Prepare("SELECT * FROM cookies WHERE name = ? AND module = ?")
+	raven.CheckError(err)
+
+	rows, err := stmt.Query(name, module.ModuleKey())
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(rows)
+
+	if rows.Next() {
+		var cookie models.Cookie
+
+		raven.CheckError(rows.Scan(
+			&cookie.ID, &cookie.Name, &cookie.Value, &cookie.Expiration, &cookie.Module, &cookie.Disabled,
+		))
+
+		return &cookie
+	}
+
+	// create the item and call the same function again
+	db.CreateCookie(name, value, expiration, module)
+
+	return db.GetFirstOrCreateCookie(name, value, expirationString, module)
+}
+
+// CreateCookie inserts the passed name, value and expiration of the specific module into the cookies table
+func (db *DbIO) CreateCookie(name string, value string, expiration sql.NullTime, module models.ModuleInterface) {
+	stmt, err := db.connection.Prepare("INSERT INTO cookies (name, value, expiration, module) VALUES (?, ?, ?, ?)")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(name, value, expiration, module.ModuleKey())
+	raven.CheckError(err)
+}
+
+func (db *DbIO) getNullTimeFromString(timeString string) sql.NullTime {
+	supportedLayouts := []string{
+		time.ANSIC,
+		time.UnixDate,
+		time.RubyDate,
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC850,
+		time.RFC1123,
+		time.RFC1123Z,
+		time.RFC3339,
+		fmt.Sprintf(`Expires:"%s"`, time.RFC1123),
+	}
+
+	for _, layouts := range supportedLayouts {
+		parsedTime, err := time.Parse(layouts, timeString)
+		if err == nil {
+			return sql.NullTime{
+				Time:  parsedTime,
+				Valid: true,
+			}
+		}
+	}
+
+	// return empty NullTime (ending as null in the database)
+	return sql.NullTime{}
 }
