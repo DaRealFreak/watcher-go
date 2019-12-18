@@ -39,7 +39,8 @@ func (app *Watcher) Restore(archiveName string, cfg *AppConfiguration) {
 
 	if cfg.Restore.Database.Accounts.Enabled ||
 		cfg.Restore.Database.Items.Enabled ||
-		cfg.Restore.Database.OAuth2Clients.Enabled {
+		cfg.Restore.Database.OAuth2Clients.Enabled ||
+		cfg.Restore.Database.Cookies.Enabled {
 		raven.CheckError(app.restoreDatabase(reader, cfg))
 	}
 }
@@ -68,7 +69,8 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 	switch {
 	case cfg.Restore.Database.Accounts.Enabled &&
 		cfg.Restore.Database.Items.Enabled &&
-		cfg.Restore.Database.OAuth2Clients.Enabled:
+		cfg.Restore.Database.OAuth2Clients.Enabled &&
+		cfg.Restore.Database.Cookies.Enabled:
 		// check if [database] exists in archive, else check for accounts.sql and tracked_items.sql
 		if exists, _ := reader.HasFile(filepath.Base(cfg.Database)); exists {
 			file, err := reader.GetFile(filepath.Base(cfg.Database))
@@ -89,7 +91,10 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 			log.Info("restored database file from archive")
 		}
 
-		return app.restoreTablesFromArchive(reader, "accounts.sql", "tracked_items.sql", "oauth_clients.sql")
+		return app.restoreTablesFromArchive(
+			reader,
+			"accounts.sql", "tracked_items.sql", "oauth_clients.sql", "cookies.sql",
+		)
 	case cfg.Restore.Database.Accounts.Enabled:
 		// check for accounts.sql in archive
 		return app.restoreTablesFromArchive(reader, "accounts.sql")
@@ -99,6 +104,9 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration
 	case cfg.Restore.Database.OAuth2Clients.Enabled:
 		// check for oauth_clients.sql in archive
 		return app.restoreTablesFromArchive(reader, "oauth_clients.sql")
+	case cfg.Restore.Database.Cookies.Enabled:
+		// check for cookies.sql in archive
+		return app.restoreTablesFromArchive(reader, "cookies.sql")
 	}
 
 	// no restore option selected, should be unreachable from the command line options
