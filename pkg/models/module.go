@@ -56,8 +56,8 @@ func (t *Module) ModuleKey() string {
 }
 
 // RegisterURISchema registers the URI schemas of the module to the passed map
-func (t *Module) RegisterURISchema(URISchemas map[string][]*regexp.Regexp) {
-	URISchemas[t.Key] = t.URISchemas
+func (t *Module) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
+	uriSchemas[t.Key] = t.URISchemas
 }
 
 // SetDbIO sets the database IO implementation

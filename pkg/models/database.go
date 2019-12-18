@@ -1,31 +1,35 @@
 package models
 
+import "database/sql"
+
 // DatabaseInterface of used functions from the application to eventually change the underlying library
 type DatabaseInterface interface {
-	// tracked item functions
+	// tracked item storage functionality
 	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
 	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
 	CreateTrackedItem(uri string, module ModuleInterface)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 
-	// account functions
+	// account storage functionality
 	CreateAccount(user string, password string, module ModuleInterface)
 	GetFirstOrCreateAccount(user string, password string, module ModuleInterface) *Account
 	GetAccount(module ModuleInterface) *Account
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 
-	// OAuth client functions
-	CreateOAuthClient(
-		clientID string, clientSecret string, accessToken string, refreshToken string, module ModuleInterface,
-	)
+	// OAuth2 client storage functionality
+	CreateOAuthClient(id string, secret string, accessToken string, refreshToken string, module ModuleInterface)
 	GetFirstOrCreateOAuthClient(
-		clientID string, clientSecret string, accessToken string, refreshToken string, module ModuleInterface,
+		id string, secret string, accessToken string, refreshToken string, module ModuleInterface,
 	) *OAuthClient
 	GetOAuthClient(module ModuleInterface) *OAuthClient
 
-	// Cookie functions
+	// cookie storage functionality
 	GetAllCookies(module ModuleInterface) (cookies []*Cookie)
 	GetCookie(name string, module ModuleInterface) *Cookie
+	GetFirstOrCreateCookie(name string, value string, expirationString string, module ModuleInterface) *Cookie
+	CreateCookie(name string, value string, expiration sql.NullTime, module ModuleInterface)
+	UpdateCookie(name string, value string, expirationString string, module ModuleInterface)
+	UpdateCookieDisabledStatus(name string, disabled bool, module ModuleInterface)
 }
 
 // Account contains all required data from accounts in the application

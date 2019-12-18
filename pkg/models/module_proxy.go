@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
@@ -95,4 +96,3 @@ func (t *Module) GetProxySettings() (proxySettings *http.ProxySettings) {
 
 	return proxySettings
 }
-
