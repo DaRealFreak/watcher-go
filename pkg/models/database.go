@@ -24,7 +24,8 @@ type DatabaseInterface interface {
 	GetOAuthClient(module ModuleInterface) *OAuthClient
 
 	// Cookie functions
-	GetCookies(module ModuleInterface) []*Cookie
+	GetAllCookies(module ModuleInterface) (cookies []*Cookie)
+	GetCookie(name string, module ModuleInterface) *Cookie
 }
 
 // Account contains all required data from accounts in the application
