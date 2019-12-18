@@ -1,9 +1,10 @@
 package database
 
 import (
+	"testing"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestDbIO_GetCookies(t *testing.T) {
