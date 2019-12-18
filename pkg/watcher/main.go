@@ -46,6 +46,9 @@ type BackupSettings struct {
 		OAuth2Clients struct {
 			Enabled bool
 		}
+		Cookies struct {
+			Enabled bool
+		}
 		SQL bool
 	}
 	Settings bool

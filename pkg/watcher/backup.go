@@ -27,7 +27,8 @@ func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
 
 	if cfg.Backup.Database.Accounts.Enabled ||
 		cfg.Backup.Database.Items.Enabled ||
-		cfg.Backup.Database.OAuth2Clients.Enabled {
+		cfg.Backup.Database.OAuth2Clients.Enabled ||
+		cfg.Backup.Database.Cookies.Enabled {
 		raven.CheckError(app.backupDatabase(writer, cfg))
 	}
 
@@ -40,9 +41,10 @@ func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration)
 	switch {
 	case cfg.Backup.Database.Accounts.Enabled &&
 		cfg.Backup.Database.Items.Enabled &&
-		cfg.Backup.Database.OAuth2Clients.Enabled:
+		cfg.Backup.Database.OAuth2Clients.Enabled &&
+		cfg.Backup.Database.Cookies.Enabled:
 		if cfg.Backup.Database.SQL {
-			for _, table := range []string{"accounts", "tracked_items", "oauth_clients"} {
+			for _, table := range []string{"accounts", "tracked_items", "oauth_clients", "cookies"} {
 				app.backupTableAsSQL(writer, table)
 			}
 		} else {
@@ -57,6 +59,8 @@ func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration)
 		app.backupTableAsSQL(writer, "tracked_items")
 	case cfg.Backup.Database.OAuth2Clients.Enabled:
 		app.backupTableAsSQL(writer, "oauth_clients")
+	case cfg.Backup.Database.Cookies.Enabled:
+		app.backupTableAsSQL(writer, "cookies")
 	}
 
 	return err
