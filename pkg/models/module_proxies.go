@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+
 	"github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ type ProxyLoopConfiguration struct {
 	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 }
 
+// AddProxyLoopCommands adds the proxies sub command for the passed command
 func (t *Module) AddProxyLoopCommands(command *cobra.Command) {
 	proxiesCmd := &cobra.Command{
 		Use:   "proxies",
