@@ -19,6 +19,13 @@ type AjaxAPI struct {
 	Cookies    Cookies
 }
 
+const (
+	// CookieSession is the session cookie which is set after a successful login
+	CookieSession = "PHPSESSID"
+	// CookieDeviceToken is the device cookie which is set after a successful login
+	CookieDeviceToken = "device_token"
+)
+
 // NewAjaxAPI initializes the AJAX API and handles the whole auth and round tripper procedures
 func NewAjaxAPI(moduleKey string) *AjaxAPI {
 	ajaxAPI := &AjaxAPI{
@@ -33,8 +40,8 @@ func NewAjaxAPI(moduleKey string) *AjaxAPI {
 func (a *AjaxAPI) SetCookies() {
 	a.Session.GetClient().Jar.SetCookies(a.StorageURL,
 		[]*http.Cookie{
-			{Name: "device_token", Value: a.Cookies.DeviceToken},
-			{Name: "PHPSESSID", Value: a.Cookies.SessionID},
+			{Name: CookieDeviceToken, Value: a.Cookies.DeviceToken},
+			{Name: CookieSession, Value: a.Cookies.SessionID},
 		},
 	)
 	// apply cookies for our cookie header in the round trip
