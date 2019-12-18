@@ -266,7 +266,7 @@ func (cli *CliApplication) getUpdateCookieCommand() *cobra.Command {
 			cli.watcher.DbCon.UpdateCookie(name, value, expiration, module)
 		},
 	}
-	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name")
+	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name (required)")
 	cookieCmd.Flags().StringVar(&value, "value", "v", "cookie value (required)")
 	cookieCmd.Flags().StringVar(&expiration, "expiration", "e", "cookie expiration")
 	cookieCmd.Flags().StringVar(&url, "url", "", "url for the association of the cookie (required)")

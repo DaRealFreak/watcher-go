@@ -121,12 +121,13 @@ func (cli *CliApplication) getAddCookieCommand() *cobra.Command {
 			cli.watcher.AddCookieByURI(url, name, value, expiration)
 		},
 	}
-	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name")
-	cookieCmd.Flags().StringVar(&value, "value", "v", "cookie value")
-	cookieCmd.Flags().StringVar(&expiration, "expiration", "e", "cookie expiration")
-	cookieCmd.Flags().StringVar(&url, "url", "", "url for the association of the cookie (required)")
+	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name (required)")
+	cookieCmd.Flags().StringVar(&value, "value", "", "cookie value (required)")
+	cookieCmd.Flags().StringVarP(&expiration, "expiration", "e", "", "cookie expiration")
+	cookieCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the cookie (required)")
 	_ = cookieCmd.MarkFlagRequired("url")
 	_ = cookieCmd.MarkFlagRequired("name")
+	_ = cookieCmd.MarkFlagRequired("value")
 
 	return cookieCmd
 }
