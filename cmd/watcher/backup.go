@@ -10,7 +10,7 @@ func (cli *CliApplication) addBackupCommand() {
 		Use:   "backup [archive name]",
 		Short: "generates a backup of the current settings and database file",
 		Long: "generates a zip/tar.gz file of the current settings and database file.\n" +
-			"It is possible to narrow it down to specific elements like accounts/items/settings.",
+			"It is possible to narrow it down to specific elements like accounts/items/OAuth2 clients/cookies/settings.",
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Backup.Database.Accounts.Enabled = true

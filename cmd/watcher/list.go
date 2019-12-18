@@ -12,7 +12,7 @@ func (cli *CliApplication) addListCommand() {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "lists items or accounts from the database",
-		Long:  "option for the user to list all items/accounts from the database",
+		Long:  "option for the user to list all items, accounts, OAuth2 clients, cookies and modules from the database",
 	}
 
 	cli.rootCmd.AddCommand(listCmd)
