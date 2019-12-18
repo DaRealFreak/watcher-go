@@ -89,12 +89,14 @@ func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.Fan
 	if postInfo.Body.ImageForShare != "" {
 		fileName := fmt.Sprintf("0_%s", m.GetFileName(postInfo.Body.ImageForShare))
 
-		return m.ajaxAPI.Session.DownloadFile(
+		if err := m.ajaxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			postInfo.Body.ImageForShare,
-		)
+		); err != nil {
+			return err
+		}
 	}
 
 	for i, image := range postInfo.Body.PostBody.Images {
@@ -105,6 +107,20 @@ func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.Fan
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			image.OriginalURL,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
+	for i, file := range postInfo.Body.PostBody.Files {
+		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
+
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			file.URL,
 		); err != nil {
 			// if download was not successful return the occurred error here
 			return err
