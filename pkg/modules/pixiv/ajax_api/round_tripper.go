@@ -4,25 +4,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 	browser "github.com/EDDYCJY/fake-useragent"
 )
 
 type pixivRoundTripper struct {
-	inner   http.RoundTripper
-	cookies Cookies
-}
-
-// Cookies contains the required cookie data which is additionally added in the header
-type Cookies struct {
-	SessionID   string
-	DeviceToken string
+	inner         http.RoundTripper
+	sessionCookie *models.Cookie
 }
 
 // setPixivWebHeaders returns the round tripper for the pixiv web headers
-func (a *AjaxAPI) setPixivWebHeaders(inner http.RoundTripper, loginData Cookies) http.RoundTripper {
+func (a *AjaxAPI) setPixivWebHeaders(inner http.RoundTripper, sessionCookie *models.Cookie) http.RoundTripper {
 	return &pixivRoundTripper{
-		inner:   inner,
-		cookies: loginData,
+		inner:         inner,
+		sessionCookie: sessionCookie,
 	}
 }
 
@@ -34,10 +29,7 @@ func (rt *pixivRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 	r.Header.Set("User-Agent", browser.Firefox())
 	r.Header.Set("Referer", "https://www.pixiv.net/")
 	r.Header.Set("Origin", "https://www.pixiv.net")
-	r.Header.Set(
-		"Cookie",
-		fmt.Sprintf("PHPSESSID=%s; device_token=%s", rt.cookies.SessionID, rt.cookies.DeviceToken),
-	)
+	r.Header.Set("Cookie", fmt.Sprintf("PHPSESSID=%s", rt.sessionCookie.Value))
 
 	if rt.inner == nil {
 		return http.DefaultTransport.RoundTrip(r)
