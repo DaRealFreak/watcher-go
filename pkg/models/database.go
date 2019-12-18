@@ -22,6 +22,9 @@ type DatabaseInterface interface {
 		clientID string, clientSecret string, accessToken string, refreshToken string, module ModuleInterface,
 	) *OAuthClient
 	GetOAuthClient(module ModuleInterface) *OAuthClient
+
+	// Cookie functions
+	GetCookies(module ModuleInterface) []*Cookie
 }
 
 // Account contains all required data from accounts in the application
