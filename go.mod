@@ -16,7 +16,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.4
 	github.com/mattn/go-isatty v0.0.11 // indirect
-	github.com/mattn/go-sqlite3 v1.12.0
+	github.com/mattn/go-sqlite3 v1.13.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/pelletier/go-toml v1.6.0 // indirect
