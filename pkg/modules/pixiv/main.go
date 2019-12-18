@@ -151,8 +151,11 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 
 		return err
 	case m.patterns.fanboxPattern.MatchString(item.URI):
-		fmt.Println("parse fanbox: " + item.URI)
-		fmt.Println(m.patterns.fanboxPattern.FindStringSubmatch(item.URI))
+		if m.ajaxAPI == nil {
+			m.ajaxAPI = ajaxapi.NewAjaxAPI(m.Key)
+		}
+
+		return m.parseFanbox(item)
 	case m.patterns.memberPattern.MatchString(item.URI):
 		return m.parseUser(item)
 	default:
