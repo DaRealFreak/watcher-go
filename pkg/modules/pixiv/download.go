@@ -5,37 +5,178 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	ajaxapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/ajax_api"
+	mobileapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/mobile_api"
+	publicapi "github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/public_api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-// downloadIllustration handles the download process of Illustration and Manga illustration types
-func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err error) {
-	for i := len(downloadQueueItem.Illustration.MetaPages) - 1; i >= 0; i-- {
-		image := downloadQueueItem.Illustration.MetaPages[i]
-		fileName := m.GetFileName(image["image_urls"]["original"])
-		fileURI := image["image_urls"]["original"]
+type downloadQueueItem struct {
+	ItemID       int
+	DownloadTag  string
+	DownloadItem interface{}
+}
 
-		if err := m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
-			fileURI,
+func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) error {
+	log.WithField("module", m.Key).Info(
+		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+	)
+
+	for index, data := range downloadQueue {
+		log.WithField("module", m.Key).Info(
+			fmt.Sprintf(
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			),
+		)
+
+		switch item := data.DownloadItem.(type) {
+		case publicapi.PublicIllustration:
+			if err := m.downloadPublicIllustration(data, item); err != nil {
+				return err
+			}
+
+			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
+		case mobileapi.Illustration:
+			var err error
+
+			switch item.Type {
+			case Ugoira:
+				err = m.downloadUgoira(data, item.ID)
+			default:
+				err = m.downloadIllustration(data, item)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
+		case ajaxapi.FanboxPost:
+			if err := m.downloadFanboxPostInfo(data, item); err != nil {
+				return err
+			}
+
+			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
+		}
+
+		m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
+	}
+
+	return nil
+}
+
+func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.FanboxPost) error {
+	postID, err := post.ID.Int64()
+	if err != nil {
+		return err
+	}
+
+	postInfo, err := m.ajaxAPI.GetPostInfo(int(postID))
+	if err != nil {
+		return err
+	}
+
+	if postInfo.Body.ImageForShare != "" {
+		fileName := fmt.Sprintf("0_%s", m.GetFileName(postInfo.Body.ImageForShare))
+
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			postInfo.Body.ImageForShare,
+		); err != nil {
+			return err
+		}
+	}
+
+	for i, image := range postInfo.Body.PostBody.Images {
+		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(image.OriginalURL))
+
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			image.OriginalURL,
 		); err != nil {
 			// if download was not successful return the occurred error here
 			return err
 		}
 	}
 
-	if len(downloadQueueItem.Illustration.MetaSinglePage) > 0 {
-		fileName := m.GetFileName(downloadQueueItem.Illustration.MetaSinglePage["original_image_url"])
-		fileURI := downloadQueueItem.Illustration.MetaSinglePage["original_image_url"]
+	for i, file := range postInfo.Body.PostBody.Files {
+		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
 
-		return m.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName),
-			fileURI,
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			file.URL,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *pixiv) downloadPublicIllustration(data *downloadQueueItem, illust publicapi.PublicIllustration) error {
+	switch {
+	case illust.PageCount > 1:
+		illustration, err := m.mobileAPI.GetIllustDetail(illust.ID)
+		if err != nil {
+			return err
+		}
+
+		return m.downloadIllustration(data, illustration.Illustration)
+	case illust.Type == Ugoira:
+		return m.downloadUgoira(data, illust.ID)
+	default:
+		if err := m.mobileAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"),
+				m.Key,
+				data.DownloadTag,
+				m.GetFileName(illust.ImageURLs.Large),
+			),
+			illust.ImageURLs.Large,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.Illustration) error {
+	for _, metaPage := range illust.MetaPages {
+		fileName := m.GetFileName(metaPage.ImageURLs.Original)
+
+		if err := m.mobileAPI.Session.DownloadFile(
+			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
+			metaPage.ImageURLs.Original,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
+	if illust.MetaSinglePage.OriginalImageURL != nil {
+		fileName := m.GetFileName(*illust.MetaSinglePage.OriginalImageURL)
+
+		return m.mobileAPI.Session.DownloadFile(
+			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
+			*illust.MetaSinglePage.OriginalImageURL,
 		)
 	}
 
@@ -43,16 +184,19 @@ func (m *pixiv) downloadIllustration(downloadQueueItem *downloadQueueItem) (err 
 }
 
 // downloadUgoira handles the download process of ugoira illustration types
-func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error) {
-	apiRes, err := m.getUgoiraMetaData(downloadQueueItem.ItemID)
+func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error) {
+	apiRes, err := m.mobileAPI.GetUgoiraMetadata(illustID)
 	if err != nil {
 		return err
 	}
 
-	fileName := strings.TrimSuffix(m.GetFileName(apiRes.UgoiraMetadata.ZipUrls["medium"]), ".zip") + ".webp"
-	fileURI := apiRes.UgoiraMetadata.ZipUrls["medium"]
+	fileName := fmt.Sprintf(
+		"%s%s",
+		strings.TrimSuffix(m.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip"),
+		m.settings.Animation.Format,
+	)
 
-	resp, err := m.Session.Get(fileURI)
+	resp, err := m.mobileAPI.Session.Get(apiRes.Metadata.ZipURLs.Medium)
 	if err != nil {
 		return err
 	}
@@ -67,17 +211,54 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		return err
 	}
 
+	animationData, err := m.getAnimationData(zipReader, apiRes)
+	if err != nil {
+		return err
+	}
+
+	var fileContent []byte
+
+	switch m.settings.Animation.Format {
+	case animation.FileFormatWebp:
+		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
+	case animation.FileFormatGif:
+		fileContent, err = m.animationHelper.CreateAnimationGif(&animationData)
+	default:
+		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
+	}
+
+	if err != nil && m.settings.Animation.LowQualityGifFallback {
+		fileContent, err = m.animationHelper.CreateAnimationGifGo(&animationData)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	filepath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName)
+	log.WithField("module", m.Key).Debug(
+		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
+	)
+
+	if err := ioutil.WriteFile(filepath, fileContent, os.ModePerm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *pixiv) getAnimationData(zipReader *zip.Reader, apiRes *mobileapi.UgoiraMetadata) (animation.FileData, error) {
 	animationData := animation.FileData{}
 
 	for _, zipFile := range zipReader.File {
-		frame, err := m.getUgoiraFrame(zipFile.Name, apiRes.UgoiraMetadata)
+		frame, err := apiRes.GetUgoiraFrame(zipFile.Name)
 		if err != nil {
-			return err
+			return animation.FileData{}, err
 		}
 
 		unzippedFileBytes, err := m.readZipFile(zipFile)
 		if err != nil {
-			return err
+			return animation.FileData{}, err
 		}
 
 		delay, _ := frame.Delay.Int64()
@@ -86,20 +267,5 @@ func (m *pixiv) downloadUgoira(downloadQueueItem *downloadQueueItem) (err error)
 		animationData.MsDelays = append(animationData.MsDelays, int(delay))
 	}
 
-	// ToDo: fallback to imaging library of golang of error
-	fileContent, err := m.animationHelper.CreateAnimationWebp(&animationData)
-	if err != nil {
-		return err
-	}
-
-	filepath := path.Join(viper.GetString("download.directory"), m.Key, downloadQueueItem.DownloadTag, fileName)
-	log.WithField("module", m.Key).Debug(
-		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
-	)
-
-	if _, err := m.pixivSession.WriteToFile(filepath, fileContent); err != nil {
-		return err
-	}
-
-	return nil
+	return animationData, nil
 }

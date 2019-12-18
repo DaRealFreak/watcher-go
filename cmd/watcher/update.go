@@ -13,8 +13,8 @@ func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "update",
-		Short: "update the application or an item/account in the database",
-		Long:  "option for the user to update the application or items/accounts in the database",
+		Short: "update the application or an item/account/OAuth2 client/cookie in the database",
+		Long:  "option for the user to update the application or items/accounts/OAuth2 clients/cookies in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := update.NewUpdateChecker().UpdateApplication()
 			raven.CheckError(err)
@@ -25,6 +25,7 @@ func (cli *CliApplication) addUpdateCommand() {
 	addCmd.AddCommand(cli.getUpdateAccountCommand())
 	addCmd.AddCommand(cli.getUpdateOAuthClientCommand())
 	addCmd.AddCommand(cli.getUpdateItemCommand())
+	addCmd.AddCommand(cli.getUpdateCookieCommand())
 }
 
 // getUpdateAccountCommand returns the command for the update account sub command
@@ -40,13 +41,14 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 		Short: "updates the saved account",
 		Long:  "updates the saved account in the database(new password, enable/disable)",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountByURI(url, user, password)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateAccount(user, password, module)
 		},
 	}
 
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	accountCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
-	accountCmd.Flags().StringVarP(&password, "password", "p", "", "new password (required)")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	accountCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
+	accountCmd.Flags().StringVarP(&password, "password", "P", "", "new password (required)")
 
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("user")
@@ -70,12 +72,13 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 		Short: "enables an account based on the username",
 		Long:  "update the database to set the user of the module to enabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, false)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateAccountDisabledStatus(user, false, module)
 		},
 	}
 
-	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	enableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
 
 	_ = enableCmd.MarkFlagRequired("url")
 	_ = enableCmd.MarkFlagRequired("user")
@@ -95,12 +98,13 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 		Short: "disable an account based on the username",
 		Long:  "update the database to set the user of the module to disabled",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateAccountDisabledStatusByURI(url, user, true)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateAccountDisabledStatus(user, true, module)
 		},
 	}
 
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
 
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("user")
@@ -123,7 +127,8 @@ func (cli *CliApplication) getUpdateOAuthClientCommand() *cobra.Command {
 		Short: "updates the saved OAuth2 client",
 		Long:  "updates the saved OAuth2 client in the database (new client secret/access token/refresh token)",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateOAuthClientByURI(url, clientID, clientSecret, accessToken, refreshToken)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateOAuthClient(clientID, clientSecret, accessToken, refreshToken, module)
 		},
 	}
 
@@ -132,7 +137,7 @@ func (cli *CliApplication) getUpdateOAuthClientCommand() *cobra.Command {
 	accountCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 	accountCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
 
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("client-id")
@@ -164,11 +169,12 @@ func (cli *CliApplication) getEnableOAuthClientCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateOAuthClientDisabledStatusByURI(url, clientID, accessToken, true)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateOAuthClientDisabledStatus(clientID, accessToken, true, module)
 		},
 	}
 
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 	disableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
 	disableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 
@@ -198,11 +204,12 @@ func (cli *CliApplication) getDisableOAuthClientCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.UpdateOAuthClientDisabledStatusByURI(url, clientID, accessToken, false)
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateOAuthClientDisabledStatus(clientID, accessToken, false, module)
 		},
 	}
 
-	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 	enableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
 	enableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 
@@ -229,7 +236,7 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 		},
 	}
 
-	itemCmd.Flags().StringVar(&url, "url", "", "url of tracked item you want to update (required)")
+	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of tracked item you want to update (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
 
 	_ = itemCmd.MarkFlagRequired("url")
@@ -239,6 +246,38 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	itemCmd.AddCommand(cli.getDisableItemCommand())
 
 	return itemCmd
+}
+
+func (cli *CliApplication) getUpdateCookieCommand() *cobra.Command {
+	var (
+		url        string
+		name       string
+		value      string
+		expiration string
+	)
+
+	// add the account option, requires username, password and uri
+	cookieCmd := &cobra.Command{
+		Use:   "cookie",
+		Short: "updates the cookie for a new value and expiration date",
+		Long:  "updates the saved cookie in the database, creates an entry if it doesn't exist yet",
+		Run: func(cmd *cobra.Command, args []string) {
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateCookie(name, value, expiration, module)
+		},
+	}
+	cookieCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
+	cookieCmd.Flags().StringVarP(&value, "value", "V", "", "cookie value (required)")
+	cookieCmd.Flags().StringVarP(&expiration, "expiration", "e", "", "cookie expiration")
+	cookieCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the cookie (required)")
+	_ = cookieCmd.MarkFlagRequired("url")
+	_ = cookieCmd.MarkFlagRequired("name")
+	_ = cookieCmd.MarkFlagRequired("value")
+
+	cookieCmd.AddCommand(cli.getEnableCookieCommand())
+	cookieCmd.AddCommand(cli.getDisableCookieCommand())
+
+	return cookieCmd
 }
 
 // getEnableItemCommand returns the command for the update item enable sub command
@@ -277,4 +316,56 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 	}
 
 	return enableCmd
+}
+
+// getEnableCookieCommand returns the command for the update cookie enable sub command
+func (cli *CliApplication) getEnableCookieCommand() *cobra.Command {
+	var (
+		url  string
+		name string
+	)
+
+	enableCmd := &cobra.Command{
+		Use:   "enable",
+		Short: "enables the cookie matching to the passed module and name",
+		Long:  "changes the disabled status on the matching cookie to false, causing the cookie to be used again",
+		Run: func(cmd *cobra.Command, args []string) {
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateCookieDisabledStatus(name, false, module)
+		},
+	}
+
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
+
+	_ = enableCmd.MarkFlagRequired("url")
+	_ = enableCmd.MarkFlagRequired("name")
+
+	return enableCmd
+}
+
+// getDisableCookieCommand returns the command for the update cookie disable sub command
+func (cli *CliApplication) getDisableCookieCommand() *cobra.Command {
+	var (
+		url  string
+		name string
+	)
+
+	disableCmd := &cobra.Command{
+		Use:   "disable",
+		Short: "disables the cookie matching to the passed module and name",
+		Long:  "changes the disabled status on the matching cookie to true, causing the cookie to not be used",
+		Run: func(cmd *cobra.Command, args []string) {
+			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+			cli.watcher.DbCon.UpdateCookieDisabledStatus(name, true, module)
+		},
+	}
+
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
+
+	_ = disableCmd.MarkFlagRequired("url")
+	_ = disableCmd.MarkFlagRequired("name")
+
+	return disableCmd
 }

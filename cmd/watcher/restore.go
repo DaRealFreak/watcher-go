@@ -10,7 +10,7 @@ func (cli *CliApplication) addRestoreCommand() {
 		Use:   "restore [archive name]",
 		Short: "restores the current settings/database from the passed backup archive",
 		Long: "uses the passed archive file to restore the backed up setting/database file.\n" +
-			"It is possible to narrow it down to specific elements like accounts/items/settings.",
+			"It is possible to narrow it down to specific elements like accounts/items/OAuth2 clients/cookies/settings.",
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Restore.Database.Accounts.Enabled = true
@@ -24,6 +24,7 @@ func (cli *CliApplication) addRestoreCommand() {
 	restoreCmd.AddCommand(cli.getRestoreAccountsCommand())
 	restoreCmd.AddCommand(cli.getRestoreItemsCommand())
 	restoreCmd.AddCommand(cli.getRestoreOAuthClientsCommand())
+	restoreCmd.AddCommand(cli.getRestoreCookiesCommand())
 	restoreCmd.AddCommand(cli.getRestoreSettingsCommand())
 	cli.rootCmd.AddCommand(restoreCmd)
 }
@@ -77,6 +78,23 @@ func (cli *CliApplication) getRestoreOAuthClientsCommand() *cobra.Command {
 	}
 
 	return restoreOauthClientsCmd
+}
+
+// getRestoreCookiesCommand returns the command for the restore cookies sub command
+func (cli *CliApplication) getRestoreCookiesCommand() *cobra.Command {
+	restoreCookiesCmd := &cobra.Command{
+		Use:   "cookies [archive name]",
+		Short: "restores the cookies table from the passed archive",
+		Long: "restores only the cookies table from the passed archive.\n" +
+			"Requires a cookies.sql file in the backup archive",
+		Args: cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.config.Restore.Database.Cookies.Enabled = true
+			cli.watcher.Restore(args[0], cli.config)
+		},
+	}
+
+	return restoreCookiesCmd
 }
 
 // getRestoreSettingsCommand returns the command for the restore settings sub command

@@ -10,6 +10,22 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func (db *DbIO) createAccountsTable(connection *sql.DB) (err error) {
+	sqlStatement := `
+		CREATE TABLE accounts
+		(
+			uid      INTEGER      PRIMARY KEY AUTOINCREMENT,
+			user     VARCHAR(255) DEFAULT '',
+			password VARCHAR(255) DEFAULT '',
+			module   VARCHAR(255) NOT NULL,
+			disabled BOOLEAN      DEFAULT FALSE NOT NULL
+		);
+	`
+	_, err = connection.Exec(sqlStatement)
+
+	return err
+}
+
 // GetAccount retrieves the first not disabled account of the passed module
 func (db *DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 	stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY uid")

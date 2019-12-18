@@ -20,19 +20,14 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
+const FileFormatGif = ".gif"
+
 // CreateAnimationGif creates a .gif (Graphics Interchange Format) file from the passed fileData.
 // If ImageMagick GIF creation fails we use a fallback method to retrieve a lower quality gif made with golang libraries
 func (h *Helper) CreateAnimationGif(fData *FileData) (content []byte, err error) {
 	log.Debugf("trying to create GIF animation with ImageMagick")
 
-	content, err = h.createAnimationGifImageMagick(fData)
-	if err != nil {
-		log.Debugf("trying to create GIF animation using go library fallback")
-
-		content, err = h.createAnimationGifGo(fData)
-	}
-
-	return
+	return h.createAnimationGifImageMagick(fData)
 }
 
 // createAnimationGifImageMagick tries to create a high quality GIF using ImageMagick
@@ -40,9 +35,9 @@ func (h *Helper) createAnimationGifImageMagick(fData *FileData) (content []byte,
 	return h.createAnimationImageMagick(fData, "gif", true)
 }
 
-// createAnimationGifGo is a fallback function to create a GIF file with the golang image libraries
+// CreateAnimationGifGo is a fallback function to create a GIF file with the golang image libraries
 // quality suffers a lot (256 colors max f.e.), so ImageMagick conversion would be preferable
-func (h *Helper) createAnimationGifGo(fData *FileData) (content []byte, err error) {
+func (h *Helper) CreateAnimationGifGo(fData *FileData) (content []byte, err error) {
 	if len(fData.Frames) != len(fData.MsDelays) {
 		return nil, fmt.Errorf("delays don't match the frame count")
 	}

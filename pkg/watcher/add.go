@@ -23,3 +23,9 @@ func (app *Watcher) AddOAuthClientByURI(
 	module := app.ModuleFactory.GetModuleFromURI(uri)
 	app.DbCon.GetFirstOrCreateOAuthClient(clientID, clientSecret, accessToken, refreshToken, module)
 }
+
+// AddCookieByURI adds a cookie based on the uri
+func (app *Watcher) AddCookieByURI(uri string, name string, value string, expiration string) {
+	module := app.ModuleFactory.GetModuleFromURI(uri)
+	app.DbCon.GetFirstOrCreateCookie(name, value, expiration, module)
+}

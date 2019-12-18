@@ -59,46 +59,8 @@ func (db *DbIO) createDatabase() {
 
 	defer raven.CheckClosure(connection)
 
-	sqlStatement := `
-		CREATE TABLE accounts
-		(
-			uid      INTEGER      PRIMARY KEY AUTOINCREMENT,
-			user     VARCHAR(255) DEFAULT '',
-			password VARCHAR(255) DEFAULT '',
-			module   VARCHAR(255) NOT NULL,
-			disabled BOOLEAN      DEFAULT FALSE NOT NULL
-		);
-	`
-	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
-
-	sqlStatement = `
-		CREATE TABLE tracked_items
-		(
-			uid          INTEGER PRIMARY KEY AUTOINCREMENT,
-			uri          VARCHAR(255) DEFAULT '',
-			current_item VARCHAR(255) DEFAULT '',
-			module       VARCHAR(255) DEFAULT '' NOT NULL ,
-			complete     BOOLEAN      DEFAULT FALSE NOT NULL
-		);
-	`
-
-	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
-
-	sqlStatement = `
-		CREATE TABLE oauth_clients
-		(
-			uid           INTEGER PRIMARY KEY AUTOINCREMENT,
-			client_id     VARCHAR(255) DEFAULT '',
-			client_secret VARCHAR(255) DEFAULT '',
-			access_token  VARCHAR(255) DEFAULT '',
-			refresh_token VARCHAR(255) DEFAULT '',
-			module        VARCHAR(255) DEFAULT '' NOT NULL ,
-			disabled      BOOLEAN      DEFAULT FALSE NOT NULL
-		);
-	`
-
-	_, err = connection.Exec(sqlStatement)
-	raven.CheckError(err)
+	raven.CheckError(db.createAccountsTable(connection))
+	raven.CheckError(db.createTrackedItemsTable(connection))
+	raven.CheckError(db.createOAuthClientsTable(connection))
+	raven.CheckError(db.createCookiesTable(connection))
 }

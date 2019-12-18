@@ -12,12 +12,13 @@ func (cli *CliApplication) addListCommand() {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "lists items or accounts from the database",
-		Long:  "option for the user to list all items/accounts from the database",
+		Long:  "option for the user to list all items, accounts, OAuth2 clients, cookies and modules from the database",
 	}
 
 	cli.rootCmd.AddCommand(listCmd)
 	listCmd.AddCommand(cli.getListAccountsCommand())
 	listCmd.AddCommand(cli.getListOAuthClientsCommand())
+	listCmd.AddCommand(cli.getListCookiesCommand())
 	listCmd.AddCommand(cli.getListItemsCommand())
 	listCmd.AddCommand(cli.getListModulesCommand())
 	listCmd.AddCommand(cli.getListAllCommand())
@@ -35,7 +36,7 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 			cli.watcher.ListAccounts(url)
 		},
 	}
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return accountCmd
 }
@@ -44,7 +45,7 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 func (cli *CliApplication) getListOAuthClientsCommand() *cobra.Command {
 	var url string
 
-	accountCmd := &cobra.Command{
+	oauthClientsCmd := &cobra.Command{
 		Use:   "oauth",
 		Short: "displays all OAuth2 clients",
 		Long:  "displays all OAuth2 clients currently in the database",
@@ -52,9 +53,25 @@ func (cli *CliApplication) getListOAuthClientsCommand() *cobra.Command {
 			cli.watcher.ListOAuthClients(url)
 		},
 	}
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
+	oauthClientsCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
-	return accountCmd
+	return oauthClientsCmd
+}
+
+func (cli *CliApplication) getListCookiesCommand() *cobra.Command {
+	var url string
+
+	cookiesCmd := &cobra.Command{
+		Use:   "cookies",
+		Short: "displays all cookies",
+		Long:  "displays all cookies currently in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.ListCookies(url)
+		},
+	}
+	cookiesCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
+
+	return cookiesCmd
 }
 
 // getListItemsCommand returns the command for the list items sub command
@@ -73,7 +90,7 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 		},
 	}
 
-	itemCmd.Flags().StringVar(&url, "url", "", "url of module")
+	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 	itemCmd.Flags().BoolVar(&includeCompleted, "include-completed", true, "should completed items be included in the list")
 
 	return itemCmd
@@ -97,12 +114,15 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 			fmt.Println("OAuth2 Clients:")
 			cli.watcher.ListOAuthClients(url)
 			fmt.Println("\n ")
+			fmt.Println("Cookies:")
+			cli.watcher.ListCookies(url)
+			fmt.Println("\n ")
 			fmt.Println("Tracked Items:")
 			cli.watcher.ListTrackedItems(url, true)
 		},
 	}
 
-	allCmd.Flags().StringVar(&url, "url", "", "url of module")
+	allCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return allCmd
 }
@@ -120,7 +140,7 @@ func (cli *CliApplication) getListModulesCommand() *cobra.Command {
 		},
 	}
 
-	modulesCmd.Flags().StringVar(&url, "url", "", "url of module")
+	modulesCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return modulesCmd
 }
