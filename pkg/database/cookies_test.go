@@ -131,10 +131,66 @@ func TestDbIO_GetFirstOrCreateCookie(t *testing.T) {
 	assert.New(t).Equal(0, len(cookies))
 
 	dbIO.GetFirstOrCreateCookie(
-		"test", "name", time.Now().Add(24*time.Hour).Format(time.RFC1123), &models.Module{Key: "test.module"},
+		"test", "value", time.Now().Add(24*time.Hour).Format(time.RFC1123), &models.Module{Key: "test.module"},
 	)
 
 	cookies = dbIO.GetAllCookies(&models.Module{Key: "test.module"})
+	assert.New(t).Equal(1, len(cookies))
+}
+
+func TestDbIO_UpdateCookie(t *testing.T) {
+	// truncate table
+	_, err := dbIO.connection.Exec(`DELETE FROM cookies WHERE uid;`)
+	assert.New(t).NoError(err)
+
+	cookies := dbIO.GetAllCookies(nil)
+	assert.New(t).Equal(0, len(cookies))
+
+	testTime := time.Now().Add(24 * time.Hour)
+	cookie := dbIO.GetFirstOrCreateCookie(
+		"test", "value", testTime.Format(time.RFC1123), &models.Module{Key: "test.module"},
+	)
+
+	assert.New(t).Equal("value", cookie.Value)
+	// compare unix since nano comparison will have minuscule differences and could fail
+	assert.New(t).Equal(testTime.Unix(), cookie.Expiration.Time.Unix())
+
+	dbIO.UpdateCookie("test", "newValue", "invalid", &models.Module{Key: "test.module"})
+
+	cookie = dbIO.GetCookie("test", &models.Module{Key: "test.module"})
+	assert.New(t).Equal("newValue", cookie.Value)
+	// compare unix since nano comparison will have minuscule differences and could fail
+	assert.New(t).Equal(false, cookie.Expiration.Valid)
+}
+
+func TestDbIO_UpdateCookieDisabledStatus(t *testing.T) {
+	// truncate table
+	_, err := dbIO.connection.Exec(`DELETE FROM cookies WHERE uid;`)
+	assert.New(t).NoError(err)
+
+	cookies := dbIO.GetAllCookies(nil)
+	assert.New(t).Equal(0, len(cookies))
+
+	testTime := time.Now().Add(24 * time.Hour)
+	dbIO.GetFirstOrCreateCookie(
+		"test", "value", testTime.Format(time.RFC1123), &models.Module{Key: "test.module"},
+	)
+
+	cookies = dbIO.GetAllCookies(nil)
+	assert.New(t).Equal(1, len(cookies))
+
+	// disable the created cookie
+	dbIO.UpdateCookieDisabledStatus("test", true, &models.Module{Key: "test.module"})
+
+	// expect 0 results
+	cookies = dbIO.GetAllCookies(nil)
+	assert.New(t).Equal(0, len(cookies))
+
+	// enable cookie again
+	dbIO.UpdateCookieDisabledStatus("test", false, &models.Module{Key: "test.module"})
+
+	// expect 1 result again
+	cookies = dbIO.GetAllCookies(nil)
 	assert.New(t).Equal(1, len(cookies))
 }
 
