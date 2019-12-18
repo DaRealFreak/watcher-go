@@ -14,7 +14,7 @@ func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
 			uid 		INTEGER PRIMARY KEY AUTOINCREMENT,
 			name 		VARCHAR(255) 	DEFAULT '',
 			value 		VARCHAR(255) 	DEFAULT '',
-			expiration 	DATETIME 		DEFAULT CURRENT_TIMESTAMP,
+			expiration 	TIMESTAMP 		DEFAULT NULL,
 			module 		VARCHAR(255) 	DEFAULT '' NOT NULL,
 			disabled 	BOOLEAN 		DEFAULT FALSE NOT NULL
 		);
@@ -35,7 +35,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 		stmt, err := db.connection.Prepare(`
 			SELECT * FROM cookies
 			WHERE NOT disabled
-			  AND CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch')
+			  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
 			  AND module = ?
 			ORDER BY uid
 		`)
@@ -48,7 +48,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 			SELECT * 
 			FROM cookies 
 			WHERE NOT disabled
-			  AND CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch')
+			  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
 			ORDER BY module, uid`)
 	}
 
@@ -72,7 +72,7 @@ func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Co
 	stmt, err := db.connection.Prepare(`
 		SELECT * FROM cookies
 		WHERE NOT disabled
-		  AND CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch')
+		  AND (CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch') OR expiration IS NULL)
 		  AND name = ?
 		  AND module = ?
 		ORDER BY uid

@@ -1,13 +1,15 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+)
 
 // Cookie contains all the required details to set cookies for domains
 type Cookie struct {
 	ID         int
 	Name       string
 	Value      string
-	Expiration time.Time
+	Expiration sql.NullTime
 	Module     string
 	Disabled   bool
 }
