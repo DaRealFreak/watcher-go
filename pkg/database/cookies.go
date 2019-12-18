@@ -141,6 +141,38 @@ func (db *DbIO) CreateCookie(name string, value string, expiration sql.NullTime,
 	raven.CheckError(err)
 }
 
+// UpdateCookie updates the value and/or the expiration date of the passed name/module associated cookie
+func (db *DbIO) UpdateCookie(name string, value string, expirationString string, module models.ModuleInterface) {
+	expiration := db.getNullTimeFromString(expirationString)
+
+	stmt, err := db.connection.Prepare("UPDATE cookies SET value = ?, expiration = ? WHERE name = ? AND module = ?")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(value, expiration, name, module.ModuleKey())
+	raven.CheckError(err)
+}
+
+// UpdateCookieDisabledStatus disables or enables the cookie of the passed user/module
+func (db *DbIO) UpdateCookieDisabledStatus(name string, disabled bool, module models.ModuleInterface) {
+	var disabledInt int8
+
+	if disabled {
+		disabledInt = 1
+	} else {
+		disabledInt = 0
+	}
+
+	stmt, err := db.connection.Prepare("UPDATE cookies SET disabled = ? WHERE name = ? AND module = ?")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(disabledInt, name, module.ModuleKey())
+	raven.CheckError(err)
+}
+
 func (db *DbIO) getNullTimeFromString(timeString string) sql.NullTime {
 	supportedLayouts := []string{
 		time.ANSIC,
