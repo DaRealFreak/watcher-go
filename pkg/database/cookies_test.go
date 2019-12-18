@@ -38,13 +38,20 @@ func seedCookiesTable(t *testing.T) {
 		pastTimestamp,
 	))
 	assert.New(t).NoError(err)
-}
 
-func TestDbIO_GetCookies(t *testing.T) {
-	seedCookiesTable(t)
+	_, err = dbIO.connection.Exec(fmt.Sprintf(`
+		INSERT INTO cookies (uid, name, value, expiration, module, disabled)
+		VALUES (4, 'future_cookie_2', 'test123456', '%d', 'test.module.2', 0);`,
+		futureTimestamp,
+	))
+	assert.New(t).NoError(err)
 
-	cookies := dbIO.GetCookies(&models.Module{Key: "test.module"})
-	assert.New(t).Equal(1, len(cookies))
+	_, err = dbIO.connection.Exec(fmt.Sprintf(`
+		INSERT INTO cookies (uid, name, value, expiration, module, disabled)
+		VALUES (5, 'expired_cookie_2', 'test123456', '%d', 'test.module.2', 0);`,
+		pastTimestamp,
+	))
+	assert.New(t).NoError(err)
 }
 
 func TestDbIO_GetCookie(t *testing.T) {
@@ -58,4 +65,14 @@ func TestDbIO_GetCookie(t *testing.T) {
 
 	cookie = dbIO.GetCookie("expired_cookie", &models.Module{Key: "test.module"})
 	assert.New(t).Empty(cookie)
+}
+
+func TestDbIO_GetAllCookies(t *testing.T) {
+	seedCookiesTable(t)
+
+	cookies := dbIO.GetAllCookies(&models.Module{Key: "test.module"})
+	assert.New(t).Equal(1, len(cookies))
+
+	cookies = dbIO.GetAllCookies(nil)
+	assert.New(t).Equal(2, len(cookies))
 }
