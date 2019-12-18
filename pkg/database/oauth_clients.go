@@ -10,6 +10,24 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func (db *DbIO) createOAuthClientsTable(connection *sql.DB) (err error) {
+	sqlStatement := `
+		CREATE TABLE oauth_clients
+		(
+			uid           INTEGER PRIMARY KEY AUTOINCREMENT,
+			client_id     VARCHAR(255) DEFAULT '',
+			client_secret VARCHAR(255) DEFAULT '',
+			access_token  VARCHAR(255) DEFAULT '',
+			refresh_token VARCHAR(255) DEFAULT '',
+			module        VARCHAR(255) DEFAULT '' NOT NULL ,
+			disabled      BOOLEAN      DEFAULT FALSE NOT NULL
+		);
+	`
+	_, err = connection.Exec(sqlStatement)
+
+	return err
+}
+
 // GetOAuthClient retrieves the first not disabled OAuth client of the passed module
 func (db *DbIO) GetOAuthClient(module models.ModuleInterface) *models.OAuthClient {
 	stmt, err := db.connection.Prepare(

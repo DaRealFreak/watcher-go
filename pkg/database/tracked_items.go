@@ -10,6 +10,22 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
+	sqlStatement := `
+		CREATE TABLE tracked_items
+		(
+			uid          INTEGER PRIMARY KEY AUTOINCREMENT,
+			uri          VARCHAR(255) DEFAULT '',
+			current_item VARCHAR(255) DEFAULT '',
+			module       VARCHAR(255) DEFAULT '' NOT NULL ,
+			complete     BOOLEAN      DEFAULT FALSE NOT NULL
+		);
+	`
+	_, err = connection.Exec(sqlStatement)
+
+	return err
+}
+
 // GetTrackedItems retrieves all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
 func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
