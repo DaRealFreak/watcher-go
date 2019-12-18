@@ -15,7 +15,7 @@ func (db *DbIO) GetCookies(module models.ModuleInterface) (cookies []*models.Coo
 
 	defer raven.CheckClosure(rows)
 
-	if rows.Next() {
+	for rows.Next() {
 		var cookie models.Cookie
 
 		raven.CheckError(rows.Scan(
