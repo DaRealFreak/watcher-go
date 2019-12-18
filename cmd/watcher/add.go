@@ -19,6 +19,7 @@ func (cli *CliApplication) addAddCommand() {
 	addCmd.AddCommand(cli.getAddAccountCommand())
 	addCmd.AddCommand(cli.getAddItemCommand())
 	addCmd.AddCommand(cli.getAddOAuthClientCommand())
+	addCmd.AddCommand(cli.getAddCookieCommand())
 }
 
 // getAddItemCommand returns the command for the add item sub command
@@ -96,6 +97,33 @@ func (cli *CliApplication) getAddOAuthClientCommand() *cobra.Command {
 	accountCmd.Flags().StringVar(&clientSecret, "client-secret", "", "OAuth2 client secret")
 	accountCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 	accountCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
+	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the OAuth2 client (required)")
+	_ = accountCmd.MarkFlagRequired("url")
+
+	return accountCmd
+}
+
+// getAddCookieCommand returns the command for the add cookie sub command
+func (cli *CliApplication) getAddCookieCommand() *cobra.Command {
+	var (
+		url        string
+		name       string
+		value      string
+		expiration string
+	)
+
+	// add the account option, requires username, password and uri
+	accountCmd := &cobra.Command{
+		Use:   "oauth",
+		Short: "adds an OAuth2 client to the database",
+		Long:  "checks the passed url to assign the passed OAuth2 client to a module and save it to the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.watcher.AddCookieByURI(url, name, value, expiration)
+		},
+	}
+	accountCmd.Flags().StringVarP(&name, "name", "n", "", "OAuth2 client ID")
+	accountCmd.Flags().StringVar(&value, "value", "v", "OAuth2 client secret")
+	accountCmd.Flags().StringVar(&expiration, "expiration", "e", "OAuth2 access token")
 	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the OAuth2 client (required)")
 	_ = accountCmd.MarkFlagRequired("url")
 
