@@ -26,7 +26,14 @@ func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
 
 // GetCookies retrieves all cookies associated to the passed module which is not expired or disabled
 func (db *DbIO) GetCookies(module models.ModuleInterface) (cookies []*models.Cookie) {
-	stmt, err := db.connection.Prepare("SELECT * FROM cookies WHERE NOT disabled AND module = ? ORDER BY uid")
+	// ignore cookies matching on the second since it'll be expired already until we actually use it
+	stmt, err := db.connection.Prepare(`
+		SELECT * FROM cookies
+		WHERE NOT disabled
+		  AND CURRENT_TIMESTAMP < datetime(expiration, 'unixepoch')
+		  AND module = ?
+		ORDER BY uid
+	`)
 	raven.CheckError(err)
 
 	rows, err := stmt.Query(module.ModuleKey())
