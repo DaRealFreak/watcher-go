@@ -159,12 +159,12 @@ func (m *pixiv) downloadPublicIllustration(data *downloadQueueItem, illust publi
 }
 
 func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.Illustration) error {
-	for i := len(illust.MetaPages) - 1; i >= 0; i-- {
-		fileName := m.GetFileName(illust.MetaPages[i].ImageURLs.Original)
+	for _, metaPage := range illust.MetaPages {
+		fileName := m.GetFileName(metaPage.ImageURLs.Original)
 
 		if err := m.mobileAPI.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
-			illust.MetaPages[i].ImageURLs.Original,
+			metaPage.ImageURLs.Original,
 		); err != nil {
 			// if download was not successful return the occurred error here
 			return err
