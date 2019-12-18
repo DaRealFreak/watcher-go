@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
 // FanboxUser contains the relevant information of the user passed from the API
@@ -45,6 +47,11 @@ type PostInfo struct {
 		Items   []FanboxPost `json:"items"`
 		NextURL string       `json:"nextUrl"`
 	} `json:"body"`
+}
+
+// GetUserTag returns the default download tag for illustrations of the user context
+func (u *FanboxUser) GetUserTag() string {
+	return fmt.Sprintf("%s/%s", u.UserID.String(), models.Module{}.SanitizePath(u.Name, false))
 }
 
 // GetCreator requests the creator information from the unofficial ajax/fanbox/creator endpoint

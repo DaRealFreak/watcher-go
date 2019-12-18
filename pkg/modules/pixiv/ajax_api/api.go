@@ -64,7 +64,6 @@ func (a *AjaxAPI) setPixivRoundTripper(sessionCookie *models.Cookie) {
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *AjaxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
 	content := a.Session.GetDocument(res).Text()
-	fmt.Println(content)
 
 	if res.StatusCode >= 400 {
 		var (
