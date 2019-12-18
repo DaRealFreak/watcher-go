@@ -16,6 +16,7 @@ func (cli *CliApplication) addBackupCommand() {
 			cli.config.Backup.Database.Accounts.Enabled = true
 			cli.config.Backup.Database.Items.Enabled = true
 			cli.config.Backup.Database.OAuth2Clients.Enabled = true
+			cli.config.Backup.Database.Cookies.Enabled = true
 			cli.config.Backup.Settings = true
 			cli.watcher.Backup(args[0], cli.config)
 		},
@@ -27,6 +28,7 @@ func (cli *CliApplication) addBackupCommand() {
 	backupCmd.AddCommand(cli.getBackupAccountsCommand())
 	backupCmd.AddCommand(cli.getBackupItemsCommand())
 	backupCmd.AddCommand(cli.getBackupOAuthClientsCommand())
+	backupCmd.AddCommand(cli.getBackupCookiesCommand())
 	backupCmd.AddCommand(cli.getBackupSettingsCommand())
 	cli.rootCmd.AddCommand(backupCmd)
 }
@@ -77,6 +79,21 @@ func (cli *CliApplication) getBackupOAuthClientsCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Backup.Database.OAuth2Clients.Enabled = true
+			cli.watcher.Backup(args[0], cli.config)
+		},
+	}
+	cli.addBackupArchiveFlags(backupOAuthClientsCmd)
+
+	return backupOAuthClientsCmd
+}
+
+func (cli *CliApplication) getBackupCookiesCommand() *cobra.Command {
+	backupOAuthClientsCmd := &cobra.Command{
+		Use:   "cookies [archive name]",
+		Short: "generates a backup of the current cookies",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			cli.config.Backup.Database.Cookies.Enabled = true
 			cli.watcher.Backup(args[0], cli.config)
 		},
 	}
