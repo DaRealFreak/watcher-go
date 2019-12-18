@@ -36,7 +36,7 @@ func (cli *CliApplication) getListAccountsCommand() *cobra.Command {
 			cli.watcher.ListAccounts(url)
 		},
 	}
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return accountCmd
 }
@@ -53,7 +53,7 @@ func (cli *CliApplication) getListOAuthClientsCommand() *cobra.Command {
 			cli.watcher.ListOAuthClients(url)
 		},
 	}
-	oauthClientsCmd.Flags().StringVar(&url, "url", "", "url of module")
+	oauthClientsCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return oauthClientsCmd
 }
@@ -69,7 +69,7 @@ func (cli *CliApplication) getListCookiesCommand() *cobra.Command {
 			cli.watcher.ListCookies(url)
 		},
 	}
-	cookiesCmd.Flags().StringVar(&url, "url", "", "url of module")
+	cookiesCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return cookiesCmd
 }
@@ -90,7 +90,7 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 		},
 	}
 
-	itemCmd.Flags().StringVar(&url, "url", "", "url of module")
+	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 	itemCmd.Flags().BoolVar(&includeCompleted, "include-completed", true, "should completed items be included in the list")
 
 	return itemCmd
@@ -122,7 +122,7 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 		},
 	}
 
-	allCmd.Flags().StringVar(&url, "url", "", "url of module")
+	allCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return allCmd
 }
@@ -140,7 +140,7 @@ func (cli *CliApplication) getListModulesCommand() *cobra.Command {
 		},
 	}
 
-	modulesCmd.Flags().StringVar(&url, "url", "", "url of module")
+	modulesCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
 
 	return modulesCmd
 }

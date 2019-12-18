@@ -46,9 +46,9 @@ func (cli *CliApplication) getUpdateAccountCommand() *cobra.Command {
 		},
 	}
 
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	accountCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
-	accountCmd.Flags().StringVarP(&password, "password", "p", "", "new password (required)")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	accountCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
+	accountCmd.Flags().StringVarP(&password, "password", "P", "", "new password (required)")
 
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("user")
@@ -77,8 +77,8 @@ func (cli *CliApplication) getEnableAccountCommand() *cobra.Command {
 		},
 	}
 
-	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	enableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
 
 	_ = enableCmd.MarkFlagRequired("url")
 	_ = enableCmd.MarkFlagRequired("user")
@@ -103,8 +103,8 @@ func (cli *CliApplication) getDisableAccountCommand() *cobra.Command {
 		},
 	}
 
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	disableCmd.Flags().StringVarP(&user, "user", "u", "", "username (required)")
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&user, "user", "U", "", "username (required)")
 
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("user")
@@ -137,7 +137,7 @@ func (cli *CliApplication) getUpdateOAuthClientCommand() *cobra.Command {
 	accountCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 	accountCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
 
-	accountCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 
 	_ = accountCmd.MarkFlagRequired("url")
 	_ = accountCmd.MarkFlagRequired("client-id")
@@ -174,7 +174,7 @@ func (cli *CliApplication) getEnableOAuthClientCommand() *cobra.Command {
 		},
 	}
 
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 	disableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
 	disableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 
@@ -209,7 +209,7 @@ func (cli *CliApplication) getDisableOAuthClientCommand() *cobra.Command {
 		},
 	}
 
-	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
 	enableCmd.Flags().StringVar(&clientID, "client-id", "", "OAuth2 client ID")
 	enableCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 
@@ -236,7 +236,7 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 		},
 	}
 
-	itemCmd.Flags().StringVar(&url, "url", "", "url of tracked item you want to update (required)")
+	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of tracked item you want to update (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
 
 	_ = itemCmd.MarkFlagRequired("url")
@@ -266,10 +266,10 @@ func (cli *CliApplication) getUpdateCookieCommand() *cobra.Command {
 			cli.watcher.DbCon.UpdateCookie(name, value, expiration, module)
 		},
 	}
-	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name (required)")
-	cookieCmd.Flags().StringVar(&value, "value", "v", "cookie value (required)")
+	cookieCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
+	cookieCmd.Flags().StringVarP(&value, "value", "V", "", "cookie value (required)")
 	cookieCmd.Flags().StringVar(&expiration, "expiration", "e", "cookie expiration")
-	cookieCmd.Flags().StringVar(&url, "url", "", "url for the association of the cookie (required)")
+	cookieCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the cookie (required)")
 	_ = cookieCmd.MarkFlagRequired("url")
 	_ = cookieCmd.MarkFlagRequired("name")
 	_ = cookieCmd.MarkFlagRequired("value")
@@ -335,8 +335,8 @@ func (cli *CliApplication) getEnableCookieCommand() *cobra.Command {
 		},
 	}
 
-	enableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	enableCmd.Flags().StringVarP(&name, "name", "u", "", "cookie name (required)")
+	enableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	enableCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
 
 	_ = enableCmd.MarkFlagRequired("url")
 	_ = enableCmd.MarkFlagRequired("name")
@@ -361,8 +361,8 @@ func (cli *CliApplication) getDisableCookieCommand() *cobra.Command {
 		},
 	}
 
-	disableCmd.Flags().StringVar(&url, "url", "", "url of module (required)")
-	disableCmd.Flags().StringVarP(&name, "name", "u", "", "cookie name (required)")
+	disableCmd.Flags().StringVarP(&url, "url", "u", "", "url of module (required)")
+	disableCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
 
 	_ = disableCmd.MarkFlagRequired("url")
 	_ = disableCmd.MarkFlagRequired("name")

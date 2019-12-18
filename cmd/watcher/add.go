@@ -57,9 +57,9 @@ func (cli *CliApplication) getAddAccountCommand() *cobra.Command {
 			cli.watcher.AddAccountByURI(url, username, password)
 		},
 	}
-	accountCmd.Flags().StringVarP(&username, "user", "u", "", "username you want to add (required)")
-	accountCmd.Flags().StringVarP(&password, "password", "p", "", "password of the user (required)")
-	accountCmd.Flags().StringVar(&url, "url", "", "url for the association of the account (required)")
+	accountCmd.Flags().StringVarP(&username, "user", "U", "", "username you want to add (required)")
+	accountCmd.Flags().StringVarP(&password, "password", "P", "", "password of the user (required)")
+	accountCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the account (required)")
 	_ = accountCmd.MarkFlagRequired("user")
 	_ = accountCmd.MarkFlagRequired("password")
 	_ = accountCmd.MarkFlagRequired("url")
@@ -97,7 +97,7 @@ func (cli *CliApplication) getAddOAuthClientCommand() *cobra.Command {
 	oauthClientCmd.Flags().StringVar(&clientSecret, "client-secret", "", "OAuth2 client secret")
 	oauthClientCmd.Flags().StringVar(&accessToken, "access-token", "", "OAuth2 access token")
 	oauthClientCmd.Flags().StringVar(&refreshToken, "refresh-token", "", "OAuth2 refresh token")
-	oauthClientCmd.Flags().StringVar(&url, "url", "", "url for the association of the OAuth2 client (required)")
+	oauthClientCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the OAuth2 client (required)")
 	_ = oauthClientCmd.MarkFlagRequired("url")
 
 	return oauthClientCmd
@@ -121,8 +121,8 @@ func (cli *CliApplication) getAddCookieCommand() *cobra.Command {
 			cli.watcher.AddCookieByURI(url, name, value, expiration)
 		},
 	}
-	cookieCmd.Flags().StringVarP(&name, "name", "n", "", "cookie name (required)")
-	cookieCmd.Flags().StringVar(&value, "value", "", "cookie value (required)")
+	cookieCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
+	cookieCmd.Flags().StringVarP(&value, "value", "V", "", "cookie value (required)")
 	cookieCmd.Flags().StringVarP(&expiration, "expiration", "e", "", "cookie expiration")
 	cookieCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the cookie (required)")
 	_ = cookieCmd.MarkFlagRequired("url")
