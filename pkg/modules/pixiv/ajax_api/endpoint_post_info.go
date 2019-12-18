@@ -9,7 +9,13 @@ import (
 type FanboxPostInfo struct {
 	Body struct {
 		PostBody struct {
-			Text   string `json:"text"`
+			Text  string `json:"text"`
+			Files []*struct {
+				ID        string `json:"id"`
+				Name      string `json:"name"`
+				Extension string `json:"extension"`
+				URL       string `json:"url"`
+			}
 			Images []*struct {
 				ID           string `json:"id"`
 				Extension    string `json:"extension"`
