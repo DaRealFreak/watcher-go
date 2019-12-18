@@ -1,9 +1,28 @@
 package database
 
 import (
+	"database/sql"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
+
+func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
+	sqlStatement := `
+		CREATE TABLE cookies
+		(
+			uid 		INTEGER PRIMARY KEY AUTOINCREMENT,
+			name 		VARCHAR(255) 	DEFAULT '',
+			value 		VARCHAR(255) 	DEFAULT '',
+			expiration 	DATETIME 		DEFAULT CURRENT_TIMESTAMP,
+			module 		VARCHAR(255) 	DEFAULT '' NOT NULL,
+			disabled 	BOOLEAN 		DEFAULT FALSE NOT NULL
+		);
+	`
+	_, err = connection.Exec(sqlStatement)
+
+	return err
+}
 
 // GetCookies retrieves all cookies associated to the passed module which is not expired or disabled
 func (db *DbIO) GetCookies(module models.ModuleInterface) (cookies []*models.Cookie) {
