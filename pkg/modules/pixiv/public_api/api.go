@@ -12,15 +12,8 @@ type PublicAPI struct {
 }
 
 // NewPublicAPI initializes the public API and handles the whole OAuth2 and round tripper procedures
-func NewPublicAPI(moduleKey string, account *models.Account) (*PublicAPI, error) {
-	pixivAPI, err := pixivapi.NewPixivAPI(moduleKey, account, "http://spapi.pixiv.net/")
-	if err != nil {
-		return nil, err
+func NewPublicAPI(moduleKey string, account *models.Account) *PublicAPI {
+	return &PublicAPI{
+		*pixivapi.NewPixivAPI(moduleKey, account, "http://spapi.pixiv.net/"),
 	}
-
-	publicAPI := &PublicAPI{
-		pixivAPI,
-	}
-
-	return publicAPI, nil
 }

@@ -10,7 +10,9 @@ import (
 // getTestAjaxAPI builds the AJAX API from the environment variables and executes all required functions
 func getTestAjaxAPI() *AjaxAPI {
 	ajaxAPI := NewAjaxAPI("pixiv AJAX API")
-	ajaxAPI.SetCookies(&models.Cookie{Value: os.Getenv("PIXIV_SESSION_ID")})
+	ajaxAPI.SessionCookie = &models.Cookie{Value: os.Getenv("PIXIV_SESSION_ID")}
+
+	ajaxAPI.AddRoundTrippers()
 
 	return ajaxAPI
 }

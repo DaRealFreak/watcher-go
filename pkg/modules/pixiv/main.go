@@ -116,17 +116,10 @@ func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *pixiv) Login(account *models.Account) bool {
-	var err error
+	m.mobileAPI = mobileapi.NewMobileAPI(m.Key, account)
+	m.publicAPI = publicapi.NewPublicAPI(m.Key, account)
 
-	m.mobileAPI, err = mobileapi.NewMobileAPI(m.Key, account)
-	if err != nil {
-		return false
-	}
-
-	m.publicAPI, err = publicapi.NewPublicAPI(m.Key, account)
-	if err != nil {
-		return false
-	}
+	raven.CheckError(m.preparePixivAPISessions())
 
 	m.LoggedIn = true
 
@@ -153,8 +146,11 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	case m.patterns.fanboxPattern.MatchString(item.URI):
 		if m.ajaxAPI == nil {
 			m.ajaxAPI = ajaxapi.NewAjaxAPI(m.Key)
+			m.ajaxAPI.SessionCookie = m.DbIO.GetCookie(ajaxapi.CookieSession, m)
 
-			m.ajaxAPI.SetCookies(m.DbIO.GetCookie(ajaxapi.CookieSession, m))
+			if err := m.preparePixivAjaxSession(); err != nil {
+				return err
+			}
 		}
 
 		return m.parseFanbox(item)
@@ -163,6 +159,47 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
+
+	return nil
+}
+
+func (m *pixiv) preparePixivAPISessions() error {
+	usedProxy := m.GetProxySettings()
+
+	// set proxy and overwrite the client if the proxy is enabled
+	if usedProxy.Enable {
+		if err := m.publicAPI.Session.SetProxy(usedProxy); err != nil {
+			return err
+		}
+
+		if err := m.mobileAPI.Session.SetProxy(usedProxy); err != nil {
+			return err
+		}
+	}
+
+	// prepare public API session again
+	if err := m.publicAPI.AddRoundTrippers(); err != nil {
+		return err
+	}
+
+	// prepare mobile API session again
+	if err := m.mobileAPI.AddRoundTrippers(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *pixiv) preparePixivAjaxSession() error {
+	usedProxy := m.GetProxySettings()
+
+	if usedProxy.Enable {
+		if err := m.ajaxAPI.Session.SetProxy(usedProxy); err != nil {
+			return err
+		}
+	}
+
+	m.ajaxAPI.AddRoundTrippers()
 
 	return nil
 }
