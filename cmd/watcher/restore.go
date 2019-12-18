@@ -10,7 +10,7 @@ func (cli *CliApplication) addRestoreCommand() {
 		Use:   "restore [archive name]",
 		Short: "restores the current settings/database from the passed backup archive",
 		Long: "uses the passed archive file to restore the backed up setting/database file.\n" +
-			"It is possible to narrow it down to specific elements like accounts/items/settings.",
+			"It is possible to narrow it down to specific elements like accounts/items/OAuth2 clients/cookies/settings.",
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli.config.Restore.Database.Accounts.Enabled = true

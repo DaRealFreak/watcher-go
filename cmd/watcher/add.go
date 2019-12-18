@@ -11,8 +11,8 @@ func (cli *CliApplication) addAddCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "add",
-		Short: "add an item or account to the database",
-		Long:  "option for the user to add accounts/items to the database for the main usage",
+		Short: "add an item, account, OAuth2 client or cookie to the database",
+		Long:  "option for the user to add accounts, items, OAuth2 clients and cookies to the database for the main usage",
 	}
 
 	cli.rootCmd.AddCommand(addCmd)

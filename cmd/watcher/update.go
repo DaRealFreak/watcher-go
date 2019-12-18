@@ -13,8 +13,8 @@ func (cli *CliApplication) addUpdateCommand() {
 	// general add option
 	addCmd := &cobra.Command{
 		Use:   "update",
-		Short: "update the application or an item/account in the database",
-		Long:  "option for the user to update the application or items/accounts in the database",
+		Short: "update the application or an item/account/OAuth2 client/cookie in the database",
+		Long:  "option for the user to update the application or items/accounts/OAuth2 clients/cookies in the database",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := update.NewUpdateChecker().UpdateApplication()
 			raven.CheckError(err)
@@ -268,7 +268,7 @@ func (cli *CliApplication) getUpdateCookieCommand() *cobra.Command {
 	}
 	cookieCmd.Flags().StringVarP(&name, "name", "N", "", "cookie name (required)")
 	cookieCmd.Flags().StringVarP(&value, "value", "V", "", "cookie value (required)")
-	cookieCmd.Flags().StringVar(&expiration, "expiration", "e", "cookie expiration")
+	cookieCmd.Flags().StringVarP(&expiration, "expiration", "e", "", "cookie expiration")
 	cookieCmd.Flags().StringVarP(&url, "url", "u", "", "url for the association of the cookie (required)")
 	_ = cookieCmd.MarkFlagRequired("url")
 	_ = cookieCmd.MarkFlagRequired("name")
