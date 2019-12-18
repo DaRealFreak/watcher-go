@@ -61,11 +61,54 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 			}
 
 			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
-		case ajaxapi.FanboxPostInfo:
-			fmt.Println("fanbox post")
+		case ajaxapi.FanboxPost:
+			if err := m.downloadFanboxPostInfo(data, item); err != nil {
+				return err
+			}
+
+			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
 		}
 
 		m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
+	}
+
+	return nil
+}
+
+func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.FanboxPost) error {
+	postID, err := post.ID.Int64()
+	if err != nil {
+		return err
+	}
+
+	postInfo, err := m.ajaxAPI.GetPostInfo(int(postID))
+	if err != nil {
+		return err
+	}
+
+	if postInfo.Body.ImageForShare != "" {
+		fileName := fmt.Sprintf("0_%s", m.GetFileName(postInfo.Body.ImageForShare))
+
+		return m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			postInfo.Body.ImageForShare,
+		)
+	}
+
+	for i, image := range postInfo.Body.PostBody.Images {
+		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(image.OriginalURL))
+
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			image.OriginalURL,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
 	}
 
 	return nil
