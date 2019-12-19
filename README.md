@@ -143,14 +143,14 @@ Available Commands:
 
 Flags:
   -p, --password string   new password (required)
-      --url string        url of module (required)
+  -u, --url string        url of module (required)
   -u, --user string       username (required)
 ```
 
 items got the following flags:
 ```
   -c, --current string   current item in case you don't want to download older items
-      --url string       url of tracked item you want to update (required)
+  -u, --url string       url of tracked item you want to update (required)
 ```
 
 oauth got the following flags:
@@ -164,7 +164,7 @@ Flags:
       --client-secret string   OAuth2 client secret
       --access-token string    OAuth2 access token
       --refresh-token string   OAuth2 refresh token
-      --url string             url of module (required)
+  -u, --url string             url of module (required)
 ```
 
 cookies got the following flags:
