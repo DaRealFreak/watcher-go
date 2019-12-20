@@ -80,7 +80,7 @@ func (g ImplicitGrantDeviantart) Login() error {
 
 // Authorize implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt (only new style)
 func (g ImplicitGrantDeviantart) Authorize() error {
-	res, err := g.Client.Get(implicitoauth2.AuthCodeURLImplicit(g.Config, "session-id"))
+	res, err := g.Client.Get(implicitoauth2.AuthTokenURL(g.Config, "session-id"))
 	if err != nil {
 		return err
 	}

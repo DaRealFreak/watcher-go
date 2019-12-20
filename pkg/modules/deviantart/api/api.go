@@ -55,5 +55,5 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	token, err := grant.Token()
 	fmt.Println(token, err)
 
-	fmt.Println(implicitoauth2.AuthCodeURLImplicit(a.OAuth2Config, "session-id"))
+	fmt.Println(implicitoauth2.AuthTokenURL(a.OAuth2Config, "session-id"))
 }
