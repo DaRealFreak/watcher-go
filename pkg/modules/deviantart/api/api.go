@@ -3,13 +3,11 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
-	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	browser "github.com/EDDYCJY/fake-useragent"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
@@ -50,10 +48,10 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	client.Transport = a.SetCloudFlareHeaders(client.Transport)
 	client.Transport = a.SetUserAgent(client.Transport, browser.Firefox())
 
-	grant := NewImplicitGrantDeviantart(a.OAuth2Config, client, a.account)
-
-	token, err := grant.Token()
-	fmt.Println(token, err)
-
-	fmt.Println(implicitoauth2.AuthTokenURL(a.OAuth2Config, "session-id"))
+	a.Session.SetClient(
+		oauth2.NewClient(
+			context.Background(),
+			&deviantartTokenRefresher{new: NewImplicitGrantDeviantart(a.OAuth2Config, client, a.account)},
+		),
+	)
 }
