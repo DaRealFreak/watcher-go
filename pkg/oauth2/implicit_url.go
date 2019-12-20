@@ -1,4 +1,4 @@
-package internal
+package implicitoauth2
 
 import (
 	"golang.org/x/oauth2"
