@@ -14,7 +14,7 @@ import (
 // ImplicitGrantInterface defines all required methods for an implicit grant OAuth2 process
 type ImplicitGrantInterface interface {
 	Login() error
-	Authorize()
+	Authorize() error
 	Token() (*oauth2.Token, error)
 }
 
@@ -64,7 +64,11 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 		return nil
 	}
 
-	g.Authorize()
+	if err := g.Authorize(); err != nil && !ImplicitGrantRequestErrorSuccessful(err) {
+		wg.Done()
+		return nil, err
+	}
+
 	wg.Wait()
 
 	expires, err := strconv.Atoi(fragments.Get("expires_in"))
@@ -75,4 +79,17 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 		RefreshToken: fragments.Get("refresh_token"),
 		Expiry:       time.Now().Add(time.Duration(expires) * time.Second),
 	}, err
+}
+
+func ImplicitGrantRequestErrorSuccessful(err error) bool {
+	switch errorWrap := err.(type) {
+	case *url.Error:
+		switch errorWrap.Err.(type) {
+		case ImplicitGrantRedirect:
+			// already redirected to the token URL, no need for authorization
+			return true
+		}
+	}
+
+	return false
 }
