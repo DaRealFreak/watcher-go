@@ -2,17 +2,19 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/oauth2"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
+// ImplicitGrantDeviantart is the implementation of the ImplicitGrant interface
 type ImplicitGrantDeviantart struct {
 	implicitoauth2.ImplicitGrant
 	account *models.Account

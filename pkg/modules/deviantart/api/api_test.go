@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"os"
 	"testing"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
 )
 
 func TestNewDeviantartAPI(t *testing.T) {

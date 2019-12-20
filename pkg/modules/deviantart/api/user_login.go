@@ -2,10 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // loginInfo contains all relevant information from the login page

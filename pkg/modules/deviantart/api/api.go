@@ -1,8 +1,11 @@
+// Package api is the implementation of the DeviantArt API including the authentication using the Implicit Grant OAuth2
 package api
 
 import (
 	"context"
 	"fmt"
+	"time"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
@@ -10,9 +13,9 @@ import (
 	browser "github.com/EDDYCJY/fake-useragent"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
-	"time"
 )
 
+// DeviantartAPI contains all required items to communicate with the API
 type DeviantartAPI struct {
 	Session      watcherHttp.SessionInterface
 	rateLimiter  *rate.Limiter
@@ -21,6 +24,7 @@ type DeviantartAPI struct {
 	account      *models.Account
 }
 
+// NewDeviantartAPI returns the settings of the DeviantArt API
 func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI {
 	return &DeviantartAPI{
 		Session: session.NewSession(moduleKey),
@@ -38,6 +42,8 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 	}
 }
 
+// AddRoundTrippers adds the round trippers for CloudFlare, adds a custom user agent
+// and implements the implicit OAuth2 authentication and sets the Token round tripper
 func (a *DeviantartAPI) AddRoundTrippers() {
 	client := a.Session.GetClient()
 
