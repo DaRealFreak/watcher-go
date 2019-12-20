@@ -1,10 +1,12 @@
 package implicitoauth2
 
 import (
-	"golang.org/x/oauth2"
 	"strings"
+
+	"golang.org/x/oauth2"
 )
 
-func AuthCodeURLImplicit(cfg *oauth2.Config, state string) string {
+// AuthTokenURL is a function to retrieve the URL to request the Token with by the Implicit Grant OAuth2 authentication
+func AuthTokenURL(cfg *oauth2.Config, state string) string {
 	return strings.Replace(cfg.AuthCodeURL(state), "response_type=code", "response_type=token", -1)
 }

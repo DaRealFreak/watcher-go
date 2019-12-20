@@ -1,14 +1,16 @@
+// Package implicitoauth2 contains the basic functionality to realize an Implicit Grant OAuth2 authentication
 package implicitoauth2
 
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 // ImplicitGrantInterface defines all required methods for an implicit grant OAuth2 process
@@ -25,21 +27,26 @@ type ImplicitGrant struct {
 	Config *oauth2.Config
 }
 
+// ImplicitGrantRedirect is a custom error we return when we got successfully redirected to a Token URL
 type ImplicitGrantRedirect struct {
 	URL *url.URL
 }
 
+// Error is the implementation of the default output of the error interface
 func (r ImplicitGrantRedirect) Error() string {
 	return fmt.Sprintf("reached Token URL: %s", r.URL)
 }
 
+// Token is a basic implementation for the workflow of the Implicit Grant OAuth2 authentication
 func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 	if err := g.Login(); err != nil {
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
-	var fragments url.Values
+	var (
+		wg        sync.WaitGroup
+		fragments url.Values
+	)
 
 	wg.Add(1)
 
@@ -61,6 +68,7 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 		if len(via) >= 10 {
 			return errors.New("stopped after 10 redirects")
 		}
+
 		return nil
 	}
 
@@ -81,11 +89,11 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 	}, err
 }
 
+// ImplicitGrantRequestErrorSuccessful checks if the error occurred is the error indicating a successful redirect
+// which is returned as error since we cancel the request the moment we reach it
 func ImplicitGrantRequestErrorSuccessful(err error) bool {
-	switch errorWrap := err.(type) {
-	case *url.Error:
-		switch errorWrap.Err.(type) {
-		case ImplicitGrantRedirect:
+	if x, ok := err.(*url.Error); ok {
+		if _, isRedirect := x.Err.(ImplicitGrantRedirect); isRedirect {
 			// already redirected to the token URL, no need for authorization
 			return true
 		}
