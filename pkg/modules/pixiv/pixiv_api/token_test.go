@@ -24,6 +24,7 @@ func TestPixivAPI_tokenRenewal(t *testing.T) {
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)
 
+	// expire token to make the Valid() function of the token to return false and trigger a token renewal
 	pixivAPI.token.Expiry = time.Now().Add(-1 * time.Minute)
 
 	res, err = pixivAPI.Session.Get(apiURL.String())

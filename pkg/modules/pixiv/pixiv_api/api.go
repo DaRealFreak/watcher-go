@@ -11,6 +11,7 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/pixiv/pixiv_api/internal"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
@@ -50,7 +51,9 @@ func (a *PixivAPI) AddRoundTrippers() (err error) {
 	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(a.Session.GetClient().Transport, a.referer)
 
 	if a.token == nil {
-		a.token, err = a.passwordCredentialsToken(a.oAuth2Account.Username, a.oAuth2Account.Password)
+		a.token, err = internal.PasswordCredentialsToken(
+			a.oAuth2Account.Username, a.oAuth2Account.Password, a.OAuth2Config, a.Session.GetClient(),
+		)
 		if err != nil {
 			return err
 		}
@@ -60,7 +63,12 @@ func (a *PixivAPI) AddRoundTrippers() (err error) {
 
 	// set context with own http client for OAuth2 library to use
 	// retrieve new client with applied OAuth2 round tripper
-	a.Session.SetClient(a.OAuth2Config.Client(httpClientContext, a.token))
+	a.Session.SetClient(
+		oauth2.NewClient(
+			httpClientContext,
+			&pixivTokenRefresher{token: a.token, client: a.Session.GetClient(), config: a.OAuth2Config},
+		),
+	)
 
 	return nil
 }
