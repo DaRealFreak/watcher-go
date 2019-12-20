@@ -73,7 +73,6 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 	}
 
 	if err := g.Authorize(); err != nil && !ImplicitGrantRequestErrorSuccessful(err) {
-		wg.Done()
 		return nil, err
 	}
 
