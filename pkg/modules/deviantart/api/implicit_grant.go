@@ -9,7 +9,6 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/oauth2"
 )
@@ -40,7 +39,9 @@ func NewImplicitGrantDeviantart(
 // Login implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt
 func (g ImplicitGrantDeviantart) Login() error {
 	res, err := g.Client.Get("https://www.deviantart.com/users/login")
-	raven.CheckError(err)
+	if err != nil {
+		return err
+	}
 
 	info, err := g.getLoginCSRFToken(res)
 	if err != nil {

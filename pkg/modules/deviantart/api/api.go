@@ -8,6 +8,7 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	browser "github.com/EDDYCJY/fake-useragent"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
@@ -51,7 +52,9 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	a.Session.SetClient(
 		oauth2.NewClient(
 			context.Background(),
-			&deviantartTokenRefresher{new: NewImplicitGrantDeviantart(a.OAuth2Config, client, a.account)},
+			&implicitoauth2.ImplicitGrantTokenSource{
+				Grant: NewImplicitGrantDeviantart(a.OAuth2Config, client, a.account),
+			},
 		),
 	)
 }

@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDeviantartAPI(t *testing.T) {
