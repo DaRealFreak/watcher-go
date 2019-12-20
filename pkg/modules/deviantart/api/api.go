@@ -3,6 +3,10 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/pkg/http"
@@ -57,4 +61,34 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 			},
 		),
 	)
+}
+
+// Request simulates the http.NewRequest method to add the additional option
+// to use the DiFi API console exploit to circumvent API limitations
+func (a *DeviantartAPI) Request(method string, endpoint string, values url.Values) (*http.Response, error) {
+	apiRequestURL := "https://www.deviantart.com/api/v1/oauth2" + endpoint
+
+	switch strings.ToUpper(method) {
+	case "GET":
+		requestURL, err := url.Parse(apiRequestURL)
+		if err != nil {
+			return nil, err
+		}
+
+		existingValues := requestURL.Query()
+
+		for key, group := range values {
+			for _, value := range group {
+				existingValues.Add(key, value)
+			}
+		}
+
+		requestURL.RawQuery = existingValues.Encode()
+
+		return a.Session.Get(requestURL.String())
+	case "POST":
+		return a.Session.Post(endpoint, values)
+	default:
+		return nil, fmt.Errorf("unknown request method: %s", method)
+	}
 }

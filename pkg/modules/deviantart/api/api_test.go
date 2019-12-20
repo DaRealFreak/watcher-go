@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/url"
 	"os"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestNewDeviantartAPI(t *testing.T) {
 	daAPI := NewDeviantartAPI("deviantart API", testAccount)
 	daAPI.AddRoundTrippers()
 
-	res, err := daAPI.Session.Get("https://www.deviantart.com/api/v1/oauth2/placebo")
+	res, err := daAPI.Request("GET", "/placebo", url.Values{})
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)
 }
