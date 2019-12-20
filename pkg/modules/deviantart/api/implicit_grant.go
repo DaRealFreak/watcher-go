@@ -5,6 +5,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,7 @@ type ImplicitGrantDeviantart struct {
 	account *models.Account
 }
 
+// NewImplicitGrantDeviantart returns the ImplicitGrantDeviantArt struct implementing the Implicit Grant OAuth2 flow
 func NewImplicitGrantDeviantart(
 	cfg *oauth2.Config, client *http.Client, account *models.Account,
 ) *ImplicitGrantDeviantart {
@@ -33,6 +35,7 @@ func NewImplicitGrantDeviantart(
 	return &implicitGrantDeviantart
 }
 
+// Login implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt
 func (g ImplicitGrantDeviantart) Login() error {
 	res, err := g.Client.Get("https://www.deviantart.com/users/login")
 	raven.CheckError(err)
@@ -73,18 +76,43 @@ func (g ImplicitGrantDeviantart) Login() error {
 	return nil
 }
 
-func (g ImplicitGrantDeviantart) Authorize() {
+// Authorize implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt (only new style)
+func (g ImplicitGrantDeviantart) Authorize() error {
 	res, err := g.Client.Get(implicitoauth2.AuthCodeURLImplicit(g.Config, "session-id"))
-
-	switch errorWrap := err.(type) {
-	case *url.Error:
-		switch errorWrap.Err.(type) {
-		case implicitoauth2.ImplicitGrantRedirect:
-			// already redirected to the token URL, no need for authorization
-			return
-		}
+	if err != nil {
+		return err
 	}
 
-	fmt.Println("todo: authorize")
-	fmt.Println(res)
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return err
+	}
+
+	form := doc.Find("form[action*='authorize_app']").First()
+
+	// scrape all relevant data from the selected form
+	authValues := new(authInfo)
+	authValues.State, _ = form.Find("input[name=\"state\"]").First().Attr("value")
+	authValues.ResponseType, _ = form.Find("input[name=\"response_type\"]").First().Attr("value")
+	authValues.CSRFToken, _ = form.Find("input[name=\"csrf_token\"]").First().Attr("value")
+
+	// pack it into values and send the post request
+	values := url.Values{
+		"referer":       {authValues.State},
+		"csrf_token":    {authValues.CSRFToken},
+		"client_id":     {g.Config.ClientID},
+		"response_type": {authValues.ResponseType},
+		"redirect_uri":  {g.Config.RedirectURL},
+		"scope":         {strings.Join(g.Config.Scopes, " ")},
+		"state":         {authValues.State},
+		"authorized":    {"1"},
+	}
+
+	// the custom redirect function is still active, so new check is executed here
+	_, err = g.Client.PostForm("https://www.deviantart.com/_sisu/do/authorize_app", values)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
