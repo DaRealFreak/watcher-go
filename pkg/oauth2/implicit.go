@@ -48,18 +48,26 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 		fragments url.Values
 	)
 
+	done := make(chan struct{})
+
 	wg.Add(1)
 
 	go func() {
-		<-time.After(time.Second * 2)
-		err = fmt.Errorf("implicit grant request timeout")
-		wg.Done()
+		select {
+		case <-done:
+			return
+		case <-time.After(time.Second * 5):
+			err = fmt.Errorf("implicit grant request timeout")
+			wg.Done()
+		}
 	}()
 
 	g.Client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		fragments, _ = url.ParseQuery(req.URL.Fragment)
 		if fragments.Get("access_token") != "" {
 			wg.Done()
+			// cancel our go routine too instead of letting it run into the timeout
+			defer close(done)
 
 			return ImplicitGrantRedirect{URL: req.URL}
 		}
