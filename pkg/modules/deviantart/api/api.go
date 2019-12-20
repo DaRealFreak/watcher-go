@@ -63,10 +63,10 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	)
 }
 
-// Request simulates the http.NewRequest method to add the additional option
+// request simulates the http.NewRequest method to add the additional option
 // to use the DiFi API console exploit to circumvent API limitations
-func (a *DeviantartAPI) Request(method string, endpoint string, values url.Values) (*http.Response, error) {
-	apiRequestURL := "https://www.deviantart.com/api/v1/oauth2" + endpoint
+func (a *DeviantartAPI) request(method string, endpoint string, values url.Values) (*http.Response, error) {
+	apiRequestURL := fmt.Sprintf("https://www.deviantart.com/api/v1/oauth2%s", endpoint)
 
 	switch strings.ToUpper(method) {
 	case "GET":
@@ -87,7 +87,7 @@ func (a *DeviantartAPI) Request(method string, endpoint string, values url.Value
 
 		return a.Session.Get(requestURL.String())
 	case "POST":
-		return a.Session.Post(endpoint, values)
+		return a.Session.Post(apiRequestURL, values)
 	default:
 		return nil, fmt.Errorf("unknown request method: %s", method)
 	}

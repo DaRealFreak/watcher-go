@@ -18,7 +18,7 @@ func TestNewDeviantartAPI(t *testing.T) {
 	daAPI := NewDeviantartAPI("deviantart API", testAccount)
 	daAPI.AddRoundTrippers()
 
-	res, err := daAPI.Request("GET", "/placebo", url.Values{})
+	res, err := daAPI.request("GET", "/placebo", url.Values{})
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)
 }

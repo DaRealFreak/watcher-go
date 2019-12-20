@@ -50,7 +50,7 @@ func newTokenRequestApplication(moduleKey string) *tokenRequestApplication {
 	}
 }
 
-// checkRequestForTokenFragment checks the passed http Request for OAuth2 Token fragments
+// checkRequestForTokenFragment checks the passed http request for OAuth2 Token fragments
 // if not found it uses the redirect default behaviour
 func (a *tokenRequestApplication) checkRequestForTokenFragment(res *http.Request) (foundToken bool) {
 	f, _ := url.ParseQuery(res.URL.Fragment)
