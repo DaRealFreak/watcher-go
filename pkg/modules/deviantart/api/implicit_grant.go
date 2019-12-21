@@ -16,7 +16,8 @@ import (
 // ImplicitGrantDeviantart is the implementation of the ImplicitGrant interface
 type ImplicitGrantDeviantart struct {
 	implicitoauth2.ImplicitGrant
-	account *models.Account
+	account  *models.Account
+	loggedIn bool
 }
 
 // NewImplicitGrantDeviantart returns the ImplicitGrantDeviantArt struct implementing the Implicit Grant OAuth2 flow
@@ -38,6 +39,11 @@ func NewImplicitGrantDeviantart(
 
 // Login implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt
 func (g ImplicitGrantDeviantart) Login() error {
+	if g.loggedIn {
+		// already logged in
+		return nil
+	}
+
 	res, err := g.Client.Get("https://www.deviantart.com/users/login")
 	if err != nil {
 		return err
@@ -75,6 +81,8 @@ func (g ImplicitGrantDeviantart) Login() error {
 		!strings.Contains(string(content), "\\\"isLoggedIn\\\":true") {
 		return fmt.Errorf("login failed")
 	}
+
+	g.loggedIn = true
 
 	return nil
 }
