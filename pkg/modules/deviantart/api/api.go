@@ -20,6 +20,9 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// MaxDeviationsPerPage is the maximum amount of results you can retrieve from the API in one request
+const MaxDeviationsPerPage = 24
+
 // DeviantartAPI contains all required items to communicate with the API
 type DeviantartAPI struct {
 	Session           watcherHttp.SessionInterface
@@ -132,7 +135,7 @@ func (a *DeviantartAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (
 	return nil
 }
 
-// ApplyRateLimit waits until the leaky bucket can pass another request again
-func (a *DeviantartAPI) ApplyRateLimit() {
+// applyRateLimit waits until the leaky bucket can pass another request again
+func (a *DeviantartAPI) applyRateLimit() {
 	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }

@@ -9,7 +9,7 @@ type Placebo struct {
 
 // Placebo implements the API endpoint https://www.deviantart.com/api/v1/oauth2/placebo
 func (a *DeviantartAPI) Placebo() (*Placebo, error) {
-	a.ApplyRateLimit()
+	a.applyRateLimit()
 
 	res, err := a.request("GET", "/placebo", url.Values{})
 	if err != nil {
