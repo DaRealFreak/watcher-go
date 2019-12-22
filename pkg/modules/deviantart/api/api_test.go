@@ -10,6 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func getTestDeviantartAPI() *DeviantartAPI {
+	testAccount := &models.Account{
+		Username: os.Getenv("DEVIANTART_USER"),
+		Password: os.Getenv("DEVIANTART_PASS"),
+	}
+
+	daAPI := NewDeviantartAPI("deviantart API", testAccount)
+	daAPI.AddRoundTrippers()
+
+	return daAPI
+}
+
 func TestNewDeviantartAPI(t *testing.T) {
 	testAccount := &models.Account{
 		Username: os.Getenv("DEVIANTART_USER"),
