@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
+	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	browser "github.com/EDDYCJY/fake-useragent"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
@@ -41,7 +43,7 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 			RedirectURL: "https://lvh.me/da-cb",
 		},
 		account:     account,
-		rateLimiter: rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
+		rateLimiter: rate.NewLimiter(rate.Every(5000*time.Millisecond), 1),
 		ctx:         context.Background(),
 	}
 }
@@ -106,4 +108,31 @@ func (a *DeviantartAPI) request(method string, endpoint string, values url.Value
 	}
 
 	return res, err
+}
+
+// mapAPIResponse maps the API response into the passed APIResponse type
+func (a *DeviantartAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
+	content := a.Session.GetDocument(res).Text()
+
+	if res.StatusCode >= 400 {
+		var apiErr Error
+
+		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+			return apiErr
+		}
+
+		return fmt.Errorf(`unknown error response: "%s"`, content)
+	}
+
+	// unmarshal the request content into the response struct
+	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ApplyRateLimit waits until the leaky bucket can pass another request again
+func (a *DeviantartAPI) ApplyRateLimit() {
+	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }
