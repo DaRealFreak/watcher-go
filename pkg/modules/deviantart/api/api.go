@@ -20,11 +20,12 @@ import (
 
 // DeviantartAPI contains all required items to communicate with the API
 type DeviantartAPI struct {
-	Session      watcherHttp.SessionInterface
-	rateLimiter  *rate.Limiter
-	ctx          context.Context
-	OAuth2Config *oauth2.Config
-	account      *models.Account
+	Session           watcherHttp.SessionInterface
+	rateLimiter       *rate.Limiter
+	ctx               context.Context
+	OAuth2Config      *oauth2.Config
+	account           *models.Account
+	useConsoleExploit bool
 }
 
 // NewDeviantartAPI returns the settings of the DeviantArt API
@@ -49,6 +50,7 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 // and implements the implicit OAuth2 authentication and sets the Token round tripper
 func (a *DeviantartAPI) AddRoundTrippers() {
 	client := a.Session.GetClient()
+	jar := client.Jar
 
 	client.Transport = a.SetCloudFlareHeaders(client.Transport)
 	client.Transport = a.SetUserAgent(client.Transport, browser.Firefox())
@@ -61,34 +63,47 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 			},
 		),
 	)
+
+	// OAuth2.NewClient creates completely new client and throws away our cookie jar, set it again
+	a.Session.GetClient().Jar = jar
 }
 
 // request simulates the http.NewRequest method to add the additional option
 // to use the DiFi API console exploit to circumvent API limitations
-func (a *DeviantartAPI) request(method string, endpoint string, values url.Values) (*http.Response, error) {
-	apiRequestURL := fmt.Sprintf("https://www.deviantart.com/api/v1/oauth2%s", endpoint)
+func (a *DeviantartAPI) request(method string, endpoint string, values url.Values) (res *http.Response, err error) {
+	if a.useConsoleExploit {
+		res, err = a.consoleRequest(endpoint, values)
+	} else {
+		apiRequestURL := fmt.Sprintf("https://www.deviantart.com/api/v1/oauth2%s", endpoint)
 
-	switch strings.ToUpper(method) {
-	case "GET":
-		requestURL, err := url.Parse(apiRequestURL)
-		if err != nil {
-			return nil, err
-		}
+		switch strings.ToUpper(method) {
+		case "GET":
+			requestURL, _ := url.Parse(apiRequestURL)
+			existingValues := requestURL.Query()
 
-		existingValues := requestURL.Query()
-
-		for key, group := range values {
-			for _, value := range group {
-				existingValues.Add(key, value)
+			for key, group := range values {
+				for _, value := range group {
+					existingValues.Add(key, value)
+				}
 			}
+
+			requestURL.RawQuery = existingValues.Encode()
+
+			res, err = a.Session.Get(requestURL.String())
+		case "POST":
+			res, err = a.Session.Post(apiRequestURL, values)
+		default:
+			return nil, fmt.Errorf("unknown request method: %s", method)
 		}
-
-		requestURL.RawQuery = existingValues.Encode()
-
-		return a.Session.Get(requestURL.String())
-	case "POST":
-		return a.Session.Post(apiRequestURL, values)
-	default:
-		return nil, fmt.Errorf("unknown request method: %s", method)
 	}
+
+	// rate limitation
+	if res != nil && res.StatusCode == 429 {
+		// toggle console exploit to relieve the other API method
+		a.useConsoleExploit = !a.useConsoleExploit
+
+		return a.request(method, endpoint, values)
+	}
+
+	return res, err
 }
