@@ -32,6 +32,24 @@ func TestDeviantartAPI_Collection(t *testing.T) {
 	assert.New(t).Equal(MaxDeviationsPerPage, len(tagResultsConsoleExploit.Results))
 }
 
+func TestDeviantartAPI_Folders(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
+	folders, err := daAPI.Folders("CLG-Artisa", 0, MaxDeviationsPerPage)
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(folders)
+
+	// toggle console exploit, we also require the first OAuth2 process to have succeeded
+	// since we require the user information cookie which is set on a successful login
+	daAPI.useConsoleExploit = true
+
+	foldersConsoleExploit, err := daAPI.Folders("CLG-Artisa", 0, MaxDeviationsPerPage)
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(foldersConsoleExploit)
+
+	assert.New(t).Equal(len(folders.Results), len(foldersConsoleExploit.Results))
+}
+
 func TestDeviantartAPI_FolderIDToUUID(t *testing.T) {
 	daAPI.useConsoleExploit = false
 
