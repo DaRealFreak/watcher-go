@@ -76,6 +76,8 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 // request simulates the http.NewRequest method to add the additional option
 // to use the DiFi API console exploit to circumvent API limitations
 func (a *DeviantartAPI) request(method string, endpoint string, values url.Values) (res *http.Response, err error) {
+	a.applyRateLimit()
+
 	if a.useConsoleExploit {
 		res, err = a.consoleRequest(endpoint, values)
 	} else {
