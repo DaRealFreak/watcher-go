@@ -7,8 +7,6 @@ import (
 )
 
 func TestDeviantartAPI_Collection(t *testing.T) {
-	daAPI := getTestDeviantartAPI()
-
 	collection, err := daAPI.Collection(
 		"CLG-Artisa", "338AC44C-9373-061A-364C-DAC39C26935C", 0, MaxDeviationsPerPage,
 	)
@@ -33,8 +31,6 @@ func TestDeviantartAPI_Collection(t *testing.T) {
 }
 
 func TestDeviantartAPI_FolderIDToUUID(t *testing.T) {
-	daAPI := getTestDeviantartAPI()
-
 	folderUUID, err := daAPI.FolderIDToUUID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("338AC44C-9373-061A-364C-DAC39C26935C", folderUUID)

@@ -7,8 +7,6 @@ import (
 )
 
 func TestDeviantartAPI_Placebo(t *testing.T) {
-	daAPI := getTestDeviantartAPI()
-
 	placebo, err := daAPI.Placebo()
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("success", placebo.Status)
