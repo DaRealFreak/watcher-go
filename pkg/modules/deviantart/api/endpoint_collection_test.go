@@ -7,6 +7,8 @@ import (
 )
 
 func TestDeviantartAPI_Collection(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
 	collection, err := daAPI.Collection(
 		"CLG-Artisa", "338AC44C-9373-061A-364C-DAC39C26935C", 0, MaxDeviationsPerPage,
 	)
@@ -31,7 +33,17 @@ func TestDeviantartAPI_Collection(t *testing.T) {
 }
 
 func TestDeviantartAPI_FolderIDToUUID(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
 	folderUUID, err := daAPI.FolderIDToUUID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("338AC44C-9373-061A-364C-DAC39C26935C", folderUUID)
+
+	// toggle console exploit, we also require the first OAuth2 process to have succeeded
+	// since we require the user information cookie which is set on a successful login
+	daAPI.useConsoleExploit = true
+
+	folderUUIDConsoleExploit, err := daAPI.FolderIDToUUID("clg-artisa", 80472763)
+	assert.New(t).NoError(err)
+	assert.New(t).Equal("338AC44C-9373-061A-364C-DAC39C26935C", folderUUIDConsoleExploit)
 }

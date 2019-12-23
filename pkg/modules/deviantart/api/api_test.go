@@ -30,6 +30,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewDeviantartAPI(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
 	res, err := daAPI.request("GET", "/placebo", url.Values{})
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)

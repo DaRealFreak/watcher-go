@@ -7,6 +7,8 @@ import (
 )
 
 func TestDeviantartAPI_BrowseTags(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
 	tagResults, err := daAPI.BrowseTags("test", 0, MaxDeviationsPerPage)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(tagResults)
