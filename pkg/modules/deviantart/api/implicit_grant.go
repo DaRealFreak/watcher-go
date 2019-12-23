@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
@@ -17,6 +18,7 @@ import (
 type ImplicitGrantDeviantart struct {
 	implicitoauth2.ImplicitGrant
 	account  *models.Account
+	loginTry uint
 	loggedIn bool
 }
 
@@ -29,7 +31,8 @@ func NewImplicitGrantDeviantart(
 			Config: cfg,
 			Client: client,
 		},
-		account: account,
+		account:  account,
+		loginTry: 1,
 	}
 	// register our current struct as the interface for the ImplicitGrant
 	implicitGrantDeviantart.ImplicitGrant.ImplicitGrantInterface = implicitGrantDeviantart
@@ -55,6 +58,15 @@ func (g ImplicitGrantDeviantart) Login() error {
 	}
 
 	if !(info.CSRFToken != "") {
+		if g.loginTry < 3 {
+			// happens pretty regularly that we can't retrieve the CSRF token from the login page
+			// so we try it up to 3 times before we return the error
+			g.loginTry++
+			time.Sleep(time.Duration(g.loginTry*5) * time.Second)
+
+			return g.Login()
+		}
+
 		return fmt.Errorf("could not retrieve CSRF token from login page")
 	}
 
