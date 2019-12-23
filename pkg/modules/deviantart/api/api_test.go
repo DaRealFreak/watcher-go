@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// nolint: gochecknoglobals
 var daAPI *DeviantartAPI
 
 // TestMain is the constructor for the test functions to use a shared API instance

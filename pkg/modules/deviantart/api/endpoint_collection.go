@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"net/url"
 	"strconv"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // Collection contains all relevant information of the API response of the collections endpoint
@@ -64,9 +65,9 @@ func (a *DeviantartAPI) Folders(user string, offset uint, limit uint) (*Folders,
 	return &folders, err
 }
 
-// IDToUUID converts an integer folder ID to the API format folder UUID
-func (a *DeviantartAPI) FolderIDToUUID(userName string, folderID int) (string, error) {
-	feURL := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", userName, folderID)
+// FolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
+func (a *DeviantartAPI) FolderIDToUUID(username string, folderID int) (string, error) {
+	feURL := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", username, folderID)
 
 	feRes, err := a.Session.Get(feURL)
 	if err != nil {
@@ -80,7 +81,7 @@ func (a *DeviantartAPI) FolderIDToUUID(userName string, folderID int) (string, e
 
 	folderTitle := document.Find("div#sub-folder-gallery h2").First().Text()
 
-	folderResults, err := a.Folders(userName, 0, MaxDeviationsPerPage)
+	folderResults, err := a.Folders(username, 0, MaxDeviationsPerPage)
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +93,7 @@ func (a *DeviantartAPI) FolderIDToUUID(userName string, folderID int) (string, e
 	}
 
 	for folderResults.NextOffset != nil && folderResults.HasMore {
-		folderResults, err = a.Folders(userName, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
+		folderResults, err = a.Folders(username, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
 		if err != nil {
 			return "", err
 		}
