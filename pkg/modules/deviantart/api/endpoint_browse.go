@@ -8,7 +8,7 @@ import (
 // PaginatedResults contains the commonly used pagination of the DeviantArt API
 type PaginatedResults struct {
 	HasMore        bool        `json:"has_more"`
-	NextOffset     uint        `json:"next_offset"`
+	NextOffset     *uint       `json:"next_offset"`
 	EstimatedTotal uint        `json:"estimated_total"`
 	Results        []Deviation `json:"results"`
 }
