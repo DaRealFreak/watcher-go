@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 // Collection contains all relevant information of the API response of the collections endpoint
@@ -74,11 +72,7 @@ func (a *DeviantartAPI) FolderIDToUUID(username string, folderID int) (string, e
 		return "", err
 	}
 
-	document, err := goquery.NewDocumentFromReader(feRes.Body)
-	if err != nil {
-		return "", err
-	}
-
+	document := a.Session.GetDocument(feRes)
 	folderTitle := document.Find("div#sub-folder-gallery h2").First().Text()
 
 	folderResults, err := a.Folders(username, 0, MaxDeviationsPerPage)
