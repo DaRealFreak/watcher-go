@@ -7,8 +7,6 @@ import (
 )
 
 func TestMobileAPI_GetSearchIllust(t *testing.T) {
-	mobileAPI := getTestMobileAPI()
-
 	illustSearchResults, err := mobileAPI.GetSearchIllust(
 		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 0,
 	)
@@ -19,8 +17,6 @@ func TestMobileAPI_GetSearchIllust(t *testing.T) {
 }
 
 func TestMobileAPI_GetSearchIllustByURL(t *testing.T) {
-	mobileAPI := getTestMobileAPI()
-
 	illustSearchResults, err := mobileAPI.GetSearchIllust(
 		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 0,
 	)

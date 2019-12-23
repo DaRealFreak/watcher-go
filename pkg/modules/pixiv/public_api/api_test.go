@@ -8,18 +8,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestPublicAPI() *PublicAPI {
+// nolint: gochecknoglobals
+var publicAPI *PublicAPI
+
+// TestMain is the constructor for the API functions creating a shared instance for the API
+// to prevent multiple consecutive logins
+func TestMain(m *testing.M) {
 	testAccount := &models.Account{
 		Username: os.Getenv("PIXIV_USER"),
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	publicAPI := NewPublicAPI("pixiv Mobile API", testAccount)
+	publicAPI = NewPublicAPI("pixiv Mobile API", testAccount)
 	if err := publicAPI.AddRoundTrippers(); err != nil {
-		return nil
+		os.Exit(1)
 	}
 
-	return publicAPI
+	// run the unit tests
+	os.Exit(m.Run())
 }
 
 func TestLogin(t *testing.T) {
@@ -28,6 +34,7 @@ func TestLogin(t *testing.T) {
 		Password: os.Getenv("PIXIV_PASS"),
 	}
 
-	mobileAPI := NewPublicAPI("pixiv Mobile API", testAccount)
+	mobileAPI := NewPublicAPI("pixiv Public API", testAccount)
 	assert.New(t).NotNil(mobileAPI)
+	assert.New(t).NoError(mobileAPI.AddRoundTrippers())
 }

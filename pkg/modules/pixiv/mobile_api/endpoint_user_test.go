@@ -7,16 +7,12 @@ import (
 )
 
 func TestMobileAPI_GetUserDetail(t *testing.T) {
-	mobileAPI := getTestMobileAPI()
-
 	userDetail, err := mobileAPI.GetUserDetail(123456)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(userDetail)
 }
 
 func TestMobileAPI_GetUserIllusts(t *testing.T) {
-	mobileAPI := getTestMobileAPI()
-
 	userIllusts, err := mobileAPI.GetUserIllusts(7210261, "", 0)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(userIllusts)
@@ -25,8 +21,6 @@ func TestMobileAPI_GetUserIllusts(t *testing.T) {
 }
 
 func TestMobileAPI_GetUserIllustsByURL(t *testing.T) {
-	mobileAPI := getTestMobileAPI()
-
 	userIllusts, err := mobileAPI.GetUserIllusts(7210261, "", 0)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(userIllusts)
