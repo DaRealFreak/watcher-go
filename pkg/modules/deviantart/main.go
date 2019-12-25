@@ -45,7 +45,7 @@ func NewBareModule() *models.Module {
 	module.ModuleInterface = &deviantArt{
 		Module: module,
 		daPattern: deviantArtPattern{
-			feedPattern:       nil,
+			feedPattern:       regexp.MustCompile("DeviantArt://watchfeed|https://www.deviantart.com(?:/$|$)"),
 			galleryPattern:    nil,
 			collectionPattern: nil,
 			tagPattern:        nil,
