@@ -20,6 +20,7 @@ type deviantArt struct {
 
 type deviantArtPattern struct {
 	feedPattern       *regexp.Regexp
+	userPattern       *regexp.Regexp
 	galleryPattern    *regexp.Regexp
 	collectionPattern *regexp.Regexp
 	tagPattern        *regexp.Regexp
@@ -94,11 +95,12 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 // extracted from the NewBareModule function to test in Unit Tests
 func getDeviantArtPattern() deviantArtPattern {
 	return deviantArtPattern{
-		feedPattern: regexp.MustCompile(`DeviantArt://watchfeed|https://www.deviantart.com(?:/$|$)`),
+		userPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]*?)(?:/gallery|/gallery/all)?(?:/)?$`),
+		feedPattern: regexp.MustCompile(`DeviantArt://watchfeed|https://www.deviantart.com(?:/)?$`),
 		galleryPattern: regexp.MustCompile(`DeviantArt://gallery/(.*)` +
-			`|https://www.deviantart.com/([^/?&]*)?/gallery/(\d+).*`),
+			`|https://www.deviantart.com/([^/?&]*?)/gallery/(\d+).*`),
 		collectionPattern: regexp.MustCompile(`DeviantArt://collection/(.*)` +
-			`|https://www.deviantart.com/([^/?&]*)?/favourites/(\d+).*`),
-		tagPattern: regexp.MustCompile(`DeviantArt://tag/(.*)|https://www.deviantart.com/tag/([^/?&]*)?`),
+			`|https://www.deviantart.com/([^/?&]*?)/favourites/(\d+).*`),
+		tagPattern: regexp.MustCompile(`DeviantArt://tag/(.*)|https://www.deviantart.com/tag/([^/?&]*?)`),
 	}
 }
