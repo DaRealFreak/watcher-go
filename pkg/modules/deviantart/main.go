@@ -2,6 +2,7 @@
 package deviantart
 
 import (
+	"fmt"
 	"regexp"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -75,10 +76,6 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
 			return false
 		}
-
-		if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
-			return false
-		}
 	}
 
 	m.LoggedIn = true
@@ -88,6 +85,21 @@ func (m *deviantArt) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
+	switch {
+	case m.daPattern.feedPattern.MatchString(item.URI):
+		fmt.Println("parse user feed")
+	case m.daPattern.userPattern.MatchString(item.URI):
+		fmt.Println("parse user gallery")
+	case m.daPattern.galleryPattern.MatchString(item.URI):
+		fmt.Println("parse gallery")
+	case m.daPattern.collectionPattern.MatchString(item.URI):
+		fmt.Println("parse collection")
+	case m.daPattern.tagPattern.MatchString(item.URI):
+		fmt.Println("parse tag")
+	default:
+		return fmt.Errorf("URL could not be associated with any of the implemented methods")
+	}
+
 	return nil
 }
 
