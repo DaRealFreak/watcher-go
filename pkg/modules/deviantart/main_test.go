@@ -58,4 +58,5 @@ func TestDeviantArt_Pattern(t *testing.T) {
 	testPattern(t, KeyGallery, patterns.galleryPattern)
 	testPattern(t, KeyCollection, patterns.collectionPattern)
 	testPattern(t, KeyTag, patterns.tagPattern)
+	testPattern(t, KeyAll, patterns.userPattern)
 }
