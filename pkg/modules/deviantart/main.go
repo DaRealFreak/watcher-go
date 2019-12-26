@@ -43,13 +43,8 @@ func NewBareModule() *models.Module {
 		},
 	}
 	module.ModuleInterface = &deviantArt{
-		Module: module,
-		daPattern: deviantArtPattern{
-			feedPattern:       regexp.MustCompile("DeviantArt://watchfeed|https://www.deviantart.com(?:/$|$)"),
-			galleryPattern:    nil,
-			collectionPattern: nil,
-			tagPattern:        nil,
-		},
+		Module:    module,
+		daPattern: getDeviantArtPattern(),
 	}
 
 	// register module to log formatter
@@ -93,4 +88,17 @@ func (m *deviantArt) Login(account *models.Account) bool {
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	return nil
+}
+
+// getDeviantArtPattern returns all required patterns
+// extracted from the NewBareModule function to test in Unit Tests
+func getDeviantArtPattern() deviantArtPattern {
+	return deviantArtPattern{
+		feedPattern: regexp.MustCompile(`DeviantArt://watchfeed|https://www.deviantart.com(?:/$|$)`),
+		galleryPattern: regexp.MustCompile(`DeviantArt://gallery/(.*)` +
+			`|https://www.deviantart.com/([^/?&]*)?/gallery/(\d+)/.*`),
+		collectionPattern: regexp.MustCompile(`DeviantArt://collection/(.*)` +
+			`|https://www.deviantart.com/([^/?&]*)?/favourites/(\d+)/.*`),
+		tagPattern: regexp.MustCompile(`DeviantArt://tag/(.*)|https://www.deviantart.com/tag/([^/?&]*)?`),
+	}
 }
