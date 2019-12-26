@@ -69,7 +69,6 @@ func (m *deviantArt) AddSettingsCommand(command *cobra.Command) {
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
 	m.daAPI = api.NewDeviantartAPI(m.Key, account)
-	m.daAPI.AddRoundTrippers()
 
 	usedProxy := m.GetProxySettings()
 	if usedProxy.Enable {
@@ -78,7 +77,10 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		}
 	}
 
-	m.LoggedIn = true
+	m.daAPI.AddRoundTrippers()
+
+	res, err := m.daAPI.Placebo()
+	m.LoggedIn = err == nil && res.Status == "success"
 
 	return m.LoggedIn
 }

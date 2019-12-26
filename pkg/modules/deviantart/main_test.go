@@ -1,10 +1,10 @@
 package deviantart
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -43,10 +43,6 @@ func testPattern(t *testing.T, expectedGroup string, pattern *regexp.Regexp) {
 
 	for grp, grpURLs := range urls {
 		for _, url := range grpURLs {
-			if (grp == expectedGroup) != pattern.MatchString(url) {
-				fmt.Println(pattern.String())
-				fmt.Println(grp, expectedGroup, url)
-			}
 			assert.New(t).Equal(grp == expectedGroup, pattern.MatchString(url))
 		}
 	}
