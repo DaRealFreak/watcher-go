@@ -96,9 +96,9 @@ func getDeviantArtPattern() deviantArtPattern {
 	return deviantArtPattern{
 		feedPattern: regexp.MustCompile(`DeviantArt://watchfeed|https://www.deviantart.com(?:/$|$)`),
 		galleryPattern: regexp.MustCompile(`DeviantArt://gallery/(.*)` +
-			`|https://www.deviantart.com/([^/?&]*)?/gallery/(\d+)/.*`),
+			`|https://www.deviantart.com/([^/?&]*)?/gallery/(\d+).*`),
 		collectionPattern: regexp.MustCompile(`DeviantArt://collection/(.*)` +
-			`|https://www.deviantart.com/([^/?&]*)?/favourites/(\d+)/.*`),
+			`|https://www.deviantart.com/([^/?&]*)?/favourites/(\d+).*`),
 		tagPattern: regexp.MustCompile(`DeviantArt://tag/(.*)|https://www.deviantart.com/tag/([^/?&]*)?`),
 	}
 }
