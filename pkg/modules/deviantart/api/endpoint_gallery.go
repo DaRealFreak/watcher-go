@@ -50,3 +50,62 @@ func (a *DeviantartAPI) GalleryAll(user string, offset uint, limit uint) (*Galle
 
 	return &galleryAll, err
 }
+
+// GalleryFolders implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders
+func (a *DeviantartAPI) GalleryFolders(user string, offset uint, limit uint) (*Folders, error) {
+	values := url.Values{
+		"username": {user},
+		"offset":   {strconv.Itoa(int(offset))},
+		"limit":    {strconv.Itoa(int(limit))},
+	}
+
+	res, err := a.request("GET", "/gallery/folders", values)
+	if err != nil {
+		return nil, err
+	}
+
+	var folders Folders
+	err = a.mapAPIResponse(res, &folders)
+
+	return &folders, err
+}
+
+// GalleryFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
+// nolint: dupl
+func (a *DeviantartAPI) GalleryFolderIDToUUID(username string, folderID int) (string, error) {
+	feURL := fmt.Sprintf("https://www.deviantart.com/%s/gallery/%d", username, folderID)
+
+	feRes, err := a.Session.Get(feURL)
+	if err != nil {
+		return "", err
+	}
+
+	document := a.Session.GetDocument(feRes)
+	folderTitle := document.Find("div#sub-folder-gallery h2").First().Text()
+
+	folderResults, err := a.GalleryFolders(username, 0, MaxDeviationsPerPage)
+	if err != nil {
+		return "", err
+	}
+
+	for _, folder := range folderResults.Results {
+		if folder.Name == folderTitle {
+			return folder.FolderUUID, nil
+		}
+	}
+
+	for folderResults.NextOffset != nil && folderResults.HasMore {
+		folderResults, err = a.GalleryFolders(username, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
+		if err != nil {
+			return "", err
+		}
+
+		for _, folder := range folderResults.Results {
+			if folder.Name == folderTitle {
+				return folder.FolderUUID, nil
+			}
+		}
+	}
+
+	return "", nil
+}

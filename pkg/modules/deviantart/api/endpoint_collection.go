@@ -17,7 +17,8 @@ type Folder struct {
 	Name       string `json:"name"`
 }
 
-// CollectionFolders contains all relevant information of the API response of the folders function of the collection endpoint
+// Folders contains all relevant information of the API response of the folders function
+// of the collection and gallery endpoint
 type Folders struct {
 	Results    []Folder `json:"results"`
 	HasMore    bool     `json:"has_more"`
@@ -64,6 +65,7 @@ func (a *DeviantartAPI) CollectionFolders(user string, offset uint, limit uint) 
 }
 
 // CollectionFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
+// nolint: dupl
 func (a *DeviantartAPI) CollectionFolderIDToUUID(username string, folderID int) (string, error) {
 	feURL := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", username, folderID)
 
