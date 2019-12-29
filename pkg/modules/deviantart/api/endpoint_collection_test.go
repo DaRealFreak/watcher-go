@@ -32,10 +32,10 @@ func TestDeviantartAPI_Collection(t *testing.T) {
 	assert.New(t).Equal(MaxDeviationsPerPage, len(tagResultsConsoleExploit.Results))
 }
 
-func TestDeviantartAPI_Folders(t *testing.T) {
+func TestDeviantartAPI_CollectionFolders(t *testing.T) {
 	daAPI.useConsoleExploit = false
 
-	folders, err := daAPI.Folders("CLG-Artisa", 0, MaxDeviationsPerPage)
+	folders, err := daAPI.CollectionFolders("CLG-Artisa", 0, MaxDeviationsPerPage)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(folders)
 
@@ -43,17 +43,17 @@ func TestDeviantartAPI_Folders(t *testing.T) {
 	// since we require the user information cookie which is set on a successful login
 	daAPI.useConsoleExploit = true
 
-	foldersConsoleExploit, err := daAPI.Folders("CLG-Artisa", 0, MaxDeviationsPerPage)
+	foldersConsoleExploit, err := daAPI.CollectionFolders("CLG-Artisa", 0, MaxDeviationsPerPage)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(foldersConsoleExploit)
 
 	assert.New(t).Equal(len(folders.Results), len(foldersConsoleExploit.Results))
 }
 
-func TestDeviantartAPI_FolderIDToUUID(t *testing.T) {
+func TestDeviantartAPI_CollectionFolderIDToUUID(t *testing.T) {
 	daAPI.useConsoleExploit = false
 
-	folderUUID, err := daAPI.FolderIDToUUID("clg-artisa", 80472763)
+	folderUUID, err := daAPI.CollectionFolderIDToUUID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("338AC44C-9373-061A-364C-DAC39C26935C", folderUUID)
 
@@ -61,7 +61,7 @@ func TestDeviantartAPI_FolderIDToUUID(t *testing.T) {
 	// since we require the user information cookie which is set on a successful login
 	daAPI.useConsoleExploit = true
 
-	folderUUIDConsoleExploit, err := daAPI.FolderIDToUUID("clg-artisa", 80472763)
+	folderUUIDConsoleExploit, err := daAPI.CollectionFolderIDToUUID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("338AC44C-9373-061A-364C-DAC39C26935C", folderUUIDConsoleExploit)
 }

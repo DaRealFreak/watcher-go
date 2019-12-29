@@ -17,7 +17,7 @@ type Folder struct {
 	Name       string `json:"name"`
 }
 
-// Folders contains all relevant information of the API response of the folders function of the collection endpoint
+// CollectionFolders contains all relevant information of the API response of the folders function of the collection endpoint
 type Folders struct {
 	Results    []Folder `json:"results"`
 	HasMore    bool     `json:"has_more"`
@@ -44,8 +44,8 @@ func (a *DeviantartAPI) Collection(user string, folderID string, offset uint, li
 	return &collection, err
 }
 
-// Folders implements the API endpoint https://www.deviantart.com/api/v1/oauth2/collections/folders
-func (a *DeviantartAPI) Folders(user string, offset uint, limit uint) (*Folders, error) {
+// CollectionFolders implements the API endpoint https://www.deviantart.com/api/v1/oauth2/collections/folders
+func (a *DeviantartAPI) CollectionFolders(user string, offset uint, limit uint) (*Folders, error) {
 	values := url.Values{
 		"username": {user},
 		"offset":   {strconv.Itoa(int(offset))},
@@ -63,8 +63,8 @@ func (a *DeviantartAPI) Folders(user string, offset uint, limit uint) (*Folders,
 	return &folders, err
 }
 
-// FolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
-func (a *DeviantartAPI) FolderIDToUUID(username string, folderID int) (string, error) {
+// CollectionFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
+func (a *DeviantartAPI) CollectionFolderIDToUUID(username string, folderID int) (string, error) {
 	feURL := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", username, folderID)
 
 	feRes, err := a.Session.Get(feURL)
@@ -75,7 +75,7 @@ func (a *DeviantartAPI) FolderIDToUUID(username string, folderID int) (string, e
 	document := a.Session.GetDocument(feRes)
 	folderTitle := document.Find("div#sub-folder-gallery h2").First().Text()
 
-	folderResults, err := a.Folders(username, 0, MaxDeviationsPerPage)
+	folderResults, err := a.CollectionFolders(username, 0, MaxDeviationsPerPage)
 	if err != nil {
 		return "", err
 	}
@@ -87,7 +87,7 @@ func (a *DeviantartAPI) FolderIDToUUID(username string, folderID int) (string, e
 	}
 
 	for folderResults.NextOffset != nil && folderResults.HasMore {
-		folderResults, err = a.Folders(username, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
+		folderResults, err = a.CollectionFolders(username, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
 		if err != nil {
 			return "", err
 		}
