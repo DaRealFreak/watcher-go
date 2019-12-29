@@ -91,7 +91,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case m.daPattern.feedPattern.MatchString(item.URI):
 		fmt.Println("parse user feed")
 	case m.daPattern.userPattern.MatchString(item.URI):
-		fmt.Println("parse user gallery")
+		return m.parseUser(item)
 	case m.daPattern.galleryPattern.MatchString(item.URI):
 		fmt.Println("parse gallery")
 	case m.daPattern.collectionPattern.MatchString(item.URI):
@@ -111,9 +111,9 @@ func getDeviantArtPattern() deviantArtPattern {
 	return deviantArtPattern{
 		userPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]*?)(?:/gallery|/gallery/all)?(?:/)?$`),
 		feedPattern: regexp.MustCompile(`DeviantArt://watchfeed|https://www.deviantart.com(?:/)?$`),
-		galleryPattern: regexp.MustCompile(`DeviantArt://gallery/(.*)` +
+		galleryPattern: regexp.MustCompile(`DeviantArt://gallery/([^/?&]*?)/([^/?&]*?)` +
 			`|https://www.deviantart.com/([^/?&]*?)/gallery/(\d+).*`),
-		collectionPattern: regexp.MustCompile(`DeviantArt://collection/(.*)` +
+		collectionPattern: regexp.MustCompile(`DeviantArt://collection/([^/?&]*?)/([^/?&]*?)` +
 			`|https://www.deviantart.com/([^/?&]*?)/favourites/(\d+).*`),
 		tagPattern: regexp.MustCompile(`DeviantArt://tag/(.*)|https://www.deviantart.com/tag/([^/?&]*?)`),
 	}
