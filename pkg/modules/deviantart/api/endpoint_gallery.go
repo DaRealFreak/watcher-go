@@ -12,16 +12,16 @@ type GalleryResponse struct {
 }
 
 // Gallery implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/{folderID}
-func (a *DeviantartAPI) Gallery(user string, folderID uint, offset uint, limit uint) (*GalleryResponse, error) {
+func (a *DeviantartAPI) Gallery(user string, folderID string, offset uint, limit uint) (*GalleryResponse, error) {
 	values := url.Values{
 		"username": {user},
-		"folderid": {strconv.Itoa(int(folderID))},
+		"folderid": {folderID},
 		"mode":     {"newest"},
 		"offset":   {strconv.Itoa(int(offset))},
 		"limit":    {strconv.Itoa(int(limit))},
 	}
 
-	res, err := a.request("GET", fmt.Sprintf("/gallery/%d", folderID), values)
+	res, err := a.request("GET", "/gallery/"+url.PathEscape(folderID), values)
 	if err != nil {
 		return nil, err
 	}

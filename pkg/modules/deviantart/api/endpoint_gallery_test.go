@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,26 +9,38 @@ import (
 func TestDeviantartAPI_Gallery(t *testing.T) {
 	daAPI.useConsoleExploit = false
 
-	fmt.Println(daAPI.GalleryFolderIDToUUID("CLG-Artisa", 66857455))
-
 	gallery, err := daAPI.Gallery(
-		"CLG-Artisa", 66857455, 0, MaxDeviationsPerPage,
+		"CLG-Artisa", "66857455", 0, MaxDeviationsPerPage,
 	)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(gallery)
+
+	galleryUUID, err := daAPI.Gallery(
+		"CLG-Artisa", "66979124-8385-B572-E652-933338A076B2", 0, MaxDeviationsPerPage,
+	)
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(galleryUUID)
 
 	// toggle console exploit, we also require the first OAuth2 process to have succeeded
 	// since we require the user information cookie which is set on a successful login
 	daAPI.useConsoleExploit = true
 
 	galleryConsoleExploit, err := daAPI.Gallery(
-		"CLG-Artisa", 66857455, 0, MaxDeviationsPerPage,
+		"CLG-Artisa", "66857455", 0, MaxDeviationsPerPage,
 	)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(galleryConsoleExploit)
 
+	galleryUUIDConsoleExploit, err := daAPI.Gallery(
+		"CLG-Artisa", "66979124-8385-B572-E652-933338A076B2", 0, MaxDeviationsPerPage,
+	)
+	assert.New(t).NoError(err)
+	assert.New(t).NotNil(galleryUUIDConsoleExploit)
+
 	assert.New(t).Equal(MaxDeviationsPerPage, len(gallery.Results))
+	assert.New(t).Equal(MaxDeviationsPerPage, len(galleryUUID.Results))
 	assert.New(t).Equal(MaxDeviationsPerPage, len(galleryConsoleExploit.Results))
+	assert.New(t).Equal(MaxDeviationsPerPage, len(galleryUUIDConsoleExploit.Results))
 }
 
 func TestDeviantartAPI_GalleryAll(t *testing.T) {
