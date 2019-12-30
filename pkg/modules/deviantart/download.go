@@ -103,7 +103,7 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 				m.Key,
 				deviation.Author.Username,
 				fmt.Sprintf(
-					"%s_c_%s.%s",
+					"%s_c_%s%s",
 					deviation.PublishedTime,
 					strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 					m.GetFileExtension(deviation.Content.Src),
@@ -118,7 +118,7 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 			m.Key,
 			deviation.Author.Username,
 			fmt.Sprintf(
-				"%s_c_%s.%s",
+				"%s_c_%s%s",
 				deviation.PublishedTime,
 				strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 				m.GetFileExtension(deviation.Content.Src),
@@ -149,34 +149,12 @@ func (m *deviantArt) downloadThumbs(deviation *api.Deviation, downloadLog *downl
 		return err
 	}
 
-	for _, item := range downloadLog.downloadedFiles() {
-		sim, err := duplication.CheckForSimilarity(item, tmpFile.Name())
-		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
-		if err != nil && sim <= 0.95 {
-			err := watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
-				m.Key,
-				deviation.Author.Username,
-				fmt.Sprintf(
-					"%s_tmb_%s.%s",
-					deviation.PublishedTime,
-					strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
-					m.GetFileExtension(lastThumb.Src),
-				)),
-			)
-			if err != nil {
-				return err
-			}
-
-			break
-		}
-	}
-
 	if len(downloadLog.downloadedFiles()) == 0 {
 		if err := watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
 			m.Key,
 			deviation.Author.Username,
 			fmt.Sprintf(
-				"%s_tmb_%s.%s",
+				"%s_tmb_%s%s",
 				deviation.PublishedTime,
 				strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 				m.GetFileExtension(lastThumb.Src),
@@ -184,9 +162,32 @@ func (m *deviantArt) downloadThumbs(deviation *api.Deviation, downloadLog *downl
 		)); err != nil {
 			return err
 		}
+
+		return nil
 	}
 
-	return nil
+	for _, item := range downloadLog.downloadedFiles() {
+		sim, _ := duplication.CheckForSimilarity(item, tmpFile.Name())
+		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
+		if sim > 0.95 {
+			log.WithField("module", m.Key).Debugf(
+				"thumbnail matching with %s above threshold %.2f%%", item, sim*100,
+			)
+
+			return nil
+		}
+	}
+
+	return watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
+		m.Key,
+		deviation.Author.Username,
+		fmt.Sprintf(
+			"%s_tmb_%s%s",
+			deviation.PublishedTime,
+			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
+			m.GetFileExtension(lastThumb.Src),
+		)),
+	)
 }
 
 func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *downloadLog) error {
@@ -203,7 +204,7 @@ func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *do
 		m.Key,
 		deviation.Author.Username,
 		fmt.Sprintf(
-			"%s_d_%s.%s",
+			"%s_d_%s%s",
 			deviation.PublishedTime,
 			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 			m.GetFileExtension(deviationDownload.Src),
