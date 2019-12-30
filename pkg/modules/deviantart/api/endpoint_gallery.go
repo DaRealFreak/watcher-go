@@ -70,9 +70,8 @@ func (a *DeviantartAPI) GalleryFolders(user string, offset uint, limit uint) (*F
 	return &folders, err
 }
 
-// GalleryFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
-// nolint: dupl
-func (a *DeviantartAPI) GalleryFolderIDToUUID(username string, folderID int) (string, error) {
+// GalleryNameFromID returns the title of the gallery extracted from the frontend, only works with integer IDs
+func (a *DeviantartAPI) GalleryNameFromID(username string, folderID int) (string, error) {
 	feURL := fmt.Sprintf("https://www.deviantart.com/%s/gallery/%d", username, folderID)
 
 	feRes, err := a.Session.Get(feURL)
@@ -81,7 +80,17 @@ func (a *DeviantartAPI) GalleryFolderIDToUUID(username string, folderID int) (st
 	}
 
 	document := a.Session.GetDocument(feRes)
-	folderTitle := document.Find("div#sub-folder-gallery h2").First().Text()
+
+	return document.Find("div#sub-folder-gallery h2").First().Text(), nil
+}
+
+// GalleryFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
+// nolint: dupl
+func (a *DeviantartAPI) GalleryFolderIDToUUID(username string, folderID int) (string, error) {
+	folderTitle, err := a.GalleryNameFromID(username, folderID)
+	if err != nil {
+		return "", err
+	}
 
 	folderResults, err := a.GalleryFolders(username, 0, MaxDeviationsPerPage)
 	if err != nil {

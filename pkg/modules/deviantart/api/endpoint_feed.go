@@ -26,8 +26,7 @@ type FeedBucketResponse struct {
 func (a *DeviantartAPI) FeedHomeBucket(bucketID string, offset uint) (*FeedBucketResponse, error) {
 	// originally there is a "limit" value too, but it is getting completely ignored by the API anyways
 	values := url.Values{
-		"offset":         {strconv.Itoa(int(offset))},
-		"mature_content": {"true"},
+		"offset": {strconv.Itoa(int(offset))},
 	}
 
 	res, err := a.request("GET", "/feed/home/"+url.PathEscape(bucketID), values)
@@ -44,8 +43,7 @@ func (a *DeviantartAPI) FeedHomeBucket(bucketID string, offset uint) (*FeedBucke
 // FeedHome implements the API endpoint https://www.deviantart.com/api/v1/oauth2/feed/home/
 func (a *DeviantartAPI) FeedHome(cursor string) (*FeedBucketResponse, error) {
 	values := url.Values{
-		"cursor":         {cursor},
-		"mature_content": {"true"},
+		"cursor": {cursor},
 	}
 
 	res, err := a.request("GET", "/feed/home/", values)
