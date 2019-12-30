@@ -22,12 +22,12 @@ type Deviation struct {
 	Content struct {
 		Src string `json:"src"`
 	} `json:"content"`
-	DeviationID    string `json:"deviationid"`
-	DeviationURL   string `json:"url"`
-	Title          string `json:"title"`
-	PublishedTime  string `json:"published_time"`
-	Excerpt        string `json:"excerpt"`
-	IsDownloadable bool   `json:"is_downloadable"`
+	DeviationID    string  `json:"deviationid"`
+	DeviationURL   string  `json:"url"`
+	Title          string  `json:"title"`
+	PublishedTime  string  `json:"published_time"`
+	Excerpt        *string `json:"excerpt"`
+	IsDownloadable bool    `json:"is_downloadable"`
 }
 
 // BrowseTags contains all relevant information of the API response of the browse function of the tags endpoint
