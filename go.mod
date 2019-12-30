@@ -8,7 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/getsentry/sentry-go v0.3.1
+	github.com/getsentry/sentry-go v0.4.0
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20191106031601-ce3c9ade29de // indirect
