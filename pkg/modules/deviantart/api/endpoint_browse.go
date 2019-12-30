@@ -7,10 +7,10 @@ import (
 
 // PaginatedResults contains the commonly used pagination of the DeviantArt API
 type PaginatedResults struct {
-	HasMore        bool        `json:"has_more"`
-	NextOffset     *uint       `json:"next_offset"`
-	EstimatedTotal uint        `json:"estimated_total"`
-	Results        []Deviation `json:"results"`
+	HasMore        bool         `json:"has_more"`
+	NextOffset     *uint        `json:"next_offset"`
+	EstimatedTotal uint         `json:"estimated_total"`
+	Results        []*Deviation `json:"results"`
 }
 
 // Deviation contains all relevant information on artworks/deviations returned from the API
@@ -19,15 +19,20 @@ type Deviation struct {
 		UserID   string `json:"userid"`
 		Username string `json:"username"`
 	} `json:"author"`
-	Content struct {
+	Content *struct {
 		Src string `json:"src"`
 	} `json:"content"`
-	DeviationID    string  `json:"deviationid"`
-	DeviationURL   string  `json:"url"`
-	Title          string  `json:"title"`
-	PublishedTime  string  `json:"published_time"`
-	Excerpt        *string `json:"excerpt"`
-	IsDownloadable bool    `json:"is_downloadable"`
+	Thumbs []struct {
+		Src string `json:"src"`
+	} `json:"thumbs"`
+	// used for comparison of thumbs and and download, not actually returned by the API
+	DeviationDownload *DeviationDownload
+	DeviationID       string  `json:"deviationid"`
+	DeviationURL      string  `json:"url"`
+	Title             string  `json:"title"`
+	PublishedTime     string  `json:"published_time"`
+	Excerpt           *string `json:"excerpt"`
+	IsDownloadable    bool    `json:"is_downloadable"`
 }
 
 // BrowseTags contains all relevant information of the API response of the browse function of the tags endpoint
