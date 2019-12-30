@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
@@ -99,7 +100,7 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 		sim, err := duplication.CheckForSimilarity(downloadLog.download, tmpFile.Name())
 		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
 		if err != nil && sim <= 0.95 {
-			downloadLog.content = path.Join(viper.GetString("download.directory"),
+			downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 				m.Key,
 				deviation.Author.Username,
 				fmt.Sprintf(
@@ -108,13 +109,13 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 					strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 					m.GetFileExtension(deviation.Content.Src),
 				),
-			)
+			))
 			if err := watcherIO.CopyFile(tmpFile.Name(), downloadLog.content); err != nil {
 				return err
 			}
 		}
 	} else if deviation.Content != nil {
-		downloadLog.content = path.Join(viper.GetString("download.directory"),
+		downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 			m.Key,
 			deviation.Author.Username,
 			fmt.Sprintf(
@@ -123,7 +124,7 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 				strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 				m.GetFileExtension(deviation.Content.Src),
 			),
-		)
+		))
 		if err := m.daAPI.Session.DownloadFile(downloadLog.content, deviation.Content.Src); err != nil {
 			return err
 		}
@@ -200,7 +201,7 @@ func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *do
 	}
 
 	deviation.DeviationDownload = deviationDownload
-	downloadLog.download = path.Join(viper.GetString("download.directory"),
+	downloadLog.download, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 		m.Key,
 		deviation.Author.Username,
 		fmt.Sprintf(
@@ -209,7 +210,7 @@ func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *do
 			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
 			m.GetFileExtension(deviationDownload.Src),
 		),
-	)
+	))
 
 	if err := m.daAPI.Session.DownloadFile(
 		downloadLog.download,
