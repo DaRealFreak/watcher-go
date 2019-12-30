@@ -18,7 +18,7 @@ const (
 func testPattern(t *testing.T, expectedGroup string, pattern *regexp.Regexp) {
 	urls := map[string][]string{
 		KeyFeed: {
-			"https://www.deviantart.com", "https://www.deviantart.com/", "DeviantArt://watchfeed",
+			"https://www.deviantart.com", "https://www.deviantart.com/",
 		},
 		KeyGallery: {
 			"https://www.deviantart.com/test/gallery/12345/test",
