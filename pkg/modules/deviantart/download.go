@@ -57,7 +57,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 			path.Join(
 				viper.GetString("download.directory"),
 				m.Key,
-				deviationItem.deviation.Author.Username,
+				deviationItem.downloadTag,
 				"tmp.txt",
 			),
 		)
@@ -65,18 +65,18 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 		var downloadLog downloadLog
 
 		if deviationItem.deviation.Excerpt != nil {
-			if err := m.downloadHTMLContent(deviationItem.deviation); err != nil {
+			if err := m.downloadHTMLContent(deviationItem); err != nil {
 				return err
 			}
 		}
 
 		if deviationItem.deviation.IsDownloadable {
-			if err := m.downloadDeviation(deviationItem.deviation, &downloadLog); err != nil {
+			if err := m.downloadDeviation(deviationItem, &downloadLog); err != nil {
 				return err
 			}
 		}
 
-		if err := m.downloadContent(deviationItem.deviation, &downloadLog); err != nil {
+		if err := m.downloadContent(deviationItem, &downloadLog); err != nil {
 			return err
 		}
 
@@ -86,14 +86,14 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 	return nil
 }
 
-func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *downloadLog) error {
-	if deviation.DeviationDownload != nil && deviation.Content != nil {
+func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downloadLog) error {
+	if item.deviation.DeviationDownload != nil && item.deviation.Content != nil {
 		tmpFile, err := ioutil.TempFile("", ".*")
 		if err != nil {
 			return err
 		}
 
-		if err := m.daAPI.Session.DownloadFile(tmpFile.Name(), deviation.Content.Src); err != nil {
+		if err := m.daAPI.Session.DownloadFile(tmpFile.Name(), item.deviation.Content.Src); err != nil {
 			return err
 		}
 
@@ -102,44 +102,44 @@ func (m *deviantArt) downloadContent(deviation *api.Deviation, downloadLog *down
 		if err != nil && sim <= 0.95 {
 			downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 				m.Key,
-				deviation.Author.Username,
+				item.downloadTag,
 				fmt.Sprintf(
 					"%s_c_%s%s",
-					deviation.PublishedTime,
-					strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
-					m.GetFileExtension(deviation.Content.Src),
+					item.deviation.PublishedTime,
+					strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
+					m.GetFileExtension(item.deviation.Content.Src),
 				),
 			))
 			if err := watcherIO.CopyFile(tmpFile.Name(), downloadLog.content); err != nil {
 				return err
 			}
 		}
-	} else if deviation.Content != nil {
+	} else if item.deviation.Content != nil {
 		downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 			m.Key,
-			deviation.Author.Username,
+			item.downloadTag,
 			fmt.Sprintf(
 				"%s_c_%s%s",
-				deviation.PublishedTime,
-				strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
-				m.GetFileExtension(deviation.Content.Src),
+				item.deviation.PublishedTime,
+				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
+				m.GetFileExtension(item.deviation.Content.Src),
 			),
 		))
-		if err := m.daAPI.Session.DownloadFile(downloadLog.content, deviation.Content.Src); err != nil {
+		if err := m.daAPI.Session.DownloadFile(downloadLog.content, item.deviation.Content.Src); err != nil {
 			return err
 		}
 	}
 
-	return m.downloadThumbs(deviation, downloadLog)
+	return m.downloadThumbs(item, downloadLog)
 }
 
-func (m *deviantArt) downloadThumbs(deviation *api.Deviation, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloadLog) error {
 	// compare thumb and download/content
-	if len(deviation.Thumbs) == 0 {
+	if len(item.deviation.Thumbs) == 0 {
 		return nil
 	}
 
-	lastThumb := deviation.Thumbs[len(deviation.Thumbs)-1]
+	lastThumb := item.deviation.Thumbs[len(item.deviation.Thumbs)-1]
 
 	tmpFile, err := ioutil.TempFile("", ".*")
 	if err != nil {
@@ -153,11 +153,11 @@ func (m *deviantArt) downloadThumbs(deviation *api.Deviation, downloadLog *downl
 	if len(downloadLog.downloadedFiles()) == 0 {
 		if err := watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
 			m.Key,
-			deviation.Author.Username,
+			item.downloadTag,
 			fmt.Sprintf(
 				"%s_tmb_%s%s",
-				deviation.PublishedTime,
-				strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
+				item.deviation.PublishedTime,
+				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
 				m.GetFileExtension(lastThumb.Src),
 			),
 		)); err != nil {
@@ -181,33 +181,33 @@ func (m *deviantArt) downloadThumbs(deviation *api.Deviation, downloadLog *downl
 
 	return watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
 		m.Key,
-		deviation.Author.Username,
+		item.downloadTag,
 		fmt.Sprintf(
 			"%s_tmb_%s%s",
-			deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
+			item.deviation.PublishedTime,
+			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
 			m.GetFileExtension(lastThumb.Src),
 		)),
 	)
 }
 
-func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *downloadLog) error {
-	deviationDownload, err := m.daAPI.DeviationDownloadFallback(deviation.DeviationURL)
+func (m *deviantArt) downloadDeviation(item downloadQueueItem, downloadLog *downloadLog) error {
+	deviationDownload, err := m.daAPI.DeviationDownloadFallback(item.deviation.DeviationURL)
 	if err != nil {
-		deviationDownload, err = m.daAPI.DeviationDownload(deviation.DeviationID)
+		deviationDownload, err = m.daAPI.DeviationDownload(item.deviation.DeviationID)
 		if err != nil {
 			return err
 		}
 	}
 
-	deviation.DeviationDownload = deviationDownload
+	item.deviation.DeviationDownload = deviationDownload
 	downloadLog.download, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
 		m.Key,
-		deviation.Author.Username,
+		item.downloadTag,
 		fmt.Sprintf(
 			"%s_d_%s%s",
-			deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
+			item.deviation.PublishedTime,
+			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
 			m.GetFileExtension(deviationDownload.Src),
 		),
 	))
@@ -222,9 +222,9 @@ func (m *deviantArt) downloadDeviation(deviation *api.Deviation, downloadLog *do
 	return nil
 }
 
-func (m *deviantArt) downloadHTMLContent(deviation *api.Deviation) error {
+func (m *deviantArt) downloadHTMLContent(item downloadQueueItem) error {
 	// deviation has text so we retrieve the full content
-	deviationContent, err := m.daAPI.DeviationContent(deviation.DeviationID)
+	deviationContent, err := m.daAPI.DeviationContent(item.deviation.DeviationID)
 	if err != nil {
 		return err
 	}
@@ -236,11 +236,11 @@ func (m *deviantArt) downloadHTMLContent(deviation *api.Deviation) error {
 
 	filePath := path.Join(viper.GetString("download.directory"),
 		m.Key,
-		deviation.Author.Username,
+		item.downloadTag,
 		fmt.Sprintf(
 			"%s_t_%s.txt",
-			deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(deviation.Title, false), " ", "_"),
+			item.deviation.PublishedTime,
+			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
 		),
 	)
 	if err := ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
