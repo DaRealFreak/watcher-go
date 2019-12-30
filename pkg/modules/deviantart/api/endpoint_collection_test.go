@@ -50,6 +50,22 @@ func TestDeviantartAPI_CollectionFolders(t *testing.T) {
 	assert.New(t).Equal(len(folders.Results), len(foldersConsoleExploit.Results))
 }
 
+func TestDeviantartAPI_CollectionNameFromID(t *testing.T) {
+	daAPI.useConsoleExploit = false
+
+	collectionTitle, err := daAPI.CollectionNameFromID("clg-artisa", 80472763)
+	assert.New(t).NoError(err)
+	assert.New(t).Equal("Ellysiumn", collectionTitle)
+
+	// toggle console exploit, we also require the first OAuth2 process to have succeeded
+	// since we require the user information cookie which is set on a successful login
+	daAPI.useConsoleExploit = true
+
+	collectionTitleConsoleExploit, err := daAPI.CollectionNameFromID("clg-artisa", 80472763)
+	assert.New(t).NoError(err)
+	assert.New(t).Equal("Ellysiumn", collectionTitleConsoleExploit)
+}
+
 func TestDeviantartAPI_CollectionFolderIDToUUID(t *testing.T) {
 	daAPI.useConsoleExploit = false
 
