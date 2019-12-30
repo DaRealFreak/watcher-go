@@ -1,9 +1,10 @@
 package deviantart
 
 import (
+	"strconv"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
-	"strconv"
 )
 
 func (m *deviantArt) parseUser(item *models.TrackedItem) error {

@@ -2,11 +2,15 @@ package deviantart
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
+	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"path"
 )
 
 type downloadQueueItem struct {
@@ -39,6 +43,71 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 			),
 		)
 
+		if deviationItem.deviation.Excerpt != nil {
+			if err := m.downloadHTMLContent(deviationItem.deviation); err != nil {
+				return err
+			}
+		}
+
+		if deviationItem.deviation.IsDownloadable {
+			if err := m.downloadDeviation(deviationItem.deviation); err != nil {
+				return err
+			}
+		}
+
+		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.deviation.PublishedTime)
 	}
+
+	return nil
+}
+
+func (m *deviantArt) downloadDeviation(deviation api.Deviation) error {
+	deviationDownload, err := m.daAPI.DeviationDownloadFallback(deviation.DeviationURL)
+	if err != nil {
+		deviationDownload, err = m.daAPI.DeviationDownload(deviation.DeviationID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := m.Session.DownloadFile(
+		path.Join(viper.GetString("download.directory"),
+			m.Key,
+			deviation.Author.Username,
+			deviation.PublishedTime+"_"+m.GetFileName(deviationDownload.Src),
+		),
+		deviationDownload.Src,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *deviantArt) downloadHTMLContent(deviation api.Deviation) error {
+	// deviation has text so we retrieve the full content
+	deviationContent, err := m.daAPI.DeviationContent(deviation.DeviationID)
+	if err != nil {
+		return err
+	}
+
+	text, err := html2text.FromString(deviationContent.HTML)
+	if err != nil {
+		return err
+	}
+
+	filePath := path.Join(viper.GetString("download.directory"),
+		m.Key,
+		deviation.Author.Username,
+		fmt.Sprintf(
+			"%s_%s.txt",
+			deviation.PublishedTime,
+			m.SanitizePath(deviation.Title, false),
+		),
+	)
+	if err := ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+		return err
+	}
+
 	return nil
 }
