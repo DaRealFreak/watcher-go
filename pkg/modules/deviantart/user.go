@@ -48,5 +48,9 @@ func (m *deviantArt) parseUser(item *models.TrackedItem) error {
 		}
 	}
 
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
+	}
+
 	return m.processDownloadQueue(downloadQueue, item)
 }
