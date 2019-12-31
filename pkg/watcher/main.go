@@ -236,7 +236,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 		log.WithField("module", module.Key).Info("login successful")
 	} else {
 		if module.RequiresLogin {
-			log.WithField("module", module.Key).Errorf(
+			log.WithField("module", module.Key).Fatalf(
 				"module requires a login, but the login failed",
 			)
 		} else {
