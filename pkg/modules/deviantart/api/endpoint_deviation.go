@@ -18,7 +18,8 @@ type DeviationDownload struct {
 // DeviationContent implements the API endpoint https://www.deviantart.com/api/v1/oauth2/deviation/content
 func (a *DeviantartAPI) DeviationContent(deviationID string) (*DeviationContent, error) {
 	values := url.Values{
-		"deviationid": {deviationID},
+		"deviationid":    {deviationID},
+		"mature_content": {"true"},
 	}
 
 	res, err := a.request("GET", "/deviation/content", values)

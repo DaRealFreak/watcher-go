@@ -43,9 +43,10 @@ type BrowseTags struct {
 // BrowseTags implements the API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags
 func (a *DeviantartAPI) BrowseTags(tag string, offset uint, limit uint) (*BrowseTags, error) {
 	values := url.Values{
-		"tag":    {tag},
-		"offset": {strconv.FormatUint(uint64(offset), 10)},
-		"limit":  {strconv.FormatUint(uint64(limit), 10)},
+		"tag":            {tag},
+		"offset":         {strconv.FormatUint(uint64(offset), 10)},
+		"limit":          {strconv.FormatUint(uint64(limit), 10)},
+		"mature_content": {"true"},
 	}
 
 	res, err := a.request("GET", "/browse/tags", values)

@@ -14,11 +14,12 @@ type GalleryResponse struct {
 // Gallery implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/{folderID}
 func (a *DeviantartAPI) Gallery(user string, folderID string, offset uint, limit uint) (*GalleryResponse, error) {
 	values := url.Values{
-		"username": {user},
-		"folderid": {folderID},
-		"mode":     {"newest"},
-		"offset":   {strconv.Itoa(int(offset))},
-		"limit":    {strconv.Itoa(int(limit))},
+		"username":       {user},
+		"folderid":       {folderID},
+		"mode":           {"newest"},
+		"offset":         {strconv.Itoa(int(offset))},
+		"limit":          {strconv.Itoa(int(limit))},
+		"mature_content": {"true"},
 	}
 
 	res, err := a.request("GET", "/gallery/"+url.PathEscape(folderID), values)
@@ -35,9 +36,10 @@ func (a *DeviantartAPI) Gallery(user string, folderID string, offset uint, limit
 // GalleryAll implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/all
 func (a *DeviantartAPI) GalleryAll(user string, offset uint, limit uint) (*GalleryResponse, error) {
 	values := url.Values{
-		"username": {user},
-		"offset":   {strconv.Itoa(int(offset))},
-		"limit":    {strconv.Itoa(int(limit))},
+		"username":       {user},
+		"offset":         {strconv.Itoa(int(offset))},
+		"limit":          {strconv.Itoa(int(limit))},
+		"mature_content": {"true"},
 	}
 
 	res, err := a.request("GET", "/gallery/all", values)
@@ -54,9 +56,10 @@ func (a *DeviantartAPI) GalleryAll(user string, offset uint, limit uint) (*Galle
 // GalleryFolders implements the API endpoint https://www.deviantart.com/api/v1/oauth2/gallery/folders
 func (a *DeviantartAPI) GalleryFolders(user string, offset uint, limit uint) (*Folders, error) {
 	values := url.Values{
-		"username": {user},
-		"offset":   {strconv.Itoa(int(offset))},
-		"limit":    {strconv.Itoa(int(limit))},
+		"username":       {user},
+		"offset":         {strconv.Itoa(int(offset))},
+		"limit":          {strconv.Itoa(int(limit))},
+		"mature_content": {"true"},
 	}
 
 	res, err := a.request("GET", "/gallery/folders", values)

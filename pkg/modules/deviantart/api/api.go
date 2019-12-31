@@ -78,9 +78,6 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 func (a *DeviantartAPI) request(method string, endpoint string, values url.Values) (res *http.Response, err error) {
 	a.applyRateLimit()
 
-	// central application of mature content setting
-	values.Set("mature_content", fmt.Sprintf("%t", true))
-
 	if a.useConsoleExploit {
 		res, err = a.consoleRequest(endpoint, values)
 	} else {
