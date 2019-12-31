@@ -100,7 +100,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case m.daPattern.collectionUUIDPattern.MatchString(item.URI):
 		return m.parseCollectionUUID(item)
 	case m.daPattern.tagPattern.MatchString(item.URI):
-		fmt.Println("parse tag")
+		return m.parseTag(item)
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}

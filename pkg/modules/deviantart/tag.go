@@ -9,14 +9,14 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseUser(item *models.TrackedItem) error {
+func (m *deviantArt) parseTag(item *models.TrackedItem) error {
 	var downloadQueue []downloadQueueItem
 
-	username := m.daPattern.userPattern.FindStringSubmatch(item.URI)[1]
+	tag := m.daPattern.tagPattern.FindStringSubmatch(item.URI)[1]
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	response, err := m.daAPI.GalleryAll(username, 0, api.MaxDeviationsPerPage)
+	response, err := m.daAPI.BrowseTags(tag, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func (m *deviantArt) parseUser(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItem{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: m.SanitizePath(username, false),
+					downloadTag: m.SanitizePath(tag, false),
 				})
 			} else {
 				foundCurrentItem = true
@@ -44,7 +44,7 @@ func (m *deviantArt) parseUser(item *models.TrackedItem) error {
 			break
 		}
 
-		response, err = m.daAPI.GalleryAll(username, *response.NextOffset, api.MaxDeviationsPerPage)
+		response, err = m.daAPI.BrowseTags(tag, *response.NextOffset, api.MaxDeviationsPerPage)
 		if err != nil {
 			return err
 		}
