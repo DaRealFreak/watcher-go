@@ -35,6 +35,10 @@ func testPattern(t *testing.T, expectedGroup string, pattern *regexp.Regexp) {
 			"https://www.deviantart.com/testuser/favourites/12345/test-title/",
 			"https://www.deviantart.com/testuser/favourites/12345",
 			"https://www.deviantart.com/testuser/favourites/12345/",
+			"https://www.deviantart.com/testuser/favourites/all",
+			"https://www.deviantart.com/testuser/favourites/all/",
+			"https://www.deviantart.com/testuser/favourites",
+			"https://www.deviantart.com/testuser/favourites/",
 		},
 		KeyTag: {
 			"https://www.deviantart.com/tag/test", "https://www.deviantart.com/tag/test/",
