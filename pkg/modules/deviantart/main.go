@@ -90,7 +90,7 @@ func (m *deviantArt) Login(account *models.Account) bool {
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	switch {
 	case m.daPattern.feedPattern.MatchString(item.URI):
-		fmt.Println("parse user feed")
+		return m.parseFeed(item)
 	case m.daPattern.userPattern.MatchString(item.URI):
 		return m.parseUser(item)
 	case m.daPattern.galleryPattern.MatchString(item.URI):
@@ -104,8 +104,6 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
-
-	return nil
 }
 
 // getDeviantArtPattern returns all required patterns
