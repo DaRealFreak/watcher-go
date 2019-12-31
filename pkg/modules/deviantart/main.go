@@ -20,11 +20,12 @@ type deviantArt struct {
 }
 
 type deviantArtPattern struct {
-	feedPattern       *regexp.Regexp
-	userPattern       *regexp.Regexp
-	galleryPattern    *regexp.Regexp
-	collectionPattern *regexp.Regexp
-	tagPattern        *regexp.Regexp
+	feedPattern           *regexp.Regexp
+	userPattern           *regexp.Regexp
+	galleryPattern        *regexp.Regexp
+	collectionUUIDPattern *regexp.Regexp
+	collectionPattern     *regexp.Regexp
+	tagPattern            *regexp.Regexp
 }
 
 // nolint: gochecknoinits
@@ -96,6 +97,8 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 		return m.parseGallery(item)
 	case m.daPattern.collectionPattern.MatchString(item.URI):
 		return m.parseCollection(item)
+	case m.daPattern.collectionUUIDPattern.MatchString(item.URI):
+		return m.parseCollectionUUID(item)
 	case m.daPattern.tagPattern.MatchString(item.URI):
 		fmt.Println("parse tag")
 	default:
@@ -109,10 +112,11 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 // extracted from the NewBareModule function to test in Unit Tests
 func getDeviantArtPattern() deviantArtPattern {
 	return deviantArtPattern{
-		userPattern:       regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)(?:/gallery|/gallery/all)?(?:/)?$`),
-		feedPattern:       regexp.MustCompile(`https://www.deviantart.com(?:/)?$`),
-		galleryPattern:    regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/(\d+).*`),
-		collectionPattern: regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/favourites(?:/(\d+))?.*`),
-		tagPattern:        regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+?)`),
+		userPattern:           regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)(?:/gallery|/gallery/all)?(?:/)?$`),
+		feedPattern:           regexp.MustCompile(`https://www.deviantart.com(?:/)?$`),
+		galleryPattern:        regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/(\d+).*`),
+		collectionPattern:     regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/favourites(?:/(\d+))?.*`),
+		collectionUUIDPattern: regexp.MustCompile(`DeviantArt://collection/([^/?&]+?)/([^/?&]+)`),
+		tagPattern:            regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+)(?:$|/.*)`),
 	}
 }
