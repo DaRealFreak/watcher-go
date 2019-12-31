@@ -94,7 +94,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 
 func (m *deviantArt) downloadFlash(item downloadQueueItem, downloadLog *downloadLog) error {
 	// download content is always equal to the flash object in the API response
-	if downloadLog.download != "" && filepath.Ext(downloadLog.download) != ".swf" {
+	if downloadLog.download == "" || (downloadLog.download != "" && filepath.Ext(downloadLog.download) != ".swf") {
 		return m.daAPI.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"),
 				m.Key,
