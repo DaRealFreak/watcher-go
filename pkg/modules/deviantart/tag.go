@@ -1,61 +1,58 @@
+// Package deviantart contains the implementation of the deviantart module
+// nolint: dupl
 package deviantart
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseTag(appURL string, item *models.TrackedItem) error {
-	tag := strings.Split(appURL, "/")[3]
+func (m *deviantArt) parseTag(item *models.TrackedItem) error {
+	var downloadQueue []downloadQueueItem
+
+	tag := m.daPattern.tagPattern.FindStringSubmatch(item.URI)[1]
+	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
-	offset := 0
-	var deviations []*Deviation
+
+	response, err := m.daAPI.BrowseTags(tag, 0, api.MaxDeviationsPerPage)
+	if err != nil {
+		return err
+	}
 
 	for !foundCurrentItem {
-		results, apiErr, err := m.BrowseTags(tag, uint(offset), 24)
-		if err != nil {
-			return err
-		}
-		if apiErr != nil {
-			return fmt.Errorf(apiErr.ErrorDescription)
-		}
+		for _, deviation := range response.Results {
+			publishedTime, err := strconv.ParseInt(deviation.PublishedTime, 10, 64)
+			if err != nil {
+				return err
+			}
 
-		for _, result := range results.Results {
-			// will return 0 on error, so fine for us too
-			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-			itemID, _ := strconv.ParseInt(result.PublishedTime, 10, 64)
-
-			if !(item.CurrentItem == "" || itemID > currentItemID) {
+			if item.CurrentItem == "" || publishedTime > currentItemID {
+				downloadQueue = append(downloadQueue, downloadQueueItem{
+					itemID:      deviation.PublishedTime,
+					deviation:   deviation,
+					downloadTag: m.SanitizePath(tag, false),
+				})
+			} else {
 				foundCurrentItem = true
 				break
 			}
-
-			// fake the username to save in a specific directory
-			// ToDo: use custom result struct
-			result.Author.Username = tag
-			deviations = append(deviations, result)
 		}
 
-		// no more results, break out of the loop
-		if !results.HasMore {
+		if response.NextOffset == nil {
 			break
 		}
 
-		// update offset
-		nextOffset, err := results.NextOffset.Int64()
+		response, err = m.daAPI.BrowseTags(tag, *response.NextOffset, api.MaxDeviationsPerPage)
 		if err != nil {
 			return err
 		}
-		offset = int(nextOffset)
 	}
 
-	// reverse deviations to download the oldest items first
-	for i, j := 0, len(deviations)-1; i < j; i, j = i+1, j-1 {
-		deviations[i], deviations[j] = deviations[j], deviations[i]
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
-	// retrieve all relevant details and parse the download queue
-	return m.processDownloadQueue(item, deviations)
+
+	return m.processDownloadQueue(downloadQueue, item)
 }

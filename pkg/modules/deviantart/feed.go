@@ -1,64 +1,57 @@
 package deviantart
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
 )
 
-// parseFeed retrieves the deviation_submitted bucket and parses all new deviations
 func (m *deviantArt) parseFeed(item *models.TrackedItem) error {
-	foundCurrentItem := false
-	var deviations []*Deviation
+	var downloadQueue []downloadQueueItem
 
-	bucket, apiErr, err := m.FeedHomeBucket("deviation_submitted", 0, 10, true)
+	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+	foundCurrentItem := false
+
+	response, err := m.daAPI.FeedHomeBucket(api.BucketDeviationSubmitted, 0)
 	if err != nil {
 		return err
 	}
-	if apiErr != nil {
-		return fmt.Errorf(apiErr.ErrorDescription)
-	}
+
 	for !foundCurrentItem {
-		results, apiErr, err := m.FeedHome(bucket.Cursor, true)
-		if err != nil {
-			return err
-		}
-		if apiErr != nil {
-			return fmt.Errorf(apiErr.ErrorDescription)
-		}
-		for _, itemFeed := range results.Items {
-			for _, result := range itemFeed.Deviations {
-				// will return 0 on error, so fine for us too
-				currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-				itemID, _ := strconv.ParseInt(result.PublishedTime, 10, 64)
-
-				if !(item.CurrentItem == "" || itemID > currentItemID) {
-					foundCurrentItem = true
-					break
-				}
-
-				deviations = append(deviations, result)
+		for _, feedItem := range response.Items {
+			publishedTime, err := strconv.ParseInt(feedItem.Timestamp, 10, 64)
+			if err != nil {
+				return err
 			}
-			// break outer loop too if current item got found
-			if foundCurrentItem {
+
+			if item.CurrentItem == "" || publishedTime > currentItemID {
+				for _, singleDeviation := range feedItem.Deviations {
+					downloadQueue = append(downloadQueue, downloadQueueItem{
+						itemID:      singleDeviation.PublishedTime,
+						deviation:   singleDeviation,
+						downloadTag: "watch_feed",
+					})
+				}
+			} else {
+				foundCurrentItem = true
 				break
 			}
 		}
 
-		// no more results, break out of the loop
-		if !results.HasMore {
+		if !response.HasMore {
 			break
 		}
 
-		// update cursor to retrieve next page
-		bucket.Cursor = results.Cursor
+		response, err = m.daAPI.FeedHome(response.Cursor)
+		if err != nil {
+			return err
+		}
 	}
 
-	// reverse deviations to download the oldest items first
-	for i, j := 0, len(deviations)-1; i < j; i, j = i+1, j-1 {
-		deviations[i], deviations[j] = deviations[j], deviations[i]
+	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
+		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
-	// retrieve all relevant details and parse the download queue
-	return m.processDownloadQueue(item, deviations)
+
+	return m.processDownloadQueue(downloadQueue, item)
 }

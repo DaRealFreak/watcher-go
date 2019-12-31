@@ -1,33 +1,22 @@
+// Package deviantart contains the implementation of the deviantart module
+// nolint: dupl
 package deviantart
 
 import (
-	"path"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
+func (m *deviantArt) parseUser(item *models.TrackedItem) error {
 	var downloadQueue []downloadQueueItem
 
+	username := m.daPattern.userPattern.FindStringSubmatch(item.URI)[1]
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
-	username := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[1]
-	galleryID := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[2]
-	galleryIntID, _ := strconv.ParseInt(galleryID, 10, 64)
 
-	galleryUUID, err := m.daAPI.GalleryFolderIDToUUID(username, int(galleryIntID))
-	if err != nil {
-		return err
-	}
-
-	galleryName, err := m.daAPI.GalleryNameFromID(username, int(galleryIntID))
-	if err != nil {
-		return err
-	}
-
-	response, err := m.daAPI.Gallery(username, galleryUUID, 0, api.MaxDeviationsPerPage)
+	response, err := m.daAPI.GalleryAll(username, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return err
 	}
@@ -43,7 +32,7 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItem{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(m.SanitizePath(username, false), galleryName),
+					downloadTag: m.SanitizePath(username, false),
 				})
 			} else {
 				foundCurrentItem = true
@@ -55,7 +44,7 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
 			break
 		}
 
-		response, err = m.daAPI.Gallery(username, galleryUUID, *response.NextOffset, api.MaxDeviationsPerPage)
+		response, err = m.daAPI.GalleryAll(username, *response.NextOffset, api.MaxDeviationsPerPage)
 		if err != nil {
 			return err
 		}

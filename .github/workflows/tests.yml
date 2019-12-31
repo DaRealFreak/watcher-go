@@ -14,6 +14,8 @@ env:
   PIXIV_DEVICE_TOKEN: ${{ secrets.PIXIV_DEVICE_TOKEN }}
   PIXIV_USER: ${{ secrets.PIXIV_USER }}
   PIXIV_PASS: ${{ secrets.PIXIV_PASS }}
+  DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}
+  DEVIANTART_PASS: ${{ secrets.DEVIANTART_PASS }}
 
 jobs:
   test:
