@@ -85,6 +85,35 @@ func (a *DeviantartAPI) CollectionNameFromID(username string, folderID int) (str
 	)
 }
 
+// CollectionNameFromUUID returns the collection name based on the collection folder UUID
+func (a *DeviantartAPI) CollectionNameFromUUID(username string, folderUUID string) (string, error) {
+	folderResults, err := a.CollectionFolders(username, 0, MaxDeviationsPerPage)
+	if err != nil {
+		return "", err
+	}
+
+	for _, folder := range folderResults.Results {
+		if folder.FolderUUID == folderUUID {
+			return folder.Name, nil
+		}
+	}
+
+	for folderResults.NextOffset != nil && folderResults.HasMore {
+		folderResults, err = a.CollectionFolders(username, uint(*folderResults.NextOffset), MaxDeviationsPerPage)
+		if err != nil {
+			return "", err
+		}
+
+		for _, folder := range folderResults.Results {
+			if folder.FolderUUID == folderUUID {
+				return folder.Name, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
 // CollectionFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
 // nolint: dupl
 func (a *DeviantartAPI) CollectionFolderIDToUUID(username string, folderID int) (string, error) {
