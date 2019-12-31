@@ -240,7 +240,7 @@ func (app *Watcher) loginToModule(module *models.Module) {
 				"module requires a login, but the login failed",
 			)
 		} else {
-			log.WithField("module", module.Key).Warning("login not successful")
+			log.WithField("module", module.Key).Fatalf("login not successful")
 		}
 	}
 }
