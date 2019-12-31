@@ -76,6 +76,12 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 			}
 		}
 
+		if deviationItem.deviation.Flash != nil {
+			if err := m.downloadFlash(deviationItem); err != nil {
+				return err
+			}
+		}
+
 		if err := m.downloadContent(deviationItem, &downloadLog); err != nil {
 			return err
 		}
@@ -84,6 +90,20 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 	}
 
 	return nil
+}
+
+func (m *deviantArt) downloadFlash(item downloadQueueItem) error {
+	return m.daAPI.Session.DownloadFile(
+		path.Join(viper.GetString("download.directory"),
+			m.Key,
+			item.downloadTag,
+			fmt.Sprintf(
+				"%s_f_%s.swf",
+				item.deviation.PublishedTime,
+				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
+			),
+		), item.deviation.Flash.Src,
+	)
 }
 
 func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downloadLog) error {

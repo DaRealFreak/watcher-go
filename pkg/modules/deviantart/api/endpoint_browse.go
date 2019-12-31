@@ -22,6 +22,9 @@ type Deviation struct {
 	Content *struct {
 		Src string `json:"src"`
 	} `json:"content"`
+	Flash *struct {
+		Src string `json:"src"`
+	} `json:"flash"`
 	Thumbs []struct {
 		Src string `json:"src"`
 	} `json:"thumbs"`
