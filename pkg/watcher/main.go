@@ -142,7 +142,7 @@ func (app *Watcher) Run() {
 
 			if err := module.Parse(item); err != nil {
 				log.WithField("module", item.Module).Warningf(
-					"error occurred parsing item %s, skipping", item.URI,
+					"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
 				)
 			}
 		}
@@ -206,7 +206,7 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 		if err := module.Parse(item); err != nil {
 			log.WithField("module", item.Module).Warningf(
-				"error occurred parsing item %s, skipping", item.URI,
+				"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
 			)
 		}
 	}
