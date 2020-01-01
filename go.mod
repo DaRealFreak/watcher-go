@@ -3,6 +3,7 @@ module github.com/DaRealFreak/watcher-go
 go 1.13
 
 require (
+	github.com/DaRealFreak/cloudflare-bp-go v1.0.0
 	github.com/DaRealFreak/colored-nested-formatter v0.0.0-20191016183746-56b03bf0f1d0
 	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.5.0

@@ -5,6 +5,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/CloudyKit/fastprinter v0.0.0-20170127035650-74b38d55f37a/go.mod h1:EFZQ978U7x8IRnstaskI3IysnWY5Ao3QgZUKOXlsAdw=
 github.com/CloudyKit/jet v2.1.3-0.20180809161101-62edd43e4f88+incompatible/go.mod h1:HPYO+50pSWkPoj9Q/eq0aRGByCL6ScRlUmiEX5Zgm+w=
+github.com/DaRealFreak/cloudflare-bp-go v1.0.0 h1:D6qZ8lg9G9Fbvca5cy4txHgvGrp8vrWpKD0dW9AL1qs=
+github.com/DaRealFreak/cloudflare-bp-go v1.0.0/go.mod h1:CowRNq3aWX18b2C4GFBKwMARoYOH99AXMuTqpmi3UJQ=
 github.com/DaRealFreak/colored-nested-formatter v0.0.0-20191016183746-56b03bf0f1d0 h1:Cac/+vBxIkdTjX89sy4W1IIGDMiEYWfsMfV+p9ujN1I=
 github.com/DaRealFreak/colored-nested-formatter v0.0.0-20191016183746-56b03bf0f1d0/go.mod h1:iAfnp6rydlawlfqmyTapRxhwNjeXGaj+VpuKdSHpjdU=
 github.com/EDDYCJY/fake-useragent v0.2.0 h1:Jcnkk2bgXmDpX0z+ELlUErTkoLb/mxFBNd2YdcpvJBs=

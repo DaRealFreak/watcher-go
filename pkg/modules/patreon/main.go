@@ -3,18 +3,16 @@ package patreon
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 
+	"github.com/DaRealFreak/cloudflare-bp-go"
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -94,17 +92,8 @@ func (m *patreon) InitializeModule() {
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 
-	// set TLS configuration for transport layer of client to pass CloudFlare checks
-	if trans, ok := m.Session.GetClient().Transport.(*http.Transport); ok {
-		trans.TLSClientConfig = &tls.Config{
-			PreferServerCipherSuites: true,
-			CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.CurveP384, tls.CurveP521, tls.X25519},
-		}
-	}
-
-	client := m.Session.GetClient()
-	client.Transport = m.SetUserAgent(client.Transport, browser.Firefox())
-	client.Transport = m.SetCloudFlareHeaders(client.Transport)
+	// add CloudFlare bypass
+	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
