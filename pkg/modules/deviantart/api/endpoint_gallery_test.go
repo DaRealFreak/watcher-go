@@ -76,14 +76,6 @@ func TestDeviantartAPI_GalleryNameFromID(t *testing.T) {
 	galleryTitle, err := daAPI.GalleryNameFromID("CLG-Artisa", 66857455)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal("Unikitty", galleryTitle)
-
-	// toggle console exploit, we also require the first OAuth2 process to have succeeded
-	// since we require the user information cookie which is set on a successful login
-	daAPI.useConsoleExploit = true
-
-	galleryTitleConsoleExploit, err := daAPI.GalleryFolderIDToUUID("CLG-Artisa", 66857455)
-	assert.New(t).NoError(err)
-	assert.New(t).Equal("Unikitty", galleryTitleConsoleExploit)
 }
 
 func TestDeviantartAPI_GalleryFolderIDToUUID(t *testing.T) {

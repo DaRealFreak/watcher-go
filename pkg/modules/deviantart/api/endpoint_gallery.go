@@ -82,9 +82,7 @@ func (a *DeviantartAPI) GalleryNameFromID(username string, folderID int) (string
 		return "", err
 	}
 
-	document := a.Session.GetDocument(feRes)
-
-	return document.Find("div#sub-folder-gallery h2").First().Text(), nil
+	return a.Session.GetDocument(feRes).Find("div#sub-folder-gallery h2").First().Text(), nil
 }
 
 // GalleryFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID
