@@ -98,6 +98,7 @@ func (m *patreon) InitializeModule() {
 	if trans, ok := m.Session.GetClient().Transport.(*http.Transport); ok {
 		trans.TLSClientConfig = &tls.Config{
 			PreferServerCipherSuites: true,
+			CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.CurveP384, tls.CurveP521, tls.X25519},
 		}
 	}
 
@@ -130,7 +131,7 @@ func (m *patreon) Login(account *models.Account) bool {
 	}
 
 	res, err := m.Session.GetClient().Post(
-		"https://www.patreon.com/api/login?include=campaign,user_location&json-api-version=1.0",
+		"https://www.patreon.com/api/login?include=campaign%2Cuser_location&json-api-version=1.0",
 		"application/vnd.api+json",
 		bytes.NewReader(data),
 	)
