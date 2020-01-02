@@ -2,10 +2,11 @@ package twitter
 
 import (
 	"fmt"
-	"net/url"
 	"regexp"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/twitter/api"
 )
 
 func (m *twitter) parsePage(item *models.TrackedItem) error {
@@ -14,33 +15,18 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return err
 	}
 
-	values := url.Values{
-		"screen_name": {screenName},
-		"trim_user":   {"1"},
-		"count":       {"200"},
-		"include_rts": {"1"},
-	}
-	maxID := ""
-	latestTweetID := ""
-
-	var newMediaTweets []*Tweet
-
-	if item.CurrentItem != "" {
-		values.Set("since_id", item.CurrentItem)
-	}
+	var (
+		maxID          string
+		latestTweetID  *uint
+		newMediaTweets []*api.Tweet
+	)
 
 	for {
-		if maxID != "" {
-			values.Set("max_id", maxID)
-		}
-
-		tweets, apiErr, err := m.getUserTimeline(values)
+		tweets, err := m.twitterAPI.UserTimeline(
+			screenName, item.CurrentItem, maxID, api.MaxTweetsPerRequest, true,
+		)
 		if err != nil {
 			return nil
-		}
-
-		if apiErr != nil {
-			return fmt.Errorf("api error occurred")
 		}
 
 		if maxID != "" {
@@ -48,8 +34,8 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 			tweets = tweets[1:]
 		}
 
-		if latestTweetID == "" && len(tweets) > 0 {
-			latestTweetID = tweets[0].ID.String()
+		if latestTweetID == nil && len(tweets) > 0 {
+			latestTweetID = &tweets[0].ID
 		}
 
 		mediaTweets := m.filterRetweet(m.filterMediaTweets(tweets), false)
@@ -59,15 +45,20 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 			break
 		}
 
-		maxID = tweets[len(tweets)-1].ID.String()
+		maxID = strconv.Itoa(int(tweets[len(tweets)-1].ID))
 	}
 
-	if err := m.processDownloadQueue(m.reverseTweets(newMediaTweets), item); err != nil {
+	for i, j := 0, len(newMediaTweets)-1; i < j; i, j = i+1, j-1 {
+		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
+	}
+
+	if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
 		return err
 	}
 
-	if latestTweetID != "" {
-		m.DbIO.UpdateTrackedItem(item, latestTweetID)
+	if latestTweetID != nil {
+		// update also if no new media item got found to possibly save some queries if media tweets happen later
+		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(int(*latestTweetID)))
 	}
 
 	return nil
@@ -84,7 +75,7 @@ func (m *twitter) extractScreenName(uri string) (string, error) {
 
 // filterMediaTweets returns a filtered amount of tweets having media elements attached since the search endpoint
 // only filters the indexed tweets of 6-9 days and is unreliable
-func (m *twitter) filterMediaTweets(tweets []*Tweet) (mediaTweets []*Tweet) {
+func (m *twitter) filterMediaTweets(tweets []*api.Tweet) (mediaTweets []*api.Tweet) {
 	for _, tweet := range tweets {
 		if len(tweet.ExtendedEntities.Media) > 0 {
 			mediaTweets = append(mediaTweets, tweet)
@@ -95,7 +86,7 @@ func (m *twitter) filterMediaTweets(tweets []*Tweet) (mediaTweets []*Tweet) {
 }
 
 // filterRetweet is an option to filter retweets from the passed tweets or also original tweets
-func (m *twitter) filterRetweet(tweets []*Tweet, retweet bool) (responseTweets []*Tweet) {
+func (m *twitter) filterRetweet(tweets []*api.Tweet, retweet bool) (responseTweets []*api.Tweet) {
 	for _, tweet := range tweets {
 		if retweet == (tweet.RetweetedStatus != nil) {
 			responseTweets = append(responseTweets, tweet)

@@ -2,26 +2,21 @@
 package twitter
 
 import (
-	"context"
 	"os"
 	"regexp"
-	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/pkg/http/session"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
 	"github.com/DaRealFreak/watcher-go/pkg/modules"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/twitter/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
-	"golang.org/x/time/rate"
 )
 
 // twitter contains the implementation of the ModuleInterface
 type twitter struct {
 	*models.Module
+	twitterAPI *api.TwitterAPI
 }
 
 // nolint: gochecknoinits
@@ -64,26 +59,7 @@ func (m *twitter) InitializeModule() {
 		os.Exit(1)
 	}
 
-	// initialize session
-	twitterSession := session.NewSession(m.Key)
-	// twitter rate limits: 900 requests per 15 minutes
-	twitterSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
-	m.Session = twitterSession
-
-	// set the proxy if requested
-	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-
-	config := &clientcredentials.Config{
-		ClientID:     oauthClient.ClientID,
-		ClientSecret: oauthClient.ClientSecret,
-		TokenURL:     "https://api.twitter.com/oauth2/token",
-	}
-
-	// set context with own http client for OAuth2 library to use
-	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, m.Session.GetClient())
-
-	// add OAuth2 round tripper from our client credentials context
-	m.Session.SetClient(config.Client(httpClientContext))
+	m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application

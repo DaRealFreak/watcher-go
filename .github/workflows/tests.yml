@@ -16,6 +16,8 @@ env:
   PIXIV_PASS: ${{ secrets.PIXIV_PASS }}
   DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}
   DEVIANTART_PASS: ${{ secrets.DEVIANTART_PASS }}
+  TWITTER_CLIENT_ID: ${{ secrets.TWITTER_CLIENT_ID }}
+  TWITTER_CLIENT_SECRET: ${{ secrets.TWITTER_CLIENT_SECRET }}
 
 jobs:
   test:

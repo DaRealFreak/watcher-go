@@ -3,14 +3,16 @@ package twitter
 import (
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"github.com/DaRealFreak/watcher-go/pkg/modules/twitter/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 // processDownloadQueue downloads all media entities from the passed tweets if set
-func (m *twitter) processDownloadQueue(downloadQueue []*Tweet, trackedItem *models.TrackedItem) error {
+func (m *twitter) processDownloadQueue(downloadQueue []*api.Tweet, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
@@ -30,12 +32,12 @@ func (m *twitter) processDownloadQueue(downloadQueue []*Tweet, trackedItem *mode
 		)
 
 		for _, entity := range tweet.ExtendedEntities.Media {
-			if err := m.Session.DownloadFile(
+			if err := m.twitterAPI.Session.DownloadFile(
 				path.Join(
 					viper.GetString("download.directory"),
 					m.Key,
 					screenName,
-					fmt.Sprintf("%s_%s", tweet.ID.String(), m.GetFileName(entity.MediaURLHTTPS)),
+					fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.MediaURLHTTPS)),
 				),
 				entity.MediaURLHTTPS,
 			); err != nil {
@@ -43,16 +45,8 @@ func (m *twitter) processDownloadQueue(downloadQueue []*Tweet, trackedItem *mode
 			}
 		}
 
-		m.DbIO.UpdateTrackedItem(trackedItem, tweet.ID.String())
+		m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(int(tweet.ID)))
 	}
 
 	return nil
-}
-
-func (m *twitter) reverseTweets(tweets []*Tweet) []*Tweet {
-	for i, j := 0, len(tweets)-1; i < j; i, j = i+1, j-1 {
-		tweets[i], tweets[j] = tweets[j], tweets[i]
-	}
-
-	return tweets
 }
