@@ -62,7 +62,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 
 			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
 		case ajaxapi.FanboxPost:
-			if err := m.downloadFanboxPostInfo(data, item); err != nil {
+			if err := m.downloadFanboxPost(data, item); err != nil {
 				return err
 			}
 
@@ -75,7 +75,9 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	return nil
 }
 
-func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.FanboxPost) error {
+// downloadFanboxPost downloads a pixiv fanbox post after retrieving the post info from the AJAX API
+// nolint: funlen
+func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxPost) error {
 	postID, err := post.ID.Int64()
 	if err != nil {
 		return err
@@ -121,6 +123,20 @@ func (m *pixiv) downloadFanboxPostInfo(data *downloadQueueItem, post ajaxapi.Fan
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			file.URL,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
+	for i, file := range postInfo.ImagesFromBlocks() {
+		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(file))
+
+		if err := m.ajaxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			file,
 		); err != nil {
 			// if download was not successful return the occurred error here
 			return err
