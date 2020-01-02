@@ -66,7 +66,9 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return err
 	}
 
-	m.DbIO.UpdateTrackedItem(item, latestTweetID)
+	if latestTweetID != "" {
+		m.DbIO.UpdateTrackedItem(item, latestTweetID)
+	}
 
 	return nil
 }
