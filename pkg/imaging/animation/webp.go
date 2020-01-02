@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// FileFormatWebp is the file extension for the WEBP format
 const FileFormatWebp = ".webp"
 
 // CreateAnimationWebp tries create a .webp animated picture from the passed file data

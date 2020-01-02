@@ -20,6 +20,7 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
+// FileFormatGif is the file extension for the GIF format
 const FileFormatGif = ".gif"
 
 // CreateAnimationGif creates a .gif (Graphics Interchange Format) file from the passed fileData.
