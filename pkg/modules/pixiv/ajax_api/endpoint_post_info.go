@@ -22,11 +22,33 @@ type FanboxPostInfo struct {
 				OriginalURL  string `json:"originalUrl"`
 				ThumbnailURL string `json:"thumbnailUrl"`
 			} `json:"images"`
+			Blocks []struct {
+				Type    string `json:"type"`
+				Text    string `json:"text"`
+				ImageID string `json:"imageId"`
+			} `json:"blocks"`
+			ImageMap map[string]struct {
+				ID          string `json:"id"`
+				OriginalURL string `json:"originalUrl"`
+			} `json:"imageMap"`
 		} `json:"body"`
 		ID            json.Number `json:"id"`
 		Title         string      `json:"title"`
 		ImageForShare string      `json:"imageForShare"`
 	} `json:"body"`
+}
+
+// ImagesFromBlocks returns all image URLs from the Blocks section of the fanbox post
+func (i *FanboxPostInfo) ImagesFromBlocks() []string {
+	var imageURLs []string
+
+	for _, block := range i.Body.PostBody.Blocks {
+		if block.Type == "image" {
+			imageURLs = append(imageURLs, i.Body.PostBody.ImageMap[block.ImageID].OriginalURL)
+		}
+	}
+
+	return imageURLs
 }
 
 // GetPostInfo requests the fanbox post info from the API for the passed post ID
