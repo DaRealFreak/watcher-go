@@ -167,7 +167,7 @@ func (m *pixiv) preparePixivAPISessions() error {
 	usedProxy := m.GetProxySettings()
 
 	// set proxy and overwrite the client if the proxy is enabled
-	if usedProxy.Enable {
+	if usedProxy != nil && usedProxy.Enable {
 		if err := m.publicAPI.Session.SetProxy(usedProxy); err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func (m *pixiv) preparePixivAPISessions() error {
 func (m *pixiv) preparePixivAjaxSession() error {
 	usedProxy := m.GetProxySettings()
 
-	if usedProxy.Enable {
+	if usedProxy != nil && usedProxy.Enable {
 		if err := m.ajaxAPI.Session.SetProxy(usedProxy); err != nil {
 			return err
 		}
