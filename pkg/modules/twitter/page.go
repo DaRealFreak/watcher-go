@@ -29,7 +29,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 			return nil
 		}
 
-		if maxID != "" {
+		if maxID != "" && len(tweets) > 0 {
 			// remove the first element which is our current max_id
 			tweets = tweets[1:]
 		}
