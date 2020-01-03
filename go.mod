@@ -3,6 +3,7 @@ module github.com/DaRealFreak/watcher-go
 go 1.13
 
 require (
+	cloud.google.com/go v0.38.0
 	github.com/DaRealFreak/cloudflare-bp-go v1.0.0
 	github.com/DaRealFreak/colored-nested-formatter v0.0.0-20191016183746-56b03bf0f1d0
 	github.com/EDDYCJY/fake-useragent v0.2.0
@@ -39,6 +40,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 	golang.org/x/sys v0.0.0-20191218084908-4a24b4065292 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	google.golang.org/api v0.15.0
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect

@@ -13,6 +13,7 @@ import (
 	// registered modules imported for registering into the module factory
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/deviantart"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/ehentai"
+	_ "github.com/DaRealFreak/watcher-go/pkg/modules/gdrive"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/giantessworld"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/jinjamodoki"
 	_ "github.com/DaRealFreak/watcher-go/pkg/modules/patreon"
