@@ -26,7 +26,7 @@ type ImplicitGrantDeviantart struct {
 func NewImplicitGrantDeviantart(
 	cfg *oauth2.Config, client *http.Client, account *models.Account,
 ) *ImplicitGrantDeviantart {
-	implicitGrantDeviantart := ImplicitGrantDeviantart{
+	implicitGrantDeviantart := &ImplicitGrantDeviantart{
 		ImplicitGrant: implicitoauth2.ImplicitGrant{
 			Config: cfg,
 			Client: client,
@@ -37,11 +37,11 @@ func NewImplicitGrantDeviantart(
 	// register our current struct as the interface for the ImplicitGrant
 	implicitGrantDeviantart.ImplicitGrant.ImplicitGrantInterface = implicitGrantDeviantart
 
-	return &implicitGrantDeviantart
+	return implicitGrantDeviantart
 }
 
 // Login implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt
-func (g ImplicitGrantDeviantart) Login() error {
+func (g *ImplicitGrantDeviantart) Login() error {
 	if g.loggedIn {
 		// already logged in
 		return nil
@@ -100,7 +100,7 @@ func (g ImplicitGrantDeviantart) Login() error {
 }
 
 // Authorize implements the interface function of the Implicit Grant OAuth2 flow for DeviantArt (only new style)
-func (g ImplicitGrantDeviantart) Authorize() error {
+func (g *ImplicitGrantDeviantart) Authorize() error {
 	res, err := g.Client.Get(implicitoauth2.AuthTokenURL(g.Config, "session-id"))
 	if err != nil {
 		return err

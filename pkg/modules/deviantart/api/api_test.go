@@ -5,8 +5,11 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"github.com/DaRealFreak/watcher-go/pkg/models"
+	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,4 +54,33 @@ func TestNewDeviantartAPI(t *testing.T) {
 	assert.New(t).NoError(err)
 
 	assert.New(t).Equal(contentAPI, contentConsoleExploit)
+}
+
+func TestNewDeviantartAPIExpiredToken(t *testing.T) {
+	testAccount := &models.Account{
+		Username: os.Getenv("DEVIANTART_USER"),
+		Password: os.Getenv("DEVIANTART_PASS"),
+	}
+
+	// initialize the shared API instance
+	daAPI = NewDeviantartAPI("token expiration test", testAccount)
+
+	client := daAPI.Session.GetClient()
+	// apply CloudFlare bypass
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+
+	ts := &implicitoauth2.ImplicitGrantTokenSource{
+		Grant: NewImplicitGrantDeviantart(daAPI.OAuth2Config, client, daAPI.account),
+	}
+
+	token, err := ts.Token()
+	assert.New(t).NoError(err)
+	assert.New(t).Equal("bearer", token.TokenType)
+
+	// expire token to force a refresh
+	token.Expiry = time.Now().Add(-1 * time.Minute)
+
+	token, err = ts.Token()
+	assert.New(t).NoError(err)
+	assert.New(t).Equal("bearer", token.TokenType)
 }
