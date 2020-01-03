@@ -63,14 +63,14 @@ func TestNewDeviantartAPIExpiredToken(t *testing.T) {
 	}
 
 	// initialize the shared API instance
-	daAPI = NewDeviantartAPI("token expiration test", testAccount)
+	api := NewDeviantartAPI("token expiration test", testAccount)
 
-	client := daAPI.Session.GetClient()
+	client := api.Session.GetClient()
 	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
 
 	ts := &implicitoauth2.ImplicitGrantTokenSource{
-		Grant: NewImplicitGrantDeviantart(daAPI.OAuth2Config, client, daAPI.account),
+		Grant: NewImplicitGrantDeviantart(api.OAuth2Config, client, api.account),
 	}
 
 	token, err := ts.Token()
