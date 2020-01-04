@@ -14,7 +14,7 @@ import (
 func (m *gdrive) parseFolder(item *models.TrackedItem) error {
 	folderID := m.folderPattern.FindStringSubmatch(item.URI)[1]
 	lastModifiedTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-	lastModified := time.Unix(lastModifiedTimestamp, 0)
+	lastModified := time.Unix(0, lastModifiedTimestamp)
 
 	files, err := m.getFilesInFolder(folderID, "", 0)
 	if err != nil {
@@ -25,11 +25,16 @@ func (m *gdrive) parseFolder(item *models.TrackedItem) error {
 	sort.Sort(sortedFiles)
 
 	for i, file := range sortedFiles {
-		modified, _ := time.Parse(time.RFC3339, file.ModifiedTime)
+		modified, _ := time.Parse(time.RFC3339Nano, file.ModifiedTime)
 		if modified.After(lastModified) {
 			// all files after the current one are new too since it's already sorted by modified date
 			sortedFiles = sortedFiles[i:]
 			break
+		}
+
+		if i == len(sortedFiles)-1 {
+			// all files are older than our last update, so return here
+			return nil
 		}
 	}
 

@@ -16,8 +16,8 @@ func (a ByModifiedTime) Len() int {
 
 // Less compares the modified timestamp and returns if the ith item is less than the jth item
 func (a ByModifiedTime) Less(i int, j int) bool {
-	iTime, _ := time.Parse(time.RFC3339, a[i].ModifiedTime)
-	jTime, _ := time.Parse(time.RFC3339, a[j].ModifiedTime)
+	iTime, _ := time.Parse(time.RFC3339Nano, a[i].ModifiedTime)
+	jTime, _ := time.Parse(time.RFC3339Nano, a[j].ModifiedTime)
 
 	return iTime.Before(jTime)
 }

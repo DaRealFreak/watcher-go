@@ -68,9 +68,9 @@ func (m *gdrive) downloadFiles(sortedFiles []*drive.File, item *models.TrackedIt
 			return err
 		}
 
-		modified, _ := time.Parse(time.RFC3339, file.ModifiedTime)
+		modified, _ := time.Parse(time.RFC3339Nano, file.ModifiedTime)
 
-		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(int(modified.Unix())))
+		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(int(modified.UnixNano())))
 	}
 
 	return nil
