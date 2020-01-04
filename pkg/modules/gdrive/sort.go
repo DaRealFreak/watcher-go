@@ -1,8 +1,9 @@
 package gdrive
 
 import (
-	"google.golang.org/api/drive/v3"
 	"time"
+
+	"google.golang.org/api/drive/v3"
 )
 
 // ByModifiedTime implements the Sort interface of the sort package
