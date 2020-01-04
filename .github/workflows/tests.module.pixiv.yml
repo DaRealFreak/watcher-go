@@ -1,13 +1,15 @@
-name: tests
+name: 'Pixiv APIs'
+
 on:
-  # trigger workflow on push and pull requests on the master branch
-  # disable for feature branches (since mac builds are expensive af)
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    paths:
+      - 'pkg/modules/pixiv/**.go'
+
+env:
+  PIXIV_SESSION_ID: ${{ secrets.PIXIV_SESSION_ID }}
+  PIXIV_DEVICE_TOKEN: ${{ secrets.PIXIV_DEVICE_TOKEN }}
+  PIXIV_USER: ${{ secrets.PIXIV_USER }}
+  PIXIV_PASS: ${{ secrets.PIXIV_PASS }}
 
 jobs:
   test:
@@ -24,4 +26,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Test
-        run: go test `go list ./... | grep -v github.com/DaRealFreak/watcher-go/pkg/modules/`
+        run: go test `go list ./... | grep github.com/DaRealFreak/watcher-go/pkg/modules/pixiv`

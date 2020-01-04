@@ -1,13 +1,13 @@
-name: tests
+name: 'Twitter API'
+
 on:
-  # trigger workflow on push and pull requests on the master branch
-  # disable for feature branches (since mac builds are expensive af)
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    paths:
+      - 'pkg/modules/twitter/**.go'
+
+env:
+  TWITTER_CLIENT_ID: ${{ secrets.TWITTER_CLIENT_ID }}
+  TWITTER_CLIENT_SECRET: ${{ secrets.TWITTER_CLIENT_SECRET }}
 
 jobs:
   test:
@@ -24,4 +24,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Test
-        run: go test `go list ./... | grep -v github.com/DaRealFreak/watcher-go/pkg/modules/`
+        run: go test `go list ./... | grep github.com/DaRealFreak/watcher-go/pkg/modules/twitter`

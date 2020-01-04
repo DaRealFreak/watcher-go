@@ -1,13 +1,13 @@
-name: tests
+name: 'DeviantArt API'
+
 on:
-  # trigger workflow on push and pull requests on the master branch
-  # disable for feature branches (since mac builds are expensive af)
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    paths:
+      - 'pkg/modules/deviantart/**.go'
+
+env:
+  DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}
+  DEVIANTART_PASS: ${{ secrets.DEVIANTART_PASS }}
 
 jobs:
   test:
@@ -24,4 +24,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Test
-        run: go test `go list ./... | grep -v github.com/DaRealFreak/watcher-go/pkg/modules/`
+        run: go test `go list ./... | grep github.com/DaRealFreak/watcher-go/pkg/modules/deviantart`
