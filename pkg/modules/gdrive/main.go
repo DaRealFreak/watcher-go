@@ -4,7 +4,6 @@ package gdrive
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -25,8 +24,9 @@ import (
 // gdrive contains the implementation of the ModuleInterface
 type gdrive struct {
 	*models.Module
-	driveService *drive.Service
-	settings     gdriveSettings
+	driveService  *drive.Service
+	settings      gdriveSettings
+	folderPattern *regexp.Regexp
 }
 
 type gdriveSettings struct {
@@ -51,6 +51,9 @@ func NewBareModule() *models.Module {
 	}
 	module.ModuleInterface = &gdrive{
 		Module: module,
+		folderPattern: regexp.MustCompile(
+			`drive.google.(?:[^/?&]+?)/(?:drive/folders/|open\?id=)([^/?&]+)(?:[^/?&]|$)`,
+		),
 	}
 
 	// register module to log formatter
@@ -108,37 +111,10 @@ func (m *gdrive) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *gdrive) Parse(item *models.TrackedItem) error {
-	list, err := m.driveService.Files.List().
-		OrderBy("modifiedTime desc").
-		Q(fmt.Sprintf("'%s' in parents", "1xkdljI7kgZ8VZdcCFis2xEtu0iGn3Zy3")).
-		Fields("*").
-		Do()
-	if err != nil {
-		panic(err)
+	switch {
+	case m.folderPattern.MatchString(item.URI):
+		return m.parseFolder(item)
+	default:
+		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
-
-	for _, file := range list.Files {
-		if file.MimeType == "application/vnd.google-apps.folder" {
-			fmt.Println(fmt.Sprintf("folder: %s (id: %s)", file.Name, file.Id))
-		} else {
-			res, err := m.driveService.Files.Get(file.Id).Download()
-			if err != nil {
-				return err
-			}
-
-			localFile, err := os.Create(file.Name)
-			if err != nil {
-				return err
-			}
-
-			_, err = io.Copy(localFile, res.Body)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(fmt.Sprintf("downloaded file: %s (id: %s)", file.Name, file.Id))
-		}
-	}
-
-	return nil
 }
