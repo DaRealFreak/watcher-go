@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'pkg/modules/pixiv/**.go'
+  pull_request:
+    paths:
+      - 'pkg/modules/pixiv/**.go'
 
 env:
   PIXIV_SESSION_ID: ${{ secrets.PIXIV_SESSION_ID }}

@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'pkg/modules/deviantart/**.go'
+  pull_request:
+    paths:
+      - 'pkg/modules/deviantart/**.go'
 
 env:
   DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}

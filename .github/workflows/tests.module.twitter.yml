@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'pkg/modules/twitter/**.go'
+  pull_request:
+    paths:
+      - 'pkg/modules/twitter/**.go'
 
 env:
   TWITTER_CLIENT_ID: ${{ secrets.TWITTER_CLIENT_ID }}
