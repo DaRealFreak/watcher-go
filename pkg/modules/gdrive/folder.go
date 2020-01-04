@@ -2,18 +2,19 @@ package gdrive
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/pkg/models"
-	"google.golang.org/api/drive/v3"
-	"io"
-	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/pkg/models"
+	"google.golang.org/api/drive/v3"
 )
 
 func (m *gdrive) parseFolder(item *models.TrackedItem) error {
 	folderID := m.folderPattern.FindStringSubmatch(item.URI)[1]
+	lastModifiedTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+	lastModified := time.Unix(lastModifiedTimestamp, 0)
 
 	files, err := m.getFilesInFolder(folderID, "", 0)
 	if err != nil {
@@ -23,38 +24,16 @@ func (m *gdrive) parseFolder(item *models.TrackedItem) error {
 	sortedFiles := append(ByModifiedTime{}, files.Files...)
 	sort.Sort(sortedFiles)
 
-	for _, file := range sortedFiles {
-		var res *http.Response
-
-		for i := 0; i < 5; i++ {
-			res, err = m.driveService.Files.Get(file.Id).Download()
-			if err == nil {
-				break
-			}
-
-			time.Sleep(time.Duration(i) * 5)
+	for i, file := range sortedFiles {
+		modified, _ := time.Parse(time.RFC3339, file.ModifiedTime)
+		if modified.After(lastModified) {
+			// all files after the current one are new too since it's already sorted by modified date
+			sortedFiles = sortedFiles[i:]
+			break
 		}
-
-		if err != nil {
-			return err
-		}
-
-		m.Session.EnsureDownloadDirectory(file.Name)
-
-		localFile, err := os.Create(file.Name)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(localFile, res.Body)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(fmt.Sprintf("downloaded file: %s (id: %s)", file.Name, file.Id))
 	}
 
-	return nil
+	return m.downloadFiles(sortedFiles, item)
 }
 
 func (m *gdrive) getFilesInFolder(folderID string, base string, depth uint) (*drive.FileList, error) {
