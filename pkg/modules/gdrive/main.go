@@ -92,6 +92,7 @@ func (m *gdrive) InitializeModule() {
 // AddSettingsCommand adds custom module specific settings and commands to our application
 func (m *gdrive) AddSettingsCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
+	m.addAuthenticationCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
