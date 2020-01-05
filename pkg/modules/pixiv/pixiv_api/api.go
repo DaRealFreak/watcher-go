@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -41,7 +42,7 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) *Pix
 		},
 		oAuth2Account: account,
 		referer:       referer,
-		rateLimiter:   rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
+		rateLimiter:   rate.NewLimiter(rate.Every(2*time.Second), 1),
 		ctx:           context.Background(),
 	}
 }
@@ -75,7 +76,12 @@ func (a *PixivAPI) AddRoundTrippers() (err error) {
 
 // MapAPIResponse maps the API response into the passed APIResponse type
 func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	content := a.Session.GetDocument(res).Text()
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	content := string(out)
 
 	if res.StatusCode >= 400 {
 		var (

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -116,7 +117,12 @@ func (a *DeviantartAPI) request(method string, endpoint string, values url.Value
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *DeviantartAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	content := a.Session.GetDocument(res).Text()
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	content := string(out)
 
 	if res.StatusCode >= 400 {
 		var apiErr Error
