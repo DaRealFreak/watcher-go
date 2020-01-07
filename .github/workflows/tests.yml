@@ -1,13 +1,21 @@
 name: tests
 on:
-  # trigger workflow on push and pull requests on the master branch
-  # disable for feature branches (since mac builds are expensive af)
   push:
-    branches:
-      - master
+    paths:
+      - '**.go'
   pull_request:
-    branches:
-      - master
+    paths:
+      - '**.go'
+
+env:
+  DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}
+  DEVIANTART_PASS: ${{ secrets.DEVIANTART_PASS }}
+  PIXIV_SESSION_ID: ${{ secrets.PIXIV_SESSION_ID }}
+  PIXIV_DEVICE_TOKEN: ${{ secrets.PIXIV_DEVICE_TOKEN }}
+  PIXIV_USER: ${{ secrets.PIXIV_USER }}
+  PIXIV_PASS: ${{ secrets.PIXIV_PASS }}
+  TWITTER_CLIENT_ID: ${{ secrets.TWITTER_CLIENT_ID }}
+  TWITTER_CLIENT_SECRET: ${{ secrets.TWITTER_CLIENT_SECRET }}
 
 jobs:
   test:
@@ -24,4 +32,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Test
-        run: go test `go list ./... | grep -v github.com/DaRealFreak/watcher-go/pkg/modules/`
+        run: go test ./...
