@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  app_goreleaser:
+    build:
+      context: ..
+      dockerfile: .build/Dockerfile
+      args:
+        GO_VERSION: 1.13.5
+    working_dir: /go/src/github.com/DaRealFreak/watcher-go
+    privileged: true
+    volumes:
+      - ./../:/go/src/github.com/DaRealFreak/watcher-go
+    env_file:
+      - github.env
+    command: goreleaser release --rm-dist

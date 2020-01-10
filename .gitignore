@@ -25,6 +25,5 @@
 
 # Build Pipeline files
 dist/
-.gh-release.yaml
-gh_release.exe
+.build/*.env
 release.sh
