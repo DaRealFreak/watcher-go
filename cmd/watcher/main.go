@@ -7,10 +7,10 @@ import (
 	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
-	"github.com/DaRealFreak/watcher-go/pkg/update"
-	"github.com/DaRealFreak/watcher-go/pkg/version"
-	watcherApp "github.com/DaRealFreak/watcher-go/pkg/watcher"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/internal/update"
+	"github.com/DaRealFreak/watcher-go/internal/version"
+	watcherApp "github.com/DaRealFreak/watcher-go/internal/watcher"
 	"github.com/mattn/go-colorable"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,7 +33,7 @@ func NewWatcherApplication() *CliApplication {
 			Short: "Watcher keeps track of all media items you want to track.",
 			Long: "An application written in Go to keep track of items from multiple sources.\n" +
 				"On every downloaded media file the current index will get updated so you'll never miss a tracked item",
-			Version: version.VERSION,
+			Version: version.GetVersion(),
 			Run: func(cmd *cobra.Command, args []string) {
 				// display the help as the root command since we require a root command run function
 				// the persistent flags won't get initialized

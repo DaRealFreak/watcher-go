@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 

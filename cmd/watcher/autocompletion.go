@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"

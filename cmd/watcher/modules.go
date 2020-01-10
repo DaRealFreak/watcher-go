@@ -3,7 +3,7 @@ package watcher
 import (
 	"fmt"
 
-	"github.com/DaRealFreak/watcher-go/pkg/modules"
+	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/spf13/cobra"
 )
 

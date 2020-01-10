@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
 )
 
 // tarArchiveWriter adding both gzip and tar writer

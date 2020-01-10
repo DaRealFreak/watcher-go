@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/DaRealFreak/watcher-go/pkg/raven"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 )
 
 // CopyFile copies a file from the given src path to the given destination path and returns possible occurred errors
