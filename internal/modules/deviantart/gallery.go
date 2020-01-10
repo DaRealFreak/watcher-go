@@ -51,7 +51,7 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
 			}
 		}
 
-		if response.NextOffset == nil {
+		if response.NextOffset == nil || foundCurrentItem {
 			break
 		}
 

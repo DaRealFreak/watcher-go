@@ -113,7 +113,7 @@ func (m *deviantArt) getCollectionDownloadQueue(
 			}
 		}
 
-		if response.NextOffset == nil {
+		if response.NextOffset == nil || foundCurrentItem {
 			break
 		}
 

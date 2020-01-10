@@ -40,7 +40,7 @@ func (m *deviantArt) parseTag(item *models.TrackedItem) error {
 			}
 		}
 
-		if response.NextOffset == nil {
+		if response.NextOffset == nil || foundCurrentItem {
 			break
 		}
 
