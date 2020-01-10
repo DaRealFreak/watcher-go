@@ -78,6 +78,6 @@ changelog:
   filters:
     exclude:
       - '^[DOC]:'
-      - '^Bump:'
+      - '^Bump'
       - Merge pull request
       - Merge branch
