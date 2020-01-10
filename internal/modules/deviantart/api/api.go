@@ -17,6 +17,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
 )
@@ -32,6 +33,7 @@ type DeviantartAPI struct {
 	OAuth2Config      *oauth2.Config
 	account           *models.Account
 	useConsoleExploit bool
+	moduleKey         string
 }
 
 // NewDeviantartAPI returns the settings of the DeviantArt API
@@ -47,8 +49,9 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 			RedirectURL: "https://lvh.me/da-cb",
 		},
 		account:     account,
-		rateLimiter: rate.NewLimiter(rate.Every(5000*time.Millisecond), 1),
+		rateLimiter: rate.NewLimiter(rate.Every(10*time.Second), 1),
 		ctx:         context.Background(),
+		moduleKey:   moduleKey,
 	}
 }
 
@@ -106,6 +109,13 @@ func (a *DeviantartAPI) request(method string, endpoint string, values url.Value
 
 	// rate limitation
 	if res != nil && res.StatusCode == 429 {
+		if a.useConsoleExploit {
+			log.WithField("module", a.moduleKey).Info(
+				"reached console exploit request limit too. sleeping 5 minutes to let account limits recover",
+			)
+			time.Sleep(5 * time.Minute)
+		}
+
 		// toggle console exploit to relieve the other API method
 		a.useConsoleExploit = !a.useConsoleExploit
 
