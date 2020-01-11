@@ -3,14 +3,17 @@ package jinjamodoki
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"regexp"
+	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -71,13 +74,22 @@ func (m *jinjaModoki) InitializeModule() {
 	raven.CheckError(m.setProxyMethod())
 
 	// disable browsing access restrictions
-	_, err := m.Session.Post("https://gs-uploader.jinja-modoki.com/upld-index.php?", url.Values{
+	res, err := m.Session.Post("https://gs-uploader.jinja-modoki.com/upld-index.php?", url.Values{
 		"mode":          {"complete"},
 		"prev_mode":     {"top"},
 		"item":          {"restriction"},
 		"restriction[]": {"0", "1", "2", "3", "4"},
 	})
 	raven.CheckError(err)
+
+	// blacklisted IPs can't set access, so throw a fatal log if that occurs
+	content, _ := ioutil.ReadAll(res.Body)
+	if strings.Contains(string(content),
+		"You are not allowed to change your access settings for browsing-restricted contents") {
+		log.WithField("module", m.Key).Fatal(
+			fmt.Errorf("could not change browsing restrictions, your IP is most likely blacklisted"),
+		)
+	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
