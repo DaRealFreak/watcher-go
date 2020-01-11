@@ -129,11 +129,15 @@ func (m *jinjaModoki) getFileNameFromFileURI(fileURI string) (string, error) {
 	u, _ := url.Parse(fileURI)
 	q, _ := url.ParseQuery(u.RawQuery)
 
-	if len(q["file"]) == 0 {
-		return "", fmt.Errorf("parsed uri(%s) does not contain any \"file\" tag", fileURI)
+	if len(q["file"]) > 0 {
+		return filepath.Base(q["file"][0]), nil
 	}
 
-	return filepath.Base(q["file"][0]), nil
+	if strings.Index(u.Path, "/documents/") == 0 {
+		return filepath.Base(u.Path), nil
+	}
+
+	return "", fmt.Errorf("parsed uri(%s) does not contain any \"file\" tag", fileURI)
 }
 
 func (m *jinjaModoki) getDownloadTagFromItemURI(fileURI string) (string, error) {
