@@ -67,6 +67,7 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 		}
 
 		data.FileURI = m.baseURL.ResolveReference(u).String()
+		data.restriction = false
 	}
 
 	filePath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, data.FileName)
