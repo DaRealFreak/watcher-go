@@ -13,7 +13,7 @@ import (
 
 // parsePage parses a user page for contributions
 func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
-	var downloadQueue []models.DownloadQueueItem
+	var downloadQueue []downloadQueueItem
 
 	foundCurrent := false
 	currentPageURI := item.URI
@@ -73,7 +73,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 	return m.processDownloadQueue(downloadQueue, item)
 }
 
-func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem models.DownloadQueueItem, err error) {
+func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem downloadQueueItem, err error) {
 	link := selection.Find(`td:nth-child(2) > a[href*="?file="]`).First()
 	relativeURI, _ := link.Attr("href")
 	restrictions := selection.Find(`td:last-child`).First()
@@ -83,24 +83,10 @@ func (m *jinjaModoki) parseItem(selection *goquery.Selection) (downloadItem mode
 		return downloadItem, err
 	}
 
-	if strings.TrimSpace(restrictions.Text()) != "" {
-		res, err := m.Session.Get(m.baseURL.ResolveReference(u).String())
-		if err != nil {
-			return downloadItem, err
-		}
-
-		link = m.Session.GetDocument(res).Find(`table.info tr:nth-child(3) a[href*="/documents/"]`).First()
-		relativeURI, _ = link.Attr("href")
-
-		u, err = url.Parse(relativeURI)
-		if err != nil {
-			return downloadItem, err
-		}
-	}
-
 	downloadItem.FileURI = m.baseURL.ResolveReference(u).String()
 	downloadItem.FileName, err = m.getFileNameFromFileURI(downloadItem.FileURI)
 	downloadItem.ItemID = downloadItem.FileName
+	downloadItem.restriction = strings.TrimSpace(restrictions.Text()) != ""
 
 	return downloadItem, err
 }

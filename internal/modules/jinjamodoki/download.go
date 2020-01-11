@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -15,8 +16,13 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type downloadQueueItem struct {
+	models.DownloadQueueItem
+	restriction bool
+}
+
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
-func (m *jinjaModoki) processDownloadQueue(queue []models.DownloadQueueItem, item *models.TrackedItem) error {
+func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *models.TrackedItem) error {
 	// only the downloads have a rate limit, so we only set it here
 	m.defaultSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
 
@@ -44,7 +50,25 @@ func (m *jinjaModoki) processDownloadQueue(queue []models.DownloadQueueItem, ite
 	return nil
 }
 
-func (m *jinjaModoki) downloadItem(data models.DownloadQueueItem, item *models.TrackedItem) error {
+func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedItem) error {
+	// if download item has a restriction we retrieve the absolute path now
+	if data.restriction {
+		res, err := m.Session.Get(data.FileURI)
+		if err != nil {
+			return err
+		}
+
+		link := m.Session.GetDocument(res).Find(`table.info tr:nth-child(3) a[href*="/documents/"]`).First()
+		relativeURI, _ := link.Attr("href")
+
+		u, err := url.Parse(relativeURI)
+		if err != nil {
+			return err
+		}
+
+		data.FileURI = m.baseURL.ResolveReference(u).String()
+	}
+
 	filePath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, data.FileName)
 
 	err := m.defaultSession.DownloadFile(
