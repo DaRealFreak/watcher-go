@@ -74,7 +74,7 @@ func (m *ehentai) InitializeModule() {
 
 	// set rate limiter on 1.5 seconds with burst limit of 1
 	m.ehSession = session.NewSession(m.Key)
-	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(2500*time.Millisecond), 1)
 	m.Session = m.ehSession
 
 	// set the proxy if requested
