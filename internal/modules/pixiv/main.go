@@ -73,10 +73,10 @@ func NewBareModule() *models.Module {
 		Module:          module,
 		animationHelper: animation.NewAnimationHelper(),
 		patterns: pixivPattern{
-			searchPattern:       regexp.MustCompile(`(?:/tags/([^/?&]*)?|/search.php.*word=([^/?&]*)?)`),
-			illustrationPattern: regexp.MustCompile(`(?:/artworks/(\d*)?|/member_illust.php?.*illust_id=(\d*)?)`),
+			searchPattern:       regexp.MustCompile(`(?:/tags/|/search.php.*word=)([^/?&]*)?`),
+			illustrationPattern: regexp.MustCompile(`(?:/artworks/|/member_illust.php?.*illust_id=)(\d*)?`),
 			fanboxPattern:       regexp.MustCompile(`/fanbox/creator/(\d*)?`),
-			memberPattern:       regexp.MustCompile(`(?:/member.php?.*id=(\d*)?|/member_illust.php?.*id=(\d*)?)`),
+			memberPattern:       regexp.MustCompile(`(?:/member.php?.*id=|/member_illust.php?.*id=|/users/)(\d*)?`),
 		},
 	}
 
