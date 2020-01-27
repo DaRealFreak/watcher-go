@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging"
 	log "github.com/sirupsen/logrus"
 )
@@ -41,14 +42,20 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 	}
 
 	if err := resizeImage(tmpFile1.Name(), 400, 400); err != nil {
+		raven.CheckErrorNonFatal(os.Remove(tmpFile1.Name()))
 		return 0, err
 	}
 
 	if err := resizeImage(tmpFile2.Name(), 400, 400); err != nil {
+		raven.CheckErrorNonFatal(os.Remove(tmpFile2.Name()))
 		return 0, err
 	}
 
-	return getSimilarity(tmpFile1.Name(), tmpFile2.Name())
+	sim, err := getSimilarity(tmpFile1.Name(), tmpFile2.Name())
+	raven.CheckErrorNonFatal(os.Remove(tmpFile1.Name()))
+	raven.CheckErrorNonFatal(os.Remove(tmpFile2.Name()))
+
+	return sim, err
 }
 
 // getSimilarity returns the similarity of the passed files in numerical percentage, the higher the more similar
