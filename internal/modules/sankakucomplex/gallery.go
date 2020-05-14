@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 )
@@ -61,7 +62,7 @@ type author struct {
 // created is the JSON struct of created objects returned by the API
 type created struct {
 	JSONClass string `json:"json_class"`
-	S         int    `json:"s"`
+	S         int64  `json:"s"`
 	N         int    `json:"n"`
 }
 
@@ -81,11 +82,12 @@ type tag struct {
 
 // parseGallery parses galleries based on the tags in the tracked item
 func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue []models.DownloadQueueItem, err error) {
-	tag, err := m.extractItemTag(item)
+	originalTag, err := m.extractItemTag(item)
 	if err != nil {
 		return nil, err
 	}
 
+	tag := originalTag
 	page := 0
 	foundCurrentItem := false
 
@@ -129,8 +131,14 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		}
 
 		// we reached the last possible page, break here
-		if len(apiItems) == 0 || page == 50 {
+		if len(apiItems) == 0 {
 			break
+		}
+
+		if page == 50 {
+			tm := time.Unix(apiItems[len(apiItems)-1].CreatedAt.S, 0)
+			tag = fmt.Sprintf("date:01.01.1970..%s %s", tm.Format("02.01.2006"), originalTag)
+			page = 0
 		}
 	}
 
