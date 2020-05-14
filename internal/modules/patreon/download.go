@@ -37,12 +37,13 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 		for _, attachment := range data.Attachments {
 			switch attachment.Type {
 			case "attachment":
+				fileName := m.SanitizePath(attachment.Attributes.Name, false)
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name)),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName)),
 					),
 					attachment.Attributes.URL,
 				); err != nil {
@@ -60,12 +61,13 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					continue
 				}
 
+				fileName := m.SanitizePath(attachment.Attributes.FileName, false)
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.FileName)),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName)),
 					),
 					attachment.Attributes.DownloadURL,
 				); err != nil {
