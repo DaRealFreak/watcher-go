@@ -51,14 +51,14 @@ type campaignInclude struct {
 		DownloadURL string `json:"download_url"`
 		FileName    string `json:"file_name"`
 	} `json:"attributes"`
-	ID   json.Number `json:"id"`
-	Type string      `json:"type"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 // attachmentData is the struct of the attachment in the post data
 type attachmentData struct {
-	ID   json.Number `json:"id"`
-	Type string      `json:"type"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 // parseCampaign is the main entry point to parse campaigns of the module

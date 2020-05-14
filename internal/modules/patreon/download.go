@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	log "github.com/sirupsen/logrus"
@@ -40,8 +41,8 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
-						fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.Name)),
 					),
 					attachment.Attributes.URL,
 				); err != nil {
@@ -53,7 +54,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					log.WithField("module", m.Key).Warningf(
 						"post %s not unlocked, skipping attachment %s",
 						"https://www.patreon.com"+data.PatreonURL,
-						attachment.ID.String(),
+						attachment.ID,
 					)
 
 					continue
@@ -63,8 +64,8 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName),
-						fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.FileName),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
+						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, attachment.Attributes.FileName)),
 					),
 					attachment.Attributes.DownloadURL,
 				); err != nil {
