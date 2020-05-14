@@ -67,16 +67,16 @@ type created struct {
 
 // tag is the JSON struct of tag objects returned by the API
 type tag struct {
-	ID        int         `json:"id"`
-	NameEn    string      `json:"name_en"`
-	NameJa    string      `json:"name_ja"`
-	Type      int         `json:"type"`
-	Count     int         `json:"count"`
-	PostCount int         `json:"post_count"`
-	PoolCount int         `json:"pool_count"`
-	Locale    string      `json:"locale"`
-	Rating    json.Number `json:"rating"`
-	Name      string      `json:"name"`
+	ID        int    `json:"id"`
+	NameEn    string `json:"name_en"`
+	NameJa    string `json:"name_ja"`
+	Type      int    `json:"type"`
+	Count     int    `json:"count"`
+	PostCount int    `json:"post_count"`
+	PoolCount int    `json:"pool_count"`
+	Locale    string `json:"locale"`
+	Rating    string `json:"rating"`
+	Name      string `json:"name"`
 }
 
 // parseGallery parses galleries based on the tags in the tracked item
