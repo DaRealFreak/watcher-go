@@ -120,7 +120,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			if item.CurrentItem == "" || itemID > currentItemID {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemID:      string(data.ID),
-					DownloadTag: path.Join(m.SanitizePath(tag, false), m.getTagSubDirectory(data)),
+					DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
 					FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
 					FileURI:     data.FileURL,
 				})
