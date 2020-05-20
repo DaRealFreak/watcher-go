@@ -17,7 +17,7 @@ import (
 )
 
 // CookieSession is the session cookie which is set after a successful login
-const CookieSession = "PHPSESSID"
+const CookieSession = "FANBOXSESSID"
 
 // AjaxAPI is the implementation of the not reachable but required endpoints not in the public or mobile API
 type AjaxAPI struct {
@@ -33,7 +33,7 @@ func NewAjaxAPI(moduleKey string) *AjaxAPI {
 		Key:     moduleKey,
 		Session: session.NewSession(moduleKey),
 	}
-	ajaxAPI.StorageURL, _ = url.Parse("https://pixiv.net")
+	ajaxAPI.StorageURL, _ = url.Parse("https://www.fanbox.cc")
 
 	return ajaxAPI
 }

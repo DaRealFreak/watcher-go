@@ -55,7 +55,7 @@ func (i *FanboxPostInfo) ImagesFromBlocks() []string {
 func (a *AjaxAPI) GetPostInfo(postID int) (*FanboxPostInfo, error) {
 	var postInfo FanboxPostInfo
 
-	res, err := a.Session.Get(fmt.Sprintf("https://fanbox.pixiv.net/api/post.info?postId=%d", postID))
+	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/post.info?postId=%d", postID))
 	if err != nil {
 		return nil, err
 	}

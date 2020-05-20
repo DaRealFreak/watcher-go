@@ -67,6 +67,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*pixiv.(co.jp|net)"),
+			regexp.MustCompile(".*fanbox.(cc)"),
 		},
 	}
 	module.ModuleInterface = &pixiv{
@@ -75,7 +76,7 @@ func NewBareModule() *models.Module {
 		patterns: pixivPattern{
 			searchPattern:       regexp.MustCompile(`(?:/tags/|/search.php.*word=)([^/?&]*)?`),
 			illustrationPattern: regexp.MustCompile(`(?:/artworks/|/member_illust.php?.*illust_id=)(\d*)?`),
-			fanboxPattern:       regexp.MustCompile(`/fanbox/creator/(\d*)?`),
+			fanboxPattern:       regexp.MustCompile(`(\w*)?.fanbox.cc`),
 			memberPattern:       regexp.MustCompile(`(?:/member.php?.*id=|/member_illust.php?.*id=|/users/)(\d*)?`),
 		},
 	}

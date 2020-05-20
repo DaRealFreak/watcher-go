@@ -8,14 +8,14 @@ import (
 )
 
 func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
-	creatorID, _ := strconv.ParseInt(m.patterns.fanboxPattern.FindStringSubmatch(item.URI)[1], 10, 64)
+	creator := m.patterns.fanboxPattern.FindStringSubmatch(item.URI)[1]
 
 	var downloadQueue []*downloadQueueItem
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	postList, err := m.ajaxAPI.GetPostList(int(creatorID), 200)
+	postList, err := m.ajaxAPI.GetPostList(creator, 200)
 	if err != nil {
 		return err
 	}

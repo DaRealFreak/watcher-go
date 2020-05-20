@@ -2,10 +2,10 @@ package ajaxapi
 
 import (
 	"fmt"
+	browser "github.com/EDDYCJY/fake-useragent"
 	"net/http"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	browser "github.com/EDDYCJY/fake-useragent"
 )
 
 type pixivRoundTripper struct {
@@ -23,12 +23,12 @@ func (a *AjaxAPI) setPixivWebHeaders(inner http.RoundTripper, sessionCookie *mod
 
 // RoundTrip adds the required request headers to pass CloudFlare checks
 func (rt *pixivRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	r.Header.Set("Accept", "application/json, text/plain, */*")
 	r.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	r.Header.Set("User-Agent", browser.Firefox())
-	r.Header.Set("Referer", "https://www.pixiv.net/")
-	r.Header.Set("Origin", "https://www.pixiv.net")
-	r.Header.Set("Cookie", fmt.Sprintf("PHPSESSID=%s", rt.sessionCookie.Value))
+	r.Header.Set("Referer", "https://www.fanbox.cc")
+	r.Header.Set("Origin", "https://www.fanbox.cc")
+	r.Header.Set("Cookie", fmt.Sprintf("FANBOXSESSID=%s", rt.sessionCookie.Value))
 
 	if rt.inner == nil {
 		return http.DefaultTransport.RoundTrip(r)

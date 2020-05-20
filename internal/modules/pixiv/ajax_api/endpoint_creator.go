@@ -32,10 +32,6 @@ type CreatorInfo struct {
 			User        FanboxUser `json:"user"`
 			Description string     `json:"description"`
 		} `json:"creator"`
-		Post struct {
-			Items   []FanboxPost `json:"items"`
-			NextURL string       `json:"nextUrl"`
-		} `json:"post"`
 	} `json:"body"`
 	Error   bool   `json:"error"`
 	Message string `json:"message"`
@@ -55,10 +51,10 @@ func (u *FanboxUser) GetUserTag() string {
 }
 
 // GetCreator requests the creator information from the unofficial ajax/fanbox/creator endpoint
-func (a *AjaxAPI) GetCreator(userID int) (*CreatorInfo, error) {
+func (a *AjaxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 	var info CreatorInfo
 
-	res, err := a.Session.Get(fmt.Sprintf("https://www.pixiv.net/ajax/fanbox/creator?userId=%d", userID))
+	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/creator.get?creatorId=%s", creatorId))
 	if err != nil {
 		return nil, err
 	}
@@ -71,14 +67,14 @@ func (a *AjaxAPI) GetCreator(userID int) (*CreatorInfo, error) {
 }
 
 // GetPostList returns the initial post list of the passed user
-func (a *AjaxAPI) GetPostList(userID int, limit int) (*PostInfo, error) {
+func (a *AjaxAPI) GetPostList(creatorId string, limit int) (*PostInfo, error) {
 	values := url.Values{
-		"userId":               {strconv.Itoa(userID)},
+		"creatorId":            {creatorId},
 		"maxPublishedDatetime": {time.Now().Format("2006-01-02 15:04:05")},
 		"maxId":                {strconv.Itoa(math.MaxUint32)},
 		"limit":                {strconv.Itoa(limit)},
 	}
-	apiURL := fmt.Sprintf("https://fanbox.pixiv.net/api/post.listCreator?%s", values.Encode())
+	apiURL := fmt.Sprintf("https://api.fanbox.cc/post.listCreator?%s", values.Encode())
 
 	return a.GetPostListByURL(apiURL)
 }

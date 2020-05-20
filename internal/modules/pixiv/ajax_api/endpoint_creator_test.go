@@ -7,20 +7,20 @@ import (
 )
 
 func TestAjaxAPI_GetCreator(t *testing.T) {
-	creatorInfo, err := getTestAjaxAPI().GetCreator(8189060)
+	creatorInfo, err := getTestAjaxAPI().GetCreator("mito-nagishiro")
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(creatorInfo)
 }
 
 func TestAjaxAPI_GetPostList(t *testing.T) {
-	postList, err := getTestAjaxAPI().GetPostList(8189060, 50)
+	postList, err := getTestAjaxAPI().GetPostList("mito-nagishiro", 50)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
 }
 
 func TestAjaxAPI_GetPostListByURL(t *testing.T) {
 	// retrieve next URL from previous Post List (user requires to have >= 40 fanbox posts for unit tests to pass)
-	postList, err := getTestAjaxAPI().GetPostList(8189060, 20)
+	postList, err := getTestAjaxAPI().GetPostList("mito-nagishiro", 20)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
 	assert.New(t).Equal(len(postList.Body.Items), 20)
@@ -30,14 +30,4 @@ func TestAjaxAPI_GetPostListByURL(t *testing.T) {
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(nextPagePostList)
 	assert.New(t).Equal(len(nextPagePostList.Body.Items), 20)
-
-	// retrieve next URL from creator list
-	creatorInfo, err := getTestAjaxAPI().GetCreator(8189060)
-	assert.New(t).NoError(err)
-	assert.New(t).NotNil(creatorInfo)
-	assert.New(t).NotEmpty(creatorInfo.Body.Post.NextURL)
-
-	nextPagePostList, err = getTestAjaxAPI().GetPostListByURL(creatorInfo.Body.Post.NextURL)
-	assert.New(t).NoError(err)
-	assert.New(t).NotNil(nextPagePostList)
 }
