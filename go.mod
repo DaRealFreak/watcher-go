@@ -48,7 +48,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
-	google.golang.org/api v0.26.0
+	google.golang.org/api v0.27.0
 	google.golang.org/genproto v0.0.0-20200507105951-43844f6eee31 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.56.0 // indirect
