@@ -3,7 +3,6 @@ module github.com/DaRealFreak/watcher-go
 go 1.13
 
 require (
-	cloud.google.com/go v0.57.0 // indirect
 	github.com/DaRealFreak/cloudflare-bp-go v1.0.0
 	github.com/DaRealFreak/colored-nested-formatter v1.0.0
 	github.com/EDDYCJY/fake-useragent v0.2.0
@@ -13,7 +12,6 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/getsentry/sentry-go v0.7.0
 	github.com/go-errors/errors v1.0.2 // indirect
-	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
@@ -42,14 +40,11 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/go-gitconfig v0.1.2
 	github.com/ulikunitz/xz v0.5.7 // indirect
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
 	golang.org/x/image v0.0.0-20200430140353-33d19683fad8
-	golang.org/x/net v0.0.0-20200506145744-7e3656a0809f
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
-	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200507105951-43844f6eee31 // indirect
+	google.golang.org/api v0.30.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.56.0 // indirect
 )
