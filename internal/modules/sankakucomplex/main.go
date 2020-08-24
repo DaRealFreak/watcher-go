@@ -73,7 +73,7 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 
 	res, _ := m.Session.Post("https://chan.sankakucomplex.com/user/authenticate", values)
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
-	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
+	m.LoggedIn = strings.Contains(htmlResponse, "<h2>Welcome")
 	m.TriedLogin = true
 
 	return m.LoggedIn
