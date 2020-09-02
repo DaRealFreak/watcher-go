@@ -13,7 +13,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/getsentry/sentry-go v0.7.0
 	github.com/go-errors/errors v1.0.2 // indirect
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
 	github.com/kr/text v0.2.0 // indirect
