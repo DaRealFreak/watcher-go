@@ -187,7 +187,7 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 			proxyType = "socks5"
 		case "HTTP":
 			proxyType = "http"
-		case "HTTPS":
+		case "HTTPS", "":
 			proxyType = "https"
 		default:
 			return fmt.Errorf("unknown proxy type: %s", proxySettings.Type)
