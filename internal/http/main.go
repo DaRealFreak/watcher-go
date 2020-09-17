@@ -42,6 +42,7 @@ type ProxySettings struct {
 	Enable   bool   `mapstructure:"enable"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
+	Type     string `mapstructure:"type"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }

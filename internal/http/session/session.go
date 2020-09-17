@@ -9,6 +9,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
@@ -179,8 +180,21 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 			"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
 		)
 
-		switch proxySettings.Port {
-		case 1080:
+		var proxyType string
+
+		switch strings.ToUpper(proxySettings.Type) {
+		case "SOCKS5":
+			proxyType = "socks5"
+		case "HTTP":
+			proxyType = "http"
+		case "HTTPS":
+			proxyType = "https"
+		default:
+			return fmt.Errorf("unknown proxy type: %s", proxySettings.Type)
+		}
+
+		switch proxyType {
+		case "socks5":
 			auth := proxy.Auth{
 				User:     proxySettings.Username,
 				Password: proxySettings.Password,
@@ -203,7 +217,8 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 			if proxySettings.Username != "" && proxySettings.Password != "" {
 				proxyURL, _ = url.Parse(
 					fmt.Sprintf(
-						"http://%s:%s@%s:%d",
+						"%s://%s:%s@%s:%d",
+						proxyType,
 						url.QueryEscape(proxySettings.Username), url.QueryEscape(proxySettings.Password),
 						url.QueryEscape(proxySettings.Host), proxySettings.Port,
 					),
@@ -211,8 +226,8 @@ func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err
 			} else {
 				proxyURL, _ = url.Parse(
 					fmt.Sprintf(
-						"http://%s:%d",
-						url.QueryEscape(proxySettings.Host), proxySettings.Port,
+						"%s://%s:%d",
+						proxyType, url.QueryEscape(proxySettings.Host), proxySettings.Port,
 					),
 				)
 			}
