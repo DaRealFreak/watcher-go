@@ -105,7 +105,7 @@ func (m *deviantArt) getCollectionDownloadQueue(
 				downloadQueue = append(downloadQueue, downloadQueueItem{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(m.SanitizePath(username, false), collectionName),
+					downloadTag: path.Join(m.SanitizePath(username, false), m.SanitizePath(collectionName, false)),
 				})
 			} else {
 				foundCurrentItem = true

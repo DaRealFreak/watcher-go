@@ -43,7 +43,7 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItem{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(m.SanitizePath(username, false), galleryName),
+					downloadTag: path.Join(m.SanitizePath(username, false), m.SanitizePath(galleryName, false)),
 				})
 			} else {
 				foundCurrentItem = true
