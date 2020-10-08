@@ -17,7 +17,7 @@ require (
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.3 // indirect
-	github.com/mattn/go-colorable v0.1.7
+	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
