@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -49,7 +50,10 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) *Pix
 
 // AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
 func (a *PixivAPI) AddRoundTrippers() (err error) {
-	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(a.Session.GetClient().Transport, a.referer)
+	client := a.Session.GetClient()
+	// apply CloudFlare bypass
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(client.Transport, a.referer)
 
 	if a.token == nil {
 		a.token, err = internal.PasswordCredentialsToken(
