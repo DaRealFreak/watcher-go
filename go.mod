@@ -10,7 +10,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/getsentry/sentry-go v0.7.0
+	github.com/getsentry/sentry-go v0.8.0
 	github.com/go-errors/errors v1.1.1 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
