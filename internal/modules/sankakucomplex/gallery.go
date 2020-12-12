@@ -3,15 +3,23 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
-	"time"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
 )
+
+type apiResponse struct {
+	Meta meta `json:"meta"`
+	Data []apiItem `json:"data"`
+}
+
+type meta struct {
+	Next string `json:"next"`
+	Prev string `json:"prev"`
+}
 
 // apiItem is the JSON struct of item objects returned by the API
 type apiItem struct {
@@ -88,28 +96,31 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	}
 
 	tag := originalTag
-	page := 0
+	nextItem := ""
 	foundCurrentItem := false
 
 	for !foundCurrentItem {
-		page++
 		apiURI := fmt.Sprintf(
-			"https://capi-v2.sankakucomplex.com/posts?lang=english&page=%d&limit=100&tags=%s",
-			page,
+			"https://capi-v2.sankakucomplex.com/posts/keyset?lang=en&limit=100&tags=%s",
 			url.QueryEscape(tag),
 		)
+		if nextItem != "" {
+			apiURI = fmt.Sprintf("%s&next=%s", apiURI, nextItem)
+		}
 
 		response, err := m.Session.Get(apiURI)
 		if err != nil {
 			return nil, err
 		}
 
-		apiItems, err := m.parseAPIResponse(response)
+		apiResponse, err := m.parseAPIResponse(response)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, data := range apiItems {
+		nextItem = apiResponse.Meta.Next
+
+		for _, data := range apiResponse.Data {
 			itemID, err := data.ID.Int64()
 			if err != nil {
 				return nil, err
@@ -118,12 +129,14 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			// will return 0 on error, so fine for us too
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			if item.CurrentItem == "" || itemID > currentItemID {
-				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
-					ItemID:      string(data.ID),
-					DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
-					FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
-					FileURI:     data.FileURL,
-				})
+				if data.FileURL != "" {
+					downloadQueue = append(downloadQueue, models.DownloadQueueItem{
+						ItemID:      string(data.ID),
+						DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
+						FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
+						FileURI:     data.FileURL,
+					})
+				}
 			} else {
 				foundCurrentItem = true
 				break
@@ -131,14 +144,8 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		}
 
 		// we reached the last possible page, break here
-		if len(apiItems) == 0 {
+		if len(apiResponse.Data) == 0 {
 			break
-		}
-
-		if page == 50 {
-			tm := time.Unix(apiItems[len(apiItems)-1].CreatedAt.S, 0)
-			tag = fmt.Sprintf("date:01.01.1970..%s %s", tm.Format("02.01.2006"), originalTag)
-			page = 0
 		}
 	}
 
@@ -149,17 +156,17 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 }
 
 // parseAPIResponse parses the response from the API
-func (m *sankakuComplex) parseAPIResponse(response *http.Response) ([]apiItem, error) {
-	var apiItems []apiItem
+func (m *sankakuComplex) parseAPIResponse(response *http.Response) (apiResponse, error) {
+	var apiResponse apiResponse
 
 	body, _ := ioutil.ReadAll(response.Body)
 
-	err := json.Unmarshal(body, &apiItems)
+	err := json.Unmarshal(body, &apiResponse)
 	if err != nil {
-		return nil, err
+		return apiResponse, err
 	}
 
-	return apiItems, err
+	return apiResponse, err
 }
 
 // extractItemTag extracts the tag from the passed item URL
