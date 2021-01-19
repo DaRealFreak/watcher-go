@@ -6,12 +6,12 @@ require (
 	github.com/DaRealFreak/cloudflare-bp-go v1.0.0
 	github.com/DaRealFreak/colored-nested-formatter v1.0.0
 	github.com/EDDYCJY/fake-useragent v0.2.0
-	github.com/PuerkitoBio/goquery v1.6.0
+	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/getsentry/sentry-go v0.9.0
 	github.com/go-errors/errors v1.1.1 // indirect
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.1.5
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
 	github.com/kr/text v0.2.0 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rhysd/go-github-selfupdate v1.2.2
+	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.4.0 // indirect
@@ -38,10 +38,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tcnksm/go-gitconfig v0.1.2
-	github.com/ulikunitz/xz v0.5.8 // indirect
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
