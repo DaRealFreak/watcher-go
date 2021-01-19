@@ -38,7 +38,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tcnksm/go-gitconfig v0.1.2
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102
