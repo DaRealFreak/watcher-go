@@ -144,7 +144,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		}
 
 		// we reached the last possible page, break here
-		if len(apiResponse.Data) == 0 {
+		if len(apiResponse.Data) == 0 || nextItem == "" {
 			break
 		}
 	}
