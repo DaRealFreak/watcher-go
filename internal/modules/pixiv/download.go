@@ -256,6 +256,8 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
 	)
 
+	m.mobileAPI.Session.EnsureDownloadDirectory(filepath)
+
 	if err := ioutil.WriteFile(filepath, fileContent, os.ModePerm); err != nil {
 		return err
 	}
