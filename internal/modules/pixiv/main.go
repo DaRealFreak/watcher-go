@@ -3,6 +3,8 @@ package pixiv
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"os"
 	"regexp"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -117,8 +119,17 @@ func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *pixiv) Login(account *models.Account) bool {
-	m.mobileAPI = mobileapi.NewMobileAPI(m.Key, account)
-	m.publicAPI = publicapi.NewPublicAPI(m.Key, account)
+	oauthClient := m.DbIO.GetOAuthClient(m)
+	if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
+		log.WithField("module", m.Key).Fatalf(
+			"module requires an OAuth2 consumer ID and token",
+		)
+		// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
+		os.Exit(1)
+	}
+
+	m.mobileAPI = mobileapi.NewMobileAPI(m.Key, oauthClient)
+	m.publicAPI = publicapi.NewPublicAPI(m.Key, oauthClient)
 
 	raven.CheckError(m.preparePixivAPISessions())
 

@@ -13,8 +13,8 @@ type MobileAPI struct {
 }
 
 // NewMobileAPI initializes the mobile API and handles the whole OAuth2 and round tripper procedures
-func NewMobileAPI(moduleKey string, account *models.Account) *MobileAPI {
+func NewMobileAPI(moduleKey string, oauthClient *models.OAuthClient) *MobileAPI {
 	return &MobileAPI{
-		*pixivapi.NewPixivAPI(moduleKey, account, "https://app-api.pixiv.net/"),
+		*pixivapi.NewPixivAPI(moduleKey, oauthClient, "https://app-api.pixiv.net/"),
 	}
 }

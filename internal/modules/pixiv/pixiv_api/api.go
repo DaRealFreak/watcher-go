@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -25,13 +25,13 @@ type PixivAPI struct {
 	rateLimiter   *rate.Limiter
 	ctx           context.Context
 	OAuth2Config  *oauth2.Config
-	oAuth2Account *models.Account
+	oAuth2Account *models.OAuthClient
 	referer       string
 	token         *oauth2.Token
 }
 
 // NewPixivAPI returned a pixiv API struct with already configured round trips
-func NewPixivAPI(moduleKey string, account *models.Account, referer string) *PixivAPI {
+func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer string) *PixivAPI {
 	return &PixivAPI{
 		Session: session.NewSession(moduleKey),
 		OAuth2Config: &oauth2.Config{
@@ -41,7 +41,7 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) *Pix
 				TokenURL: "https://oauth.secure.pixiv.net/auth/token",
 			},
 		},
-		oAuth2Account: account,
+		oAuth2Account: oAuthClient,
 		referer:       referer,
 		rateLimiter:   rate.NewLimiter(rate.Every(2*time.Second), 1),
 		ctx:           context.Background(),
@@ -51,13 +51,13 @@ func NewPixivAPI(moduleKey string, account *models.Account, referer string) *Pix
 // AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
 func (a *PixivAPI) AddRoundTrippers() (err error) {
 	client := a.Session.GetClient()
-	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
 	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(client.Transport, a.referer)
+	// apply CloudFlare bypass
 
 	if a.token == nil {
 		a.token, err = internal.PasswordCredentialsToken(
-			a.oAuth2Account.Username, a.oAuth2Account.Password, a.OAuth2Config, a.Session.GetClient(),
+			a.oAuth2Account, a.OAuth2Config, a.Session.GetClient(),
 		)
 		if err != nil {
 			return err

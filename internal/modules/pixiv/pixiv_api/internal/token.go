@@ -3,6 +3,7 @@ package internal
 
 import (
 	"encoding/json"
+	"github.com/DaRealFreak/watcher-go/internal/models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -26,18 +27,15 @@ type tokenResponse struct {
 // PasswordCredentialsToken is a custom implementation of the oauth2 PasswordCredentialsToken since additional
 // post values are required and checked server side from pixiv
 func PasswordCredentialsToken(
-	username string, password string, cfg *oauth2.Config, client *http.Client,
+	account *models.OAuthClient, cfg *oauth2.Config, client *http.Client,
 ) (*oauth2.Token, error) {
 	v := url.Values{
-		"device_token":   {"pixiv"},
-		"get_secure_url": {"true"},
-		"include_policy": {"true"},
+		"get_secure_url": {"1"},
 		"client_id":      {cfg.ClientID},
 		"client_secret":  {cfg.ClientSecret},
 		// password specific values
-		"grant_type": {"password"},
-		"username":   {username},
-		"password":   {password},
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {account.RefreshToken},
 	}
 
 	res, err := client.PostForm(cfg.Endpoint.TokenURL, v)

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	browser "github.com/EDDYCJY/fake-useragent"
 )
 
 type pixivPublicAPIRoundTripper struct {
@@ -26,12 +24,11 @@ func (a *PixivAPI) setPixivMobileAPIHeaders(inner http.RoundTripper, referer str
 // RoundTrip adds the required request headers to pass server side checks of pixiv
 func (rt *pixivPublicAPIRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Header.Set("Accept-Language", "en_US")
-	r.Header.Set("App-OS", "android")
-	r.Header.Set("App-OS-Version", "9")
+	r.Header.Set("App-OS", "ios")
+	r.Header.Set("App-OS-Version", "14.6")
 	r.Header.Set("App-Version", "5.0.156")
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Set("Referer", rt.referer)
-	r.Header.Set("User-Agent", browser.Firefox())
+	r.Header.Set("User-Agent", "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)")
 
 	// add X-Client-Time and X-Client-Hash which are now getting validated server side
 	localTime := time.Now()

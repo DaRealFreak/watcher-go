@@ -12,7 +12,7 @@ type PublicAPI struct {
 }
 
 // NewPublicAPI initializes the public API and handles the whole OAuth2 and round tripper procedures
-func NewPublicAPI(moduleKey string, account *models.Account) *PublicAPI {
+func NewPublicAPI(moduleKey string, account *models.OAuthClient) *PublicAPI {
 	return &PublicAPI{
 		*pixivapi.NewPixivAPI(moduleKey, account, "http://spapi.pixiv.net/"),
 	}
