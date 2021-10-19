@@ -1,0 +1,25 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  assignees:
+  - DaRealFreak
+  ignore:
+  - dependency-name: google.golang.org/api
+    versions:
+    - 0.37.0
+    - 0.38.0
+    - 0.39.0
+    - 0.41.0
+  - dependency-name: github.com/sirupsen/logrus
+    versions:
+    - 1.7.1
+  - dependency-name: github.com/spf13/cobra
+    versions:
+    - 1.1.2
+  - dependency-name: github.com/google/uuid
+    versions:
+    - 1.2.0
