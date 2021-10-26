@@ -7,7 +7,7 @@ require (
 	github.com/DaRealFreak/cloudflare-bp-go v1.0.1
 	github.com/DaRealFreak/colored-nested-formatter v1.0.0
 	github.com/EDDYCJY/fake-useragent v0.2.0
-	github.com/PuerkitoBio/goquery v1.7.1
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
