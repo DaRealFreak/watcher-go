@@ -14,8 +14,8 @@ builds:
     binary: watcher
     env:
       - CGO_ENABLED=1
-      - CC=o64-clang
-      - CXX=o64-clang++
+      - CC=/home/runner/work/osxcross/target/bin/o64-clang
+      - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
     main: ./main.go
     goos:
       - darwin
@@ -38,8 +38,8 @@ builds:
     binary: watcher
     env:
       - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
+      - CC=/home/runner/work/osxcross/target/bin/o64-clang
+      - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
     main: ./main.go
     goos:
       - windows
