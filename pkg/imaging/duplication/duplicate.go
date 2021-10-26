@@ -52,8 +52,9 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 	}
 
 	sim, err := getSimilarity(tmpFile1.Name(), tmpFile2.Name())
-	raven.CheckErrorNonFatal(os.Remove(tmpFile1.Name()))
-	raven.CheckErrorNonFatal(os.Remove(tmpFile2.Name()))
+
+	defer raven.CheckFileRemoval(tmpFile1)
+	defer raven.CheckFileRemoval(tmpFile2)
 
 	return sim, err
 }
@@ -65,7 +66,7 @@ func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 
 	// ImageMagick compare returns 0 on similar images, 1 on dissimilar images, 2 on error according to the man page
-	// since we want to return similarity we have to handle exit code 1 too which would be handled ass error in go
+	// since we want to return similarity we have to handle exit code 1 too which would be handled as error in go
 	// #nosec
 	stdout, stderr, err := executeCommand(exec.Command(executable, args...))
 

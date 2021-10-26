@@ -3,6 +3,7 @@ package raven
 
 import (
 	"io"
+	"os"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/version"
@@ -58,4 +59,10 @@ func CheckClosure(obj io.Closer) {
 // CheckClosureNonFatal checks for errors on closeable objects simply warning the user and not exiting the application
 func CheckClosureNonFatal(obj io.Closer) {
 	CheckErrorNonFatal(obj.Close())
+}
+
+// CheckFileRemoval checks for errors while closing and removing the passed file
+func CheckFileRemoval(f *os.File) {
+	CheckError(f.Close())
+	CheckError(os.Remove(f.Name()))
 }
