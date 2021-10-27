@@ -37,7 +37,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 		stmt, err := db.connection.Prepare(`
 			SELECT * FROM cookies
 			WHERE NOT disabled
-			  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
+			  AND (strftime('%s','now') < expiration OR expiration IS NULL)
 			  AND module = ?
 			ORDER BY uid
 		`)
@@ -50,8 +50,9 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 			SELECT * 
 			FROM cookies 
 			WHERE NOT disabled
-			  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
-			ORDER BY module, uid`)
+			  AND (strftime('%s','now') < expiration OR expiration IS NULL)
+			ORDER BY module, uid
+		`)
 	}
 
 	raven.CheckError(err)
@@ -74,7 +75,7 @@ func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Co
 	stmt, err := db.connection.Prepare(`
 		SELECT * FROM cookies
 		WHERE NOT disabled
-		  AND (DATETIME('NOW') < DATETIME(expiration) OR expiration IS NULL)
+		  AND (strftime('%s','now') < expiration OR expiration IS NULL)
 		  AND name = ?
 		  AND module = ?
 		ORDER BY uid
