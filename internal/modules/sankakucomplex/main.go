@@ -87,5 +87,5 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 		return err
 	}
 
-	return m.ProcessDownloadQueue(downloadQueue, item)
+	return m.processDownloadQueue(downloadQueue, item)
 }
