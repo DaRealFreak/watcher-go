@@ -32,16 +32,39 @@ func (m *twitter) processDownloadQueue(downloadQueue []*api.Tweet, trackedItem *
 		)
 
 		for _, entity := range tweet.ExtendedEntities.Media {
-			if err := m.twitterAPI.Session.DownloadFile(
-				path.Join(
-					viper.GetString("download.directory"),
-					m.Key,
-					screenName,
-					fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.MediaURLHTTPS)),
-				),
-				entity.MediaURLHTTPS,
-			); err != nil {
-				return err
+			if entity.Type == "video" {
+				highestBitRateIndex := 0
+				var highestBitRate uint = 0
+				for index, variant := range entity.VideoInfo.Variants {
+					if variant.Bitrate > highestBitRate {
+						highestBitRateIndex = index
+					}
+				}
+
+				if err := m.twitterAPI.Session.DownloadFile(
+					path.Join(
+						viper.GetString("download.directory"),
+						m.Key,
+						screenName,
+						fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
+					),
+					entity.VideoInfo.Variants[highestBitRateIndex].URL,
+				); err != nil {
+					return err
+				}
+
+			} else {
+				if err := m.twitterAPI.Session.DownloadFile(
+					path.Join(
+						viper.GetString("download.directory"),
+						m.Key,
+						screenName,
+						fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.MediaURLHTTPS)),
+					),
+					entity.MediaURLHTTPS,
+				); err != nil {
+					return err
+				}
 			}
 		}
 

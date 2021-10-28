@@ -17,6 +17,13 @@ type Tweet struct {
 			MediaURLHTTPS string `json:"media_url_https"`
 			DisplayURL    string `json:"display_url"`
 			Type          string `json:"type"`
+			VideoInfo     struct {
+				Variants []*struct {
+					Bitrate     uint   `json:"bitrate"`
+					ContentType string `json:"content_type"`
+					URL         string `json:"url"`
+				} `json:"variants"`
+			} `json:"video_info"`
 		} `json:"media"`
 	} `json:"extended_entities"`
 	RetweetedStatus interface{} `json:"retweeted_status"`
