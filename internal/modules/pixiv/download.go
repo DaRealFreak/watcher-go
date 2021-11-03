@@ -13,7 +13,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	ajaxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/ajax_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
-	publicapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/public_api"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -40,12 +39,6 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 		)
 
 		switch item := data.DownloadItem.(type) {
-		case publicapi.PublicIllustration:
-			if err := m.downloadPublicIllustration(data, item); err != nil {
-				return err
-			}
-
-			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
 		case mobileapi.Illustration:
 			var err error
 
@@ -139,34 +132,6 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxP
 			file,
 		); err != nil {
 			// if download was not successful return the occurred error here
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *pixiv) downloadPublicIllustration(data *downloadQueueItem, illust publicapi.PublicIllustration) error {
-	switch {
-	case illust.PageCount > 1:
-		illustration, err := m.mobileAPI.GetIllustDetail(illust.ID)
-		if err != nil {
-			return err
-		}
-
-		return m.downloadIllustration(data, illustration.Illustration)
-	case illust.Type == Ugoira:
-		return m.downloadUgoira(data, illust.ID)
-	default:
-		if err := m.mobileAPI.Session.DownloadFile(
-			path.Join(
-				viper.GetString("download.directory"),
-				m.Key,
-				data.DownloadTag,
-				m.GetFileName(illust.ImageURLs.Large),
-			),
-			illust.ImageURLs.Large,
-		); err != nil {
 			return err
 		}
 	}

@@ -3,16 +3,16 @@ package pixiv
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"regexp"
+
+	log "github.com/sirupsen/logrus"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	ajaxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/ajax_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
-	publicapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/public_api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	"github.com/spf13/cobra"
@@ -20,11 +20,6 @@ import (
 )
 
 const (
-	// SearchAPIPublic is the key constant for the public search API (no limitations)
-	SearchAPIPublic = "public"
-	//SearchAPIMobile is the key constant for the mobile search API (limited to 5000 results)
-	SearchAPIMobile = "mobile"
-
 	// Ugoira is the returned API type for animations
 	Ugoira = "ugoira"
 )
@@ -33,7 +28,6 @@ const (
 type pixiv struct {
 	*models.Module
 	animationHelper *animation.Helper
-	publicAPI       *publicapi.PublicAPI
 	mobileAPI       *mobileapi.MobileAPI
 	ajaxAPI         *ajaxapi.AjaxAPI
 	patterns        pixivPattern
@@ -41,7 +35,6 @@ type pixiv struct {
 }
 
 type pixivSettings struct {
-	SearchAPI string `mapstructure:"search_api"`
 	Animation struct {
 		Format                string `mapstructure:"format"`
 		LowQualityGifFallback bool   `mapstructure:"fallback_gif"`
@@ -106,10 +99,6 @@ func (m *pixiv) InitializeModule() {
 	}[m.settings.Animation.Format] {
 		m.settings.Animation.Format = animation.FileFormatWebp
 	}
-
-	if m.settings.SearchAPI == "" {
-		m.settings.SearchAPI = SearchAPIPublic
-	}
 }
 
 // AddSettingsCommand adds custom module specific settings and commands to our application
@@ -118,7 +107,7 @@ func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
 }
 
 // Login logs us in for the current session if possible/account available
-func (m *pixiv) Login(account *models.Account) bool {
+func (m *pixiv) Login(_ *models.Account) bool {
 	oauthClient := m.DbIO.GetOAuthClient(m)
 	if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
 		log.WithField("module", m.Key).Fatalf(
@@ -129,7 +118,6 @@ func (m *pixiv) Login(account *models.Account) bool {
 	}
 
 	m.mobileAPI = mobileapi.NewMobileAPI(m.Key, oauthClient)
-	m.publicAPI = publicapi.NewPublicAPI(m.Key, oauthClient)
 
 	raven.CheckError(m.preparePixivAPISessions())
 
@@ -142,12 +130,7 @@ func (m *pixiv) Login(account *models.Account) bool {
 func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	switch {
 	case m.patterns.searchPattern.MatchString(item.URI):
-		switch m.settings.SearchAPI {
-		case SearchAPIPublic:
-			return m.parseSearchPublic(item)
-		case SearchAPIMobile:
-			return m.parseSearch(item)
-		}
+		return m.parseSearch(item)
 	case m.patterns.illustrationPattern.MatchString(item.URI):
 		err := m.parseIllustration(item)
 		if err == nil {
@@ -171,8 +154,6 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
-
-	return nil
 }
 
 func (m *pixiv) preparePixivAPISessions() error {
@@ -180,20 +161,10 @@ func (m *pixiv) preparePixivAPISessions() error {
 
 	// set proxy and overwrite the client if the proxy is enabled
 	if usedProxy != nil && usedProxy.Enable {
-		if err := m.publicAPI.Session.SetProxy(usedProxy); err != nil {
-			return err
-		}
-
 		if err := m.mobileAPI.Session.SetProxy(usedProxy); err != nil {
 			return err
 		}
 	}
-
-	// prepare public API session again
-	if err := m.publicAPI.AddRoundTrippers(); err != nil {
-		return err
-	}
-
 	// prepare mobile API session again
 	if err := m.mobileAPI.AddRoundTrippers(); err != nil {
 		return err
