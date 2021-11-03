@@ -69,11 +69,19 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		itemQueue[i], itemQueue[j] = itemQueue[j], itemQueue[i]
 	}
 
+	var galleryQueue []*models.TrackedItem
+
 	// add items
 	for _, gallery := range itemQueue {
 		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
-		m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
+		galleryQueue = append(galleryQueue, m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m))
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
+	}
+
+	for _, galleryItem := range galleryQueue {
+		if err := m.Parse(galleryItem); err != nil {
+			return err
+		}
 	}
 
 	return nil
