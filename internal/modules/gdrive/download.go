@@ -54,6 +54,10 @@ func (m *gdrive) downloadFiles(sortedFiles []*drive.File, item *models.TrackedIt
 		)
 		m.Session.EnsureDownloadDirectory(localFilePath)
 
+		if res.StatusCode >= 400 {
+			return fmt.Errorf("unexpected returned status code: %d", res.StatusCode)
+		}
+
 		localFile, err := os.Create(localFilePath)
 		if err != nil {
 			return err

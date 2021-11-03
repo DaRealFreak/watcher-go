@@ -132,6 +132,10 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	// ensure the directory
 	s.EnsureDownloadDirectory(filepath)
 
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("unexpected returned status code: %d", resp.StatusCode)
+	}
+
 	// create the file
 	out, err := os.Create(filepath)
 	if err != nil {
