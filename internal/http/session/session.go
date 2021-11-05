@@ -107,12 +107,13 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string) (err error) {
 		)
 
 		err = s.tryDownloadFile(filepath, uri)
-		// if no error occurred return nil
-		if err == nil {
-			return
+		if err != nil {
+			// sleep if an error occurred
+			time.Sleep(time.Duration(try+1) * time.Second)
+		} else {
+			// if no error occurred return nil
+			return nil
 		}
-
-		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 
 	return err
