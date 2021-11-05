@@ -20,7 +20,6 @@ func CopyFile(src, dst string) error {
 		return fmt.Errorf("%s is not a regular file", src)
 	}
 
-	// nolint: gosec
 	source, err := os.Open(src)
 	if err != nil {
 		return err
