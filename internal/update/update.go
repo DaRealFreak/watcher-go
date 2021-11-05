@@ -29,7 +29,7 @@ func (u *Checker) CheckForAvailableUpdates() {
 	raven.CheckError(err)
 
 	if updateAvailable {
-		fmt.Println("new version detected, run \"watcher update\" to update your application.")
+		log.Info("new version detected, run \"watcher update\" to update your application.")
 	}
 }
 
@@ -57,7 +57,7 @@ func (u *Checker) UpdateApplication() (err error) {
 	}
 
 	if !updateAvailable {
-		fmt.Println("current version is the latest")
+		log.Info("current version is the latest")
 		return nil
 	}
 
@@ -75,7 +75,7 @@ func (u *Checker) UpdateApplication() (err error) {
 		return err
 	}
 
-	fmt.Println("new version detected, updating...")
+	log.Info("new version detected, updating...")
 	// retrieve latest asset url again
 	latest, _, err := up.DetectLatest("DaRealFreak/watcher-go")
 	if err != nil {
