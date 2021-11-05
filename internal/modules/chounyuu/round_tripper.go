@@ -1,7 +1,11 @@
 package chounyuu
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/DaRealFreak/watcher-go/internal/modules/chounyuu/api"
 
 	browser "github.com/EDDYCJY/fake-useragent"
 )
@@ -21,8 +25,14 @@ func (m *chounyuu) SetReferer(inner http.RoundTripper) http.RoundTripper {
 // RoundTrip adds the custom user agent to request headers
 func (m *refererRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	r.Header.Set("Origin", "https://g.chounyuu.com")
-	r.Header.Set("Referer", "https://g.chounyuu.com")
+
+	domain := api.ChounyuuDomain
+	if strings.Contains(r.URL.Host, api.SuperFutaDomain) {
+		domain = api.SuperFutaDomain
+	}
+
+	r.Header.Set("Origin", fmt.Sprintf("https://g.%s", domain))
+	r.Header.Set("Referer", fmt.Sprintf("https://g.%s", domain))
 	r.Header.Set("User-Agent", browser.Firefox())
 
 	if m.inner == nil {

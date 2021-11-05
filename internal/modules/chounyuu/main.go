@@ -4,6 +4,7 @@ package chounyuu
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/modules/chounyuu/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +22,7 @@ import (
 // chounyuu contains the implementation of the ModuleInterface
 type chounyuu struct {
 	*models.Module
+	api api.ChounyuuAPI
 }
 
 // nolint: gochecknoinits
@@ -36,10 +39,12 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile("chounyuu.com"),
+			regexp.MustCompile("superfuta.com"),
 		},
 	}
 	module.ModuleInterface = &chounyuu{
 		Module: module,
+		api:    api.ChounyuuAPI{},
 	}
 
 	// register module to log formatter
@@ -55,6 +60,7 @@ func NewBareModule() *models.Module {
 func (m *chounyuu) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
+	m.api.Session = m.Session
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
@@ -78,48 +84,59 @@ type loginFormData struct {
 
 // Login logs us in for the current session if possible/account available
 func (m *chounyuu) Login(account *models.Account) bool {
-	// access login page for CSRF token
-	res, err := m.Session.Get("https://g.chounyuu.com/account")
-	if err != nil {
-		m.TriedLogin = true
-		return false
-	}
-
-	loginData := loginFormData{}
-	loginData.IB = 1
-	loginData.Name = account.Username
-	loginData.Password = account.Password
-
-	data, _ := json.Marshal(loginData)
-	req, _ := http.NewRequest("POST", "https://g.chounyuu.com/api/post/login", bytes.NewReader(data))
-
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Content-Type", "application/json;charset=utf-8")
-
-	client := m.Session.GetClient()
-	loginUrl, _ := url.Parse("https://g.chounyuu.com/api/post/login")
-	cookies := client.Jar.Cookies(loginUrl)
-	for _, cookie := range cookies {
-		if cookie.Name == "XSRF-TOKEN" {
-			req.Header.Set("X-XSRF-TOKEN", cookie.Value)
+	for _, domain := range []string{api.ChounyuuDomain, api.SuperFutaDomain} {
+		// access login page for CSRF token
+		res, err := m.Session.Get(fmt.Sprintf("https://g.%s/account", domain))
+		if err != nil {
+			m.TriedLogin = true
+			return false
 		}
-	}
 
-	res, err = client.Do(req)
-	if err != nil {
+		loginData := loginFormData{}
+		loginData.IB = 1
+		loginData.Name = account.Username
+		loginData.Password = account.Password
+
+		data, _ := json.Marshal(loginData)
+		req, _ := http.NewRequest(
+			"POST",
+			fmt.Sprintf("https://g.%s/api/post/login", domain),
+			bytes.NewReader(data),
+		)
+
+		req.Header.Set("Accept", "application/json, text/plain, */*")
+		req.Header.Set("Content-Type", "application/json;charset=utf-8")
+
+		client := m.Session.GetClient()
+		loginUrl, _ := url.Parse(fmt.Sprintf("https://g.%s/api/post/login", domain))
+		cookies := client.Jar.Cookies(loginUrl)
+		for _, cookie := range cookies {
+			if cookie.Name == "XSRF-TOKEN" {
+				req.Header.Set("X-XSRF-TOKEN", cookie.Value)
+			}
+		}
+
+		res, err = client.Do(req)
+		if err != nil {
+			m.TriedLogin = true
+			return false
+		}
+
+		htmlResponse, _ := m.Session.GetDocument(res).Html()
+		m.LoggedIn = strings.Contains(htmlResponse, "Login successful")
 		m.TriedLogin = true
-		return false
 	}
-
-	htmlResponse, _ := m.Session.GetDocument(res).Html()
-	m.LoggedIn = strings.Contains(htmlResponse, "Login successful")
-	m.TriedLogin = true
 
 	return m.LoggedIn
 }
 
 // Parse parses the tracked item
 func (m *chounyuu) Parse(item *models.TrackedItem) error {
+	if strings.Contains(item.URI, "/tag/") {
+		return m.parseTag(item)
+	} else if strings.Contains(item.URI, "/thread/") {
+		return m.parseThread(item)
+	}
 
 	return nil
 }
