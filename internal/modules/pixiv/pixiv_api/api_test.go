@@ -9,9 +9,11 @@ import (
 )
 
 func getTestPixivAPI() *PixivAPI {
-	testAccount := &models.Account{
-		Username: os.Getenv("PIXIV_USER"),
-		Password: os.Getenv("PIXIV_PASS"),
+	testAccount := &models.OAuthClient{
+		ClientID:     os.Getenv("PIXIV_CLIENT_ID"),
+		ClientSecret: os.Getenv("PIXIV_CLIENT_SECRET"),
+		AccessToken:  os.Getenv("PIXIV_ACCESS_TOKEN"),
+		RefreshToken: os.Getenv("PIXIV_REFRESH_TOKEN"),
 	}
 
 	pixivAPI := NewPixivAPI("pixiv API", testAccount, "https://app-api.pixiv.net/")
@@ -23,9 +25,11 @@ func getTestPixivAPI() *PixivAPI {
 }
 
 func TestNewPixivAPI(t *testing.T) {
-	testAccount := &models.Account{
-		Username: os.Getenv("PIXIV_USER"),
-		Password: os.Getenv("PIXIV_PASS"),
+	testAccount := &models.OAuthClient{
+		ClientID:     os.Getenv("PIXIV_CLIENT_ID"),
+		ClientSecret: os.Getenv("PIXIV_CLIENT_SECRET"),
+		AccessToken:  os.Getenv("PIXIV_ACCESS_TOKEN"),
+		RefreshToken: os.Getenv("PIXIV_REFRESH_TOKEN"),
 	}
 
 	pixivAPI := NewPixivAPI("pixiv API", testAccount, "https://app-api.pixiv.net/")

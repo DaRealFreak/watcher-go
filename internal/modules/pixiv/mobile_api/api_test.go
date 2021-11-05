@@ -14,9 +14,11 @@ var mobileAPI *MobileAPI
 // TestMain is the constructor for the API functions creating a shared instance for the API
 // to prevent multiple consecutive logins
 func TestMain(m *testing.M) {
-	testAccount := &models.Account{
-		Username: os.Getenv("PIXIV_USER"),
-		Password: os.Getenv("PIXIV_PASS"),
+	testAccount := &models.OAuthClient{
+		ClientID:     os.Getenv("PIXIV_CLIENT_ID"),
+		ClientSecret: os.Getenv("PIXIV_CLIENT_SECRET"),
+		AccessToken:  os.Getenv("PIXIV_ACCESS_TOKEN"),
+		RefreshToken: os.Getenv("PIXIV_REFRESH_TOKEN"),
 	}
 
 	mobileAPI = NewMobileAPI("pixiv Mobile API", testAccount)
@@ -29,9 +31,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestLogin(t *testing.T) {
-	testAccount := &models.Account{
-		Username: os.Getenv("PIXIV_USER"),
-		Password: os.Getenv("PIXIV_PASS"),
+	testAccount := &models.OAuthClient{
+		ClientID:     os.Getenv("PIXIV_CLIENT_ID"),
+		ClientSecret: os.Getenv("PIXIV_CLIENT_SECRET"),
+		AccessToken:  os.Getenv("PIXIV_ACCESS_TOKEN"),
+		RefreshToken: os.Getenv("PIXIV_REFRESH_TOKEN"),
 	}
 
 	mobileAPI := NewMobileAPI("pixiv Mobile API", testAccount)
