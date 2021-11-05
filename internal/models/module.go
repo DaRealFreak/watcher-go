@@ -103,7 +103,12 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 		)
 
 		err := t.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), t.Key, data.DownloadTag, data.FileName),
+			path.Join(
+				viper.GetString("download.directory"),
+				t.Key,
+				t.SanitizePath(data.DownloadTag, false),
+				t.SanitizePath(data.FileName, false),
+			),
 			data.FileURI,
 		)
 		if err != nil {
@@ -137,7 +142,7 @@ func (t Module) SanitizePath(path string, allowSeparator bool) string {
 
 	path = strings.Trim(path, "_")
 
-	return path
+	return strings.Trim(path, " ")
 }
 
 // GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
