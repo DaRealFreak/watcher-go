@@ -8,6 +8,7 @@ import (
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/internal/update"
 	"github.com/DaRealFreak/watcher-go/internal/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/internal/watcher"
 	"github.com/mattn/go-colorable"
@@ -118,7 +119,7 @@ func (cli *CliApplication) addPersistentFlags() {
 // Execute executes the root command, entry point for the CLI application
 func (cli *CliApplication) Execute() {
 	// check for available updates
-	// update.NewUpdateChecker().CheckForAvailableUpdates()
+	update.NewUpdateChecker().CheckForAvailableUpdates()
 
 	if err := cli.rootCmd.Execute(); err != nil {
 		os.Exit(-1)
