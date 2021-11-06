@@ -24,9 +24,13 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 	}
 
 	html, _ := m.Session.GetDocument(response).Html()
-	if m.hasGalleryErrors(item, html) {
+	if hasGalleryError, newGalleryItem := m.hasGalleryErrors(item, html); hasGalleryError == true {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		return fmt.Errorf("gallery contains errors")
+		if newGalleryItem != nil {
+			return m.Parse(newGalleryItem)
+		} else {
+			return fmt.Errorf("gallery contains errors")
+		}
 	}
 
 	var downloadQueue []imageGalleryItem
@@ -95,31 +99,32 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageG
 }
 
 // hasGalleryErrors checks if the gallery has any errors and should be skipped
-func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) bool {
+func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool, *models.TrackedItem) {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
 		log.WithField("module", m.Key).Info("newer version of gallery available, updating uri of: " + item.URI)
 
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
 		// slice to retrieve only the latest gallery
+		var newGalleryItem *models.TrackedItem
 		newGalleryLinks = newGalleryLinks.Slice(newGalleryLinks.Length()-1, newGalleryLinks.Length())
 		newGalleryLinks.Each(func(index int, row *goquery.Selection) {
 			url, exists := row.Attr("href")
 			if exists {
-				m.DbIO.GetFirstOrCreateTrackedItem(url, m)
+				newGalleryItem = m.DbIO.GetFirstOrCreateTrackedItem(url, m)
 				log.WithField("module", m.Key).Info("added gallery to tracked items: " + url)
 			}
 		})
 
-		return true
+		return true, newGalleryItem
 	}
 
 	if strings.Contains(html, "This gallery has been removed or is unavailable.") ||
 		strings.Contains(html, "Gallery not found.") {
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
