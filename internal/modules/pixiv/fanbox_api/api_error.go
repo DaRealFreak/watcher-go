@@ -1,4 +1,4 @@
-package ajaxapi
+package fanboxapi
 
 // APIError contains error messages of the API
 type APIError struct {

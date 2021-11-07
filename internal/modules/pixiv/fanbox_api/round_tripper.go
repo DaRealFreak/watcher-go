@@ -1,9 +1,10 @@
-package ajaxapi
+package fanboxapi
 
 import (
 	"fmt"
-	browser "github.com/EDDYCJY/fake-useragent"
 	"net/http"
+
+	browser "github.com/EDDYCJY/fake-useragent"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 )
@@ -14,7 +15,7 @@ type pixivRoundTripper struct {
 }
 
 // setPixivWebHeaders returns the round tripper for the pixiv web headers
-func (a *AjaxAPI) setPixivWebHeaders(inner http.RoundTripper, sessionCookie *models.Cookie) http.RoundTripper {
+func (a *FanboxAPI) setPixivWebHeaders(inner http.RoundTripper, sessionCookie *models.Cookie) http.RoundTripper {
 	return &pixivRoundTripper{
 		inner:         inner,
 		sessionCookie: sessionCookie,

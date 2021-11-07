@@ -15,7 +15,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	postList, err := m.ajaxAPI.GetPostList(creator, 200)
+	postList, err := m.fanboxAPI.GetPostList(creator, 200)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 			break
 		}
 
-		postList, err = m.ajaxAPI.GetPostListByURL(postList.Body.NextURL)
+		postList, err = m.fanboxAPI.GetPostListByURL(postList.Body.NextURL)
 		if err != nil {
 			return err
 		}

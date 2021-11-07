@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	ajaxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/ajax_api"
+	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	log "github.com/sirupsen/logrus"
@@ -54,7 +54,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 			}
 
 			m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(data.ItemID))
-		case ajaxapi.FanboxPost:
+		case fanboxapi.FanboxPost:
 			if err := m.downloadFanboxPost(data, item); err != nil {
 				return err
 			}
@@ -68,15 +68,15 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	return nil
 }
 
-// downloadFanboxPost downloads a pixiv fanbox post after retrieving the post info from the AJAX API
+// downloadFanboxPost downloads a pixiv fanbox post after retrieving the post info from the Fanbox API
 // nolint: funlen
-func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxPost) error {
+func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.FanboxPost) error {
 	postID, err := post.ID.Int64()
 	if err != nil {
 		return err
 	}
 
-	postInfo, err := m.ajaxAPI.GetPostInfo(int(postID))
+	postInfo, err := m.fanboxAPI.GetPostInfo(int(postID))
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxP
 	if postInfo.Body.ImageForShare != "" {
 		fileName := fmt.Sprintf("0_%s", m.GetFileName(postInfo.Body.ImageForShare))
 
-		if err := m.ajaxAPI.Session.DownloadFile(
+		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -97,7 +97,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxP
 	for i, image := range postInfo.Body.PostBody.Images {
 		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(image.OriginalURL))
 
-		if err := m.ajaxAPI.Session.DownloadFile(
+		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -111,7 +111,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxP
 	for i, file := range postInfo.Body.PostBody.Files {
 		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
 
-		if err := m.ajaxAPI.Session.DownloadFile(
+		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -125,7 +125,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post ajaxapi.FanboxP
 	for i, file := range postInfo.ImagesFromBlocks() {
 		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(file))
 
-		if err := m.ajaxAPI.Session.DownloadFile(
+		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),

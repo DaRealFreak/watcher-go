@@ -18,7 +18,7 @@ func TestMobileAPI_GetSearchIllust(t *testing.T) {
 
 func TestMobileAPI_GetSearchIllustByURL(t *testing.T) {
 	illustSearchResults, err := mobileAPI.GetSearchIllust(
-		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 0,
+		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 5100,
 	)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(illustSearchResults)

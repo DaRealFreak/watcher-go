@@ -6,15 +6,14 @@ import (
 	"os"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
-	ajaxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/ajax_api"
+	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,7 +28,7 @@ type pixiv struct {
 	*models.Module
 	animationHelper *animation.Helper
 	mobileAPI       *mobileapi.MobileAPI
-	ajaxAPI         *ajaxapi.AjaxAPI
+	fanboxAPI       *fanboxapi.FanboxAPI
 	patterns        pixivPattern
 	settings        pixivSettings
 }
@@ -139,11 +138,11 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 
 		return err
 	case m.patterns.fanboxPattern.MatchString(item.URI):
-		if m.ajaxAPI == nil {
-			m.ajaxAPI = ajaxapi.NewAjaxAPI(m.Key)
-			m.ajaxAPI.SessionCookie = m.DbIO.GetCookie(ajaxapi.CookieSession, m)
+		if m.fanboxAPI == nil {
+			m.fanboxAPI = fanboxapi.NewFanboxAPI(m.Key)
+			m.fanboxAPI.SessionCookie = m.DbIO.GetCookie(fanboxapi.CookieSession, m)
 
-			if err := m.preparePixivAjaxSession(); err != nil {
+			if err := m.preparePixivFanboxSession(); err != nil {
 				return err
 			}
 		}
@@ -173,16 +172,16 @@ func (m *pixiv) preparePixivAPISessions() error {
 	return nil
 }
 
-func (m *pixiv) preparePixivAjaxSession() error {
+func (m *pixiv) preparePixivFanboxSession() error {
 	usedProxy := m.GetProxySettings()
 
 	if usedProxy != nil && usedProxy.Enable {
-		if err := m.ajaxAPI.Session.SetProxy(usedProxy); err != nil {
+		if err := m.fanboxAPI.Session.SetProxy(usedProxy); err != nil {
 			return err
 		}
 	}
 
-	m.ajaxAPI.AddRoundTrippers()
+	m.fanboxAPI.AddRoundTrippers()
 
 	return nil
 }

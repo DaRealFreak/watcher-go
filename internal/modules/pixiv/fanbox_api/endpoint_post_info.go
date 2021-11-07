@@ -1,4 +1,4 @@
-package ajaxapi
+package fanboxapi
 
 import (
 	"encoding/json"
@@ -52,7 +52,7 @@ func (i *FanboxPostInfo) ImagesFromBlocks() []string {
 }
 
 // GetPostInfo requests the fanbox post info from the API for the passed post ID
-func (a *AjaxAPI) GetPostInfo(postID int) (*FanboxPostInfo, error) {
+func (a *FanboxAPI) GetPostInfo(postID int) (*FanboxPostInfo, error) {
 	var postInfo FanboxPostInfo
 
 	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/post.info?postId=%d", postID))

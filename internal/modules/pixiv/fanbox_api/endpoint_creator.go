@@ -1,4 +1,4 @@
-package ajaxapi
+package fanboxapi
 
 import (
 	"encoding/json"
@@ -50,8 +50,8 @@ func (u *FanboxUser) GetUserTag() string {
 	return fmt.Sprintf("%s/%s", u.UserID.String(), models.Module{}.SanitizePath(u.Name, false))
 }
 
-// GetCreator requests the creator information from the unofficial ajax/fanbox/creator endpoint
-func (a *AjaxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
+// GetCreator requests the creator information from the unofficial fanbox/creator endpoint
+func (a *FanboxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 	var info CreatorInfo
 
 	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/creator.get?creatorId=%s", creatorId))
@@ -67,7 +67,7 @@ func (a *AjaxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 }
 
 // GetPostList returns the initial post list of the passed user
-func (a *AjaxAPI) GetPostList(creatorId string, limit int) (*PostInfo, error) {
+func (a *FanboxAPI) GetPostList(creatorId string, limit int) (*PostInfo, error) {
 	values := url.Values{
 		"creatorId":            {creatorId},
 		"maxPublishedDatetime": {time.Now().Format("2006-01-02 15:04:05")},
@@ -80,7 +80,7 @@ func (a *AjaxAPI) GetPostList(creatorId string, limit int) (*PostInfo, error) {
 }
 
 // GetPostListByURL returns the post info solely by the URL since the PostInfo objects contain a NextURL string
-func (a *AjaxAPI) GetPostListByURL(url string) (*PostInfo, error) {
+func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfo, error) {
 	var postInfo PostInfo
 
 	res, err := a.Session.Get(url)
