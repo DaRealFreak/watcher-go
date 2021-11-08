@@ -1,6 +1,7 @@
 package ehentai
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -71,6 +72,10 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	var galleryQueue []*models.TrackedItem
 
+	log.WithField("module", m.Key).Info(
+		fmt.Sprintf("found %d new items for uri: %s", len(galleryQueue), item.URI),
+	)
+
 	// add items
 	for _, gallery := range itemQueue {
 		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
@@ -92,7 +97,7 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 	var items []searchGalleryItem
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("table.itg td.gl3c a[href]").Each(func(index int, row *goquery.Selection) {
+	document.Find(".itg [class*='gl3'] a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		items = append(items, searchGalleryItem{
 			id:  m.searchGalleryIDPattern.FindStringSubmatch(uri)[1],
@@ -107,7 +112,11 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
-	pages = pages.Slice(pages.Length()-1, pages.Length())
+	// return empty url if we don't have any result due to f.e. removed galleries
+	if pages.Length() == 0 {
+		return "", false
+	}
 
+	pages = pages.Slice(pages.Length()-1, pages.Length())
 	return pages.Find("a[href]").Attr("href")
 }
