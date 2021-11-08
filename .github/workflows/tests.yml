@@ -3,13 +3,11 @@ on:
   push:
     paths:
       - '**.go'
-    paths-ignore:
-      - 'internal/modules/**'
+      - '!internal/modules/**'
   pull_request:
     paths:
       - '**.go'
-    paths-ignore:
-      - 'internal/modules/**'
+      - '!internal/modules/**'
 
 jobs:
   test:
