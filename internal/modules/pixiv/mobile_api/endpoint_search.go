@@ -1,6 +1,7 @@
 package mobileapi
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -49,6 +50,14 @@ func (a *MobileAPI) GetSearchIllust(
 	}
 
 	if startDate != nil && endDate != nil {
+		if startDate.AddDate(1, 0, 0).Unix() < endDate.Unix() {
+			return nil, fmt.Errorf("end_date can't be more than 1 year after the start_date")
+		}
+
+		if endDate.Unix() < startDate.Unix() {
+			return nil, fmt.Errorf("start_date has to be before the end_date")
+		}
+
 		data.Add("start_date", startDate.Format("2006-01-02"))
 		data.Add("end_date", endDate.Format("2006-01-02"))
 	}
