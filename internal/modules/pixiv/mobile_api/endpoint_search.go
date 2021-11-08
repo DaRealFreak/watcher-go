@@ -3,6 +3,7 @@ package mobileapi
 import (
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // SearchIllust contains all relevant information regarding the illustration search
@@ -28,6 +29,7 @@ const (
 // GetSearchIllust returns the illustration search results from the API
 func (a *MobileAPI) GetSearchIllust(
 	word string, searchMode string, searchOrder string, offset int,
+	minBookmarks int, startDate *time.Time, endDate *time.Time,
 ) (*SearchIllust, error) {
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/search/illust")
 	data := url.Values{
@@ -40,6 +42,15 @@ func (a *MobileAPI) GetSearchIllust(
 
 	if offset > 0 {
 		data.Add("offset", strconv.Itoa(offset))
+	}
+
+	if minBookmarks > 0 {
+		data.Add("bookmark_num_min", strconv.Itoa(minBookmarks))
+	}
+
+	if startDate != nil && endDate != nil {
+		data.Add("start_date", startDate.Format("2006-01-02"))
+		data.Add("end_date", endDate.Format("2006-01-02"))
 	}
 
 	apiURL.RawQuery = data.Encode()

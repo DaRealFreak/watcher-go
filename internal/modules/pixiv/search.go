@@ -24,7 +24,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	response, err := m.mobileAPI.GetSearchIllust(searchWord, searchMode, mobileapi.SearchOrderDateDescending, 0)
+	response, err := m.mobileAPI.GetSearchIllust(searchWord, searchMode, mobileapi.SearchOrderDateDescending, 0, 0, nil, nil)
 	if err != nil {
 		return err
 	}

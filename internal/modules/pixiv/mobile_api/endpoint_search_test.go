@@ -9,6 +9,7 @@ import (
 func TestMobileAPI_GetSearchIllust(t *testing.T) {
 	illustSearchResults, err := mobileAPI.GetSearchIllust(
 		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 0,
+		0, nil, nil,
 	)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(illustSearchResults)
@@ -18,7 +19,8 @@ func TestMobileAPI_GetSearchIllust(t *testing.T) {
 
 func TestMobileAPI_GetSearchIllustByURL(t *testing.T) {
 	illustSearchResults, err := mobileAPI.GetSearchIllust(
-		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 5100,
+		"test", SearchModePartialTagMatch, SearchOrderDateDescending, 0,
+		0, nil, nil,
 	)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(illustSearchResults)
