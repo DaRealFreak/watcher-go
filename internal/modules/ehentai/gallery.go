@@ -128,7 +128,9 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 }
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
-func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) (*models.DownloadQueueItem, error) {
+func (m *ehentai) getDownloadQueueItem(
+	trackedItem *models.TrackedItem, item imageGalleryItem,
+) (*models.DownloadQueueItem, error) {
 	response, err := m.Session.Get(item.uri)
 	if err != nil {
 		return nil, err
@@ -138,10 +140,14 @@ func (m *ehentai) getDownloadQueueItem(item imageGalleryItem) (*models.DownloadQ
 	imageURL, _ := document.Find("img#img").Attr("src")
 
 	return &models.DownloadQueueItem{
-		ItemID:      item.id,
-		DownloadTag: item.galleryTitle,
-		FileName:    m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
-		FileURI:     imageURL,
+		ItemID: item.id,
+		DownloadTag: fmt.Sprintf(
+			"%s (%s)",
+			item.galleryTitle,
+			m.searchGalleryIDPattern.FindStringSubmatch(trackedItem.URI)[1],
+		),
+		FileName: m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
+		FileURI:  imageURL,
 	}, nil
 }
 

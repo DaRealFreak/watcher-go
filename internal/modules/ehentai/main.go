@@ -146,7 +146,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 }
 
 func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGalleryItem) error {
-	downloadQueueItem, err := m.getDownloadQueueItem(data)
+	downloadQueueItem, err := m.getDownloadQueueItem(trackedItem, data)
 	if err != nil {
 		return err
 	}
