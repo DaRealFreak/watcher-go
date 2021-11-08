@@ -24,7 +24,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 	}
 
 	html, _ := m.Session.GetDocument(response).Html()
-	if hasGalleryError, newGalleryItem := m.hasGalleryErrors(item, html); hasGalleryError == true {
+	if hasGalleryError, newGalleryItem := m.hasGalleryErrors(item, html); hasGalleryError {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		if newGalleryItem != nil {
 			return m.Parse(newGalleryItem)

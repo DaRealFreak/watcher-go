@@ -63,7 +63,8 @@ func (s *Session) EnsureDownloadDirectory(fileName string) {
 // also checks if the written bytes are more not equal or less than 0 which is definitely an unwanted result
 func (s *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
 	if val, ok := responseHeader["Content-Length"]; ok {
-		fileSize, err := strconv.Atoi(val[0])
+		var fileSize int
+		fileSize, err = strconv.Atoi(val[0])
 		if err == nil {
 			if writtenSize != int64(fileSize) {
 				return fmt.Errorf("written file size doesn't match the header content length value")

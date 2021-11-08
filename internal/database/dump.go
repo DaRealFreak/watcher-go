@@ -18,7 +18,7 @@ type tableSchema struct {
 
 // DumpTables dumps the database tableSchema and the inserts to the passed writer
 func (db *DbIO) DumpTables(writer io.Writer, tableNames ...string) (err error) {
-	if _, err := writer.Write([]byte("BEGIN TRANSACTION;\n")); err != nil {
+	if _, err = writer.Write([]byte("BEGIN TRANSACTION;\n")); err != nil {
 		return err
 	}
 
@@ -27,22 +27,23 @@ func (db *DbIO) DumpTables(writer io.Writer, tableNames ...string) (err error) {
 		return err
 	}
 
-	for _, tableSchema := range tableSchemas {
-		if _, err := writer.Write([]byte("DROP TABLE IF EXISTS " + tableSchema.Name + ";\n")); err != nil {
+	for _, currentTableSchema := range tableSchemas {
+		if _, err = writer.Write([]byte("DROP TABLE IF EXISTS " + currentTableSchema.Name + ";\n")); err != nil {
 			return err
 		}
 
-		if _, err := writer.Write([]byte(tableSchema.SQL + ";\n")); err != nil {
+		if _, err = writer.Write([]byte(currentTableSchema.SQL + ";\n")); err != nil {
 			return err
 		}
 
-		inserts, err := db.getTableRows(tableSchema.Name)
+		var inserts []string
+		inserts, err = db.getTableRows(currentTableSchema.Name)
 		if err != nil {
 			return err
 		}
 
 		for _, insert := range inserts {
-			if _, err := writer.Write([]byte(insert + "\n")); err != nil {
+			if _, err = writer.Write([]byte(insert + "\n")); err != nil {
 				return err
 			}
 		}

@@ -95,10 +95,12 @@ func (cli *CliApplication) getGenerateAutoCompletionCommandZsh() *cobra.Command 
 	return zshCmd
 }
 
-// createAutoCompletionFile creates the auto completion file in the default directory
-// and prints the activiation command if successfully created
-func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byte, activationCmd string) (err error) {
-	if dir, err := homedir.Dir(); err == nil {
+// createAutoCompletionFile creates the autocompletion file in the default directory
+// and prints the activation command if successfully created
+func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byte, activationCmd string) error {
+	if dir, err := homedir.Dir(); err != nil {
+		return err
+	} else {
 		if err := os.MkdirAll(filepath.Join(dir, ".watcher", "completion"), os.ModePerm); err != nil {
 			return err
 		}
@@ -115,9 +117,9 @@ func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byt
 				fmt.Sprintf(activationCmd, filePath),
 			),
 		)
-	}
 
-	return err
+		return nil
+	}
 }
 
 // updateBashCompletionCommandToCurrentExecutable updates activation path to current executable

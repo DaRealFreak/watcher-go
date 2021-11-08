@@ -96,7 +96,8 @@ func (m *deviantArt) getCollectionDownloadQueue(
 
 	for !foundCurrentItem {
 		for _, deviation := range response.Results {
-			publishedTime, err := strconv.ParseInt(deviation.PublishedTime, 10, 64)
+			var publishedTime int64
+			publishedTime, err = strconv.ParseInt(deviation.PublishedTime, 10, 64)
 			if err != nil {
 				return nil, err
 			}

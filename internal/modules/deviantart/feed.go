@@ -20,7 +20,8 @@ func (m *deviantArt) parseFeed(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		for _, feedItem := range response.Items {
-			publishedTime, err := strconv.ParseInt(feedItem.Timestamp, 10, 64)
+			var publishedTime int64
+			publishedTime, err = strconv.ParseInt(feedItem.Timestamp, 10, 64)
 			if err != nil {
 				return err
 			}

@@ -32,7 +32,8 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue []models.DownloadQue
 
 		parsedQuery, _ := url.ParseQuery(u.RawQuery)
 		if expires := parsedQuery.Get("expires"); expires != "" {
-			i, err := strconv.ParseInt(expires, 10, 64)
+			var i int64
+			i, err = strconv.ParseInt(expires, 10, 64)
 			if err != nil {
 				return err
 			}

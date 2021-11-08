@@ -16,7 +16,7 @@ type loginInfo struct {
 
 // getLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
 func (g ImplicitGrantDeviantart) getLoginCSRFToken(res *http.Response) (*loginInfo, error) {
-	var loginInfo loginInfo
+	var currentLoginInfo loginInfo
 
 	jsonPattern := regexp.MustCompile(`JSON.parse\((?P<Number>.*csrfToken.*?)\);`)
 
@@ -28,7 +28,7 @@ func (g ImplicitGrantDeviantart) getLoginCSRFToken(res *http.Response) (*loginIn
 	scriptTags := document.Find("script")
 	scriptTags.Each(func(row int, selection *goquery.Selection) {
 		// no need for further checks if we already have our login info
-		if loginInfo.CSRFToken != "" {
+		if currentLoginInfo.CSRFToken != "" {
 			return
 		}
 
@@ -41,11 +41,11 @@ func (g ImplicitGrantDeviantart) getLoginCSRFToken(res *http.Response) (*loginIn
 				return
 			}
 
-			if err := json.Unmarshal([]byte(s), &loginInfo); err != nil {
+			if err = json.Unmarshal([]byte(s), &currentLoginInfo); err != nil {
 				return
 			}
 		}
 	})
 
-	return &loginInfo, err
+	return &currentLoginInfo, err
 }

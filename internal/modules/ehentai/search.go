@@ -30,10 +30,18 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		for _, galleryItem := range m.getSearchGalleryUrls(html) {
-			// will return 0 on error, so fine for us too for the current item
-			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-			galleryItemID, err := strconv.ParseInt(galleryItem.id, 10, 64)
+			var (
+				currentItemID int64
+				galleryItemID int64
+			)
 
+			// will return 0 on error, so fine for us too for the current item
+			currentItemID, err = strconv.ParseInt(item.CurrentItem, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			galleryItemID, err = strconv.ParseInt(galleryItem.id, 10, 64)
 			if err != nil {
 				return err
 			}

@@ -55,7 +55,7 @@ func RetrieveTokenFromResponse(response *http.Response) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(bytes, &token); err != nil {
+	if err = json.Unmarshal(bytes, &token); err != nil {
 		return nil, err
 	}
 

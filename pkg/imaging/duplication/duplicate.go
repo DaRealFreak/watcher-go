@@ -41,12 +41,12 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 		return 0, err
 	}
 
-	if err := resizeImage(tmpFile1.Name(), 400, 400); err != nil {
+	if err = resizeImage(tmpFile1.Name(), 400, 400); err != nil {
 		raven.CheckErrorNonFatal(os.Remove(tmpFile1.Name()))
 		return 0, err
 	}
 
-	if err := resizeImage(tmpFile2.Name(), 400, 400); err != nil {
+	if err = resizeImage(tmpFile2.Name(), 400, 400); err != nil {
 		raven.CheckErrorNonFatal(os.Remove(tmpFile2.Name()))
 		return 0, err
 	}
@@ -78,7 +78,7 @@ func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 
 	if len(matches) == 2 {
 		similarityResult := matches[1]
-		res, _ := strconv.ParseFloat(similarityResult, 10)
+		res, _ := strconv.ParseFloat(similarityResult, 64)
 
 		return 1 - res, nil
 	}

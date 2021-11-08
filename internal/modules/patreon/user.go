@@ -50,14 +50,14 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 		return nil, err
 	}
 
-	var userResponse userResponse
-	if err := json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &userResponse); err != nil {
+	var apiUserResponse userResponse
+	if err := json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &apiUserResponse); err != nil {
 		return nil, err
 	}
 
-	if userResponse.Data.Relationships.Campaign.Data == nil {
+	if apiUserResponse.Data.Relationships.Campaign.Data == nil {
 		return nil, fmt.Errorf("user has no campaign")
 	}
 
-	return &userResponse, nil
+	return &apiUserResponse, nil
 }

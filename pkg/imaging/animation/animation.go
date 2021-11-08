@@ -62,7 +62,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	}
 
 	if len(fData.FilePaths) == 0 {
-		if err := h.dumpFramesForImageMagick(fData); err != nil {
+		if err = h.dumpFramesForImageMagick(fData); err != nil {
 			return nil, err
 		}
 	}
@@ -82,7 +82,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 	// #nosec
-	if err := exec.Command(executable, args...).Run(); err != nil {
+	if err = exec.Command(executable, args...).Run(); err != nil {
 		if fData.ConvertedFrames {
 			// fallback failed, return the error
 			return nil, err
@@ -121,7 +121,7 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 	fData.WorkPath = filepath.Join(h.outputDirectory, uuid4.String())
 
 	// create the directory
-	if err := os.MkdirAll(fData.WorkPath, os.ModePerm); err != nil {
+	if err = os.MkdirAll(fData.WorkPath, os.ModePerm); err != nil {
 		return err
 	}
 

@@ -62,7 +62,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 			),
 		)
 
-		var downloadLog downloadLog
+		var itemDownloadLog downloadLog
 
 		if deviationItem.deviation.Excerpt != nil {
 			if err := m.downloadHTMLContent(deviationItem); err != nil {
@@ -71,18 +71,18 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 		}
 
 		if deviationItem.deviation.IsDownloadable {
-			if err := m.downloadDeviation(deviationItem, &downloadLog); err != nil {
+			if err := m.downloadDeviation(deviationItem, &itemDownloadLog); err != nil {
 				return err
 			}
 		}
 
 		if deviationItem.deviation.Flash != nil {
-			if err := m.downloadFlash(deviationItem, &downloadLog); err != nil {
+			if err := m.downloadFlash(deviationItem, &itemDownloadLog); err != nil {
 				return err
 			}
 		}
 
-		if err := m.downloadContent(deviationItem, &downloadLog); err != nil {
+		if err := m.downloadContent(deviationItem, &itemDownloadLog); err != nil {
 			return err
 		}
 
@@ -118,7 +118,7 @@ func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downlo
 			return err
 		}
 
-		if err := m.daAPI.Session.DownloadFile(tmpFile.Name(), item.deviation.Content.Src); err != nil {
+		if err = m.daAPI.Session.DownloadFile(tmpFile.Name(), item.deviation.Content.Src); err != nil {
 			return err
 		}
 

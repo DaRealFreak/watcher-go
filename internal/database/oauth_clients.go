@@ -57,12 +57,13 @@ func (db *DbIO) GetOAuthClient(module models.ModuleInterface) *models.OAuthClien
 // GetAllOAuthClients retrieves all OAuth clients of only by module if module is not nil
 func (db *DbIO) GetAllOAuthClients(module models.ModuleInterface) (oAuthClients []*models.OAuthClient) {
 	var (
+		stmt *sql.Stmt
 		rows *sql.Rows
 		err  error
 	)
 
 	if module != nil {
-		stmt, err := db.connection.Prepare(
+		stmt, err = db.connection.Prepare(
 			"SELECT * FROM oauth_clients WHERE NOT disabled AND module = ? ORDER BY module, uid",
 		)
 		raven.CheckError(err)

@@ -39,7 +39,7 @@ func (r ImplicitGrantRedirect) Error() string {
 
 // Token is a basic implementation for the workflow of the Implicit Grant OAuth2 authentication
 func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
-	if err := g.Login(); err != nil {
+	if err = g.Login(); err != nil {
 		return nil, err
 	}
 
@@ -80,7 +80,7 @@ func (g ImplicitGrant) Token() (token *oauth2.Token, err error) {
 		return nil
 	}
 
-	if err := g.Authorize(); err != nil && !ImplicitGrantRequestErrorSuccessful(err) {
+	if err = g.Authorize(); err != nil && !ImplicitGrantRequestErrorSuccessful(err) {
 		return nil, err
 	}
 

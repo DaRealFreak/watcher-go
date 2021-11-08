@@ -50,12 +50,13 @@ func (db *DbIO) GetAccount(module models.ModuleInterface) *models.Account {
 // GetAllAccounts retrieves all accounts of only by module if module is not nil
 func (db *DbIO) GetAllAccounts(module models.ModuleInterface) (accounts []*models.Account) {
 	var (
+		stmt *sql.Stmt
 		rows *sql.Rows
 		err  error
 	)
 
 	if module != nil {
-		stmt, err := db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY module, uid")
+		stmt, err = db.connection.Prepare("SELECT * FROM accounts WHERE NOT disabled AND module = ? ORDER BY module, uid")
 		raven.CheckError(err)
 
 		rows, err = stmt.Query(module.ModuleKey())

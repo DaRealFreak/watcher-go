@@ -155,7 +155,7 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGaller
 	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 		if m.settings.Loop {
-			if err := m.setProxyMethod(); err != nil {
+			if err = m.setProxyMethod(); err != nil {
 				return err
 			}
 

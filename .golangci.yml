@@ -16,25 +16,10 @@ linters-settings:
     min-confidence: 0
   misspell:
     locale: US
-  gocritic: # go-critic docs: https://go-critic.github.io/overview.html
-    enabled-tags:
-      - performance
-      - style
-      - experimental
-    disabled-checks:
-      - hugeParam
-      - rangeValCopy
-      - paramTypeCombine
-      - wrapperFunc
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
 
 linters: # List of available linters: https://github.com/golangci/golangci-lint#enabled-by-default-linters
-  enable-all: true
-  disable:
-    - maligned
-    - prealloc
-    - gochecknoglobals
-    - lll
+  enable-all: false
+  disable: []
 
 issues:
   exclude-rules:

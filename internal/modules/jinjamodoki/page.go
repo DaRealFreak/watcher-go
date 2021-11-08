@@ -34,13 +34,13 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 
 		doc.Find(`table.list > tbody > tr[class]`).Each(func(i int, selection *goquery.Selection) {
 			if !foundCurrent {
-				if downloadQueueItem, err := m.parseItem(selection); err == nil {
-					downloadQueueItem.DownloadTag = downloadTag
-					if downloadQueueItem.ItemID == item.CurrentItem {
+				if currentDownloadQueueItem, err := m.parseItem(selection); err == nil {
+					currentDownloadQueueItem.DownloadTag = downloadTag
+					if currentDownloadQueueItem.ItemID == item.CurrentItem {
 						foundCurrent = true
 						return
 					}
-					downloadQueue = append(downloadQueue, downloadQueueItem)
+					downloadQueue = append(downloadQueue, currentDownloadQueueItem)
 				}
 			}
 		})

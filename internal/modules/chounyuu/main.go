@@ -86,7 +86,7 @@ type loginFormData struct {
 func (m *chounyuu) Login(account *models.Account) bool {
 	for _, domain := range []string{api.ChounyuuDomain, api.SuperFutaDomain} {
 		// access login page for CSRF token
-		res, err := m.Session.Get(fmt.Sprintf("https://g.%s/account", domain))
+		_, err := m.Session.Get(fmt.Sprintf("https://g.%s/account", domain))
 		if err != nil {
 			m.TriedLogin = true
 			return false
@@ -116,7 +116,7 @@ func (m *chounyuu) Login(account *models.Account) bool {
 			}
 		}
 
-		res, err = client.Do(req)
+		res, err := client.Do(req)
 		if err != nil {
 			m.TriedLogin = true
 			return false

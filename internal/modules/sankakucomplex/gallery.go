@@ -113,14 +113,14 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			return nil, err
 		}
 
-		apiResponse, err := m.parseAPIResponse(response)
+		apiGalleryResponse, err := m.parseAPIResponse(response)
 		if err != nil {
 			return nil, err
 		}
 
-		nextItem = apiResponse.Meta.Next
+		nextItem = apiGalleryResponse.Meta.Next
 
-		for _, data := range apiResponse.Data {
+		for _, data := range apiGalleryResponse.Data {
 			itemID, err := data.ID.Int64()
 			if err != nil {
 				return nil, err
@@ -144,7 +144,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 		}
 
 		// we reached the last possible page, break here
-		if len(apiResponse.Data) == 0 || nextItem == "" {
+		if len(apiGalleryResponse.Data) == 0 || nextItem == "" {
 			break
 		}
 	}
@@ -157,16 +157,16 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 
 // parseAPIResponse parses the response from the API
 func (m *sankakuComplex) parseAPIResponse(response *http.Response) (apiResponse, error) {
-	var apiResponse apiResponse
+	var currentApiResponse apiResponse
 
 	body, _ := ioutil.ReadAll(response.Body)
 
-	err := json.Unmarshal(body, &apiResponse)
+	err := json.Unmarshal(body, &currentApiResponse)
 	if err != nil {
-		return apiResponse, err
+		return currentApiResponse, err
 	}
 
-	return apiResponse, err
+	return currentApiResponse, err
 }
 
 // extractItemTag extracts the tag from the passed item URL

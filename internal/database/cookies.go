@@ -29,12 +29,13 @@ func (db *DbIO) createCookiesTable(connection *sql.DB) (err error) {
 // GetAllCookies retrieves all cookies of only by module if module is not nil
 func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.Cookie) {
 	var (
+		stmt *sql.Stmt
 		rows *sql.Rows
 		err  error
 	)
 
 	if module != nil {
-		stmt, err := db.connection.Prepare(`
+		stmt, err = db.connection.Prepare(`
 			SELECT * FROM cookies
 			WHERE NOT disabled
 			  AND (strftime('%s','now') < expiration OR expiration IS NULL)

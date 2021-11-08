@@ -18,7 +18,7 @@ const FileFormatWebp = ".webp"
 func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error) {
 	// create mkv video from the file data first
 	// since ImageMagick doesn't support animated webp pictures
-	if _, err := h.createAnimationImageMagick(fData, "mkv", false); err != nil {
+	if _, err = h.createAnimationImageMagick(fData, "mkv", false); err != nil {
 		return nil, err
 	}
 
@@ -34,7 +34,7 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
 
 	// #nosec
-	if err := exec.Command("ffmpeg", args...).Run(); err != nil {
+	if err = exec.Command("ffmpeg", args...).Run(); err != nil {
 		return nil, err
 	}
 
