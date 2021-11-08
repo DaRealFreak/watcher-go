@@ -1,15 +1,15 @@
-name: tests
+name: DeviantArt
 on:
   push:
     paths:
-      - '**.go'
-    paths-ignore:
-      - 'internal/modules/**'
+      - 'internal/modules/deviantart/**'
   pull_request:
     paths:
-      - '**.go'
-    paths-ignore:
-      - 'internal/modules/**'
+      - 'internal/modules/deviantart/**'
+
+env:
+  DEVIANTART_USER: ${{ secrets.DEVIANTART_USER }}
+  DEVIANTART_PASS: ${{ secrets.DEVIANTART_PASS }}
 
 jobs:
   test:
@@ -26,4 +26,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Test
-        run: go test ./...
+        run: go test ./internal/modules/deviantart/...
