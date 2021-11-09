@@ -38,7 +38,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 		stmt, err = db.connection.Prepare(`
 			SELECT * FROM cookies
 			WHERE NOT disabled
-			  AND (strftime('%s','now') < expiration OR expiration IS NULL)
+			  AND (strftime('%s','now') < expiration OR expiration = 0)
 			  AND module = ?
 			ORDER BY uid
 		`)
@@ -51,7 +51,7 @@ func (db *DbIO) GetAllCookies(module models.ModuleInterface) (cookies []*models.
 			SELECT * 
 			FROM cookies 
 			WHERE NOT disabled
-			  AND (strftime('%s','now') < expiration OR expiration IS NULL)
+			  AND (strftime('%s','now') < expiration OR expiration = 0)
 			ORDER BY module, uid
 		`)
 	}
@@ -76,7 +76,7 @@ func (db *DbIO) GetCookie(name string, module models.ModuleInterface) *models.Co
 	stmt, err := db.connection.Prepare(`
 		SELECT * FROM cookies
 		WHERE NOT disabled
-		  AND (strftime('%s','now') < expiration OR expiration IS NULL)
+		  AND (strftime('%s','now') < expiration OR expiration = 0)
 		  AND name = ?
 		  AND module = ?
 		ORDER BY uid
@@ -139,7 +139,7 @@ func (db *DbIO) CreateCookie(name string, value string, expiration sql.NullTime,
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(name, value, expiration.Time.Unix(), module.ModuleKey())
+	_, err = stmt.Exec(name, value, db.getUnixTimestampFromNullTime(expiration), module.ModuleKey())
 	raven.CheckError(err)
 }
 
@@ -152,7 +152,7 @@ func (db *DbIO) UpdateCookie(name string, value string, expirationString string,
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(value, expiration.Time.Unix(), name, module.ModuleKey())
+	_, err = stmt.Exec(value, db.getUnixTimestampFromNullTime(expiration), name, module.ModuleKey())
 	raven.CheckError(err)
 }
 
@@ -201,4 +201,12 @@ func (db *DbIO) getNullTimeFromString(timeString string) sql.NullTime {
 
 	// return empty NullTime (ending as null in the database)
 	return sql.NullTime{}
+}
+
+func (db *DbIO) getUnixTimestampFromNullTime(time sql.NullTime) int64 {
+	if time.Time.Unix() < 0 {
+		return 0
+	}
+
+	return time.Time.Unix()
 }

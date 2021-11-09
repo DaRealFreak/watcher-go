@@ -45,7 +45,7 @@ func seedCookiesTable(t *testing.T) {
 
 	_, err = dbIO.connection.Exec(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('null_cookie', null, 'test.module');`,
+		VALUES ('null_cookie', '0', 'test.module');`,
 	)
 	assert.New(t).NoError(err)
 
@@ -67,7 +67,7 @@ func seedCookiesTable(t *testing.T) {
 
 	_, err = dbIO.connection.Exec(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('null_cookie', null, 'test.module.2');`,
+		VALUES ('null_cookie', '0', 'test.module.2');`,
 	)
 	assert.New(t).NoError(err)
 }
@@ -159,8 +159,7 @@ func TestDbIO_UpdateCookie(t *testing.T) {
 
 	cookie = dbIO.GetCookie("test", &models.Module{Key: "test.module"})
 	assert.New(t).Equal("newValue", cookie.Value)
-	// compare unix since nano comparison will have minuscule differences and could fail
-	assert.New(t).Equal(false, cookie.Expiration.Valid)
+	assert.New(t).Equal(true, cookie.Expiration.Valid)
 }
 
 func TestDbIO_UpdateCookieDisabledStatus(t *testing.T) {
