@@ -12,7 +12,7 @@ import (
 )
 
 type apiResponse struct {
-	Meta meta `json:"meta"`
+	Meta meta      `json:"meta"`
 	Data []apiItem `json:"data"`
 }
 

@@ -98,28 +98,29 @@ func (cli *CliApplication) getGenerateAutoCompletionCommandZsh() *cobra.Command 
 // createAutoCompletionFile creates the autocompletion file in the default directory
 // and prints the activation command if successfully created
 func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byte, activationCmd string) error {
-	if dir, err := homedir.Dir(); err != nil {
+	dir, err := homedir.Dir()
+	if err != nil {
 		return err
-	} else {
-		if err := os.MkdirAll(filepath.Join(dir, ".watcher", "completion"), os.ModePerm); err != nil {
-			return err
-		}
-
-		filePath := filepath.ToSlash(filepath.Join(dir, ".watcher", "completion", fName))
-		if err := ioutil.WriteFile(filePath, fContent, os.ModePerm); err != nil {
-			return err
-		}
-
-		log.Info("auto completion script got created at: " + filePath)
-		log.Info(
-			fmt.Sprintf(
-				"run the following command to add the auto completion to your profile: \n%s",
-				fmt.Sprintf(activationCmd, filePath),
-			),
-		)
-
-		return nil
 	}
+
+	if err = os.MkdirAll(filepath.Join(dir, ".watcher", "completion"), os.ModePerm); err != nil {
+		return err
+	}
+
+	filePath := filepath.ToSlash(filepath.Join(dir, ".watcher", "completion", fName))
+	if err := ioutil.WriteFile(filePath, fContent, os.ModePerm); err != nil {
+		return err
+	}
+
+	log.Info("auto completion script got created at: " + filePath)
+	log.Info(
+		fmt.Sprintf(
+			"run the following command to add the auto completion to your profile: \n%s",
+			fmt.Sprintf(activationCmd, filePath),
+		),
+	)
+
+	return nil
 }
 
 // updateBashCompletionCommandToCurrentExecutable updates activation path to current executable

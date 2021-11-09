@@ -9,10 +9,16 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 )
 
+// ChounyuuDomain is the domain name including the top level domain for chounyuu
 const ChounyuuDomain = "chounyuu.com"
+
+// ChounyuuApiVersion is the used API version required for the API access
 const ChounyuuApiVersion = 1
 
+// SuperFutaDomain is the domain name including the top level domain for SuperFuta
 const SuperFutaDomain = "superfuta.com"
+
+// SuperFutaApiVersion is the used API version required for the API access
 const SuperFutaApiVersion = 2
 
 // ChounyuuAPI contains all required items to communicate with the API

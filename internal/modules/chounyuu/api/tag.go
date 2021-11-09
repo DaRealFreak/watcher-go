@@ -2,6 +2,7 @@ package api
 
 import "fmt"
 
+// Tag is the struct of the API JSON response
 type Tag struct {
 	Tag struct {
 		Total       int `json:"total"`

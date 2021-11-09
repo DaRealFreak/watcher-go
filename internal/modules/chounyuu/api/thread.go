@@ -2,6 +2,7 @@ package api
 
 import "fmt"
 
+// Thread is the struct of the API JSON response
 type Thread struct {
 	Thread struct {
 		Total       int `json:"total"`
