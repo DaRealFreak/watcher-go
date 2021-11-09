@@ -22,24 +22,24 @@ func seedCookiesTable(t *testing.T) {
 	// nolint: gosec
 	_, err = dbIO.connection.Exec(fmt.Sprintf(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('future_cookie', '%s', 'test.module');`,
-		futureTimestamp.Format(time.RFC3339),
+		VALUES ('future_cookie', '%d', 'test.module');`,
+		futureTimestamp.Unix(),
 	))
 	assert.New(t).NoError(err)
 
 	// nolint: gosec
 	_, err = dbIO.connection.Exec(fmt.Sprintf(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('current_cookie', '%s', 'test.module');`,
-		currentTimestamp.Format(time.RFC3339),
+		VALUES ('current_cookie', '%d', 'test.module');`,
+		currentTimestamp.Unix(),
 	))
 	assert.New(t).NoError(err)
 
 	// nolint: gosec
 	_, err = dbIO.connection.Exec(fmt.Sprintf(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('expired_cookie', '%s', 'test.module');`,
-		pastTimestamp.Format(time.RFC3339),
+		VALUES ('expired_cookie', '%d', 'test.module');`,
+		pastTimestamp.Unix(),
 	))
 	assert.New(t).NoError(err)
 
@@ -52,16 +52,16 @@ func seedCookiesTable(t *testing.T) {
 	// nolint: gosec
 	_, err = dbIO.connection.Exec(fmt.Sprintf(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('future_cookie_2', '%s', 'test.module.2');`,
-		futureTimestamp.Format(time.RFC3339),
+		VALUES ('future_cookie_2', '%d', 'test.module.2');`,
+		futureTimestamp.Unix(),
 	))
 	assert.New(t).NoError(err)
 
 	// nolint: gosec
 	_, err = dbIO.connection.Exec(fmt.Sprintf(`
 		INSERT INTO cookies (name, expiration, module)
-		VALUES ('expired_cookie_2', '%s', 'test.module.2');`,
-		pastTimestamp.Format(time.RFC3339),
+		VALUES ('expired_cookie_2', '%d', 'test.module.2');`,
+		pastTimestamp.Unix(),
 	))
 	assert.New(t).NoError(err)
 

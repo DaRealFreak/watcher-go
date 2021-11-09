@@ -139,7 +139,7 @@ func (db *DbIO) CreateCookie(name string, value string, expiration sql.NullTime,
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(name, value, expiration, module.ModuleKey())
+	_, err = stmt.Exec(name, value, expiration.Time.Unix(), module.ModuleKey())
 	raven.CheckError(err)
 }
 
@@ -152,7 +152,7 @@ func (db *DbIO) UpdateCookie(name string, value string, expirationString string,
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(value, expiration, name, module.ModuleKey())
+	_, err = stmt.Exec(value, expiration.Time.Unix(), name, module.ModuleKey())
 	raven.CheckError(err)
 }
 
