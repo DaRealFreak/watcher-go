@@ -1,4 +1,4 @@
-name: DeviantArt
+name: 'Test - DeviantArt'
 on:
   push:
     paths:

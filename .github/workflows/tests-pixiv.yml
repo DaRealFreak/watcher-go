@@ -1,4 +1,4 @@
-name: pixiv
+name: 'Test - pixiv'
 on:
   push:
     paths:

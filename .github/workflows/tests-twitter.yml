@@ -1,4 +1,4 @@
-name: Twitter
+name: 'Test - Twitter'
 on:
   push:
     paths:
