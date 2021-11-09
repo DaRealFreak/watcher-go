@@ -26,12 +26,10 @@ jobs:
 
       - name: Cross compile and create GitHub release
         run: docker-compose -f .build/docker-compose.yml run app_goreleaser
-
-      - name: Define version
-        run: VERSION=$(sentry-cli releases propose-version)
+        timeout-minutes: 15
 
       - name: Create release
-        run: sentry-cli releases new -p watcher-go "$VERSION"
+        run: sentry-cli releases new -p watcher-go "$(sentry-cli releases propose-version)"
 
       - name: Associate commits with the release
-        run: sentry-cli releases set-commits --auto "$VERSION" && sentry-cli releases deploys "$VERSION" new --env Production
+        run: sentry-cli releases set-commits --auto "$(sentry-cli releases propose-version)" && sentry-cli releases deploys "$(sentry-cli releases propose-version)" new --env Production
