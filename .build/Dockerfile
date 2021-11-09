@@ -1,5 +1,5 @@
 # whole section is copied from docker/golang-cross since we have no access to the GO_VERSION arg in child builds
-ARG GO_VERSION=1.13.5
+ARG GO_VERSION=1.16.3
 
 # OS-X SDK parameters
 # NOTE: when changing version here, make sure to also change OSX_CODENAME below to match
@@ -49,18 +49,6 @@ COPY --from=osx-sdk "${OSX_CROSS_PATH}/." "${OSX_CROSS_PATH}/"
 ARG OSX_VERSION_MIN
 RUN UNATTENDED=yes OSX_VERSION_MIN=${OSX_VERSION_MIN} ./build.sh
 
-FROM base AS libtool
-ARG LIBTOOL_VERSION
-ARG OSX_CODENAME
-ARG OSX_SDK
-RUN mkdir -p "${OSX_CROSS_PATH}/target/SDK/${OSX_SDK}/usr/"
-RUN curl -fsSL "https://homebrew.bintray.com/bottles/libtool-${LIBTOOL_VERSION}.${OSX_CODENAME}.bottle.tar.gz" \
-	| gzip -dc | tar xf - \
-		-C "${OSX_CROSS_PATH}/target/SDK/${OSX_SDK}/usr/" \
-		--strip-components=2 \
-		"libtool/${LIBTOOL_VERSION}/include/" \
-		"libtool/${LIBTOOL_VERSION}/lib/"
-
 FROM osx-cross-base AS final
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -q --no-install-recommends \
@@ -70,7 +58,6 @@ RUN apt-get update -qq && apt-get install -y -q --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=osx-cross "${OSX_CROSS_PATH}/." "${OSX_CROSS_PATH}/"
-COPY --from=libtool   "${OSX_CROSS_PATH}/." "${OSX_CROSS_PATH}/"
 ENV PATH=${OSX_CROSS_PATH}/target/bin:$PATH
 
 # custom part to add go releaser to the image
