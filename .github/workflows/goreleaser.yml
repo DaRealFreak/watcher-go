@@ -11,7 +11,7 @@ env:
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 
 jobs:
-  test:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
