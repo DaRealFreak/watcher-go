@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - '*'
-  workflow_dispatch: []
+  workflow_dispatch: [ ]
 
 env:
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -18,6 +18,11 @@ jobs:
 
       - name: Install sentry-cli
         run: curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Set GitHub Token for GoReleaser
+        run: |
+          touch .build/github.env
+          echo GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} >> .build/github.env
 
       - name: Cross compile and create GitHub release
         run: docker-compose -f .build/docker-compose.yml run app_goreleaser
