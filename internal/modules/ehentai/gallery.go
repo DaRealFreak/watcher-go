@@ -28,9 +28,9 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		if newGalleryItem != nil {
 			return m.Parse(newGalleryItem)
-		} else {
-			return fmt.Errorf("gallery contains errors")
 		}
+
+		return fmt.Errorf("gallery contains errors")
 	}
 
 	var downloadQueue []imageGalleryItem
