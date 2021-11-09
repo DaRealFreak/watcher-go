@@ -1,0 +1,31 @@
+name: 'goreleaser'
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install sentry-cli
+        run: curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Cross compile and create GitHub release
+        run: docker-compose -f .build/docker-compose.yml run app_goreleaser
+
+      - name: Define version
+        run: VERSION=$(sentry-cli releases propose-version)
+
+      - name: Create release
+        run: sentry-cli releases new -p watcher-go "$VERSION"
+
+      - name: Associate commits with the release
+        run: sentry-cli releases set-commits --auto "$VERSION" && sentry-cli releases deploys "$VERSION" new --env Production
