@@ -23,7 +23,7 @@ func TestDeviantartAPI_BrowseTags(t *testing.T) {
 
 	// console API results are NOT cached and can contain already deleted items
 	// so comparison of API result and console exploit API results are differentiating
-	// so we just ensure that the amount of results in page 1 is 24
+	// in conclusion we just ensure that the amount of results in page 1 is 24
 	assert.New(t).Equal(MaxDeviationsPerPage, len(tagResults.Results))
 	assert.New(t).Equal(MaxDeviationsPerPage, len(tagResultsConsoleExploit.Results))
 }
