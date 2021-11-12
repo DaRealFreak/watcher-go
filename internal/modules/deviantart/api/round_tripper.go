@@ -6,7 +6,6 @@ import (
 
 type deviantArtConsoleAPIRoundTripper struct {
 	inner   http.RoundTripper
-	referer string
 }
 
 // setDeviantArtHeaders returns the round tripper for the DeviantArt console API headers
