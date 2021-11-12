@@ -1,5 +1,5 @@
 # whole section is copied from docker/golang-cross since we have no access to the GO_VERSION arg in child builds
-ARG GO_VERSION=1.16.3
+ARG GO_VERSION=1.17.3
 
 # OS-X SDK parameters
 # NOTE: when changing version here, make sure to also change OSX_CODENAME below to match
