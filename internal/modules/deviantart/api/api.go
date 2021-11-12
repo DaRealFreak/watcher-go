@@ -61,6 +61,8 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	client := a.Session.GetClient()
 	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+	a.Session.GetClient().Transport = a.setDeviantArtHeaders(client.Transport)
+
 	jar := client.Jar
 
 	a.Session.SetClient(
