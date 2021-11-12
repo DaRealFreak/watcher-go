@@ -87,7 +87,7 @@ func (s *DefaultSession) Post(uri string, data url.Values) (response *http.Respo
 
 		switch {
 		case err == nil && response.StatusCode < 400:
-			// if no error occurred and status code is okay too break out of the loop
+			// if no error occurred and status code is okay to break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
 			return response, err
 		default:
