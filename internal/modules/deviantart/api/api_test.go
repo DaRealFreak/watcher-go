@@ -68,6 +68,7 @@ func TestNewDeviantartAPIExpiredToken(t *testing.T) {
 	client := api.Session.GetClient()
 	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+	client.Transport = api.setDeviantArtHeaders(client.Transport)
 
 	ts := &implicitoauth2.ImplicitGrantTokenSource{
 		Grant: NewImplicitGrantDeviantart(api.OAuth2Config, client, api.account),
