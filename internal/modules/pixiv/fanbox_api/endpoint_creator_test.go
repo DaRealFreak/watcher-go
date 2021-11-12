@@ -13,14 +13,14 @@ func TestFanboxAPI_GetCreator(t *testing.T) {
 }
 
 func TestFanboxAPI_GetPostList(t *testing.T) {
-	postList, err := getTestFanboxAPI().GetPostList("mito-nagishiro", 50)
+	postList, err := getTestFanboxAPI().GetPostList("mito-nagishiro", nil, 0, 50)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
 }
 
 func TestFanboxAPI_GetPostListByURL(t *testing.T) {
 	// retrieve next URL from previous Post List (user requires to have >= 40 fanbox posts for unit tests to pass)
-	postList, err := getTestFanboxAPI().GetPostList("mito-nagishiro", 20)
+	postList, err := getTestFanboxAPI().GetPostList("mito-nagishiro", nil, 0, 20)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
 	assert.New(t).Equal(len(postList.Body.Items), 20)

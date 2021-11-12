@@ -3,7 +3,6 @@ package fanboxapi
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/url"
 	"strconv"
 	"time"
@@ -67,13 +66,20 @@ func (a *FanboxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 }
 
 // GetPostList returns the initial post list of the passed user
-func (a *FanboxAPI) GetPostList(creatorId string, limit int) (*PostInfo, error) {
+func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, maxId int, limit int) (*PostInfo, error) {
 	values := url.Values{
-		"creatorId":            {creatorId},
-		"maxPublishedDatetime": {time.Now().Format("2006-01-02 15:04:05")},
-		"maxId":                {strconv.Itoa(math.MaxUint32)},
-		"limit":                {strconv.Itoa(limit)},
+		"creatorId": {creatorId},
+		"limit":     {strconv.Itoa(limit)},
 	}
+
+	if maxPublishedTime != nil {
+		values.Add("maxPublishedDatetime", maxPublishedTime.Format("2006-01-02 15:04:05"))
+	}
+
+	if maxId > 0 {
+		values.Add("maxId", strconv.Itoa(maxId))
+	}
+
 	apiURL := fmt.Sprintf("https://api.fanbox.cc/post.listCreator?%s", values.Encode())
 
 	return a.GetPostListByURL(apiURL)
