@@ -55,7 +55,7 @@ func TestDeviantartAPI_CollectionNameFromID(t *testing.T) {
 
 	collectionTitle, err := daAPI.CollectionNameFromID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
-	assert.New(t).Equal("Deep Blue II", collectionTitle)
+	assert.New(t).Equal("Ellysiumn", collectionTitle)
 
 	// toggle console exploit, we also require the first OAuth2 process to have succeeded
 	// since we require the user information cookie which is set on a successful login
@@ -63,7 +63,7 @@ func TestDeviantartAPI_CollectionNameFromID(t *testing.T) {
 
 	collectionTitleConsoleExploit, err := daAPI.CollectionNameFromID("clg-artisa", 80472763)
 	assert.New(t).NoError(err)
-	assert.New(t).Equal("Deep Blue II", collectionTitleConsoleExploit)
+	assert.New(t).Equal("Ellysiumn", collectionTitleConsoleExploit)
 }
 
 func TestDeviantartAPI_CollectionFolderIDToUUID(t *testing.T) {
