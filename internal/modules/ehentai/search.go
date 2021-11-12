@@ -78,23 +78,23 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		itemQueue[i], itemQueue[j] = itemQueue[j], itemQueue[i]
 	}
 
-	var galleryQueue []*models.TrackedItem
-
 	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: %s", len(galleryQueue), item.URI),
+		fmt.Sprintf("found %d new items for uri: %s", len(itemQueue), item.URI),
 	)
 
 	// add items
 	for _, gallery := range itemQueue {
 		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
-		galleryQueue = append(galleryQueue, m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m))
-		m.DbIO.UpdateTrackedItem(item, gallery.id)
-	}
 
-	for _, galleryItem := range galleryQueue {
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		if err := m.Parse(galleryItem); err != nil {
-			return err
+			log.WithField("module", item.Module).Warningf(
+				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
+			)
+			continue
 		}
+
+		m.DbIO.UpdateTrackedItem(item, gallery.id)
 	}
 
 	return nil
