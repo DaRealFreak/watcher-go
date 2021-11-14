@@ -36,11 +36,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 			)
 
 			// will return 0 on error, so fine for us too for the current item
-			currentItemID, err = strconv.ParseInt(item.CurrentItem, 10, 64)
-			if err != nil {
-				return err
-			}
-
+			currentItemID, _ = strconv.ParseInt(item.CurrentItem, 10, 64)
 			galleryItemID, err = strconv.ParseInt(galleryItem.id, 10, 64)
 			if err != nil {
 				return err
