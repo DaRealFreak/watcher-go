@@ -88,6 +88,11 @@ func (a *DeviantartAPI) CollectionNameFromURL(feURL string) (string, error) {
 		}
 	})
 
+	// if we don't have any other collection with multiple classes (highlighted) assume we use the "All" collection
+	if title == "" {
+		title = "All"
+	}
+
 	return title, nil
 }
 
