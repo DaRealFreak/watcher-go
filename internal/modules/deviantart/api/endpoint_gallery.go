@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // GalleryResponse contains all relevant information from the functions of the gallery endpoint
@@ -82,7 +85,19 @@ func (a *DeviantartAPI) GalleryNameFromID(username string, folderID int) (string
 		return "", err
 	}
 
-	return a.Session.GetDocument(feRes).Find("div#sub-folder-gallery h2").First().Text(), nil
+	document := a.Session.GetDocument(feRes)
+
+	title := ""
+	collectionFolders := document.Find("div[data-hook*=\"gallection_folder\"]")
+	collectionFolders.Each(func(index int, row *goquery.Selection) {
+		divClass, _ := row.Attr("class")
+		// the folder is highlighted and gets an additional class (as the "All" collection), so we can filter it
+		if strings.Contains(divClass, " ") {
+			title, _ = row.Find("h2[title]:not([title=\"All\"])").First().Attr("title")
+		}
+	})
+
+	return title, nil
 }
 
 // GalleryFolderIDToUUID converts an integer folder ID in combination with the username to the API format folder UUID

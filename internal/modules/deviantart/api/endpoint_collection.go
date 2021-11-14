@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // Collection contains all relevant information of the API response of the collections endpoint
@@ -75,7 +78,17 @@ func (a *DeviantartAPI) CollectionNameFromURL(feURL string) (string, error) {
 
 	document := a.Session.GetDocument(feRes)
 
-	return document.Find("div#sub-folder-gallery h2").First().Text(), nil
+	title := ""
+	collectionFolders := document.Find("div[data-hook*=\"gallection_folder\"]")
+	collectionFolders.Each(func(index int, row *goquery.Selection) {
+		divClass, _ := row.Attr("class")
+		// the folder is highlighted and gets an additional class (as the "All" collection), so we can filter it
+		if strings.Contains(divClass, " ") {
+			title, _ = row.Find("h2[title]:not([title=\"All\"])").First().Attr("title")
+		}
+	})
+
+	return title, nil
 }
 
 // CollectionNameFromID returns the title of the collection extracted from the frontend, only works with integer IDs
