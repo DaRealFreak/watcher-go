@@ -76,8 +76,12 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	pages := document.Find("table.ptb td")
-	nextPageElement := pages.Slice(pages.Length()-1, pages.Length())
+	// return empty url if we don't have any result due to f.e. removed galleries
+	if pages.Length() == 0 {
+		return "", false
+	}
 
+	nextPageElement := pages.Slice(pages.Length()-1, pages.Length())
 	return nextPageElement.Find("a[href]").Attr("href")
 }
 
