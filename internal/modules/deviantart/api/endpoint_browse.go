@@ -28,7 +28,12 @@ type Deviation struct {
 	Thumbs []struct {
 		Src string `json:"src"`
 	} `json:"thumbs"`
-	// used for comparison of thumbs and and download, not actually returned by the API
+	Videos []struct {
+		Src      string `json:"src"`
+		Quality  string `json:"quality"`
+		FileSize int    `json:"filesize"`
+	} `json:"videos"`
+	// used for comparison of thumbs and preview download, not actually returned by the API
 	DeviationDownload *DeviationDownload
 	DeviationID       string  `json:"deviationid"`
 	DeviationURL      string  `json:"url"`
