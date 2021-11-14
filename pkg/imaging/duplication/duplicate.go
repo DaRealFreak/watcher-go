@@ -42,12 +42,12 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 	}
 
 	if err = resizeImage(tmpFile1.Name(), 400, 400); err != nil {
-		raven.CheckErrorNonFatal(os.Remove(tmpFile1.Name()))
+		defer raven.CheckFileRemoval(tmpFile1)
 		return 0, err
 	}
 
 	if err = resizeImage(tmpFile2.Name(), 400, 400); err != nil {
-		raven.CheckErrorNonFatal(os.Remove(tmpFile2.Name()))
+		defer raven.CheckFileRemoval(tmpFile2)
 		return 0, err
 	}
 
