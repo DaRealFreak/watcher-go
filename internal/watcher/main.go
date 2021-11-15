@@ -17,6 +17,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/gdrive"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/giantessworld"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/jinjamodoki"
+	_ "github.com/DaRealFreak/watcher-go/internal/modules/nhentai"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/patreon"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex"
