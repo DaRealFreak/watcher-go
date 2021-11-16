@@ -71,12 +71,12 @@ func (a *DeviantartAPI) CollectionFolders(user string, offset uint, limit uint) 
 
 // CollectionNameFromURL returns the collection name from the passed URL with the Eclipse theme
 func (a *DeviantartAPI) CollectionNameFromURL(feURL string) (string, error) {
-	feRes, err := a.Session.Get(feURL)
+	feRes, err := a.UserSession.Get(feURL)
 	if err != nil {
 		return "", err
 	}
 
-	document := a.Session.GetDocument(feRes)
+	document := a.UserSession.GetDocument(feRes)
 
 	title := ""
 	collectionFolders := document.Find("div[data-hook*=\"gallection_folder\"]")

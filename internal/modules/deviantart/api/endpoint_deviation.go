@@ -51,12 +51,12 @@ func (a *DeviantartAPI) DeviationDownload(deviationID string) (*DeviationDownloa
 // https://www.deviantart.com/api/v1/oauth2/deviation/download/{deviationid}
 // since the endpoint returns a lot of internal server error responses, while the web interface works properly
 func (a *DeviantartAPI) DeviationDownloadFallback(deviationURL string) (*DeviationDownload, error) {
-	res, err := a.Session.Get(deviationURL)
+	res, err := a.UserSession.Get(deviationURL)
 	if err != nil {
 		return nil, err
 	}
 
-	dl := a.Session.GetDocument(res).Find(`a[href*="https://www.deviantart.com/download/"]`).First()
+	dl := a.UserSession.GetDocument(res).Find(`a[href*="https://www.deviantart.com/download/"]`).First()
 	dlLink, exists := dl.Attr("href")
 
 	if dl.Length() != 1 || !exists {

@@ -53,7 +53,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 		)
 
 		// ensure download directory, needed for only text artists
-		m.daAPI.Session.EnsureDownloadDirectory(
+		m.daAPI.UserSession.EnsureDownloadDirectory(
 			path.Join(
 				viper.GetString("download.directory"),
 				m.Key,
@@ -101,7 +101,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 func (m *deviantArt) downloadFlash(item downloadQueueItem, downloadLog *downloadLog) error {
 	// download content is always equal to the flash object in the API response
 	if downloadLog.download == "" || (downloadLog.download != "" && filepath.Ext(downloadLog.download) != ".swf") {
-		return m.daAPI.Session.DownloadFile(
+		return m.daAPI.DownloadFile(
 			path.Join(viper.GetString("download.directory"),
 				m.Key,
 				item.downloadTag,
@@ -129,7 +129,7 @@ func (m *deviantArt) downloadVideo(item downloadQueueItem) error {
 		}
 	}
 
-	return m.daAPI.Session.DownloadFile(
+	return m.daAPI.DownloadFile(
 		path.Join(viper.GetString("download.directory"),
 			m.Key,
 			item.downloadTag,
@@ -150,7 +150,7 @@ func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downlo
 			return err
 		}
 
-		if err = m.daAPI.Session.DownloadFile(tmpFile.Name(), item.deviation.Content.Src); err != nil {
+		if err = m.daAPI.DownloadFile(tmpFile.Name(), item.deviation.Content.Src); err != nil {
 			return err
 		}
 
@@ -167,7 +167,7 @@ func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downlo
 					m.GetFileExtension(item.deviation.Content.Src),
 				),
 			))
-			if err := watcherIO.CopyFile(tmpFile.Name(), downloadLog.content); err != nil {
+			if err = watcherIO.CopyFile(tmpFile.Name(), downloadLog.content); err != nil {
 				return err
 			}
 		}
@@ -182,7 +182,7 @@ func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downlo
 				m.GetFileExtension(item.deviation.Content.Src),
 			),
 		))
-		if err := m.daAPI.Session.DownloadFile(downloadLog.content, item.deviation.Content.Src); err != nil {
+		if err := m.daAPI.DownloadFile(downloadLog.content, item.deviation.Content.Src); err != nil {
 			return err
 		}
 	}
@@ -203,12 +203,12 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloa
 		return err
 	}
 
-	if err := m.daAPI.Session.DownloadFile(tmpFile.Name(), lastThumb.Src); err != nil {
+	if err = m.daAPI.DownloadFile(tmpFile.Name(), lastThumb.Src); err != nil {
 		return err
 	}
 
 	if len(downloadLog.downloadedFiles()) == 0 {
-		if err := watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
+		if err = watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
 			m.Key,
 			item.downloadTag,
 			fmt.Sprintf(
@@ -224,12 +224,12 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloa
 		return nil
 	}
 
-	for _, item := range downloadLog.downloadedFiles() {
-		sim, _ := duplication.CheckForSimilarity(item, tmpFile.Name())
+	for _, downloadedItem := range downloadLog.downloadedFiles() {
+		sim, _ := duplication.CheckForSimilarity(downloadedItem, tmpFile.Name())
 		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
 		if sim > 0.95 {
 			log.WithField("module", m.Key).Debugf(
-				"thumbnail matching with %s above threshold %.2f%%", item, sim*100,
+				"thumbnail matching with %s above threshold %.2f%%", downloadedItem, sim*100,
 			)
 
 			return nil
@@ -269,7 +269,7 @@ func (m *deviantArt) downloadDeviation(item downloadQueueItem, downloadLog *down
 		),
 	))
 
-	if err := m.daAPI.Session.DownloadFile(
+	if err = m.daAPI.DownloadFile(
 		downloadLog.download,
 		deviationDownload.Src,
 	); err != nil {
@@ -300,7 +300,7 @@ func (m *deviantArt) downloadHTMLContent(item downloadQueueItem) error {
 			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
 		),
 	)
-	if err := ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+	if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err
 	}
 

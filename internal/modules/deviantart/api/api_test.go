@@ -65,7 +65,7 @@ func TestNewDeviantartAPIExpiredToken(t *testing.T) {
 	// initialize the shared API instance
 	api := NewDeviantartAPI("token expiration test", testAccount)
 
-	client := api.Session.GetClient()
+	client := api.UserSession.GetClient()
 	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
 	client.Transport = api.setDeviantArtHeaders(client.Transport)

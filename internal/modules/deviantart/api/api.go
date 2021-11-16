@@ -27,6 +27,7 @@ const MaxDeviationsPerPage = 24
 
 // DeviantartAPI contains all required items to communicate with the API
 type DeviantartAPI struct {
+	UserSession       watcherHttp.SessionInterface
 	Session           watcherHttp.SessionInterface
 	rateLimiter       *rate.Limiter
 	ctx               context.Context
@@ -39,7 +40,8 @@ type DeviantartAPI struct {
 // NewDeviantartAPI returns the settings of the DeviantArt API
 func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI {
 	return &DeviantartAPI{
-		Session: session.NewSession(moduleKey),
+		UserSession: session.NewSession(moduleKey),
+		Session:     session.NewSession(moduleKey),
 		OAuth2Config: &oauth2.Config{
 			ClientID: "9991",
 			Endpoint: oauth2.Endpoint{
@@ -58,14 +60,14 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 // AddRoundTrippers adds the round trippers for CloudFlare, adds a custom user agent
 // and implements the implicit OAuth2 authentication and sets the Token round tripper
 func (a *DeviantartAPI) AddRoundTrippers() {
-	client := a.Session.GetClient()
+	client := a.UserSession.GetClient()
 	// apply CloudFlare bypass
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
 	client.Transport = a.setDeviantArtHeaders(client.Transport)
 
 	jar := client.Jar
 
-	a.Session.SetClient(
+	a.UserSession.SetClient(
 		oauth2.NewClient(
 			context.Background(),
 			&implicitoauth2.ImplicitGrantTokenSource{
@@ -75,7 +77,20 @@ func (a *DeviantartAPI) AddRoundTrippers() {
 	)
 
 	// OAuth2.NewClient creates completely new client and throws away our cookie jar, set it again
-	a.Session.GetClient().Jar = jar
+	a.UserSession.GetClient().Jar = jar
+}
+
+func (a *DeviantartAPI) DownloadFile(filepath string, uri string) error {
+	parsedUri, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	if parsedUri.Host == "www.deviantart.com" {
+		return a.UserSession.DownloadFile(filepath, uri)
+	} else {
+		return a.Session.DownloadFile(filepath, uri)
+	}
 }
 
 // request simulates the http.NewRequest method to add the additional option
@@ -101,9 +116,9 @@ func (a *DeviantartAPI) request(method string, endpoint string, values url.Value
 
 			requestURL.RawQuery = existingValues.Encode()
 
-			res, err = a.Session.Get(requestURL.String())
+			res, err = a.UserSession.Get(requestURL.String())
 		case "POST":
-			res, err = a.Session.Post(apiRequestURL, values)
+			res, err = a.UserSession.Post(apiRequestURL, values)
 		default:
 			return nil, fmt.Errorf("unknown request method: %s", method)
 		}

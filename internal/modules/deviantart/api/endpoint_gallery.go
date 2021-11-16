@@ -80,12 +80,12 @@ func (a *DeviantartAPI) GalleryFolders(user string, offset uint, limit uint) (*F
 func (a *DeviantartAPI) GalleryNameFromID(username string, folderID int) (string, error) {
 	feURL := fmt.Sprintf("https://www.deviantart.com/%s/gallery/%d", username, folderID)
 
-	feRes, err := a.Session.Get(feURL)
+	feRes, err := a.UserSession.Get(feURL)
 	if err != nil {
 		return "", err
 	}
 
-	document := a.Session.GetDocument(feRes)
+	document := a.UserSession.GetDocument(feRes)
 
 	title := ""
 	collectionFolders := document.Find("div[data-hook*=\"gallection_folder\"]")

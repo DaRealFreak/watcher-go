@@ -73,6 +73,10 @@ func (m *deviantArt) Login(account *models.Account) bool {
 
 	usedProxy := m.GetProxySettings()
 	if usedProxy.Enable {
+		if err := m.daAPI.UserSession.SetProxy(usedProxy); err != nil {
+			return false
+		}
+
 		if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
 			return false
 		}
