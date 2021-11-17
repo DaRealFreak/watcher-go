@@ -57,7 +57,7 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *giantessWorld) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.baseURL, _ = url.Parse("http://www.giantessworld.net")
+	m.baseURL, _ = url.Parse("https://www.giantessworld.net")
 	m.Session = session.NewSession(m.Key)
 
 	// set the proxy if requested
