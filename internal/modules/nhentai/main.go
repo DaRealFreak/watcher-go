@@ -2,6 +2,7 @@
 package nhentai
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -15,6 +16,10 @@ import (
 
 type nhentai struct {
 	*models.Module
+	baseURL                *url.URL
+	galleryIDPattern       *regexp.Regexp
+	searchGalleryIDPattern *regexp.Regexp
+	thumbToImageRegexp     *regexp.Regexp
 }
 
 // nolint: gochecknoinits
@@ -35,7 +40,10 @@ func NewBareModule() *models.Module {
 		ProxyLoopIndex: -1,
 	}
 	module.ModuleInterface = &nhentai{
-		Module: module,
+		Module:                 module,
+		thumbToImageRegexp:     regexp.MustCompile("(/galleries/[\\d]+/.*)t(\\..*)"),
+		galleryIDPattern:       regexp.MustCompile(`/galleries/(\d+)/.*`),
+		searchGalleryIDPattern: regexp.MustCompile(`/g/(\d+)/`),
 	}
 
 	// register module to log formatter
@@ -49,6 +57,7 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *nhentai) InitializeModule() {
+	m.baseURL, _ = url.Parse("https://nhentai.net/")
 	m.Session = session.NewSession(m.Key)
 
 	// set the proxy if requested
@@ -68,11 +77,18 @@ func (m *nhentai) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *nhentai) Parse(item *models.TrackedItem) error {
-	if strings.Contains("/g/", item.URI) {
+	if strings.Contains(item.URI, "/g/") {
 		return m.parseGallery(item)
 	} else {
-
+		return m.parseSearch(item)
 	}
+}
 
-	return nil
+// getAbsoluteUri adds the base scheme and host since the site is using relative links
+func (m *nhentai) getAbsoluteUri(uri string) string {
+	parsedUri, _ := url.Parse(uri)
+	parsedUri.Scheme = m.baseURL.Scheme
+	parsedUri.Host = m.baseURL.Host
+
+	return parsedUri.String()
 }
