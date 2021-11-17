@@ -83,7 +83,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
-		if err := m.Parse(galleryItem); err != nil {
+		if err = m.Parse(galleryItem); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
 			)
