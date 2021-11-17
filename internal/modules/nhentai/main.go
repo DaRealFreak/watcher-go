@@ -41,7 +41,7 @@ func NewBareModule() *models.Module {
 	}
 	module.ModuleInterface = &nhentai{
 		Module:                 module,
-		thumbToImageRegexp:     regexp.MustCompile("(/galleries/[\\d]+/.*)t(\\..*)"),
+		thumbToImageRegexp:     regexp.MustCompile(`(/galleries/[\d]+/.*)t(\..*)`),
 		galleryIDPattern:       regexp.MustCompile(`/galleries/(\d+)/.*`),
 		searchGalleryIDPattern: regexp.MustCompile(`/g/(\d+)/`),
 	}
