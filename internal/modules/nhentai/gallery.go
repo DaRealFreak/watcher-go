@@ -67,11 +67,17 @@ func (m *nhentai) getGalleryImageUrls(html string, title string) (galleryItems [
 			imageUri.Host = "i.nhentai.net"
 			imageUri.Path = m.thumbToImageRegexp.ReplaceAllString(imageUri.Path, "$1$2")
 
+			languageTag, languageNotInTitle := m.getGalleryLanguages(html, title)
+			if languageNotInTitle {
+				languageTag = fmt.Sprintf("[%s] ", languageTag)
+			}
+
 			galleryItems = append(galleryItems, models.DownloadQueueItem{
 				ItemID: strconv.Itoa(i + 1),
 				DownloadTag: fmt.Sprintf(
-					"%s (%s)",
+					"%s %s(%s)",
 					title,
+					languageTag,
 					m.galleryIDPattern.FindStringSubmatch(imageUri.String())[1],
 				),
 				FileName: fmt.Sprintf("%d_%s", i+1, m.GetFileName(imageUri.String())),
@@ -88,4 +94,20 @@ func (m *nhentai) extractGalleryTitle(html string) (galleryTitle string) {
 	galleryTitle = document.Find("div#info > h1.title").Text()
 
 	return m.SanitizePath(galleryTitle, false)
+}
+
+// getGalleryLanguages extracts the language tags from the galleries and returns them joined with ", "
+func (m *nhentai) getGalleryLanguages(html string, title string) (string, bool) {
+	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+
+	var languages []string
+
+	document.Find("section#tags a[href*=\"/language/\"] > span.name").Each(func(i int, languageTag *goquery.Selection) {
+		if languageTag.Text() != "translated" && !strings.Contains(strings.ToLower(title), strings.ToLower(languageTag.Text())) {
+			languages = append(languages, languageTag.Text())
+		}
+
+	})
+
+	return strings.Join(languages, ", "), len(languages) > 0
 }
