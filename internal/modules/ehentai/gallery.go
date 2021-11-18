@@ -59,7 +59,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	if err := m.processDownloadQueue(downloadQueue, item); err != nil {
+	if err = m.processDownloadQueue(downloadQueue, item); err != nil {
 		return err
 	}
 
