@@ -45,6 +45,8 @@ func (m *nhentai) parseGallery(item *models.TrackedItem) error {
 		return err
 	}
 
+	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+
 	return nil
 }
 
