@@ -106,7 +106,7 @@ func (m *nhentai) getGalleryLanguages(html string, title string) (string, bool) 
 
 	document.Find("section#tags a[href*=\"/language/\"] > span.name").Each(func(i int, languageTag *goquery.Selection) {
 		if languageTag.Text() != "translated" && !strings.Contains(strings.ToLower(title), strings.ToLower(languageTag.Text())) {
-			languages = append(languages, languageTag.Text())
+			languages = append(languages, strings.Title(languageTag.Text()))
 		}
 
 	})
