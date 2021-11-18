@@ -76,7 +76,7 @@ func (m *nhentai) getGalleryImageUrls(html string, title string) (galleryItems [
 				ItemID: strconv.Itoa(i + 1),
 				DownloadTag: fmt.Sprintf(
 					"%s %s(%s)",
-					title,
+					m.SanitizePath(title, false),
 					languageTag,
 					m.galleryIDPattern.FindStringSubmatch(imageUri.String())[1],
 				),
