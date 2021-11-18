@@ -132,6 +132,7 @@ func (t Module) SanitizePath(path string, allowSeparator bool) string {
 	}
 
 	path = reservedCharacters.ReplaceAllString(path, "_")
+	path = strings.ReplaceAll(path, "\t", " ")
 	for strings.Contains(path, "__") {
 		path = strings.Replace(path, "__", "_", -1)
 	}
