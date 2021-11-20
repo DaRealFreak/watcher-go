@@ -103,8 +103,9 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	// option to keep converted mkv for further conversions
 	if del {
 		raven.CheckError(os.Chdir(fData.PreviousPath))
+
 		// clean up the created folder/files
-		err = os.RemoveAll(fData.WorkPath)
+		defer raven.CheckPathRemoval(fData.WorkPath)
 	}
 
 	return content, err

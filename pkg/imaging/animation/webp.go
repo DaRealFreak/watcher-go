@@ -45,8 +45,9 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 	}
 
 	raven.CheckError(os.Chdir(fData.PreviousPath))
+
 	// clean up the created folder/files
-	err = os.RemoveAll(fData.WorkPath)
+	defer raven.CheckPathRemoval(fData.WorkPath)
 
 	return content, err
 }

@@ -66,3 +66,8 @@ func CheckFileRemoval(f *os.File) {
 	CheckError(f.Close())
 	CheckError(os.Remove(f.Name()))
 }
+
+// CheckPathRemoval checks for errors while removing the passed path
+func CheckPathRemoval(path string) {
+	CheckError(os.RemoveAll(path))
+}
