@@ -198,6 +198,11 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloa
 
 	lastThumb := item.deviation.Thumbs[len(item.deviation.Thumbs)-1]
 
+	// general thumb url across multiple authors for story items which doesn't exist anymore
+	if lastThumb.Src == "https://img00.deviantart.net/bb46/a/shared/poetry.jpg" {
+		return nil
+	}
+
 	tmpFile, err := ioutil.TempFile("", ".*")
 	if err != nil {
 		return err
