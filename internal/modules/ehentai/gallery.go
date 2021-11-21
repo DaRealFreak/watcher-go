@@ -123,8 +123,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 		return true, newGalleryItem
 	}
 
-	if strings.Contains(html, "This gallery has been removed or is unavailable.") ||
-		strings.Contains(html, "Gallery not found.") {
+	if strings.Contains(html, "document.location = \"https://exhentai.org/\";") {
 		return true, nil
 	}
 
