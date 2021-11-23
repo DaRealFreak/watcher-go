@@ -62,8 +62,8 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *deviantArt) InitializeModule() {}
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *deviantArt) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 }
 

@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -49,7 +50,7 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 		} else {
 			stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
 		}
-
+		defer raven.CheckClosure(stmt)
 		raven.CheckError(err)
 
 		rows, err = stmt.Query(module.ModuleKey())
@@ -71,10 +72,46 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 	return items
 }
 
+// GetTrackedItemsByDomain retrieves all tracked items from the sqlite database based on the domain
+func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) []*models.TrackedItem {
+	var (
+		items []*models.TrackedItem
+		rows  *sql.Rows
+		err   error
+	)
+
+	var stmt *sql.Stmt
+
+	if includeCompleted {
+		stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE uri LIKE ? ORDER BY uid")
+	} else {
+		stmt, err = db.connection.Prepare("SELECT * FROM tracked_items WHERE NOT complete AND uri LIKE ? ORDER BY uid")
+	}
+	defer raven.CheckClosure(stmt)
+	raven.CheckError(err)
+
+	rows, err = stmt.Query(fmt.Sprintf("%%%s%%", domain))
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(rows)
+
+	for rows.Next() {
+		item := models.TrackedItem{}
+
+		err = rows.Scan(&item.ID, &item.URI, &item.CurrentItem, &item.Module, &item.Complete)
+		raven.CheckError(err)
+
+		items = append(items, &item)
+	}
+
+	return items
+}
+
 // GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
 func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, module models.ModuleInterface) *models.TrackedItem {
 	stmt, err := db.connection.Prepare("SELECT * FROM tracked_items WHERE uri = ? and module = ?")
+	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
 	rows, err := stmt.Query(uri, module.ModuleKey())

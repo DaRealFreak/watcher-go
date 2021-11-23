@@ -17,12 +17,12 @@ import (
 
 // ModuleInterface of used functions from the application for all modules
 type ModuleInterface interface {
-	// retrieve the module key
+	// ModuleKey retrieve the module key
 	ModuleKey() string
-	// initializes the registered bare module
+	// InitializeModule initializes the registered bare module
 	InitializeModule()
-	// option for the modules to register custom settings/commands
-	AddSettingsCommand(command *cobra.Command)
+	// AddModuleCommand option for the modules to register custom settings/commands
+	AddModuleCommand(command *cobra.Command)
 	// Login logs us in for the current session if possible/account available
 	Login(account *Account) (success bool)
 	// Parse parses the tracked item

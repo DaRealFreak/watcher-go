@@ -64,8 +64,8 @@ func (m *nhentai) InitializeModule() {
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *nhentai) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *nhentai) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 	m.AddProxyLoopCommands(command)
 }

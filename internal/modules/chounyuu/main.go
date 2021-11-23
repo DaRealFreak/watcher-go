@@ -70,8 +70,8 @@ func (m *chounyuu) InitializeModule() {
 	client.Transport = m.SetReferer(client.Transport)
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *chounyuu) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *chounyuu) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 }
 

@@ -21,7 +21,7 @@ func (cli *CliApplication) addModulesCommand() {
 			Use:   module.Key,
 			Short: fmt.Sprintf("specific commands and settings of module: %s", module.Key),
 		}
-		module.AddSettingsCommand(moduleCmd)
+		module.AddModuleCommand(moduleCmd)
 		modulesCmd.AddCommand(moduleCmd)
 	}
 

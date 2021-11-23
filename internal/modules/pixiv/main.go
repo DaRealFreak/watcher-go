@@ -100,9 +100,10 @@ func (m *pixiv) InitializeModule() {
 	}
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *pixiv) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *pixiv) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
+	m.addRunCommand(command)
 }
 
 // Login logs us in for the current session if possible/account available
@@ -184,4 +185,33 @@ func (m *pixiv) preparePixivFanboxSession() error {
 	m.fanboxAPI.AddRoundTrippers()
 
 	return nil
+}
+
+func (m *pixiv) addRunCommand(command *cobra.Command) {
+	runCmd := &cobra.Command{
+		Use:   "run [domains]",
+		Short: "update items of only the passed domain (either pixiv.net or fanbox.cc)",
+		Long:  "update all tracked items of the passed domains which can be either pixiv.net or fanbox.cc.",
+		Run: func(cmd *cobra.Command, args []string) {
+			m.InitializeModule()
+
+			for _, domain := range args {
+				trackedItems := m.DbIO.GetTrackedItemsByDomain(domain, false)
+				for _, item := range trackedItems {
+					if item.Module != m.ModuleKey() {
+						continue
+					}
+
+					if err := m.Parse(item); err != nil {
+						log.WithField("module", item.Module).Warningf(
+							"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+						)
+					}
+				}
+			}
+		},
+	}
+
+	// add run command to parent command
+	command.AddCommand(runCmd)
 }

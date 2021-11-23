@@ -96,8 +96,8 @@ func (m *patreon) InitializeModule() {
 	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport)
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *patreon) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *patreon) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 }
 

@@ -62,8 +62,8 @@ func (m *twitter) InitializeModule() {
 	m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *twitter) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *twitter) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 }
 

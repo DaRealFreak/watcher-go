@@ -89,8 +89,8 @@ func (m *gdrive) InitializeModule() {
 	m.Login(nil)
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *gdrive) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *gdrive) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 	m.addAuthenticationCommands(command)
 }

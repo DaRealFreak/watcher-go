@@ -92,8 +92,8 @@ func (m *jinjaModoki) InitializeModule() {
 	}
 }
 
-// AddSettingsCommand adds custom module specific settings and commands to our application
-func (m *jinjaModoki) AddSettingsCommand(command *cobra.Command) {
+// AddModuleCommand adds custom module specific settings and commands to our application
+func (m *jinjaModoki) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 	m.AddProxyLoopCommands(command)
 }
