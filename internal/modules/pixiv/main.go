@@ -132,7 +132,7 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	case m.patterns.searchPattern.MatchString(item.URI):
 		return m.parseSearch(item)
 	case m.patterns.illustrationPattern.MatchString(item.URI):
-		err := m.parseIllustration(item)
+		err = m.parseIllustration(item)
 		if err == nil {
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 		}
@@ -143,7 +143,7 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 			m.fanboxAPI = fanboxapi.NewFanboxAPI(m.Key)
 			m.fanboxAPI.SessionCookie = m.DbIO.GetCookie(fanboxapi.CookieSession, m)
 
-			if err := m.preparePixivFanboxSession(); err != nil {
+			if err = m.preparePixivFanboxSession(); err != nil {
 				return err
 			}
 		}
