@@ -16,6 +16,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/chounyuu/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -73,6 +74,7 @@ func (m *chounyuu) InitializeModule() {
 // AddModuleCommand adds custom module specific settings and commands to our application
 func (m *chounyuu) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
+	m.addRunCommand(command)
 }
 
 // loginData is the json struct for the JSON login form
@@ -139,4 +141,33 @@ func (m *chounyuu) Parse(item *models.TrackedItem) error {
 	}
 
 	return nil
+}
+
+func (m *chounyuu) addRunCommand(command *cobra.Command) {
+	runCmd := &cobra.Command{
+		Use:   "run [domains]",
+		Short: "update items of only the passed domain (either chounyuu.com or superfuta.com)",
+		Long:  "update all tracked items of the passed domains which can be either chounyuu.com or superfuta.com.",
+		Run: func(cmd *cobra.Command, args []string) {
+			m.InitializeModule()
+
+			for _, domain := range args {
+				trackedItems := m.DbIO.GetTrackedItemsByDomain(domain, false)
+				for _, item := range trackedItems {
+					if item.Module != m.ModuleKey() {
+						continue
+					}
+
+					if err := m.Parse(item); err != nil {
+						log.WithField("module", item.Module).Warningf(
+							"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+						)
+					}
+				}
+			}
+		},
+	}
+
+	// add run command to parent command
+	command.AddCommand(runCmd)
 }
