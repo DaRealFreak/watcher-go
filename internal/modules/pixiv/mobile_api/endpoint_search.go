@@ -16,12 +16,14 @@ type SearchIllust struct {
 //noinspection GoUnusedConst
 const (
 	// order of the search results
+
 	SearchOrderDateAscending        = "date_asc"
 	SearchOrderDateDescending       = "date_desc"
 	SearchOrderPopularityAscending  = "popular_asc"
 	SearchOrderPopularityDescending = "popular_desc"
 
 	// search modes
+
 	SearchModePartialTagMatch = "partial_match_for_tags"
 	SearchModeExactTagMatch   = "exact_match_for_tags"
 	SearchModeTitleAndCaption = "title_and_caption"
@@ -77,7 +79,7 @@ func (a *MobileAPI) GetSearchIllustByURL(url string) (*SearchIllust, error) {
 	}
 
 	var searchIllust SearchIllust
-	if err := a.MapAPIResponse(res, &searchIllust); err != nil {
+	if err = a.MapAPIResponse(res, &searchIllust); err != nil {
 		return nil, err
 	}
 
