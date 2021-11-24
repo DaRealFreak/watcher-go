@@ -202,6 +202,10 @@ func (m *pixiv) addRunCommand(command *cobra.Command) {
 						continue
 					}
 
+					log.WithField("module", item.Module).Info(
+						fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+					)
+
 					if err := m.Parse(item); err != nil {
 						log.WithField("module", item.Module).Warningf(
 							"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
