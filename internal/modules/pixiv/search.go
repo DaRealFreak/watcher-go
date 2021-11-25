@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
-	log "github.com/sirupsen/logrus"
 )
 
 func (m *pixiv) parseSearch(item *models.TrackedItem) error {
@@ -24,12 +24,30 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	response, err := m.mobileAPI.GetSearchIllust(searchWord, searchMode, mobileapi.SearchOrderDateDescending, 0, 0, nil, nil)
-	if err != nil {
-		return err
-	}
+	var (
+		offset    int
+		startDate *time.Time
+		endDate   *time.Time
+		response  *mobileapi.SearchIllust
+	)
 
 	for !foundCurrentItem {
+		response, err = m.mobileAPI.GetSearchIllust(searchWord, searchMode, mobileapi.SearchOrderDateDescending, offset, 0, startDate, endDate)
+		if err != nil {
+			if err.Error() == `{"offset":["Offset must be no more than 5000"]}` {
+				if len(downloadQueue) > 0 {
+					lastIllustration := downloadQueue[len(downloadQueue)-1].DownloadItem.(mobileapi.Illustration)
+					offset = 0
+					endDate = &lastIllustration.CreateDate
+					tmp := endDate.Add(-1 * 365 * 24 * time.Hour)
+					startDate = &tmp
+					continue
+				}
+			} else {
+				return err
+			}
+		}
+
 		for _, illustration := range response.Illustrations {
 			if item.CurrentItem == "" || illustration.ID > int(currentItemID) {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
@@ -43,25 +61,12 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 			}
 		}
 
-		if response.NextURL == "" {
+		if response.NextURL == "" && (startDate == nil || offset == 0) {
 			break
 		}
 
-		response, err = m.mobileAPI.GetSearchIllustByURL(response.NextURL)
-		if err != nil {
-			if err.Error() == `{"offset":["Offset must be no more than 5000"]}` {
-				log.WithField("module", m.Key).Warningf(
-					"search \"%s\" has more than 5000 results."+
-						"The mobile API is limited to 5000 search results, if you want to download "+
-						"more than 5000 results consider switching to the public search API",
-					searchWord,
-				)
-
-				break
-			}
-
-			return err
-		}
+		// ToDo: parse response.NextURL for offset
+		offset += 30
 	}
 
 	// reverse download queue to download old items first
