@@ -3,6 +3,7 @@ package mobileapi
 import (
 	"net/url"
 	"strconv"
+	"time"
 
 	pixivapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api"
 )
@@ -20,7 +21,8 @@ type Illustration struct {
 			Original string `json:"original"`
 		} `json:"image_urls"`
 	} `json:"meta_pages"`
-	User UserInfo `json:"user"`
+	User       UserInfo  `json:"user"`
+	CreateDate time.Time `json:"create_date"`
 }
 
 // IllustDetail contains all relevant information regarding an illustration detail API request
@@ -51,7 +53,7 @@ func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
 	}
 
 	var illustDetail IllustDetail
-	if err := a.MapAPIResponse(res, &illustDetail); err != nil {
+	if err = a.MapAPIResponse(res, &illustDetail); err != nil {
 		return nil, err
 	}
 
