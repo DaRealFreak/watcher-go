@@ -3,12 +3,13 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/internal/models"
 )
 
 type apiResponse struct {

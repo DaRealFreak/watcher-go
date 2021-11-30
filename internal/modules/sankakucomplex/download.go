@@ -2,13 +2,14 @@ package sankakucomplex
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"net/url"
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/internal/models"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func (m *sankakuComplex) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) error {

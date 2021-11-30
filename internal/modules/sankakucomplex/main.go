@@ -2,9 +2,9 @@
 package sankakucomplex
 
 import (
-	"net/url"
 	"regexp"
-	"strings"
+
+	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -17,6 +17,7 @@ import (
 // sankakuComplex contains the implementation of the ModuleInterface
 type sankakuComplex struct {
 	*models.Module
+	api *api.SankakuComplexApi
 }
 
 // nolint: gochecknoinits
@@ -55,6 +56,8 @@ func (m *sankakuComplex) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	m.api = api.NewSankakuComplexApi(m.Key, m.Session, nil)
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -64,19 +67,10 @@ func (m *sankakuComplex) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *sankakuComplex) Login(account *models.Account) bool {
-	values := url.Values{
-		"url":            {""},
-		"user[name]":     {account.Username},
-		"user[password]": {account.Password},
-		"commit":         {"Login"},
-	}
+	// overwrite our previous API with a logged in instance
+	m.api = api.NewSankakuComplexApi(m.Key, m.Session, account)
 
-	res, _ := m.Session.Post("https://chan.sankakucomplex.com/user/authenticate", values)
-	htmlResponse, _ := m.Session.GetDocument(res).Html()
-	m.LoggedIn = strings.Contains(htmlResponse, "<h2>Welcome")
-	m.TriedLogin = true
-
-	return m.LoggedIn
+	return m.api.LoginSuccessful()
 }
 
 // Parse parses the tracked item
