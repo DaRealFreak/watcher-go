@@ -88,10 +88,10 @@ changelog:
   # Default is no groups.
   groups:
     - title: 'Bug fixes'
-      regexp: "^.*fix[(\\w)]*+.*$"
+      regexp: "^.*fix.*$"
       order: 0
     - title: 'Changes'
-      regexp: "^.*task[(\\w)]*+.*$"
+      regexp: "^.*task.*$"
       order: 1
   filters:
     # Commit messages matching the regexp listed here will be removed from
