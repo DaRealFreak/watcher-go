@@ -69,10 +69,38 @@ release:
   name_template: "{{.Tag}}"
 
 changelog:
-  sort: asc
+  skip: false
+
+  # Changelog generation implementation to use.
+  #
+  # Valid options are:
+  # - `git`: uses `git log`;
+  # - `github`: uses the compare GitHub API, appending the author login to the changelog.
+  # - `gitlab`: uses the compare GitLab API, appending the author name and email to the changelog.
+  # - `github-native`: uses the GitHub release notes generation API.
+  #
+  # Defaults to `git`.
+  use: git
+
+  # Group commits messages by given regex and title.
+  # Order value defines the order of the groups.
+  # Proving no regex means all commits will be grouped under the default group.
+  # Default is no groups.
+  groups:
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*+.*$"
+      order: 0
+    - title: 'Changes'
+      regexp: "^.*task[(\\w)]*+.*$"
+      order: 1
   filters:
+    # Commit messages matching the regexp listed here will be removed from
+    # the changelog
+    # Default is empty
     exclude:
       - '^[DOC]:'
+      - typo
+      - lint
       - '^Bump'
       - Merge pull request
       - Merge branch
