@@ -3,8 +3,6 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"path"
 	"strconv"
@@ -13,11 +11,11 @@ import (
 )
 
 type apiResponse struct {
-	Meta meta      `json:"meta"`
+	Meta apiMeta   `json:"meta"`
 	Data []apiItem `json:"data"`
 }
 
-type meta struct {
+type apiMeta struct {
 	Next string `json:"next"`
 	Prev string `json:"prev"`
 }
@@ -27,7 +25,7 @@ type apiItem struct {
 	ID               json.Number `json:"id"`
 	Rating           string      `json:"rating"`
 	Status           string      `json:"status"`
-	Author           author      `json:"author"`
+	Author           apiAuthor   `json:"author"`
 	SampleURL        string      `json:"sample_url"`
 	SampleWidth      int         `json:"sample_width"`
 	SampleHeight     int         `json:"sample_height"`
@@ -38,7 +36,7 @@ type apiItem struct {
 	Height           int         `json:"height"`
 	FileSize         int         `json:"file_size"`
 	FileType         string      `json:"file_type"`
-	CreatedAt        created     `json:"created_at"`
+	CreatedAt        apiCreated  `json:"created_at"`
 	HasChildren      bool        `json:"has_children"`
 	HasComments      bool        `json:"has_comments"`
 	HasNotes         bool        `json:"has_notes"`
@@ -57,26 +55,26 @@ type apiItem struct {
 	CommentCount     json.Number `json:"comment_count"`
 	Source           string      `json:"source"`
 	Sequence         json.Number `json:"sequence"`
-	Tags             []tag       `json:"tags"`
+	Tags             []apiTag    `json:"tags"`
 }
 
-// author is the JSON struct of author objects returned by the API
-type author struct {
+// apiAuthor is the JSON struct of author objects returned by the API
+type apiAuthor struct {
 	ID           int    `json:"id"`
 	Name         string `json:"name"`
 	Avatar       string `json:"avatar"`
 	AvatarRating string `json:"avatar_rating"`
 }
 
-// created is the JSON struct of created objects returned by the API
-type created struct {
+// apiCreated is the JSON struct of created objects returned by the API
+type apiCreated struct {
 	JSONClass string `json:"json_class"`
 	S         int64  `json:"s"`
 	N         int    `json:"n"`
 }
 
-// tag is the JSON struct of tag objects returned by the API
-type tag struct {
+// apiTag is the JSON struct of tag objects returned by the API
+type apiTag struct {
 	ID        int    `json:"id"`
 	NameEn    string `json:"name_en"`
 	NameJa    string `json:"name_ja"`
@@ -90,7 +88,7 @@ type tag struct {
 }
 
 // parseGallery parses galleries based on the tags in the tracked item
-func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue []models.DownloadQueueItem, err error) {
+func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []*downloadGalleryItem, err error) {
 	originalTag, err := m.extractItemTag(item)
 	if err != nil {
 		return nil, err
@@ -114,8 +112,8 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			return nil, err
 		}
 
-		apiGalleryResponse, err := m.parseAPIResponse(response)
-		if err != nil {
+		var apiGalleryResponse apiResponse
+		if err = m.parseAPIResponse(response, &apiGalleryResponse); err != nil {
 			return nil, err
 		}
 
@@ -131,11 +129,13 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			if item.CurrentItem == "" || itemID > currentItemID {
 				if data.FileURL != "" {
-					downloadQueue = append(downloadQueue, models.DownloadQueueItem{
-						ItemID:      string(data.ID),
-						DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
-						FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
-						FileURI:     data.FileURL,
+					galleryItems = append(galleryItems, &downloadGalleryItem{
+						item: &models.DownloadQueueItem{
+							ItemID:      string(data.ID),
+							DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
+							FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
+							FileURI:     data.FileURL,
+						},
 					})
 				}
 			} else {
@@ -151,23 +151,11 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (downloadQueue [
 	}
 
 	// reverse queue to get the oldest "new" item first and manually update it
-	downloadQueue = m.ReverseDownloadQueueItems(downloadQueue)
-
-	return downloadQueue, nil
-}
-
-// parseAPIResponse parses the response from the API
-func (m *sankakuComplex) parseAPIResponse(response *http.Response) (apiResponse, error) {
-	var currentApiResponse apiResponse
-
-	body, _ := ioutil.ReadAll(response.Body)
-
-	err := json.Unmarshal(body, &currentApiResponse)
-	if err != nil {
-		return currentApiResponse, err
+	for i, j := 0, len(galleryItems)-1; i < j; i, j = i+1, j-1 {
+		galleryItems[i], galleryItems[j] = galleryItems[j], galleryItems[i]
 	}
 
-	return currentApiResponse, err
+	return galleryItems, nil
 }
 
 // extractItemTag extracts the tag from the passed item URL

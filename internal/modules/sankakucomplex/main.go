@@ -2,6 +2,8 @@
 package sankakucomplex
 
 import (
+	"fmt"
+	"net/url"
 	"regexp"
 
 	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
@@ -70,16 +72,61 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 	// overwrite our previous API with a logged in instance
 	m.api = api.NewSankakuComplexApi(m.Key, m.Session, account)
 
-	return m.api.LoginSuccessful()
+	m.TriedLogin = true
+	m.LoggedIn = m.api.LoginSuccessful()
+
+	return m.LoggedIn
 }
 
 // Parse parses the tracked item
 func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
-	// ToDo: add book support
-	downloadQueue, err := m.parseGallery(item)
-	if err != nil {
-		return err
+	bookPattern := regexp.MustCompile(`/books\?`)
+	singleBookPattern := regexp.MustCompile(`/books/([\d]+)`)
+	wikiPattern := regexp.MustCompile(`/wiki`)
+
+	itemDownloadQueue := &downloadQueue{}
+
+	if wikiPattern.MatchString(item.URI) {
+		tagName, err := m.extractItemTag(item)
+		if err != nil {
+			return err
+		}
+
+		bookUri := fmt.Sprintf("https://beta.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
+		bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, m)
+
+		galleryUri := fmt.Sprintf("https://beta.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, m)
+
+		if err = m.Parse(bookItem); err != nil {
+			return err
+		}
+
+		return m.Parse(galleryItem)
 	}
 
-	return m.processDownloadQueue(downloadQueue, item)
+	if singleBookPattern.MatchString(item.URI) {
+		galleryItems, err := m.parseSingleBook(item, singleBookPattern.FindStringSubmatch(item.URI)[1])
+		if err != nil {
+			return err
+		}
+
+		itemDownloadQueue.items = galleryItems
+	} else if bookPattern.MatchString(item.URI) {
+		bookItems, err := m.parseBooks(item)
+		if err != nil {
+			return err
+		}
+
+		itemDownloadQueue.books = bookItems
+	} else {
+		galleryItems, err := m.parseGallery(item)
+		if err != nil {
+			return err
+		}
+
+		itemDownloadQueue.items = galleryItems
+	}
+
+	return m.processDownloadQueue(itemDownloadQueue, item)
 }
