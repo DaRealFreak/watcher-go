@@ -92,7 +92,7 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 
 		for _, post := range postsData.Posts {
 			postID, _ := strconv.ParseInt(post.ID.String(), 10, 64)
-			if !(item.CurrentItem == "" || postID > currentItemID) {
+			if item.CurrentItem != "" && postID == currentItemID {
 				foundCurrentItem = true
 				break
 			}
