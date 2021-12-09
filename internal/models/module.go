@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	log "github.com/sirupsen/logrus"
@@ -106,8 +107,8 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 			path.Join(
 				viper.GetString("download.directory"),
 				t.Key,
-				t.SanitizePath(data.DownloadTag, false),
-				t.SanitizePath(data.FileName, false),
+				t.TruncateMaxLength(t.SanitizePath(data.DownloadTag, false)),
+				t.TruncateMaxLength(t.SanitizePath(data.FileName, false)),
 			),
 			data.FileURI,
 		)
@@ -119,6 +120,14 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 	}
 
 	return nil
+}
+
+// TruncateMaxLength checks for length of the passed path part to ensure the max path length
+func (t Module) TruncateMaxLength(s string) string {
+	if syscall.MAX_PATH > len(s) {
+		return s
+	}
+	return s[:strings.LastIndex(s[:syscall.MAX_PATH], " ")]
 }
 
 // SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words

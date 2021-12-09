@@ -172,8 +172,8 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGaller
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
-			strings.TrimSpace(downloadQueueItem.DownloadTag),
-			strings.TrimSpace(downloadQueueItem.FileName),
+			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
+			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
 		),
 		downloadQueueItem.FileURI,
 	)
