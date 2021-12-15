@@ -39,6 +39,11 @@ func (cli *CliApplication) addRunCommand() {
 		"parallel", "p", false,
 		"run modules parallel",
 	)
+	runCmd.Flags().BoolVarP(
+		&cli.config.Run.ForceNew,
+		"force", "f", false,
+		"forces to ignore previous progress",
+	)
 
 	_ = viper.BindPFlag("download.directory", runCmd.Flags().Lookup("directory"))
 

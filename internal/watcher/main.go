@@ -88,6 +88,7 @@ type AppConfiguration struct {
 	DisableSentry bool
 	// run specific options
 	Run struct {
+		ForceNew          bool
 		RunParallel       bool
 		Items             []string
 		DownloadDirectory string
@@ -137,6 +138,13 @@ func (app *Watcher) Run() {
 			module := app.ModuleFactory.GetModule(item.Module)
 			if !module.LoggedIn && !module.TriedLogin {
 				app.loginToModule(module)
+			}
+
+			if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
+				log.WithField("module", module.Key).Info(
+					fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
+				)
+				item.CurrentItem = ""
 			}
 
 			log.WithField("module", module.Key).Info(
@@ -203,6 +211,13 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 	}
 
 	for _, item := range trackedItems {
+		if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
+			log.WithField("module", module.Key).Info(
+				fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
+			)
+			item.CurrentItem = ""
+		}
+
 		log.WithField("module", module.Key).Info(
 			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
 		)
