@@ -194,6 +194,9 @@ func (m *pixiv) addRunCommand(command *cobra.Command) {
 		Long:  "update all tracked items of the passed domains which can be either pixiv.net or fanbox.cc.",
 		Run: func(cmd *cobra.Command, args []string) {
 			m.InitializeModule()
+			if account := m.DbIO.GetAccount(m); account != nil {
+				m.Login(m.DbIO.GetAccount(m))
+			}
 
 			for _, domain := range args {
 				trackedItems := m.DbIO.GetTrackedItemsByDomain(domain, false)
