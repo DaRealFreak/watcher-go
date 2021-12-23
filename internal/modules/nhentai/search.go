@@ -79,8 +79,14 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 	)
 
 	// add items
-	for _, gallery := range itemQueue {
-		log.WithField("module", m.Key).Info("added gallery to tracked items: " + gallery.uri)
+	for index, gallery := range itemQueue {
+		log.WithField("module", m.Key).Info(
+			fmt.Sprintf(
+				"added gallery to tracked items: \"%s\" (%0.2f%%)",
+				gallery.uri,
+				float64(index+1)/float64(len(itemQueue))*100,
+			),
+		)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		if err = m.Parse(galleryItem); err != nil {
