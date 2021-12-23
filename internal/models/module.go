@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -49,6 +51,7 @@ type Module struct {
 	TriedLogin     bool
 	URISchemas     []*regexp.Regexp
 	ProxyLoopIndex int
+	Cfg            *configuration.AppConfiguration
 }
 
 // ModuleKey returns the key of the module required to use as interface to prevent import cycles
@@ -64,6 +67,11 @@ func (t *Module) RegisterURISchema(uriSchemas map[string][]*regexp.Regexp) {
 // SetDbIO sets the database IO implementation
 func (t *Module) SetDbIO(io DatabaseInterface) {
 	t.DbIO = io
+}
+
+// SetCfg sets the app configuration for each module
+func (t *Module) SetCfg(cfg *configuration.AppConfiguration) {
+	t.Cfg = cfg
 }
 
 // GetFileName retrieves the file name of a passed uri

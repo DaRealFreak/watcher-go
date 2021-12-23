@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
+
 	"github.com/DaRealFreak/watcher-go/pkg/archive/gzip"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
@@ -28,7 +30,7 @@ func (e NoReaderFoundError) Error() string {
 }
 
 // Restore restores the database/settings from the passed archive
-func (app *Watcher) Restore(archiveName string, cfg *AppConfiguration) {
+func (app *Watcher) Restore(archiveName string, cfg *configuration.AppConfiguration) {
 	reader, err := app.getArchiveReader(archiveName)
 	raven.CheckError(err)
 
@@ -65,7 +67,7 @@ func (app *Watcher) getArchiveReader(archiveName string) (reader archive.Reader,
 
 // restoreDatabase checks
 // if items and accounts are exported and SQL mode is not active we just archive the db file
-func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *AppConfiguration) (err error) {
+func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.AppConfiguration) (err error) {
 	switch {
 	case cfg.Restore.Database.Accounts.Enabled &&
 		cfg.Restore.Database.Items.Enabled &&
@@ -146,7 +148,7 @@ func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames .
 }
 
 // restoreSettings restores the settings from the archive
-func (app *Watcher) restoreSettings(reader archive.Reader, cfg *AppConfiguration) (err error) {
+func (app *Watcher) restoreSettings(reader archive.Reader, cfg *configuration.AppConfiguration) (err error) {
 	// check for [cfg.ConfigurationFile] in archive
 	exists, err := reader.HasFile(filepath.Base(cfg.ConfigurationFile))
 	if err != nil {

@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
+
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/gzip"
@@ -17,7 +19,7 @@ import (
 )
 
 // Backup backs up the full database and the configuration
-func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
+func (app *Watcher) Backup(archiveName string, cfg *configuration.AppConfiguration) {
 	writer, err := app.getArchiveWriter(archiveName, cfg)
 	raven.CheckError(err)
 
@@ -37,7 +39,7 @@ func (app *Watcher) Backup(archiveName string, cfg *AppConfiguration) {
 
 // backupDatabase generates an SQL file for items/accounts and adds it to the archive
 // if items and accounts are exported and SQL mode is not active we just archive the db file
-func (app *Watcher) backupDatabase(writer archive.Writer, cfg *AppConfiguration) (err error) {
+func (app *Watcher) backupDatabase(writer archive.Writer, cfg *configuration.AppConfiguration) (err error) {
 	switch {
 	case cfg.Backup.Database.Accounts.Enabled &&
 		cfg.Backup.Database.Items.Enabled &&
@@ -79,7 +81,7 @@ func (app *Watcher) backupTableAsSQL(writer archive.Writer, table string) {
 }
 
 // backupSettings adds the setting file to the archive
-func (app *Watcher) backupSettings(writer archive.Writer, cfg *AppConfiguration) (err error) {
+func (app *Watcher) backupSettings(writer archive.Writer, cfg *configuration.AppConfiguration) (err error) {
 	_, err = writer.AddFileByPath(
 		path.Base(cfg.ConfigurationFile),
 		cfg.ConfigurationFile,
@@ -89,7 +91,7 @@ func (app *Watcher) backupSettings(writer archive.Writer, cfg *AppConfiguration)
 }
 
 // getArchiveWriter returns the used archive based on the passed app configuration
-func (app *Watcher) getArchiveWriter(archiveName string, cfg *AppConfiguration) (writer archive.Writer, err error) {
+func (app *Watcher) getArchiveWriter(archiveName string, cfg *configuration.AppConfiguration) (writer archive.Writer, err error) {
 	var archiveWriter archive.Writer
 
 	// retrieve the archive extension type and attach it if not already set by the user
@@ -118,7 +120,7 @@ func (app *Watcher) getArchiveWriter(archiveName string, cfg *AppConfiguration) 
 }
 
 // getArchiveExtension returns the archive extension based on the app configuration
-func (app *Watcher) getArchiveExtension(cfg *AppConfiguration) (ext string) {
+func (app *Watcher) getArchiveExtension(cfg *configuration.AppConfiguration) (ext string) {
 	switch {
 	case cfg.Backup.Archive.Gzip, cfg.Backup.Archive.Tar && cfg.Backup.Archive.Zip:
 		return gzip.FileExt

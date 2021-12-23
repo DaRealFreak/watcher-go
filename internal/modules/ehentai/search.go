@@ -69,7 +69,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	// reverse to add oldest items first
+	// reverse to add the oldest items first
 	for i, j := 0, len(itemQueue)-1; i < j; i, j = i+1, j-1 {
 		itemQueue[i], itemQueue[j] = itemQueue[j], itemQueue[i]
 	}
@@ -89,6 +89,13 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
+		if m.Cfg.Run.ForceNew && galleryItem.CurrentItem != "" {
+			log.WithField("module", m.Key).Info(
+				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
+			)
+			galleryItem.CurrentItem = ""
+		}
+
 		if err = m.Parse(galleryItem); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),

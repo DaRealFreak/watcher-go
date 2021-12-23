@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
+
 	"github.com/DaRealFreak/watcher-go/internal/database"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
@@ -34,71 +36,11 @@ const DefaultConfigurationPath = "./.watcher.yaml"
 type Watcher struct {
 	DbCon         *database.DbIO
 	ModuleFactory *modules.ModuleFactory
-	Cfg           *AppConfiguration
-}
-
-// BackupSettings are the possible configuration settings for backups and recoveries
-type BackupSettings struct {
-	Database struct {
-		Accounts struct {
-			Enabled bool
-		}
-		Items struct {
-			Enabled bool
-		}
-		OAuth2Clients struct {
-			Enabled bool
-		}
-		Cookies struct {
-			Enabled bool
-		}
-		SQL bool
-	}
-	Settings bool
-}
-
-// AppConfiguration contains the persistent configurations/settings across all commands
-type AppConfiguration struct {
-	ConfigurationFile string
-	LogLevel          string
-	// database file location
-	Database string
-	// backup options
-	Backup struct {
-		BackupSettings
-		Archive struct {
-			Zip  bool
-			Tar  bool
-			Gzip bool
-		}
-	}
-	Restore struct {
-		BackupSettings
-	}
-	// cli specific options
-	Cli struct {
-		DisableColors            bool
-		ForceColors              bool
-		DisableTimestamp         bool
-		UseUppercaseLevel        bool
-		UseTimePassedAsTimestamp bool
-	}
-	// sentry toggles
-	EnableSentry  bool
-	DisableSentry bool
-	// run specific options
-	Run struct {
-		ForceNew          bool
-		RunParallel       bool
-		Items             []string
-		DownloadDirectory string
-		ModuleURL         []string
-		DisableURL        []string
-	}
+	Cfg           *configuration.AppConfiguration
 }
 
 // NewWatcher initializes a new Watcher with the default settings
-func NewWatcher(cfg *AppConfiguration) *Watcher {
+func NewWatcher(cfg *configuration.AppConfiguration) *Watcher {
 	watcher := &Watcher{
 		DbCon:         database.NewConnection(),
 		ModuleFactory: modules.GetModuleFactory(),
@@ -107,6 +49,7 @@ func NewWatcher(cfg *AppConfiguration) *Watcher {
 
 	for _, module := range watcher.ModuleFactory.GetAllModules() {
 		module.SetDbIO(watcher.DbCon)
+		module.SetCfg(cfg)
 	}
 
 	return watcher

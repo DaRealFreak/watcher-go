@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
+
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/internal/update"
@@ -21,13 +23,13 @@ import (
 type CliApplication struct {
 	watcher *watcherApp.Watcher
 	rootCmd *cobra.Command
-	config  *watcherApp.AppConfiguration
+	config  *configuration.AppConfiguration
 }
 
 // NewWatcherApplication returns the main command using cobra
 func NewWatcherApplication() *CliApplication {
 	app := &CliApplication{
-		config: new(watcherApp.AppConfiguration),
+		config: new(configuration.AppConfiguration),
 		rootCmd: &cobra.Command{
 			Use:   "watcher",
 			Short: "Watcher keeps track of all media items you want to track.",
