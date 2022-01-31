@@ -1,9 +1,12 @@
 package pixivapi
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 
 	"github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api/internal"
 	"golang.org/x/oauth2"
@@ -37,6 +40,14 @@ func (s *pixivTokenRefresher) Token() (_ *oauth2.Token, err error) {
 
 // refreshToken is the custom refresh functionality since we also require our custom post values here
 func (s *pixivTokenRefresher) refreshToken() (*oauth2.Token, error) {
+	if s.token == nil {
+		raven.CheckError(fmt.Errorf("token is nil"))
+	}
+
+	if s.token.RefreshToken == "" {
+		raven.CheckError(fmt.Errorf("refresh token is empty"))
+	}
+
 	v := url.Values{
 		"device_token":   {"pixiv"},
 		"get_secure_url": {"true"},
@@ -49,6 +60,7 @@ func (s *pixivTokenRefresher) refreshToken() (*oauth2.Token, error) {
 	}
 
 	res, err := s.client.PostForm(s.config.Endpoint.TokenURL, v)
+	raven.CheckError(err)
 	if err != nil {
 		return nil, err
 	}
