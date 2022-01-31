@@ -29,10 +29,10 @@ type downloadGalleryItem struct {
 	item *models.DownloadQueueItem
 }
 
-func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, item *models.DownloadQueueItem) error {
+func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, item *models.DownloadQueueItem) (bool, error) {
 	u, err := url.Parse(item.FileURI)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	parsedQuery, _ := url.ParseQuery(u.RawQuery)
@@ -40,7 +40,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		var i int64
 		i, err = strconv.ParseInt(expires, 10, 64)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		if time.Now().Unix() >= i {
@@ -51,7 +51,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 				),
 			)
 
-			return m.Parse(trackedItem)
+			return true, m.Parse(trackedItem)
 		}
 	}
 
@@ -60,7 +60,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		item.FileURI,
 	)
 
-	return err
+	return false, err
 }
 
 func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trackedItem *models.TrackedItem) error {
@@ -77,8 +77,14 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 			),
 		)
 
-		if err := m.downloadDownloadQueueItem(trackedItem, data.item); err != nil {
-			return err
+		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
+			if err != nil {
+				return err
+			}
+			// on no error we still break the download queue after we ran into expired links
+			if expired {
+				break
+			}
 		}
 
 		m.DbIO.UpdateTrackedItem(trackedItem, data.item.ItemID)
@@ -111,8 +117,14 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 				fmt.Sprintf("%s%s (%s)", m.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
 			)
 
-			if err = m.downloadDownloadQueueItem(trackedItem, singleItem.item); err != nil {
-				return err
+			if expired, err := m.downloadDownloadQueueItem(trackedItem, singleItem.item); expired || err != nil {
+				if err != nil {
+					return err
+				}
+				// on no error we still break the download queue after we ran into expired links
+				if expired {
+					break
+				}
 			}
 		}
 
