@@ -3,6 +3,7 @@ package patreon
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 )
 
@@ -50,8 +51,13 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 		return nil, err
 	}
 
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	var apiUserResponse userResponse
-	if err := json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &apiUserResponse); err != nil {
+	if err := json.Unmarshal(bodyBytes, &apiUserResponse); err != nil {
 		return nil, err
 	}
 
