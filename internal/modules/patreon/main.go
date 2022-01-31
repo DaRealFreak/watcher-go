@@ -2,10 +2,14 @@
 package patreon
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
+	"strings"
+	"unicode"
 
 	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -141,6 +145,27 @@ func (m *patreon) Login(account *models.Account) bool {
 
 	if len(loginError.Errors) > 0 {
 		for _, err := range loginError.Errors {
+			if err.Code.String() == "111" {
+				reader := bufio.NewReader(os.Stdin)
+				fmt.Print("Please enter the verification link from the e-mail: ")
+				text, _ := reader.ReadString('\n')
+				// remove control characters
+				text = strings.TrimFunc(text, func(r rune) bool {
+					return !unicode.IsGraphic(r)
+				})
+				verificationRes, verificationError := m.Session.Get(strings.TrimSuffix(text, "\n"))
+				if verificationError != nil {
+					log.WithField("module", m.Key).Fatal(
+						fmt.Errorf("error occurred during login (code: %s): %s", err.Code, err.Detail),
+					)
+					return false
+				}
+
+				if verificationRes.StatusCode == 200 {
+					return m.Login(account)
+				}
+			}
+
 			log.WithField("module", m.Key).Fatal(
 				fmt.Errorf("error occurred during login (code: %s): %s", err.Code, err.Detail),
 			)

@@ -54,7 +54,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				if attachment.Attributes.DownloadURL == "" {
 					log.WithField("module", m.Key).Warningf(
 						"post %s not unlocked, skipping attachment %s",
-						"https://www.patreon.com"+data.PatreonURL,
+						data.PatreonURL,
 						attachment.ID,
 					)
 
