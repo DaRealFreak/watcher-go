@@ -122,6 +122,22 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		}
 	}
 
+	var i = 0
+	for _, file := range postInfo.Body.PostBody.FileMap {
+		i += 1
+		fileName := fmt.Sprintf("%d_%s.%s", i, file.Name, file.Extension)
+
+		if err := m.fanboxAPI.Session.DownloadFile(
+			path.Join(
+				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+			),
+			file.URL,
+		); err != nil {
+			// if download was not successful return the occurred error here
+			return err
+		}
+	}
+
 	for i, file := range postInfo.ImagesFromBlocks() {
 		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(file))
 

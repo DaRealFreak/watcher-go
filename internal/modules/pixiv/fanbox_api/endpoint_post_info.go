@@ -31,6 +31,12 @@ type FanboxPostInfo struct {
 				ID          string `json:"id"`
 				OriginalURL string `json:"originalUrl"`
 			} `json:"imageMap"`
+			FileMap map[string]struct {
+				ID        string `json:"id"`
+				Name      string `json:"name"`
+				Extension string `json:"extension"`
+				URL       string `json:"url"`
+			} `json:"fileMap"`
 		} `json:"body"`
 		ID            json.Number `json:"id"`
 		Title         string      `json:"title"`
