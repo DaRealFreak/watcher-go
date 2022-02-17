@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
-	github.com/DaRealFreak/cloudflare-bp-go v1.0.1
+	github.com/DaRealFreak/cloudflare-bp-go v1.0.4
 	github.com/DaRealFreak/colored-nested-formatter v1.0.0
 	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.8.0
