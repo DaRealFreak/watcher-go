@@ -78,6 +78,7 @@ func (cli *CliApplication) getListCookiesCommand() *cobra.Command {
 func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 	var (
 		url              string
+		partial          string
 		includeCompleted bool
 	)
 
@@ -86,11 +87,12 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 		Short: "displays all items",
 		Long:  "displays all items currently in the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.watcher.ListTrackedItems(url, includeCompleted)
+			cli.watcher.ListTrackedItems(url, includeCompleted, partial)
 		},
 	}
 
 	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
+	itemCmd.Flags().StringVarP(&partial, "partial", "p", "", "part of the item term")
 	itemCmd.Flags().BoolVar(&includeCompleted, "include-completed", true, "should completed items be included in the list")
 
 	return itemCmd
@@ -98,7 +100,10 @@ func (cli *CliApplication) getListItemsCommand() *cobra.Command {
 
 // getListAllCommand returns the command for the list all sub command
 func (cli *CliApplication) getListAllCommand() *cobra.Command {
-	var url string
+	var (
+		url     string
+		partial string
+	)
 
 	allCmd := &cobra.Command{
 		Use:   "all",
@@ -118,11 +123,12 @@ func (cli *CliApplication) getListAllCommand() *cobra.Command {
 			cli.watcher.ListCookies(url)
 			fmt.Println("\n ")
 			fmt.Println("Tracked Items:")
-			cli.watcher.ListTrackedItems(url, true)
+			cli.watcher.ListTrackedItems(url, true, partial)
 		},
 	}
 
 	allCmd.Flags().StringVarP(&url, "url", "u", "", "url of module")
+	allCmd.Flags().StringVarP(&partial, "partial", "p", "", "part of the item term")
 
 	return allCmd
 }

@@ -3,6 +3,7 @@ package watcher
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -36,7 +37,7 @@ func (app *Watcher) ListRegisteredModules(uri string) {
 }
 
 // ListTrackedItems lists all tracked items with the option to limit it to a module
-func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
+func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool, partial string) {
 	var trackedItems []*models.TrackedItem
 	if uri == "" {
 		trackedItems = app.DbCon.GetTrackedItems(nil, includeCompleted)
@@ -51,6 +52,12 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool) {
 	_, _ = fmt.Fprintln(w, "ID\tModule\tUrl\tCurrent Item\tCompleted")
 
 	for _, item := range trackedItems {
+		if partial != "" {
+			if !strings.Contains(item.URI, partial) {
+				continue
+			}
+		}
+
 		_, _ = fmt.Fprintf(
 			w,
 			"%d\t%s\t%s\t%s\t%t\n",
