@@ -1,10 +1,13 @@
 package patreon
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 )
 
 // userResponse contains not all but the relevant data of the user response of the public API
@@ -51,13 +54,16 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 		return nil, err
 	}
 
-	bodyBytes, err := io.ReadAll(res.Body)
+	reader, err := gzip.NewReader(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
+	readerRes, readerErr := ioutil.ReadAll(reader)
+	raven.CheckError(readerErr)
+
 	var apiUserResponse userResponse
-	if err := json.Unmarshal(bodyBytes, &apiUserResponse); err != nil {
+	if err := json.Unmarshal(readerRes, &apiUserResponse); err != nil {
 		return nil, err
 	}
 

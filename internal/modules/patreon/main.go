@@ -97,7 +97,9 @@ func (m *patreon) InitializeModule() {
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 
 	// add CloudFlare bypass
-	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport)
+	cloudflareOptions := cloudflarebp.GetDefaultOptions()
+	cloudflareOptions.Headers["Accept-Encoding"] = "gzip, deflate, br"
+	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

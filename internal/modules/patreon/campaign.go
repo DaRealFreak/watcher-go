@@ -1,10 +1,14 @@
 package patreon
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"strconv"
+
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 )
@@ -191,8 +195,16 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 		return nil, err
 	}
 
+	reader, err := gzip.NewReader(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	readerRes, readerErr := ioutil.ReadAll(reader)
+	raven.CheckError(readerErr)
+
 	var postsData campaignResponse
-	err = json.Unmarshal([]byte(m.Session.GetDocument(res).Text()), &postsData)
+	err = json.Unmarshal(readerRes, &postsData)
 
 	return &postsData, err
 }

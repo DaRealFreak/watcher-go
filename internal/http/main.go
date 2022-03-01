@@ -5,11 +5,13 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -81,14 +83,23 @@ func (s *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader
 
 // GetDocument converts the http response to a *goquery.Document
 func (s *Session) GetDocument(response *http.Response) *goquery.Document {
-	var reader io.ReadCloser
+	var (
+		reader io.ReadCloser
+		err    error
+	)
 
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
-		reader, _ = gzip.NewReader(response.Body)
-	default:
-		reader = response.Body
+		reader, err = gzip.NewReader(response.Body)
+		if err == nil {
+			readerRes, readerErr := ioutil.ReadAll(reader)
+			raven.CheckError(readerErr)
+
+			response.Body = io.NopCloser(strings.NewReader(string(readerRes)))
+		}
 	}
+
+	reader = response.Body
 
 	defer raven.CheckClosure(reader)
 
