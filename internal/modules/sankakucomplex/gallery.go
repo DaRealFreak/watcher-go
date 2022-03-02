@@ -131,10 +131,11 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 				if data.FileURL != "" {
 					galleryItems = append(galleryItems, &downloadGalleryItem{
 						item: &models.DownloadQueueItem{
-							ItemID:      string(data.ID),
-							DownloadTag: path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
-							FileName:    string(data.ID) + "_" + m.GetFileName(data.FileURL),
-							FileURI:     data.FileURL,
+							ItemID:          string(data.ID),
+							DownloadTag:     path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
+							FileName:        string(data.ID) + "_" + m.GetFileName(data.FileURL),
+							FileURI:         data.FileURL,
+							FallbackFileURI: data.SampleURL,
 						},
 					})
 				}

@@ -199,10 +199,11 @@ func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string
 			if galleryItem.FileURL != "" {
 				galleryItems = append(galleryItems, &downloadGalleryItem{
 					item: &models.DownloadQueueItem{
-						ItemID:      string(galleryItem.ID),
-						DownloadTag: fmt.Sprintf("%s/%s%s (%s)", "books", m.SanitizePath(bookTag, false), bookLanguage, bookId),
-						FileName:    fmt.Sprintf("%d_%s", i+1, m.GetFileName(galleryItem.FileURL)),
-						FileURI:     galleryItem.FileURL,
+						ItemID:          string(galleryItem.ID),
+						DownloadTag:     fmt.Sprintf("%s/%s%s (%s)", "books", m.SanitizePath(bookTag, false), bookLanguage, bookId),
+						FileName:        fmt.Sprintf("%d_%s", i+1, m.GetFileName(galleryItem.FileURL)),
+						FileURI:         galleryItem.FileURL,
+						FallbackFileURI: galleryItem.SampleURL,
 					},
 				})
 			}

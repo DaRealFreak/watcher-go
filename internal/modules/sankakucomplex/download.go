@@ -79,7 +79,29 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
 			if err != nil {
-				return err
+				if data.item.FallbackFileURI != "" && data.item.FallbackFileURI != data.item.FileURI {
+					// fallback to resized image
+					log.WithField("module", m.Key).Warn(
+						fmt.Sprintf("error occured: %s, using fallback URI", err.Error()),
+					)
+
+					data.item.FileURI = data.item.FallbackFileURI
+					fileName := m.GetFileName(data.item.FileName)
+					ext := m.GetFileExtension(data.item.FileName)
+					data.item.FileName = fmt.Sprintf("%s_fallback_%s", fileName, ext)
+
+					if expired, err = m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
+						if err != nil {
+							return err
+						}
+						// on no error we still break the download queue after we ran into expired links
+						if expired {
+							break
+						}
+					}
+				} else {
+					return err
+				}
 			}
 			// on no error we still break the download queue after we ran into expired links
 			if expired {
