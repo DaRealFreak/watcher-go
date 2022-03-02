@@ -34,10 +34,11 @@ type ModuleInterface interface {
 
 // DownloadQueueItem is a generic struct in case the module doesn't require special actions
 type DownloadQueueItem struct {
-	ItemID      string
-	DownloadTag string
-	FileName    string
-	FileURI     string
+	ItemID          string
+	DownloadTag     string
+	FileName        string
+	FileURI         string
+	FallbackFileURI string
 }
 
 // Module is an implementation to the ModuleInterface to provide basic functions/variables
