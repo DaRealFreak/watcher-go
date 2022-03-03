@@ -60,6 +60,20 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		item.FileURI,
 	)
 
+	if err != nil && item.FallbackFileURI != "" && item.FallbackFileURI != item.FileURI {
+		// fallback to resized image
+		log.WithField("module", m.Key).Warn(
+			fmt.Sprintf("error occured: %s, using fallback URI", err.Error()),
+		)
+
+		item.FileURI = item.FallbackFileURI
+		ext := m.GetFileExtension(item.FileName)
+		fileName := strings.TrimRight(item.FileName, ext)
+		item.FileName = fmt.Sprintf("%s_fallback%s", fileName, ext)
+
+		return m.downloadDownloadQueueItem(trackedItem, item)
+	}
+
 	return false, err
 }
 
@@ -78,27 +92,12 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		)
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
+			// continue on 404 errors, since they most likely won't get fixed
 			if err != nil {
-				if data.item.FallbackFileURI != "" && data.item.FallbackFileURI != data.item.FileURI {
-					// fallback to resized image
+				if err.Error() == "unexpected returned status code: 404" {
 					log.WithField("module", m.Key).Warn(
-						fmt.Sprintf("error occured: %s, using fallback URI", err.Error()),
+						fmt.Sprintf("skipping item: %s, status code was 404", data.item.ItemID),
 					)
-
-					data.item.FileURI = data.item.FallbackFileURI
-					fileName := m.GetFileName(data.item.FileName)
-					ext := m.GetFileExtension(data.item.FileName)
-					data.item.FileName = fmt.Sprintf("%s_fallback_%s", fileName, ext)
-
-					if expired, err = m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
-						if err != nil {
-							return err
-						}
-						// on no error we still break the download queue after we ran into expired links
-						if expired {
-							break
-						}
-					}
 				} else {
 					return err
 				}
