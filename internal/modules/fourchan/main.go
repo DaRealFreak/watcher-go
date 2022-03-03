@@ -16,6 +16,7 @@ import (
 // fourChan contains the implementation of the ModuleInterface
 type fourChan struct {
 	*models.Module
+	threadPattern *regexp.Regexp
 }
 
 // init function registers the bare and the normal module to the module factories
@@ -35,7 +36,8 @@ func NewBareModule() *models.Module {
 		},
 	}
 	module.ModuleInterface = &fourChan{
-		Module: module,
+		Module:        module,
+		threadPattern: regexp.MustCompile(`.*/(?P<BoardId>.*)/thread/(?P<ThreadID>.*)/`),
 	}
 
 	// register module to log formatter
@@ -70,6 +72,8 @@ func (m *fourChan) Login(_ *models.Account) bool {
 func (m *fourChan) Parse(item *models.TrackedItem) error {
 	if strings.Contains(item.URI, "/thread/") {
 		return m.parseThread(item)
+	} else if strings.Contains(item.URI, "/search/") {
+		return m.parseSearch(item)
 	}
 
 	return nil

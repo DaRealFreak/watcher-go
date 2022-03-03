@@ -2,7 +2,6 @@ package fourchan
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,10 +13,9 @@ import (
 
 // parseThread parses thread searches
 func (m *fourChan) parseThread(item *models.TrackedItem) error {
-	threadPattern := regexp.MustCompile(`.*/(?P<BoardId>.*)/thread/(?P<ThreadID>.*)/`)
-	if threadPattern.MatchString(item.URI) {
-		boardID := threadPattern.FindStringSubmatch(item.URI)[1]
-		threadID := threadPattern.FindStringSubmatch(item.URI)[2]
+	if m.threadPattern.MatchString(item.URI) {
+		boardID := m.threadPattern.FindStringSubmatch(item.URI)[1]
+		threadID := m.threadPattern.FindStringSubmatch(item.URI)[2]
 
 		chanUrl := fmt.Sprintf("https://boards.4chan.org/%s/thread/%s", boardID, threadID)
 		archiveUrl := fmt.Sprintf("https://desuarchive.org/%s/thread/%s/", boardID, threadID)
@@ -49,6 +47,11 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 
 		for _, itemID := range keys {
 			if item.CurrentItem == "" || itemID > int(currentItemID) {
+				// filter out deleted/not indexed entries
+				if res, _ = m.Session.GetClient().Get(contentUrls[itemID]); res.StatusCode == 404 {
+					continue
+				}
+
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemID:      strconv.Itoa(itemID),
 					DownloadTag: fmt.Sprintf("%s (%s)", threadTitle, threadID),
