@@ -26,6 +26,7 @@ type deviantArtPattern struct {
 	collectionUUIDPattern *regexp.Regexp
 	collectionPattern     *regexp.Regexp
 	tagPattern            *regexp.Regexp
+	searchPattern         *regexp.Regexp
 }
 
 // nolint: gochecknoinits
@@ -105,6 +106,8 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 		return m.parseCollectionUUID(item)
 	case m.daPattern.tagPattern.MatchString(item.URI):
 		return m.parseTag(item)
+	case m.daPattern.searchPattern.MatchString(item.URI):
+		return m.parseSearch(item)
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
@@ -120,5 +123,6 @@ func getDeviantArtPattern() deviantArtPattern {
 		collectionPattern:     regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/favourites(?:/(\d+))?.*`),
 		collectionUUIDPattern: regexp.MustCompile(`DeviantArt://collection/([^/?&]+?)/([^/?&]+)`),
 		tagPattern:            regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+)(?:$|/.*)`),
+		searchPattern:         regexp.MustCompile(`https://www.deviantart.com/search.*q=(.*)`),
 	}
 }

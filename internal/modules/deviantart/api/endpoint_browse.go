@@ -48,6 +48,11 @@ type BrowseTags struct {
 	PaginatedResults
 }
 
+// BrowseNewest contains all relevant information of the API response of the browse function of the newest endpoint
+type BrowseNewest struct {
+	PaginatedResults
+}
+
 // BrowseTags implements the API endpoint https://www.deviantart.com/api/v1/oauth2/browse/tags
 func (a *DeviantartAPI) BrowseTags(tag string, offset uint, limit uint) (*BrowseTags, error) {
 	values := url.Values{
@@ -66,4 +71,24 @@ func (a *DeviantartAPI) BrowseTags(tag string, offset uint, limit uint) (*Browse
 	err = a.mapAPIResponse(res, &browseTags)
 
 	return &browseTags, err
+}
+
+// BrowseNewest implements the API endpoint https://www.deviantart.com/api/v1/oauth2/browse/newest
+func (a *DeviantartAPI) BrowseNewest(query string, offset uint, limit uint) (*BrowseNewest, error) {
+	values := url.Values{
+		"q":              {query},
+		"offset":         {strconv.FormatUint(uint64(offset), 10)},
+		"limit":          {strconv.FormatUint(uint64(limit), 10)},
+		"mature_content": {"true"},
+	}
+
+	res, err := a.request("GET", "/browse/newest", values)
+	if err != nil {
+		return nil, err
+	}
+
+	var browseNewest BrowseNewest
+	err = a.mapAPIResponse(res, &browseNewest)
+
+	return &browseNewest, err
 }
