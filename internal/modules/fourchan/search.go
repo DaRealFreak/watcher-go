@@ -30,9 +30,11 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 	for !foundCurrentItem {
 		threads := m.getThreads(html)
 		for _, thread := range threads {
+			threadID := m.threadPattern.FindStringSubmatch(thread)[2]
+
 			// will return 0 on error, so fine for us too for the current item
 			currentItemID, _ = strconv.ParseInt(item.CurrentItem, 10, 64)
-			galleryItemID, err = strconv.ParseInt(thread, 10, 64)
+			galleryItemID, err = strconv.ParseInt(threadID, 10, 64)
 
 			if !(item.CurrentItem == "" || galleryItemID > currentItemID) {
 				foundCurrentItem = true
@@ -95,7 +97,9 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 			continue
 		}
 
-		m.DbIO.UpdateTrackedItem(item, gallery)
+		threadID := m.threadPattern.FindStringSubmatch(gallery)[2]
+
+		m.DbIO.UpdateTrackedItem(item, threadID)
 	}
 
 	return nil
