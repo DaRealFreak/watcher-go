@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -24,7 +26,9 @@ import (
 // patreon contains the implementation of the ModuleInterface
 type patreon struct {
 	*models.Module
-	creatorIPattern *regexp.Regexp
+	loginCsrfPattern  *regexp.Regexp
+	creatorIdPattern  *regexp.Regexp
+	creatorUriPattern *regexp.Regexp
 }
 
 type loginAttributes struct {
@@ -72,11 +76,14 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*patreon.com"),
+			regexp.MustCompile("patreon://creator/"),
 		},
 	}
 	module.ModuleInterface = &patreon{
-		Module:          module,
-		creatorIPattern: regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
+		Module:            module,
+		loginCsrfPattern:  regexp.MustCompile(`window\.patreon\.csrfSignature = "(.*)";`),
+		creatorIdPattern:  regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
+		creatorUriPattern: regexp.MustCompile(`patreon://creator/([\d]+)`),
 	}
 
 	// register module to log formatter
@@ -102,6 +109,22 @@ func (m *patreon) InitializeModule() {
 	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
 }
 
+func (m *patreon) AddItem(uri string) (string, error) {
+	res, err := m.Session.Get(uri)
+	if err != nil {
+		return uri, err
+	}
+
+	creatorIDMatches := m.creatorIdPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
+	if len(creatorIDMatches) != 2 {
+		return uri, fmt.Errorf("unexpected amount of matches in search of creator id ")
+	}
+
+	creatorID, _ := strconv.ParseInt(creatorIDMatches[1], 10, 64)
+
+	return fmt.Sprintf("patreon://creator/%d", creatorID), nil
+}
+
 // AddModuleCommand adds custom module specific settings and commands to our application
 func (m *patreon) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
@@ -125,13 +148,25 @@ func (m *patreon) Login(account *models.Account) bool {
 		log.WithField("module", m.Key).Error(err)
 	}
 
-	res, err := m.Session.GetClient().Post(
-		"https://www.patreon.com/api/login?include=campaign%2Cuser_location&json-api-version=1.0",
-		"application/vnd.api+json",
-		bytes.NewReader(data),
-	)
+	res, err := m.Session.Get("https://www.patreon.com/login")
+	loginCsrfMatches := m.loginCsrfPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
+	if len(loginCsrfMatches) != 2 {
+		log.WithField("module", m.Key).Fatal(
+			fmt.Errorf("unexpected amount of matches in search of login CSRF token"),
+		)
+		return false
+	}
+
+	req, _ := http.NewRequest("POST", "https://www.patreon.com/api/login?include=campaign%2Cuser_location&json-api-version=1.0", bytes.NewReader(data))
+	req.Header.Set("Content-Type", "application/vnd.api+json")
+	req.Header.Set("X-CSRF-Signature", loginCsrfMatches[1])
+
+	res, err = m.Session.GetClient().Do(req)
 	if err != nil {
 		log.WithField("module", m.Key).Error(err)
+	}
+	if res.StatusCode != 200 {
+		log.WithField("module", m.Key).Error("unable to login to patreon.com")
 	}
 
 	loginRes := m.Session.GetDocument(res).Text()
@@ -141,13 +176,13 @@ func (m *patreon) Login(account *models.Account) bool {
 		loginSuccess loginSuccessResponse
 	)
 
-	if err := json.Unmarshal([]byte(loginRes), &loginError); err != nil {
+	if err = json.Unmarshal([]byte(loginRes), &loginError); err != nil {
 		log.WithField("module", m.Key).Error(err)
 	}
 
 	if len(loginError.Errors) > 0 {
-		for _, err := range loginError.Errors {
-			if err.Code.String() == "111" {
+		for _, loginErr := range loginError.Errors {
+			if loginErr.Code.String() == "111" {
 				reader := bufio.NewReader(os.Stdin)
 				fmt.Print("Please enter the verification link from the e-mail: ")
 				text, _ := reader.ReadString('\n')
@@ -158,7 +193,7 @@ func (m *patreon) Login(account *models.Account) bool {
 				verificationRes, verificationError := m.Session.Get(strings.TrimSuffix(text, "\n"))
 				if verificationError != nil {
 					log.WithField("module", m.Key).Fatal(
-						fmt.Errorf("error occurred during login (code: %s): %s", err.Code, err.Detail),
+						fmt.Errorf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail),
 					)
 					return false
 				}
@@ -169,7 +204,7 @@ func (m *patreon) Login(account *models.Account) bool {
 			}
 
 			log.WithField("module", m.Key).Fatal(
-				fmt.Errorf("error occurred during login (code: %s): %s", err.Code, err.Detail),
+				fmt.Errorf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail),
 			)
 		}
 	}

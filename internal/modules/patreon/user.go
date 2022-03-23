@@ -37,7 +37,7 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 		return 0, err
 	}
 
-	creatorIDMatches := m.creatorIPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
+	creatorIDMatches := m.creatorIdPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
 	if len(creatorIDMatches) != 2 {
 		return 0, fmt.Errorf("unexpected amount of matches in search of creator id ")
 	}
