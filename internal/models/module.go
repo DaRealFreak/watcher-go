@@ -30,6 +30,8 @@ type ModuleInterface interface {
 	Login(account *Account) (success bool)
 	// Parse parses the tracked item
 	Parse(item *TrackedItem) error
+	// AddItem gives the module the option to parse the uri before adding it to the database (f.e. for normalizing)
+	AddItem(uri string) (string, error)
 }
 
 // DownloadQueueItem is a generic struct in case the module doesn't require special actions
@@ -53,6 +55,11 @@ type Module struct {
 	URISchemas     []*regexp.Regexp
 	ProxyLoopIndex int
 	Cfg            *configuration.AppConfiguration
+}
+
+// AddItem gives the module the option to parse the uri before adding it to the database (f.e. for normalizing)
+func (t *Module) AddItem(uri string) (string, error) {
+	return uri, nil
 }
 
 // ModuleKey returns the key of the module required to use as interface to prevent import cycles

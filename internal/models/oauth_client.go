@@ -19,7 +19,7 @@ type OAuthClient struct {
 	Disabled     bool
 }
 
-// GetClient returns an http client implementing the OAuth2 configuration
+// GetClient returns a http client implementing the OAuth2 configuration
 func (c *OAuthClient) GetClient(authURL string, tokenURL string, scopes []string) *http.Client {
 	config := oauth2.Config{
 		ClientID:     c.ClientID,
