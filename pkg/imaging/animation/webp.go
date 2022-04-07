@@ -33,8 +33,13 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 	}
 	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
 
-	// #nosec
-	if err = exec.Command("ffmpeg", args...).Run(); err != nil {
+	cmd := exec.Command("ffmpeg", args...)
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cmd.Wait(); err != nil {
 		return nil, err
 	}
 

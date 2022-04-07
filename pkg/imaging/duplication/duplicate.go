@@ -92,8 +92,13 @@ func resizeImage(fileName string, width int, height int) error {
 	args = append(args, fileName, "-resize", fmt.Sprintf("%dx%d!", width, height), fileName)
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 
-	// #nosec
-	return exec.Command(executable, args...).Run()
+	cmd := exec.Command("ffmpeg", args...)
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Wait()
 }
 
 // getFileResourceReader returns a reader of the file resource of either passed URL or local path
@@ -136,7 +141,13 @@ func copyToTempFile(r io.Reader) (f *os.File, err error) {
 func executeCommand(cmd *exec.Cmd) (stdout bytes.Buffer, stderr bytes.Buffer, err error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+
+	err = cmd.Start()
+	if err != nil {
+		return stdout, stderr, err
+	}
+
+	err = cmd.Wait()
 
 	return stdout, stderr, err
 }

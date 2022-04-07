@@ -65,6 +65,10 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 		if err = h.dumpFramesForImageMagick(fData); err != nil {
 			return nil, err
 		}
+
+		if err = h.resizeImagesForAnimation(fData); err != nil {
+			return nil, err
+		}
 	}
 
 	executable, args := imaging.GetImageMagickEnv("convert")
@@ -81,8 +85,14 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
-	// #nosec
-	if err = exec.Command(executable, args...).Run(); err != nil {
+
+	cmd := exec.Command(executable, args...)
+	err = cmd.Start()
+	if err == nil {
+		err = cmd.Wait()
+	}
+
+	if err != nil {
 		if fData.ConvertedFrames {
 			// fallback failed, return the error
 			return nil, err
@@ -141,7 +151,7 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 	for index, frame := range fData.Frames {
 		// guess the image format for the file extension
 		fType, err := h.guessImageFormat(bytes.NewReader(frame))
-		fPath := filepath.Join(fData.WorkPath, fmt.Sprintf("%d.%s", index, fType))
+		fPath := filepath.Join(fData.WorkPath, fmt.Sprintf("%d.%s", index+1, fType))
 
 		if err != nil {
 			return err
@@ -172,14 +182,19 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		executable, args := imaging.GetImageMagickEnv("convert")
-		newFilePath := filepath.Join(fData.WorkPath, strconv.Itoa(i)+".png")
+		newFilePath := filepath.Join(fData.WorkPath, strconv.Itoa(i+1)+".png")
 		args = append(args, fData.FilePaths[i], newFilePath)
 		fData.FilePaths[i] = newFilePath
 
 		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 
-		// #nosec
-		if err := exec.Command(executable, args...).Run(); err != nil {
+		cmd := exec.Command(executable, args...)
+		err := cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+
+		if err = cmd.Wait(); err != nil {
 			return nil, err
 		}
 	}
@@ -187,4 +202,31 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 	fData.ConvertedFrames = true
 
 	return h.createAnimationImageMagick(fData, fExt, del)
+}
+
+func (h *Helper) resizeImagesForAnimation(fData *FileData) error {
+	log.Debug("resizing images for animations (even width/height)")
+
+	for _, filePath := range fData.FilePaths {
+		executable := "ffmpeg"
+		args := []string{"-i", filePath}
+		args = append(args, "-vf")
+		args = append(args, "pad=ceil(iw/2)*2:ceil(ih/2)*2")
+		args = append(args, filePath)
+		args = append(args, "-y")
+
+		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+
+		cmd := exec.Command(executable, args...)
+		err := cmd.Start()
+		if err != nil {
+			return err
+		}
+
+		if err = cmd.Wait(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
