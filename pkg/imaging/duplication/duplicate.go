@@ -22,39 +22,40 @@ import (
 // CheckForSimilarity uses image magick to check for image similarity
 func CheckForSimilarity(file1 string, file2 string) (similarity float64, err error) {
 	f1, err := getFileResourceReader(file1)
+	defer raven.CheckClosureNonFatal(f1)
+
 	if err != nil {
 		return 0, err
 	}
 
 	f2, err := getFileResourceReader(file2)
+	defer raven.CheckClosureNonFatal(f2)
+
 	if err != nil {
 		return 0, err
 	}
 
 	tmpFile1, err := copyToTempFile(f1)
+	defer raven.CheckFileRemoval(tmpFile1)
 	if err != nil {
 		return 0, err
 	}
 
 	tmpFile2, err := copyToTempFile(f2)
+	defer raven.CheckFileRemoval(tmpFile2)
 	if err != nil {
 		return 0, err
 	}
 
 	if err = resizeImage(tmpFile1.Name(), 400, 400); err != nil {
-		defer raven.CheckFileRemoval(tmpFile1)
 		return 0, err
 	}
 
 	if err = resizeImage(tmpFile2.Name(), 400, 400); err != nil {
-		defer raven.CheckFileRemoval(tmpFile2)
 		return 0, err
 	}
 
 	sim, err := getSimilarity(tmpFile1.Name(), tmpFile2.Name())
-
-	defer raven.CheckFileRemoval(tmpFile1)
-	defer raven.CheckFileRemoval(tmpFile2)
 
 	return sim, err
 }
@@ -102,23 +103,32 @@ func resizeImage(fileName string, width int, height int) error {
 }
 
 // getFileResourceReader returns a reader of the file resource of either passed URL or local path
-func getFileResourceReader(source string) (r io.Reader, err error) {
+func getFileResourceReader(source string) (r *os.File, err error) {
 	u, err := url.Parse(source)
 	if err != nil {
 		return nil, err
 	}
 
 	if u.Scheme == "http" || u.Scheme == "https" {
-		// #nosec
-		resp, err := http.Get(source)
+		var f *os.File
+		f, err = ioutil.TempFile("", ".*")
 		if err != nil {
 			return nil, err
 		}
 
-		return resp.Body, nil
+		var resp *http.Response
+		resp, err = http.Get(source)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err = io.Copy(f, resp.Body); err != nil {
+			return nil, err
+		}
+
+		return f, nil
 	}
 
-	// #nosec
 	return os.Open(source)
 }
 

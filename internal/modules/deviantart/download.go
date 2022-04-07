@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
@@ -146,6 +148,7 @@ func (m *deviantArt) downloadVideo(item downloadQueueItem) error {
 func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downloadLog) error {
 	if item.deviation.DeviationDownload != nil && item.deviation.Content != nil {
 		tmpFile, err := ioutil.TempFile("", ".*")
+		defer raven.CheckFileRemoval(tmpFile)
 		if err != nil {
 			return err
 		}
@@ -204,6 +207,7 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloa
 	}
 
 	tmpFile, err := ioutil.TempFile("", ".*")
+	defer raven.CheckFileRemoval(tmpFile)
 	if err != nil {
 		return err
 	}
