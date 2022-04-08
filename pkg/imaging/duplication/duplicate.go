@@ -93,7 +93,7 @@ func resizeImage(fileName string, width int, height int) error {
 	args = append(args, fileName, "-resize", fmt.Sprintf("%dx%d!", width, height), fileName)
 	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
 
-	cmd := exec.Command("ffmpeg", args...)
+	cmd := exec.Command(executable, args...)
 	err := cmd.Start()
 	if err != nil {
 		return err
