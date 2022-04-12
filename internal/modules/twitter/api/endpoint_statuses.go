@@ -39,6 +39,7 @@ func (a *TwitterAPI) UserTimeline(
 
 	apiURI := "https://api.twitter.com/1.1/statuses/user_timeline.json"
 	values := url.Values{
+		"tweet_mode":  {"extended"},
 		"screen_name": {screenName},
 		"trim_user":   {"1"},
 		"count":       {strconv.Itoa(int(count))},
