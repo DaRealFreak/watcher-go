@@ -35,9 +35,10 @@ func (m *twitter) processDownloadQueue(downloadQueue []*api.Tweet, trackedItem *
 			if entity.Type == "video" {
 				highestBitRateIndex := 0
 				var highestBitRate uint = 0
-				for index, variant := range entity.VideoInfo.Variants {
-					if variant.Bitrate > highestBitRate {
-						highestBitRateIndex = index
+				for variantIndex, variant := range entity.VideoInfo.Variants {
+					if variant.Bitrate >= highestBitRate {
+						highestBitRateIndex = variantIndex
+						highestBitRate = variant.Bitrate
 					}
 				}
 
