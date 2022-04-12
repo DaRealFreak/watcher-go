@@ -61,7 +61,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					continue
 				}
 
-				fileName := m.SanitizePath(attachment.Attributes.FileName, false)
+				fileName := m.SanitizePath(m.GetFileName(attachment.Attributes.FileName), false)
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
