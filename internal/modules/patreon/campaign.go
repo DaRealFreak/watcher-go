@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"strconv"
@@ -195,9 +196,14 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 		return nil, err
 	}
 
-	reader, err := gzip.NewReader(res.Body)
-	if err != nil {
-		return nil, err
+	var reader io.ReadCloser
+	if res.Header.Get("Content-Encoding") == "gzip" {
+		reader, err = gzip.NewReader(res.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		reader = res.Body
 	}
 
 	readerRes, readerErr := ioutil.ReadAll(reader)
