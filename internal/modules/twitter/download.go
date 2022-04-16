@@ -12,7 +12,7 @@ import (
 )
 
 // processDownloadQueue downloads all media entities from the passed tweets if set
-func (m *twitter) processDownloadQueue(downloadQueue []*api.Tweet, trackedItem *models.TrackedItem) error {
+func (m *twitter) processDownloadQueue(downloadQueue []*api.TweetV1, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)

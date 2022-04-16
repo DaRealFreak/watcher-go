@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
@@ -15,50 +16,70 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return err
 	}
 
+	userInformation, err := m.twitterAPI.UserByUsername(screenName)
+	if err != nil {
+		return err
+	}
+
 	var (
-		maxID          string
-		latestTweetID  *uint
-		newMediaTweets []*api.Tweet
+		paginationToken string
+		latestTweetID   int
+		newMediaTweets  []api.TweetV2
 	)
 
 	for {
-		tweets, err := m.twitterAPI.UserTimeline(
-			screenName, item.CurrentItem, maxID, api.MaxTweetsPerRequest, true,
-		)
+		tweets, err := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), "", "", paginationToken)
 		if err != nil {
 			return nil
 		}
 
-		if maxID != "" && len(tweets) > 0 {
-			// remove the first element which is our current max_id
-			tweets = tweets[1:]
+		if latestTweetID == 0 && len(tweets.Data) > 0 {
+			latestTweetID, err = strconv.Atoi(tweets.Data[0].ID.String())
+			if err != nil {
+				return err
+			}
 		}
 
-		if latestTweetID == nil && len(tweets) > 0 {
-			latestTweetID = &tweets[0].ID
+		for _, tweet := range tweets.Data {
+			if strings.HasPrefix(tweet.Text, "RT @") {
+				continue
+			}
+
+			if len(tweet.Attachments.MediaKeys) > 0 {
+				for _, mediaKey := range tweet.Attachments.MediaKeys {
+					for _, media := range tweets.Includes.Media {
+						if media.MediaKey == mediaKey {
+							tweet.Attachments.Media = append(tweet.Attachments.Media, media)
+							break
+						}
+					}
+				}
+
+				newMediaTweets = append(newMediaTweets, tweet)
+			}
 		}
 
-		mediaTweets := m.filterRetweet(m.filterMediaTweets(tweets), false)
-		newMediaTweets = append(newMediaTweets, mediaTweets...)
-
-		if len(tweets) < 1 {
+		if len(tweets.Data) == 0 || tweets.Meta.NextToken == "" {
 			break
 		}
 
-		maxID = strconv.Itoa(int(tweets[len(tweets)-1].ID))
+		// set token to check the next page
+		paginationToken = tweets.Meta.NextToken
 	}
 
 	for i, j := 0, len(newMediaTweets)-1; i < j; i, j = i+1, j-1 {
 		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
 	}
 
-	if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
-		return err
-	}
+	/*
+		if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
+			return err
+		}
+	*/
 
-	if latestTweetID != nil {
+	if latestTweetID != 0 {
 		// update also if no new media item got found to possibly save some queries if media tweets happen later
-		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(int(*latestTweetID)))
+		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(latestTweetID))
 	}
 
 	return nil
@@ -75,7 +96,7 @@ func (m *twitter) extractScreenName(uri string) (string, error) {
 
 // filterMediaTweets returns a filtered amount of tweets having media elements attached since the search endpoint
 // only filters the indexed tweets of 6-9 days and is unreliable
-func (m *twitter) filterMediaTweets(tweets []*api.Tweet) (mediaTweets []*api.Tweet) {
+func (m *twitter) filterMediaTweets(tweets []*api.TweetV1) (mediaTweets []*api.TweetV1) {
 	for _, tweet := range tweets {
 		if len(tweet.ExtendedEntities.Media) > 0 {
 			mediaTweets = append(mediaTweets, tweet)
@@ -86,9 +107,9 @@ func (m *twitter) filterMediaTweets(tweets []*api.Tweet) (mediaTweets []*api.Twe
 }
 
 // filterRetweet is an option to filter retweets from the passed tweets or also original tweets
-func (m *twitter) filterRetweet(tweets []*api.Tweet, retweet bool) (responseTweets []*api.Tweet) {
+func (m *twitter) filterRetweet(tweets []*api.TweetV1, retweet bool) (responseTweets []*api.TweetV1) {
 	for _, tweet := range tweets {
-		if retweet == (tweet.RetweetedStatus != nil) {
+		if retweet == (tweet.RetweetedStatus.User.ID > 0) {
 			responseTweets = append(responseTweets, tweet)
 		}
 	}

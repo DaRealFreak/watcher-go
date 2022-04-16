@@ -6,11 +6,11 @@ import (
 	"strconv"
 )
 
-// Tweet contains the struct to unmarshal twitters API responses
-type Tweet struct {
+// TweetV1 contains the struct to unmarshal twitters API responses
+type TweetV1 struct {
 	CreatedAt        string `json:"created_at"`
 	ID               uint   `json:"id"`
-	Text             string `json:"text"`
+	Text             string `json:"full_text"`
 	ExtendedEntities struct {
 		Media []*struct {
 			ID            uint   `json:"id"`
@@ -26,7 +26,11 @@ type Tweet struct {
 			} `json:"video_info"`
 		} `json:"media"`
 	} `json:"extended_entities"`
-	RetweetedStatus interface{} `json:"retweeted_status"`
+	RetweetedStatus struct {
+		User struct {
+			ID uint `json:"id"`
+		} `json:"user"`
+	} `json:"retweeted_status"`
 }
 
 // UserTimeline retrieves the tweets of the passed user, sinceID and maxID will be omitted if an empty string is passed
@@ -34,7 +38,7 @@ type Tweet struct {
 // https://developer.twitter.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline
 func (a *TwitterAPI) UserTimeline(
 	screenName string, sinceID string, maxID string, count uint, includeRetweets bool,
-) ([]*Tweet, error) {
+) ([]*TweetV1, error) {
 	a.applyRateLimit()
 
 	apiURI := "https://api.twitter.com/1.1/statuses/user_timeline.json"
@@ -59,7 +63,7 @@ func (a *TwitterAPI) UserTimeline(
 		return nil, err
 	}
 
-	var userTimeline []*Tweet
+	var userTimeline []*TweetV1
 	err = a.mapAPIResponse(res, &userTimeline)
 
 	return userTimeline, err
