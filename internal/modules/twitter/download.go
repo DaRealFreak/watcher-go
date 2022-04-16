@@ -3,7 +3,6 @@ package twitter
 import (
 	"fmt"
 	"path"
-	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
@@ -12,7 +11,7 @@ import (
 )
 
 // processDownloadQueue downloads all media entities from the passed tweets if set
-func (m *twitter) processDownloadQueue(downloadQueue []*api.TweetV1, trackedItem *models.TrackedItem) error {
+func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
@@ -31,45 +30,25 @@ func (m *twitter) processDownloadQueue(downloadQueue []*api.TweetV1, trackedItem
 			),
 		)
 
-		for _, entity := range tweet.ExtendedEntities.Media {
-			if entity.Type == "video" {
-				highestBitRateIndex := 0
-				var highestBitRate uint = 0
-				for variantIndex, variant := range entity.VideoInfo.Variants {
-					if variant.Bitrate >= highestBitRate {
-						highestBitRateIndex = variantIndex
-						highestBitRate = variant.Bitrate
-					}
-				}
-
-				if err := m.twitterAPI.Session.DownloadFile(
-					path.Join(
-						viper.GetString("download.directory"),
-						m.Key,
-						screenName,
-						fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
-					),
-					entity.VideoInfo.Variants[highestBitRateIndex].URL,
-				); err != nil {
-					return err
-				}
-
+		for _, media := range tweet.Attachments.Media {
+			if media.Type == "video" {
+				// FixMe: fallback to v1 API for tweet due to v2 not returning download URL
 			} else {
 				if err := m.twitterAPI.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
 						screenName,
-						fmt.Sprintf("%d_%s", tweet.ID, m.GetFileName(entity.MediaURLHTTPS)),
+						fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(media.URL)),
 					),
-					entity.MediaURLHTTPS,
+					media.URL,
 				); err != nil {
 					return err
 				}
 			}
 		}
 
-		m.DbIO.UpdateTrackedItem(trackedItem, strconv.Itoa(int(tweet.ID)))
+		m.DbIO.UpdateTrackedItem(trackedItem, tweet.ID.String())
 	}
 
 	return nil

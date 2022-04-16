@@ -3,7 +3,6 @@ package twitter
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -23,7 +22,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 
 	var (
 		paginationToken string
-		latestTweetID   int
+		latestTweetID   string
 		newMediaTweets  []api.TweetV2
 	)
 
@@ -33,11 +32,8 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 			return nil
 		}
 
-		if latestTweetID == 0 && len(tweets.Data) > 0 {
-			latestTweetID, err = strconv.Atoi(tweets.Data[0].ID.String())
-			if err != nil {
-				return err
-			}
+		if latestTweetID == "" && len(tweets.Data) > 0 {
+			latestTweetID = tweets.Data[0].ID.String()
 		}
 
 		for _, tweet := range tweets.Data {
@@ -71,15 +67,13 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
 	}
 
-	/*
-		if err := m.processDownloadQueue(newMediaTweets, item); err != nil {
-			return err
-		}
-	*/
+	if err = m.processDownloadQueue(newMediaTweets, item); err != nil {
+		return err
+	}
 
-	if latestTweetID != 0 {
+	if latestTweetID != "" {
 		// update also if no new media item got found to possibly save some queries if media tweets happen later
-		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(latestTweetID))
+		m.DbIO.UpdateTrackedItem(item, latestTweetID)
 	}
 
 	return nil
