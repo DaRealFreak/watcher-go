@@ -37,14 +37,14 @@ type TweetV1 struct {
 // API documentation can be found here:
 // https://developer.twitter.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline
 func (a *TwitterAPI) UserTimeline(
-	screenName string, sinceID string, maxID string, count uint, includeRetweets bool,
+	userId string, sinceID string, maxID string, count uint, includeRetweets bool,
 ) ([]*TweetV1, error) {
 	a.applyRateLimit()
 
 	apiURI := "https://api.twitter.com/1.1/statuses/user_timeline.json"
 	values := url.Values{
 		"tweet_mode":  {"extended"},
-		"screen_name": {screenName},
+		"user_id":     {userId},
 		"trim_user":   {"1"},
 		"count":       {strconv.Itoa(int(count))},
 		"include_rts": {fmt.Sprintf("%t", includeRetweets)},

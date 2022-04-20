@@ -3,6 +3,7 @@ package twitter
 import (
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
@@ -32,7 +33,43 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 
 		for _, media := range tweet.Attachments.Media {
 			if media.Type == "video" {
-				// FixMe: fallback to v1 API for tweet due to v2 not returning download URL
+				tweetId, err := tweet.ID.Int64()
+				if err != nil {
+					return err
+				}
+
+				tweetV1, err := m.twitterAPI.UserTimeline(
+					tweet.AuthorID.String(),
+					strconv.Itoa(int(tweetId-1)),
+					strconv.Itoa(int(tweetId)),
+					1,
+					true,
+				)
+
+				for _, entity := range tweetV1[0].ExtendedEntities.Media {
+					if entity.Type == "video" {
+						highestBitRateIndex := 0
+						var highestBitRate uint = 0
+						for bitRateIndex, variant := range entity.VideoInfo.Variants {
+							if variant.Bitrate >= highestBitRate {
+								highestBitRateIndex = bitRateIndex
+								highestBitRate = variant.Bitrate
+							}
+						}
+
+						if err = m.twitterAPI.Session.DownloadFile(
+							path.Join(
+								viper.GetString("download.directory"),
+								m.Key,
+								screenName,
+								fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
+							),
+							entity.VideoInfo.Variants[highestBitRateIndex].URL,
+						); err != nil {
+							return err
+						}
+					}
+				}
 			} else {
 				if err := m.twitterAPI.Session.DownloadFile(
 					path.Join(

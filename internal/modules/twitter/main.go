@@ -4,6 +4,7 @@ package twitter
 import (
 	"os"
 	"regexp"
+	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -75,4 +76,8 @@ func (m *twitter) Login(_ *models.Account) bool {
 // Parse parses the tracked item
 func (m *twitter) Parse(item *models.TrackedItem) error {
 	return m.parsePage(item)
+}
+
+func (m *twitter) AddItem(uri string) (string, error) {
+	return strings.ReplaceAll(uri, "mobile.twitter.com", "twitter.com"), nil
 }
