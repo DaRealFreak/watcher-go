@@ -48,7 +48,8 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 
 				if len(tweetV1) == 0 {
 					log.WithField("module", m.ModuleKey()).Warnf(
-						"unable to retrieve video of https://twitter.com/%s/status/%d from twitter API v1, skipping tweet",
+						"unable to retrieve %s of https://twitter.com/%s/status/%d from twitter API v1, skipping tweet",
+						media.Type,
 						tweet.AuthorName,
 						tweetId,
 					)
