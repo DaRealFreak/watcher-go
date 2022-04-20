@@ -46,6 +46,15 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 					true,
 				)
 
+				if len(tweetV1) == 0 {
+					log.WithField("module", m.ModuleKey()).Warnf(
+						"unable to retrieve video of https://twitter.com/%s/status/%d from twitter API v1, skipping tweet",
+						tweet.AuthorName,
+						tweetId,
+					)
+					continue
+				}
+
 				for _, entity := range tweetV1[0].ExtendedEntities.Media {
 					if entity.Type == "video" {
 						highestBitRateIndex := 0

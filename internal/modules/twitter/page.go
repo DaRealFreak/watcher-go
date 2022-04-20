@@ -51,6 +51,9 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 					}
 				}
 
+				// attach username to the tweet
+				tweet.AuthorName = userInformation.Data.Username
+
 				newMediaTweets = append(newMediaTweets, tweet)
 			}
 		}

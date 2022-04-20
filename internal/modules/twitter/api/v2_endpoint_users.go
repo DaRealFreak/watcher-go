@@ -10,6 +10,7 @@ type TweetV2 struct {
 	ID          json.Number `json:"id"`
 	Text        string      `json:"text"`
 	AuthorID    json.Number `json:"author_id"`
+	AuthorName  string
 	Attachments struct {
 		MediaKeys []string `json:"media_keys"`
 		Media     []*TweetMedia
