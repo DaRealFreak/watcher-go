@@ -207,12 +207,17 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 func (h *Helper) resizeImagesForAnimation(fData *FileData) error {
 	log.Debug("resizing images for animations (even width/height)")
 
-	for _, filePath := range fData.FilePaths {
+	for index, filePath := range fData.FilePaths {
+		fileExt := filepath.Ext(filePath)
+
+		i := strings.LastIndex(filePath, fileExt)
+		newFilePath := filePath[:i] + strings.Replace(filePath[i:], fileExt, fmt.Sprintf("_edited%s", fileExt), 1)
+
 		executable := "ffmpeg"
 		args := []string{"-i", filePath}
 		args = append(args, "-vf")
 		args = append(args, "pad=ceil(iw/2)*2:ceil(ih/2)*2")
-		args = append(args, filePath)
+		args = append(args, newFilePath)
 		args = append(args, "-y")
 
 		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
@@ -226,6 +231,9 @@ func (h *Helper) resizeImagesForAnimation(fData *FileData) error {
 		if err = cmd.Wait(); err != nil {
 			return err
 		}
+
+		// update file path to the new file
+		fData.FilePaths[index] = newFilePath
 	}
 
 	return nil

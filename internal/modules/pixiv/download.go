@@ -216,12 +216,14 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 	var fileContent []byte
 
 	switch m.settings.Animation.Format {
+	case animation.FileFormatWebm:
+		fileContent, err = m.animationHelper.CreateAnimationWebM(&animationData)
 	case animation.FileFormatWebp:
 		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
 	case animation.FileFormatGif:
 		fileContent, err = m.animationHelper.CreateAnimationGif(&animationData)
 	default:
-		fileContent, err = m.animationHelper.CreateAnimationWebp(&animationData)
+		fileContent, err = m.animationHelper.CreateAnimationWebM(&animationData)
 	}
 
 	if err != nil && m.settings.Animation.LowQualityGifFallback {

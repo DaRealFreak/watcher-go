@@ -95,8 +95,9 @@ func (m *pixiv) InitializeModule() {
 	if m.settings.Animation.Format == "" || !map[string]bool{
 		animation.FileFormatGif:  true,
 		animation.FileFormatWebp: true,
+		animation.FileFormatWebm: true,
 	}[m.settings.Animation.Format] {
-		m.settings.Animation.Format = animation.FileFormatWebp
+		m.settings.Animation.Format = animation.FileFormatWebm
 	}
 }
 
