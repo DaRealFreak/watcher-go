@@ -32,7 +32,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 		)
 
 		for _, media := range tweet.Attachments.Media {
-			if media.Type == "video" {
+			if media.Type == "video" || media.Type == "animated_gif" {
 				tweetId, err := tweet.ID.Int64()
 				if err != nil {
 					return err
@@ -56,7 +56,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 				}
 
 				for _, entity := range tweetV1[0].ExtendedEntities.Media {
-					if entity.Type == "video" {
+					if entity.Type == "video" || entity.Type == "animated_gif" {
 						highestBitRateIndex := 0
 						var highestBitRate uint = 0
 						for bitRateIndex, variant := range entity.VideoInfo.Variants {

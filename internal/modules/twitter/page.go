@@ -27,7 +27,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 	)
 
 	for {
-		tweets, err := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), "", "", paginationToken)
+		tweets, err := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), item.CurrentItem, "", paginationToken)
 		if err != nil {
 			return nil
 		}
