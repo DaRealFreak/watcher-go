@@ -10,12 +10,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/dghubble/oauth1"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"golang.org/x/time/rate"
 )
 
@@ -37,17 +37,12 @@ func NewTwitterAPI(moduleKey string, oAuth2Client *models.OAuthClient) *TwitterA
 		ctx:         context.Background(),
 	}
 
-	config := &clientcredentials.Config{
-		ClientID:     oAuth2Client.ClientID,
-		ClientSecret: oAuth2Client.ClientSecret,
-		TokenURL:     "https://api.twitter.com/oauth2/token",
-	}
+	config := oauth1.NewConfig(oAuth2Client.ClientID, oAuth2Client.ClientSecret)
+	// don't hurt me for abusing refresh token as field for token secret, I don't plan on adding another table just for OAuth1 authentication
+	token := oauth1.NewToken(oAuth2Client.AccessToken, oAuth2Client.RefreshToken)
 
-	// set context with own http client for OAuth2 library to use
-	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, api.Session.GetClient())
-
-	// add OAuth2 round tripper from our client credentials context
-	api.Session.SetClient(config.Client(httpClientContext))
+	// add OAuth1 round tripper
+	api.Session.SetClient(config.Client(oauth1.NoContext, token))
 
 	return api
 }

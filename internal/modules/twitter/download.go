@@ -3,7 +3,6 @@ package twitter
 import (
 	"fmt"
 	"path"
-	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
@@ -33,33 +32,27 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 
 		for _, media := range tweet.Attachments.Media {
 			if media.Type == "video" || media.Type == "animated_gif" {
-				tweetId, err := tweet.ID.Int64()
-				if err != nil {
-					return err
+				tweetV1, singleTweetErr := m.twitterAPI.SingleTweetV1(
+					tweet.ID.String(),
+				)
+				if singleTweetErr != nil {
+					return singleTweetErr
 				}
 
-				tweetV1, err := m.twitterAPI.UserTimeline(
-					tweet.AuthorID.String(),
-					strconv.Itoa(int(tweetId-1)),
-					strconv.Itoa(int(tweetId)),
-					1,
-					true,
-				)
-
-				if len(tweetV1) == 0 {
+				if tweetV1 == nil || tweetV1.ID == 0 {
 					log.WithField("module", m.ModuleKey()).Warnf(
-						"unable to retrieve %s of https://twitter.com/%s/status/%d from twitter API v1, skipping tweet",
+						"unable to retrieve %s of https://twitter.com/%s/status/%s from twitter API v1, skipping tweet",
 						media.Type,
 						tweet.AuthorName,
-						tweetId,
+						tweet.ID.String(),
 					)
 					continue
 				}
 
-				for _, entity := range tweetV1[0].ExtendedEntities.Media {
+				for _, entity := range tweetV1.ExtendedEntities.Media {
 					if entity.Type == "video" || entity.Type == "animated_gif" {
 						highestBitRateIndex := 0
-						var highestBitRate uint = 0
+						highestBitRate := uint(0)
 						for bitRateIndex, variant := range entity.VideoInfo.Variants {
 							if variant.Bitrate >= highestBitRate {
 								highestBitRateIndex = bitRateIndex

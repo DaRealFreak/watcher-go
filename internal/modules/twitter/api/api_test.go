@@ -19,6 +19,8 @@ func TestMain(m *testing.M) {
 	testOAuth2Client := &models.OAuthClient{
 		ClientID:     os.Getenv("TWITTER_CLIENT_ID"),
 		ClientSecret: os.Getenv("TWITTER_CLIENT_SECRET"),
+		AccessToken:  os.Getenv("TWITTER_TOKEN_SOURCE"),
+		RefreshToken: os.Getenv("TWITTER_TOKEN_SECRET"),
 	}
 
 	// initialize the shared API instance

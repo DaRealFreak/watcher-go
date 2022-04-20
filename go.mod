@@ -9,6 +9,7 @@ require (
 	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/dghubble/oauth1 v0.7.1 // indirect
 	github.com/getsentry/sentry-go v0.13.0
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0
