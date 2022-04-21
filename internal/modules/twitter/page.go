@@ -10,14 +10,14 @@ import (
 )
 
 func (m *twitter) parsePage(item *models.TrackedItem) error {
-	screenName, err := m.extractScreenName(item.URI)
-	if err != nil {
-		return err
+	screenName, screenNameErr := m.extractScreenName(item.URI)
+	if screenNameErr != nil {
+		return screenNameErr
 	}
 
-	userInformation, err := m.twitterAPI.UserByUsername(screenName)
-	if err != nil {
-		return err
+	userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
+	if userErr != nil {
+		return userErr
 	}
 
 	var (
@@ -27,15 +27,16 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 	)
 
 	for {
-		tweets, err := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), item.CurrentItem, "", paginationToken)
-		if err != nil {
-			return nil
+		tweets, timeLineErr := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), item.CurrentItem, "", paginationToken)
+		if timeLineErr != nil {
+			return timeLineErr
 		}
 
 		if latestTweetID == "" && len(tweets.Data) > 0 {
 			latestTweetID = tweets.Data[0].ID.String()
 		}
 
+		// parse all media tweets we can find
 		for _, tweet := range tweets.Data {
 			if strings.HasPrefix(tweet.Text, "RT @") {
 				continue
@@ -70,8 +71,8 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
 	}
 
-	if err = m.processDownloadQueue(newMediaTweets, item); err != nil {
-		return err
+	if downloadErr := m.processDownloadQueue(newMediaTweets, item); downloadErr != nil {
+		return downloadErr
 	}
 
 	if latestTweetID != "" {
@@ -89,27 +90,4 @@ func (m *twitter) extractScreenName(uri string) (string, error) {
 	}
 
 	return results[1], nil
-}
-
-// filterMediaTweets returns a filtered amount of tweets having media elements attached since the search endpoint
-// only filters the indexed tweets of 6-9 days and is unreliable
-func (m *twitter) filterMediaTweets(tweets []*api.TweetV1) (mediaTweets []*api.TweetV1) {
-	for _, tweet := range tweets {
-		if len(tweet.ExtendedEntities.Media) > 0 {
-			mediaTweets = append(mediaTweets, tweet)
-		}
-	}
-
-	return mediaTweets
-}
-
-// filterRetweet is an option to filter retweets from the passed tweets or also original tweets
-func (m *twitter) filterRetweet(tweets []*api.TweetV1, retweet bool) (responseTweets []*api.TweetV1) {
-	for _, tweet := range tweets {
-		if retweet == (tweet.RetweetedStatus.User.ID > 0) {
-			responseTweets = append(responseTweets, tweet)
-		}
-	}
-
-	return responseTweets
 }

@@ -15,6 +15,15 @@ type TweetV2 struct {
 		MediaKeys []string `json:"media_keys"`
 		Media     []*TweetMedia
 	} `json:"attachments"`
+	Entities struct {
+		Mentions []struct {
+			ID       json.Number `json:"id"`
+			Username string      `json:"username"`
+		}
+	} `json:"entities"`
+	ReferencedTweets []struct {
+		ID json.Number `json:"id"`
+	} `json:"referenced_tweets"`
 }
 
 type TweetMedia struct {
@@ -54,9 +63,10 @@ func (a *TwitterAPI) UserTimelineV2(
 	apiURI := fmt.Sprintf("https://api.twitter.com/2/users/%s/tweets", userId)
 	values := url.Values{
 		"max_results":  {"100"},
-		"expansions":   {"attachments.media_keys"},
+		"expansions":   {"attachments.media_keys,author_id"},
 		"tweet.fields": {"attachments,author_id,conversation_id,created_at,entities,id,referenced_tweets,text"},
 		"media.fields": {"duration_ms,height,media_key,preview_image_url,type,url,width"},
+		"user.fields":  {},
 	}
 
 	if sinceID != "" {
