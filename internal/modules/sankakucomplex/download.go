@@ -92,11 +92,16 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		)
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
-			// continue on 404 errors, since they most likely won't get fixed
 			if err != nil {
 				if err.Error() == "unexpected returned status code: 404" {
+					// continue on 404 errors, since they most likely won't get fixed
 					log.WithField("module", m.Key).Warn(
 						fmt.Sprintf("skipping item: %s, status code was 404", data.item.ItemID),
+					)
+				} else if m.settings.Download.SkipBrokenStreams && strings.HasPrefix(err.Error(), "stream error: stream ID") {
+					// skip broken streams if configured to do so
+					log.WithField("module", m.Key).Warn(
+						fmt.Sprintf("skipping item: %s, download stream is broken", data.item.ItemID),
 					)
 				} else {
 					return err

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/spf13/viper"
+
 	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -19,7 +21,14 @@ import (
 // sankakuComplex contains the implementation of the ModuleInterface
 type sankakuComplex struct {
 	*models.Module
-	api *api.SankakuComplexApi
+	api      *api.SankakuComplexApi
+	settings sankakuSettings
+}
+
+type sankakuSettings struct {
+	Download struct {
+		SkipBrokenStreams bool `mapstructure:"skip_broken_streams"`
+	} `mapstructure:"download"`
 }
 
 // nolint: gochecknoinits
@@ -53,6 +62,12 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *sankakuComplex) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
 
