@@ -8,10 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
-
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -136,14 +134,6 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 	}
 
 	return nil
-}
-
-// TruncateMaxLength checks for length of the passed path part to ensure the max path length
-func (t Module) TruncateMaxLength(s string) string {
-	if syscall.MAX_PATH > len(s) {
-		return s
-	}
-	return s[:strings.LastIndex(s[:syscall.MAX_PATH], " ")]
 }
 
 // SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
