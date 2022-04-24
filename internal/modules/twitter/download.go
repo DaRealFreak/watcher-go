@@ -59,7 +59,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 							path.Join(
 								viper.GetString("download.directory"),
 								m.Key,
-								tweet.AuthorName,
+								m.SanitizePath(tweet.AuthorName, false),
 								fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
 							),
 							entity.VideoInfo.Variants[highestBitRateIndex].URL,
@@ -73,7 +73,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						tweet.AuthorName,
+						m.SanitizePath(tweet.AuthorName, false),
 						fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(media.URL)),
 					),
 					media.URL,
