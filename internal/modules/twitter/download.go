@@ -16,11 +16,6 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
-	screenName, err := m.extractScreenName(trackedItem.URI)
-	if err != nil {
-		return err
-	}
-
 	for index, tweet := range downloadQueue {
 		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
@@ -60,11 +55,11 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 							}
 						}
 
-						if err = m.twitterAPI.Session.DownloadFile(
+						if err := m.twitterAPI.Session.DownloadFile(
 							path.Join(
 								viper.GetString("download.directory"),
 								m.Key,
-								screenName,
+								tweet.AuthorName,
 								fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
 							),
 							entity.VideoInfo.Variants[highestBitRateIndex].URL,
@@ -78,7 +73,7 @@ func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem 
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						screenName,
+						tweet.AuthorName,
 						fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(media.URL)),
 					),
 					media.URL,
