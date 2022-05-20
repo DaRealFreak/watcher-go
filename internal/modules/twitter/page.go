@@ -15,6 +15,11 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		return screenNameErr
 	}
 
+	if m.settings.Api.UseGraphQlApi {
+		m.twitterGraphQlAPI.UserByUsername(screenName)
+	} else {
+	}
+
 	userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
 	if userErr != nil {
 		return userErr

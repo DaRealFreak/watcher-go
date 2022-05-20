@@ -1,9 +1,17 @@
 package graphql_api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 )
+
+type UserByScreenNameRequestVariables struct {
+	ScreenName                 string `json:"screen_name"`
+	WithSafetyModeUserFields   bool   `json:"withSafetyModeUserFields"`
+	WithSuperFollowsUserFields bool   `json:"withSuperFollowsUserFields"`
+}
 
 func (a *TwitterGraphQlAPI) UserTimeline(
 	userId string, sinceID string, untilId string, paginationToken string,
@@ -42,13 +50,27 @@ func (a *TwitterGraphQlAPI) UserTimeline(
 func (a *TwitterGraphQlAPI) UserByUsername(username string) error {
 	a.applyRateLimit()
 
-	apiURI := fmt.Sprintf("https://api.twitter.com/2/users/by/username/%s", username)
-	values := url.Values{}
-
-	_, err := a.apiGET(apiURI, values)
+	jsonString, err := json.Marshal(UserByScreenNameRequestVariables{
+		ScreenName:                 username,
+		WithSafetyModeUserFields:   true,
+		WithSuperFollowsUserFields: true,
+	})
 	if err != nil {
 		return err
 	}
+
+	apiURI := "https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName"
+	values := url.Values{
+		"variables": {string(jsonString)},
+	}
+
+	res, err := a.apiGET(apiURI, values)
+	if err != nil {
+		return err
+	}
+
+	tmp, _ := ioutil.ReadAll(res.Body)
+	print(tmp)
 
 	/*
 		var userInformation *UserInformation

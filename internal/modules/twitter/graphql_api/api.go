@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -25,8 +26,15 @@ type TwitterGraphQlAPI struct {
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
+	graphQLSession := session.NewSession(moduleKey)
+
+	client := graphQLSession.GetClient()
+	options := cloudflarebp.GetDefaultOptions()
+	options.Headers["authorization"] = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
+
 	return &TwitterGraphQlAPI{
-		Session:     session.NewSession(moduleKey),
+		Session:     graphQLSession,
 		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
 		ctx:         context.Background(),
 	}
