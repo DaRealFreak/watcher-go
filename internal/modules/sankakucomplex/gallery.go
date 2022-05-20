@@ -7,6 +7,8 @@ import (
 	"path"
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 )
 
@@ -115,6 +117,12 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 		var apiGalleryResponse apiResponse
 		if err = m.parseAPIResponse(response, &apiGalleryResponse); err != nil {
 			return nil, err
+		}
+
+		if nextItem == "" && len(apiGalleryResponse.Data) == 0 {
+			log.WithField("module", m.Key).Warn(
+				fmt.Sprintf("first request has no results, tag probably changed for uri %s", item.URI),
+			)
 		}
 
 		nextItem = apiGalleryResponse.Meta.Next
