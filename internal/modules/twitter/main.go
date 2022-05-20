@@ -2,9 +2,15 @@
 package twitter
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
+
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/spf13/viper"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -17,7 +23,15 @@ import (
 // twitter contains the implementation of the ModuleInterface
 type twitter struct {
 	*models.Module
-	twitterAPI *api.TwitterAPI
+	twitterAPI        *api.TwitterAPI
+	twitterGraphQlAPI *graphql_api.TwitterGraphQlAPI
+	settings          twitterSettings
+}
+
+type twitterSettings struct {
+	Api struct {
+		UseGraphQlApi bool `mapstructure:"use_graph_ql_api"`
+	} `mapstructure:"api"`
 }
 
 // nolint: gochecknoinits
@@ -51,16 +65,26 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *twitter) InitializeModule() {
-	oauthClient := m.DbIO.GetOAuthClient(m)
-	if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
-		log.WithField("module", m.Key).Fatalf(
-			"module requires an OAuth2 consumer ID and token",
-		)
-		// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
-		os.Exit(1)
-	}
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
 
-	m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
+	if !m.settings.Api.UseGraphQlApi {
+		oauthClient := m.DbIO.GetOAuthClient(m)
+		if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
+			log.WithField("module", m.Key).Fatalf(
+				"module requires an OAuth2 consumer ID and token",
+			)
+			// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
+			os.Exit(1)
+		}
+
+		m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
+	} else {
+		m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey())
+	}
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
