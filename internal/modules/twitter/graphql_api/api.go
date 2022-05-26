@@ -5,14 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
+
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"golang.org/x/time/rate"
 )
@@ -26,11 +26,10 @@ type TwitterGraphQlAPI struct {
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
-	graphQLSession := session.NewSession(moduleKey)
+	graphQLSession := NewTwitterSession(moduleKey)
 
 	client := graphQLSession.GetClient()
 	options := cloudflarebp.GetDefaultOptions()
-	options.Headers["authorization"] = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 
 	return &TwitterGraphQlAPI{
@@ -38,6 +37,13 @@ func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
 		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
 		ctx:         context.Background(),
 	}
+}
+
+// AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
+func (a *TwitterGraphQlAPI) AddRoundTrippers() {
+	client := a.Session.GetClient()
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+	a.setTwitterAPIHeaders(client)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

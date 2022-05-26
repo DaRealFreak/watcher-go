@@ -3,6 +3,8 @@ package twitter
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -84,6 +86,23 @@ func (m *twitter) InitializeModule() {
 		m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
 	} else {
 		m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey())
+		m.twitterGraphQlAPI.AddRoundTrippers()
+
+		if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
+			requestUrl, _ := url.Parse("https://twitter.com/")
+			m.twitterGraphQlAPI.Session.GetClient().Jar.SetCookies(
+				requestUrl,
+				[]*http.Cookie{
+					{
+						Name:   "auth_token",
+						Value:  cookie.Value,
+						MaxAge: 0,
+					},
+				},
+			)
+		} else {
+			// ToDo: guest cookie
+		}
 	}
 }
 

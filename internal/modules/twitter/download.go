@@ -4,14 +4,53 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-// processDownloadQueue downloads all media entities from the passed tweets if set
-func (m *twitter) processDownloadQueue(downloadQueue []api.TweetV2, trackedItem *models.TrackedItem) error {
+func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet, trackedItem *models.TrackedItem) error {
+	log.WithField("module", m.Key).Info(
+		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+	)
+
+	for index, tweet := range downloadQueue {
+		log.WithField("module", m.Key).Info(
+			fmt.Sprintf(
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			),
+		)
+
+		downloadItems := tweet.DownloadItems()
+		for i := range downloadItems {
+			// iterate reverse over the download items to download the cover image last
+			downloadItem := downloadItems[len(downloadItems)-1-i]
+			err := m.twitterGraphQlAPI.Session.DownloadFile(
+				path.Join(
+					viper.GetString("download.directory"),
+					m.Key,
+					m.TruncateMaxLength(m.SanitizePath(downloadItem.DownloadTag, false)),
+					m.TruncateMaxLength(m.SanitizePath(downloadItem.FileName, false)),
+				),
+				downloadItem.FileURI,
+			)
+			if err != nil {
+				return err
+			}
+		}
+		m.DbIO.UpdateTrackedItem(trackedItem, tweet.SortIndex.String())
+	}
+
+	return nil
+}
+
+// processDownloadQueueDeveloperApi downloads all media entities from the passed tweets if set
+func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)

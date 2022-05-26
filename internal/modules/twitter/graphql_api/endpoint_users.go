@@ -3,79 +3,238 @@ package graphql_api
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+
+	"github.com/DaRealFreak/watcher-go/internal/models"
 )
 
-type UserByScreenNameRequestVariables struct {
-	ScreenName                 string `json:"screen_name"`
-	WithSafetyModeUserFields   bool   `json:"withSafetyModeUserFields"`
-	WithSuperFollowsUserFields bool   `json:"withSuperFollowsUserFields"`
+type Tweet struct {
+	EntryID   string      `json:"entryId"`
+	SortIndex json.Number `json:"sortIndex"`
+	Content   struct {
+		EntryType   string `json:"entryType"`
+		Value       string `json:"value"`
+		CursorType  string `json:"cursorType"`
+		ItemContent struct {
+			ItemType     string `json:"itemType"`
+			TweetResults struct {
+				Result struct {
+					RestID json.Number `json:"rest_id"`
+					Core   struct {
+						UserResults struct {
+							Result User `json:"result"`
+						} `json:"user_results"`
+					} `json:"core"`
+					Legacy struct {
+						ExtendedEntities struct {
+							Media []struct {
+								ID        json.Number `json:"id_str"`
+								Type      string      `json:"type"`
+								MediaURL  string      `json:"media_url_https"`
+								VideoInfo *struct {
+									Variants []struct {
+										Bitrate int    `json:"bitrate"`
+										URL     string `json:"URL"`
+									} `json:"variants"`
+								} `json:"video_info"`
+							} `json:"media"`
+						} `json:"extended_entities"`
+					} `json:"legacy"`
+				} `json:"result"`
+			} `json:"tweet_results"`
+			TweetDisplayType string `json:"tweetDisplayType"`
+		} `json:"itemContent"`
+	} `json:"content"`
 }
 
-func (a *TwitterGraphQlAPI) UserTimeline(
-	userId string, sinceID string, untilId string, paginationToken string,
-) error {
-	a.applyRateLimit()
-
-	apiURI := fmt.Sprintf("https://api.twitter.com/2/users/%s/tweets", userId)
-	values := url.Values{
-		"max_results":  {"100"},
-		"expansions":   {"attachments.media_keys,author_id"},
-		"tweet.fields": {"attachments,author_id,conversation_id,created_at,entities,id,referenced_tweets,text"},
-		"media.fields": {"duration_ms,height,media_key,preview_image_url,type,url,width"},
-		"user.fields":  {},
-	}
-
-	if sinceID != "" {
-		values.Set("since_id", sinceID)
-	}
-
-	if untilId != "" {
-		values.Set("until_id", untilId)
-	}
-
-	if paginationToken != "" {
-		values.Set("pagination_token", paginationToken)
-	}
-
-	_, err := a.apiGET(apiURI, values)
-	if err != nil {
-		return err
-	}
-
-	return err
+type Timeline struct {
+	Data struct {
+		User struct {
+			Result struct {
+				TimelineV2 struct {
+					Timeline struct {
+						Instructions []struct {
+							Type    string   `json:"type"`
+							Entries []*Tweet `json:"entries"`
+						} `json:"instructions"`
+					} `json:"timeline"`
+				} `json:"timeline_v2"`
+			} `json:"result"`
+		} `json:"user"`
+	} `json:"data"`
 }
 
-func (a *TwitterGraphQlAPI) UserByUsername(username string) error {
+// TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
+func (t *Timeline) TweetEntries() (tweets []*Tweet) {
+	for _, instruction := range t.Data.User.Result.TimelineV2.Timeline.Instructions {
+		if instruction.Type != "TimelineAddEntries" {
+			continue
+		}
+
+		for _, entry := range instruction.Entries {
+			if entry.Content.EntryType != "TimelineTimelineItem" {
+				continue
+			}
+
+			tweets = append(tweets, entry)
+		}
+	}
+
+	return tweets
+}
+
+// DownloadItems returns the normalized DownloadQueueItems from the tweet objects
+func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
+	tmpModule := models.Module{}
+
+	for _, mediaEntry := range tw.Content.ItemContent.TweetResults.Result.Legacy.ExtendedEntities.Media {
+		if mediaEntry.Type == "video" || mediaEntry.Type == "animated_gif" {
+			highestBitRateIndex := 0
+			highestBitRate := 0
+			for bitRateIndex, variant := range mediaEntry.VideoInfo.Variants {
+				if variant.Bitrate >= highestBitRate {
+					highestBitRateIndex = bitRateIndex
+					highestBitRate = variant.Bitrate
+				}
+			}
+
+			items = append(items, &models.DownloadQueueItem{
+				ItemID:      tw.SortIndex.String(),
+				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
+				FileName: fmt.Sprintf(
+					"%s_%s_%s",
+					tw.SortIndex.String(),
+					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					tmpModule.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
+				),
+				FileURI: mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL,
+			})
+		} else {
+			items = append(items, &models.DownloadQueueItem{
+				ItemID:      tw.SortIndex.String(),
+				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
+				FileName: fmt.Sprintf(
+					"%s_%s_%s",
+					tw.SortIndex.String(),
+					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					tmpModule.GetFileName(mediaEntry.MediaURL),
+				),
+				FileURI: mediaEntry.MediaURL,
+			})
+		}
+	}
+
+	return items
+}
+
+// BottomCursor checks for the next cursor in the timeline response
+func (t *Timeline) BottomCursor() string {
+	for _, instruction := range t.Data.User.Result.TimelineV2.Timeline.Instructions {
+		if instruction.Type != "TimelineAddEntries" {
+			continue
+		}
+
+		for _, entry := range instruction.Entries {
+			if entry.Content.CursorType != "Bottom" {
+				continue
+			}
+
+			return entry.Content.Value
+		}
+	}
+
+	return ""
+}
+
+type User struct {
+	ID     string      `json:"id"`
+	RestID json.Number `json:"rest_id"`
+	Legacy struct {
+		Name       string `json:"name"`
+		ScreenName string `json:"screen_name"`
+	} `json:"legacy"`
+}
+
+type UserInformation struct {
+	Data struct {
+		User struct {
+			Result User `json:"result"`
+		} `json:"user"`
+	} `json:"data"`
+}
+
+func (a *TwitterGraphQlAPI) UserTimelineV2(
+	userId string,
+	cursor string,
+) (*Timeline, error) {
 	a.applyRateLimit()
 
-	jsonString, err := json.Marshal(UserByScreenNameRequestVariables{
-		ScreenName:                 username,
-		WithSafetyModeUserFields:   true,
-		WithSuperFollowsUserFields: true,
+	variables := map[string]interface{}{
+		"userId":                      userId,
+		"count":                       40,
+		"includePromotedContent":      false,
+		"withSuperFollowsUserFields":  true,
+		"withDownvotePerspective":     false,
+		"withReactionsMetadata":       false,
+		"withReactionsPerspective":    false,
+		"withSuperFollowsTweetFields": true,
+		"withClientEventToken":        false,
+		"withBirdwatchNotes":          false,
+		"withVoice":                   true,
+		"withV2Timeline":              true,
+	}
+
+	if cursor != "" {
+		variables["cursor"] = cursor
+	}
+
+	variablesJson, _ := json.Marshal(variables)
+
+	featuresJson, _ := json.Marshal(map[string]interface{}{
+		"dont_mention_me_view_api_enabled":      true,
+		"interactive_text_enabled":              true,
+		"responsive_web_uc_gql_enabled":         false,
+		"responsive_web_edit_tweet_api_enabled": false,
 	})
-	if err != nil {
-		return err
-	}
 
-	apiURI := "https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName"
+	apiURI := "https://twitter.com/i/api/graphql/ZnNUqQaF7ZP5sJehbi2u6A/UserMedia"
 	values := url.Values{
-		"variables": {string(jsonString)},
+		"variables": {string(variablesJson)},
+		"features":  {string(featuresJson)},
 	}
 
 	res, err := a.apiGET(apiURI, values)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tmp, _ := ioutil.ReadAll(res.Body)
-	print(tmp)
+	var timeline *Timeline
+	err = a.mapAPIResponse(res, &timeline)
 
-	/*
-		var userInformation *UserInformation
-		err = a.mapAPIResponse(res, &userInformation)
-	*/
+	return timeline, err
+}
 
-	return err
+func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, error) {
+	a.applyRateLimit()
+
+	variablesJson, _ := json.Marshal(map[string]interface{}{
+		"screen_name":                username,
+		"withSafetyModeUserFields":   true,
+		"withSuperFollowsUserFields": true,
+	})
+
+	apiURI := "https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName"
+	values := url.Values{
+		"variables": {string(variablesJson)},
+	}
+
+	res, err := a.apiGET(apiURI, values)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInformation *UserInformation
+	err = a.mapAPIResponse(res, &userInformation)
+
+	return userInformation, err
 }

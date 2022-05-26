@@ -3,23 +3,67 @@ package twitter
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 )
 
-func (m *twitter) parsePage(item *models.TrackedItem) error {
-	screenName, screenNameErr := m.extractScreenName(item.URI)
-	if screenNameErr != nil {
-		return screenNameErr
+func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName string) error {
+	userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+	if userErr != nil {
+		return userErr
 	}
 
-	if m.settings.Api.UseGraphQlApi {
-		m.twitterGraphQlAPI.UserByUsername(screenName)
-	} else {
+	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+
+	var (
+		foundCurrentItem bool
+		bottomCursor     string
+		newMediaTweets   []*graphql_api.Tweet
+	)
+
+	for !foundCurrentItem {
+		timeline, timeLineErr := m.twitterGraphQlAPI.UserTimelineV2(
+			userInformation.Data.User.Result.RestID.String(),
+			bottomCursor,
+		)
+		if timeLineErr != nil {
+			return timeLineErr
+		}
+
+		for _, tweet := range timeline.TweetEntries() {
+			itemID, _ := strconv.ParseInt(tweet.SortIndex.String(), 10, 64)
+			if itemID <= currentItemID {
+				foundCurrentItem = true
+				break
+			}
+
+			newMediaTweets = append(newMediaTweets, tweet)
+		}
+
+		bottomCursor = timeline.BottomCursor()
+		// no later page cursor available, so we can break here
+		if len(timeline.TweetEntries()) == 0 {
+			break
+		}
 	}
 
+	for i, j := 0, len(newMediaTweets)-1; i < j; i, j = i+1, j-1 {
+		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
+	}
+
+	if downloadErr := m.processDownloadQueueGraphQL(newMediaTweets, item); downloadErr != nil {
+		return downloadErr
+	}
+
+	return nil
+}
+
+func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName string) error {
 	userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
 	if userErr != nil {
 		return userErr
@@ -76,7 +120,7 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
 	}
 
-	if downloadErr := m.processDownloadQueue(newMediaTweets, item); downloadErr != nil {
+	if downloadErr := m.processDownloadQueueDeveloperApi(newMediaTweets, item); downloadErr != nil {
 		return downloadErr
 	}
 
@@ -88,8 +132,21 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 	return nil
 }
 
+func (m *twitter) parsePage(item *models.TrackedItem) error {
+	screenName, screenNameErr := m.extractScreenName(item.URI)
+	if screenNameErr != nil {
+		return screenNameErr
+	}
+
+	if m.settings.Api.UseGraphQlApi {
+		return m.parsePageGraphQLApi(item, screenName)
+	} else {
+		return m.parsePageDeveloperApi(item, screenName)
+	}
+}
+
 func (m *twitter) extractScreenName(uri string) (string, error) {
-	results := regexp.MustCompile(`.*twitter.com/(.*)?(?:$|/)`).FindStringSubmatch(uri)
+	results := regexp.MustCompile(`.*twitter.com/([^/]+)?(?:$|/)`).FindStringSubmatch(uri)
 	if len(results) != 2 {
 		return "", fmt.Errorf("unexpected amount of results during screen name extraction of uri %s", uri)
 	}
