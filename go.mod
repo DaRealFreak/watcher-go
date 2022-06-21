@@ -19,7 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.4
 	github.com/tcnksm/go-gitconfig v0.1.2
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 	golang.org/x/net v0.0.0-20220420153159-1850ba15e1be
@@ -67,5 +67,5 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
