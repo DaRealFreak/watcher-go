@@ -1,6 +1,7 @@
 package giantessworld
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -23,6 +24,16 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 	htmlContent, err := m.getChapterContent(base, item.CurrentItem)
 	if err != nil {
 		return err
+	}
+
+	if bytes.Contains(htmlContent, []byte("Access denied. This story has not been validated by the adminstrators of this site.")) {
+		log.WithField("module", m.Key).Warnf(
+			"story has been deleted: \"%s\", setting item to completed",
+			item.URI,
+		)
+		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+
+		return nil
 	}
 
 	if item.CurrentItem == "" {
@@ -104,6 +115,12 @@ func (m *giantessWorld) getNewChapters(document *goquery.Document) []string {
 
 // downloadChapter extracts the chapter from the html content and updates the item
 func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.TrackedItem) error {
+	parsedUrl, _ := url.Parse(item.URI)
+	storyId, ok := parsedUrl.Query()["sid"]
+	if !ok {
+		return fmt.Errorf("unable to get story ID from item URI: %s", item.URI)
+	}
+
 	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(string(htmlContent)))
 
 	content, err := doc.Find("div#story").First().Html()
@@ -121,7 +138,7 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 	filePath := path.Join(viper.GetString("download.directory"),
 		m.Key,
 		m.getAuthor(doc),
-		m.SanitizePath(m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
+		m.SanitizePath(storyId[0]+"_"+m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
 	)
 
 	// ensure download directory since we directly create the files
