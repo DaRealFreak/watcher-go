@@ -119,7 +119,9 @@ func (t *Module) SetCookies() {
 		}
 	}
 
-	t.Session.GetClient().Jar.SetCookies(sessionUrl, sessionCookies)
+	if len(sessionCookies) > 0 && t.Session != nil && t.Session.GetClient() != nil {
+		t.Session.GetClient().Jar.SetCookies(sessionUrl, sessionCookies)
+	}
 }
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
