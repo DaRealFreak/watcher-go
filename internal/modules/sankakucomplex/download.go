@@ -36,14 +36,14 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	parsedQuery, _ := url.ParseQuery(u.RawQuery)
+	expiration := int64(0)
 	if expires := parsedQuery.Get("e"); expires != "" {
-		var i int64
-		i, err = strconv.ParseInt(expires, 10, 64)
+		expiration, err = strconv.ParseInt(expires, 10, 64)
 		if err != nil {
 			return false, err
 		}
 
-		if time.Now().Unix() >= i {
+		if time.Now().Unix() >= expiration {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf(
 					"links expired for uri, refreshing progress: \"%s\"",
@@ -72,6 +72,17 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		item.FileName = fmt.Sprintf("%s_fallback%s", fileName, ext)
 
 		return m.downloadDownloadQueueItem(trackedItem, item)
+	}
+
+	if expiration > 0 && time.Now().Unix() >= expiration {
+		log.WithField("module", m.Key).Info(
+			fmt.Sprintf(
+				"links expired for uri, refreshing progress: \"%s\"",
+				trackedItem.URI,
+			),
+		)
+
+		return true, m.Parse(trackedItem)
 	}
 
 	return false, err
