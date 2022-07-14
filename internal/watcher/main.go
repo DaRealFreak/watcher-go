@@ -231,6 +231,8 @@ func (app *Watcher) initializeUsedModules(items []*models.TrackedItem) {
 				"initializing module",
 			)
 			module.InitializeModule()
+			// set whatever cookies we have
+			module.SetCookies()
 
 			initializedModules = append(initializedModules, item.Module)
 		}

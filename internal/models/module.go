@@ -3,6 +3,7 @@ package models
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
-	"github.com/DaRealFreak/watcher-go/internal/http"
+	internalHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,7 +46,7 @@ type DownloadQueueItem struct {
 type Module struct {
 	ModuleInterface
 	DbIO           DatabaseInterface
-	Session        http.SessionInterface
+	Session        internalHttp.SessionInterface
 	Key            string
 	RequiresLogin  bool
 	LoggedIn       bool
@@ -100,6 +101,25 @@ func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []
 	}
 
 	return downloadQueue
+}
+
+func (t *Module) SetCookies() {
+	sessionUrl, err := url.Parse(fmt.Sprintf("https://%s", t.Key))
+	if err != nil {
+		return
+	}
+
+	cookies := t.DbIO.GetAllCookies(t)
+	sessionCookies := make([]*http.Cookie, len(cookies))
+	for i, cookie := range cookies {
+		sessionCookies[i] = &http.Cookie{
+			Name:   cookie.Name,
+			Value:  cookie.Value,
+			Domain: sessionUrl.Host,
+		}
+	}
+
+	t.Session.GetClient().Jar.SetCookies(sessionUrl, sessionCookies)
 }
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
