@@ -24,7 +24,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 		for _, fanboxPost := range postList.Body.Items {
 			postID, _ := fanboxPost.ID.Int64()
 
-			if item.CurrentItem == "" || postID > currentItemID {
+			if item.CurrentItem == "" || postID != currentItemID {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
 					ItemID:       int(postID),
 					DownloadTag:  path.Join(fanboxPost.User.GetUserTag(), "fanbox"),
