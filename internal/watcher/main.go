@@ -122,7 +122,14 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 				continue
 			}
 
-			trackedItems = append(trackedItems, app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module))
+			trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module)
+
+			// skip completed item if we aren't forcing new
+			if trackedItem.Complete && !app.Cfg.Run.ForceNew {
+				continue
+			}
+
+			trackedItems = append(trackedItems, trackedItem)
 		}
 	case len(app.Cfg.Run.ModuleURL) > 0:
 		for _, moduleURL := range app.Cfg.Run.ModuleURL {
