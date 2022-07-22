@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
@@ -59,8 +60,16 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
-	if err = m.processDownloadQueue(downloadQueue, item); err != nil {
-		return err
+	if m.settings.MultiProxy {
+		// reset usage and errors from previous galleries
+		m.resetProxies()
+		if err = m.processDownloadQueueMultiProxy(downloadQueue, item); err != nil {
+			return err
+		}
+	} else {
+		if err = m.processDownloadQueue(downloadQueue, item); err != nil {
+			return err
+		}
 	}
 
 	if !m.downloadLimitReached {
@@ -132,14 +141,14 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
 func (m *ehentai) getDownloadQueueItem(
-	trackedItem *models.TrackedItem, item imageGalleryItem,
+	downloadSession http.SessionInterface, trackedItem *models.TrackedItem, item imageGalleryItem,
 ) (*models.DownloadQueueItem, error) {
-	response, err := m.Session.Get(item.uri)
+	response, err := downloadSession.Get(item.uri)
 	if err != nil {
 		return nil, err
 	}
 
-	document := m.Session.GetDocument(response)
+	document := downloadSession.GetDocument(response)
 	imageURL, _ := document.Find("img#img").Attr("src")
 
 	return &models.DownloadQueueItem{

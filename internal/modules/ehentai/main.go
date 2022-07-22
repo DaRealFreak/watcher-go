@@ -7,7 +7,10 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/internal/http"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -27,8 +30,20 @@ type ehentai struct {
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
-	settings                 *models.ProxyLoopConfiguration
+	settings                 *ehentaiSettings
 	ehSession                *session.DefaultSession
+	proxies                  []*proxySession
+	multiProxy               struct {
+		mutex     sync.Mutex
+		waitGroup sync.WaitGroup
+	}
+}
+
+type ehentaiSettings struct {
+	Loop        bool                 `mapstructure:"loop"`
+	Proxy       http.ProxySettings   `mapstructure:"proxy"`
+	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
+	MultiProxy  bool                 `mapstructure:"multiproxy"`
 }
 
 // nolint: gochecknoinits
@@ -108,6 +123,11 @@ func (m *ehentai) Login(account *models.Account) bool {
 	exURL, _ := url.Parse("https://exhentai.org")
 	m.Session.GetClient().Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
 
+	// initialize proxy sessions after login
+	if m.LoggedIn && m.settings.MultiProxy {
+		m.initializeProxySessions()
+	}
+
 	return m.LoggedIn
 }
 
@@ -146,7 +166,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 }
 
 func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGalleryItem) error {
-	downloadQueueItem, err := m.getDownloadQueueItem(trackedItem, data)
+	downloadQueueItem, err := m.getDownloadQueueItem(m.Session, trackedItem, data)
 	if err != nil {
 		return err
 	}
@@ -197,13 +217,21 @@ func (m *ehentai) setProxyMethod() error {
 	case !m.settings.Loop && m.settings.Proxy.Enable:
 		return m.ehSession.SetProxy(&m.settings.Proxy)
 	case m.settings.Loop:
-		// reset proxy loop index if we reach the limit with the next iteration
-		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-			m.ProxyLoopIndex = -1
-		}
-		m.ProxyLoopIndex++
+		if m.settings.MultiProxy {
+			// ToDo:
+			// function to check for free proxy
+			// return new session (copied cookies from main session for login) with proxy applied
+			// free proxy after download
+			return m.ehSession.SetProxy(&m.settings.LoopProxies[0])
+		} else {
+			// reset proxy loop index if we reach the limit with the next iteration
+			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+				m.ProxyLoopIndex = -1
+			}
+			m.ProxyLoopIndex++
 
-		return m.ehSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+			return m.ehSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+		}
 	default:
 		return nil
 	}
