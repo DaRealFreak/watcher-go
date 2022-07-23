@@ -46,6 +46,23 @@ func (m *ehentai) initializeProxySessions() {
 	}
 }
 
+func (m *ehentai) isLowestIndex(index int) bool {
+	for i := 0; i < index; i++ {
+		found := false
+		for recordedIndex := range m.multiProxy.completedIndexes {
+			if recordedIndex == i {
+				found = true
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (m *ehentai) hasFreeProxy() bool {
 	for _, proxy := range m.proxies {
 		if !proxy.inUse {
@@ -83,7 +100,7 @@ func (m *ehentai) resetProxies() {
 	}
 }
 
-func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) error {
+func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
@@ -113,7 +130,7 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []imageGalleryIte
 			proxy := m.getFreeProxy()
 			proxy.inUse = true
 
-			go m.downloadItemSession(proxy, trackedItem, data)
+			go m.downloadItemSession(proxy, trackedItem, data, index)
 		}
 
 	}
@@ -125,11 +142,14 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []imageGalleryIte
 		return m.getProxyError()
 	}
 
+	// if no error occurred update the tracked item to the last item ID
+	m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].id)
+
 	return nil
 }
 
 func (m *ehentai) downloadItemSession(
-	downloadSession *proxySession, trackedItem *models.TrackedItem, data imageGalleryItem,
+	downloadSession *proxySession, trackedItem *models.TrackedItem, data *imageGalleryItem, index int,
 ) {
 	downloadQueueItem, err := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
 	if err != nil {
@@ -163,6 +183,13 @@ func (m *ehentai) downloadItemSession(
 	if downloadSession.occurredError == nil {
 		downloadSession.inUse = false
 	}
+
+	if index == 0 || m.isLowestIndex(index) {
+		// if we are the lowest index (to prevent skips on errors) update the downloaded item
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
+	}
+
+	m.multiProxy.completedIndexes = append(m.multiProxy.completedIndexes, index)
 
 	m.multiProxy.waitGroup.Done()
 }

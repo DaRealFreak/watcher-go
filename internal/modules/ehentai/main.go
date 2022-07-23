@@ -34,8 +34,9 @@ type ehentai struct {
 	ehSession                *session.DefaultSession
 	proxies                  []*proxySession
 	multiProxy               struct {
-		mutex     sync.Mutex
-		waitGroup sync.WaitGroup
+		completedIndexes []int
+		mutex            sync.Mutex
+		waitGroup        sync.WaitGroup
 	}
 }
 
@@ -143,7 +144,7 @@ func (m *ehentai) Parse(item *models.TrackedItem) error {
 }
 
 // processDownloadQueue processes the download queue consisting of gallery items
-func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, trackedItem *models.TrackedItem) error {
+func (m *ehentai) processDownloadQueue(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
@@ -165,7 +166,7 @@ func (m *ehentai) processDownloadQueue(downloadQueue []imageGalleryItem, tracked
 	return nil
 }
 
-func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data imageGalleryItem) error {
+func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalleryItem) error {
 	downloadQueueItem, err := m.getDownloadQueueItem(m.Session, trackedItem, data)
 	if err != nil {
 		return err

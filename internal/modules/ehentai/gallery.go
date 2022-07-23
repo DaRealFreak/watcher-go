@@ -34,7 +34,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		return fmt.Errorf("gallery contains errors")
 	}
 
-	var downloadQueue []imageGalleryItem
+	var downloadQueue []*imageGalleryItem
 
 	galleryTitle := m.extractGalleryTitle(html)
 	foundCurrentItem := item.CurrentItem == ""
@@ -95,13 +95,13 @@ func (m *ehentai) getNextGalleryPageURL(html string) (url string, exists bool) {
 }
 
 // getGalleryImageUrls extracts all gallery image urls from the passed html
-func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []imageGalleryItem {
-	var imageUrls []imageGalleryItem
+func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []*imageGalleryItem {
+	var imageUrls []*imageGalleryItem
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find("div#gdt > div a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
-		imageUrls = append(imageUrls, imageGalleryItem{
+		imageUrls = append(imageUrls, &imageGalleryItem{
 			id:           m.galleryImageIDPattern.FindString(uri),
 			uri:          uri,
 			galleryTitle: galleryTitle,
@@ -145,7 +145,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
 func (m *ehentai) getDownloadQueueItem(
-	downloadSession http.SessionInterface, trackedItem *models.TrackedItem, item imageGalleryItem,
+	downloadSession http.SessionInterface, trackedItem *models.TrackedItem, item *imageGalleryItem,
 ) (*models.DownloadQueueItem, error) {
 	response, err := downloadSession.Get(item.uri)
 	if err != nil {
