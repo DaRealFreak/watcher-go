@@ -94,6 +94,8 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
 			)
 			galleryItem.CurrentItem = ""
+			m.DbIO.ChangeTrackedItemCompleteStatus(item, false)
+			m.DbIO.UpdateTrackedItem(item, "")
 		}
 
 		if err = m.Parse(galleryItem); err != nil {

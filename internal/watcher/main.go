@@ -89,6 +89,8 @@ func (app *Watcher) Run() {
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
 				)
 				item.CurrentItem = ""
+				app.DbCon.ChangeTrackedItemCompleteStatus(item, false)
+				app.DbCon.UpdateTrackedItem(item, "")
 			}
 
 			log.WithField("module", module.Key).Info(
@@ -167,6 +169,8 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
 			)
 			item.CurrentItem = ""
+			app.DbCon.ChangeTrackedItemCompleteStatus(item, false)
+			app.DbCon.UpdateTrackedItem(item, "")
 		}
 
 		log.WithField("module", module.Key).Info(
