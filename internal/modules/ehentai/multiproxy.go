@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -30,6 +32,7 @@ func (m *ehentai) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
 		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
