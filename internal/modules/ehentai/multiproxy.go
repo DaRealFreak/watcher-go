@@ -32,7 +32,7 @@ func (m *ehentai) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key)
-		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
 		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
@@ -143,7 +143,9 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	}
 
 	// if no error occurred update the tracked item to the last item ID
-	m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].id)
+	if len(downloadQueue) > 0 {
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].id)
+	}
 
 	return nil
 }
