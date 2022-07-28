@@ -32,7 +32,7 @@ func (m *ehentai) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key)
-		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 1)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
 		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
@@ -184,14 +184,14 @@ func (m *ehentai) downloadItemSession(
 
 	if downloadSession.occurredError == nil {
 		downloadSession.inUse = false
-	}
 
-	if index == 0 || m.isLowestIndex(index) {
-		// if we are the lowest index (to prevent skips on errors) update the downloaded item
-		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
-	}
+		if index == 0 || m.isLowestIndex(index) {
+			// if we are the lowest index (to prevent skips on errors) update the downloaded item
+			m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
+		}
 
-	m.multiProxy.completedIndexes = append(m.multiProxy.completedIndexes, index)
+		m.multiProxy.completedIndexes = append(m.multiProxy.completedIndexes, index)
+	}
 
 	m.multiProxy.waitGroup.Done()
 }
