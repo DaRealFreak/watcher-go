@@ -49,7 +49,7 @@ func (m *ehentai) initializeProxySessions() {
 func (m *ehentai) isLowestIndex(index int) bool {
 	for i := 0; i < index; i++ {
 		found := false
-		for recordedIndex := range m.multiProxy.completedIndexes {
+		for _, recordedIndex := range m.multiProxy.completedIndexes {
 			if recordedIndex == i {
 				found = true
 			}
