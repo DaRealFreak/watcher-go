@@ -62,7 +62,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 		nextPageURL, exists := m.getNextSearchPageURL(html)
 		if !exists {
-			// no next page exists anymore, break here
+			// no further page exists anymore, break here
 			break
 		}
 
@@ -111,7 +111,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
 			)
-			continue
+			return err
 		}
 
 		m.DbIO.UpdateTrackedItem(item, gallery.id)

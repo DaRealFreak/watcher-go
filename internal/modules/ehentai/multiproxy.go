@@ -182,6 +182,10 @@ func (m *ehentai) downloadItemSession(
 		downloadQueueItem.FileURI,
 	)
 
+	// if error == 404
+	// img normally has onerror tag: onerror="this.onerror=null; nl('43323-460857')"
+	// -> current url + "?nl=43323-460857
+
 	if downloadSession.occurredError == nil {
 		downloadSession.inUse = false
 
