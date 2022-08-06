@@ -34,9 +34,9 @@ type ehentai struct {
 	ehSession                *session.DefaultSession
 	proxies                  []*proxySession
 	multiProxy               struct {
-		completedIndexes []int
-		mutex            sync.Mutex
-		waitGroup        sync.WaitGroup
+		currentIndexes []int
+		mutex          sync.Mutex
+		waitGroup      sync.WaitGroup
 	}
 }
 

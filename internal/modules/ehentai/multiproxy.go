@@ -32,7 +32,7 @@ func (m *ehentai) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key)
-		singleSession.RateLimiter = rate.NewLimiter(rate.Every(1500*time.Millisecond), 1)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(2000*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
 		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
@@ -47,20 +47,14 @@ func (m *ehentai) initializeProxySessions() {
 }
 
 func (m *ehentai) isLowestIndex(index int) bool {
-	for i := 0; i < index; i++ {
-		found := false
-		for _, recordedIndex := range m.multiProxy.completedIndexes {
-			if recordedIndex == i {
-				found = true
-			}
-		}
-
-		if !found {
-			return false
+	lowestIndex := 999
+	for _, v := range m.multiProxy.currentIndexes {
+		if v < lowestIndex {
+			lowestIndex = v
 		}
 	}
 
-	return true
+	return lowestIndex == index
 }
 
 func (m *ehentai) hasFreeProxy() bool {
@@ -130,6 +124,8 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 			proxy := m.getFreeProxy()
 			proxy.inUse = true
 
+			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
+
 			go m.downloadItemSession(proxy, trackedItem, data, index)
 		}
 
@@ -189,12 +185,18 @@ func (m *ehentai) downloadItemSession(
 	if downloadSession.occurredError == nil {
 		downloadSession.inUse = false
 
-		if index == 0 || m.isLowestIndex(index) {
+		if m.isLowestIndex(index) {
 			// if we are the lowest index (to prevent skips on errors) update the downloaded item
 			m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 		}
 
-		m.multiProxy.completedIndexes = append(m.multiProxy.completedIndexes, index)
+		// remove current index from current list since we finished
+		for i, v := range m.multiProxy.currentIndexes {
+			if v == index {
+				m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
+				break
+			}
+		}
 	}
 
 	m.multiProxy.waitGroup.Done()
