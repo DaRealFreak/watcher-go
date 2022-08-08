@@ -64,7 +64,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 
 		nextPageURL, exists := m.getNextSearchPageURL(html)
 		if !exists {
-			// no next page exists anymore, break here
+			// no further page exists anymore, break here
 			break
 		}
 
@@ -85,31 +85,35 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		fmt.Sprintf("found %d new items for uri: %s", len(itemQueue), item.URI),
 	)
 
-	// add items
-	for index, gallery := range itemQueue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
-				"added gallery to tracked items: \"%s\" (%0.2f%%)",
-				gallery.uri,
-				float64(index+1)/float64(len(itemQueue))*100,
-			),
-		)
-
+	for _, gallery := range itemQueue {
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		if m.Cfg.Run.ForceNew && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
 			)
 			galleryItem.CurrentItem = ""
-			m.DbIO.ChangeTrackedItemCompleteStatus(item, false)
-			m.DbIO.UpdateTrackedItem(item, "")
+			m.DbIO.ChangeTrackedItemCompleteStatus(galleryItem, false)
+			m.DbIO.UpdateTrackedItem(galleryItem, "")
 		}
+	}
 
+	// add items
+	for index, gallery := range itemQueue {
+		log.WithField("module", m.Key).Info(
+			fmt.Sprintf(
+				"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
+				gallery.uri,
+				item.URI,
+				float64(index+1)/float64(len(itemQueue))*100,
+			),
+		)
+
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
 		if err = m.Parse(galleryItem); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
 			)
-			continue
+			return err
 		}
 
 		m.DbIO.UpdateTrackedItem(item, gallery.id)
