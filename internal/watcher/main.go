@@ -146,7 +146,23 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 		trackedItems = app.DbCon.GetTrackedItems(nil, false)
 	}
 
-	return trackedItems
+	// remove duplicates
+	var results []*models.TrackedItem
+	for _, newItem := range trackedItems {
+		found := false
+		for _, uniqueItem := range results {
+			if newItem.URI == uniqueItem.URI {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			results = append(results, newItem)
+		}
+	}
+
+	return results
 }
 
 // runForItems is the go routine to parse run parallel for groups
