@@ -23,6 +23,13 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		return err
 	}
 
+	if response.StatusCode == 503 {
+		return fmt.Errorf(
+			"returned status code was 503, check cloudflare.user_agent setting and cf_clearance cookie." +
+				"cloudflare checks used IP and User-Agent to validate the cf_clearance cookie",
+		)
+	}
+
 	var itemQueue []searchGalleryItem
 
 	html, _ := m.Session.GetDocument(response).Html()

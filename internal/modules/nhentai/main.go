@@ -2,18 +2,19 @@
 package nhentai
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
 
 	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type nhentai struct {
@@ -22,6 +23,13 @@ type nhentai struct {
 	galleryIDPattern       *regexp.Regexp
 	searchGalleryIDPattern *regexp.Regexp
 	thumbToImageRegexp     *regexp.Regexp
+	settings               nhentaiSettings
+}
+
+type nhentaiSettings struct {
+	Cloudflare struct {
+		UserAgent string `mapstructure:"user_agent"`
+	} `mapstructure:"cloudflare"`
 }
 
 // nolint: gochecknoinits
@@ -59,6 +67,12 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *nhentai) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
 	m.baseURL, _ = url.Parse("https://nhentai.net/")
 	m.Session = session.NewSession(m.Key)
 
@@ -67,6 +81,7 @@ func (m *nhentai) InitializeModule() {
 
 	client := m.Session.GetClient()
 	options := cloudflarebp.GetDefaultOptions()
+	options.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 }
 
