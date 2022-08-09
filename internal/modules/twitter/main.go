@@ -156,6 +156,10 @@ func (m *twitter) AddItem(uri string) (string, error) {
 				return uri, screenNameErr
 			}
 
+			log.WithField("module", m.Module.Key).Infof(
+				"converting twitter username \"%s\"", screenName,
+			)
+
 			if m.settings.Api.UseGraphQlApi {
 				userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
 				if userErr != nil || userInformation == nil || len(userInformation.Data.User.Result.RestID.String()) == 0 {
