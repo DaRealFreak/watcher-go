@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 
 	// initialize the shared API instance
 	daAPI = NewDeviantartAPI("deviantart API", testAccount)
-	daAPI.AddRoundTrippers()
+	daAPI.AddRoundTrippers("")
 
 	// run the unit tests
 	os.Exit(m.Run())

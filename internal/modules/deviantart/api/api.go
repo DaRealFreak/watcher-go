@@ -59,10 +59,15 @@ func NewDeviantartAPI(moduleKey string, account *models.Account) *DeviantartAPI 
 
 // AddRoundTrippers adds the round trippers for CloudFlare, adds a custom user agent
 // and implements the implicit OAuth2 authentication and sets the Token round tripper
-func (a *DeviantartAPI) AddRoundTrippers() {
+func (a *DeviantartAPI) AddRoundTrippers(userAgent string) {
 	client := a.UserSession.GetClient()
 	// apply CloudFlare bypass
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
+	options := cloudflarebp.GetDefaultOptions()
+	if userAgent != "" {
+		options.Headers["User-Agent"] = userAgent
+	}
+
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 	client.Transport = a.setDeviantArtHeaders(client.Transport)
 
 	jar := client.Jar

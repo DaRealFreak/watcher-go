@@ -9,7 +9,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // deviantArt contains the implementation of the ModuleInterface
@@ -17,6 +19,13 @@ type deviantArt struct {
 	*models.Module
 	daAPI     *api.DeviantartAPI
 	daPattern deviantArtPattern
+	settings  deviantArtSettings
+}
+
+type deviantArtSettings struct {
+	Cloudflare struct {
+		UserAgent string `mapstructure:"user_agent"`
+	} `mapstructure:"cloudflare"`
 }
 
 type deviantArtPattern struct {
@@ -61,7 +70,13 @@ func NewBareModule() *models.Module {
 }
 
 // InitializeModule initializes the module
-func (m *deviantArt) InitializeModule() {}
+func (m *deviantArt) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+}
 
 // AddModuleCommand adds custom module specific settings and commands to our application
 func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
@@ -83,7 +98,7 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		}
 	}
 
-	m.daAPI.AddRoundTrippers()
+	m.daAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
 
 	res, err := m.daAPI.Placebo()
 	m.LoggedIn = err == nil && res.Status == "success"
