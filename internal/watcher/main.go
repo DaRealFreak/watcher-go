@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
-
 	"github.com/DaRealFreak/watcher-go/internal/database"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
 
 	// registered modules imported for registering into the module factory
@@ -124,7 +124,9 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 				continue
 			}
 
-			trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(itemURL, module)
+			normalizedUri, err := module.ModuleInterface.AddItem(itemURL)
+			raven.CheckError(err)
+			trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, module)
 
 			// skip completed item if we aren't forcing new
 			if trackedItem.Complete && !app.Cfg.Run.ForceNew {

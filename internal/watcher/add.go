@@ -11,7 +11,7 @@ func (app *Watcher) AddAccountByURI(uri string, user string, password string) {
 // AddItemByURI adds an item based on the uri and sets it to the passed current item if not nil
 func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	module := app.ModuleFactory.GetModuleFromURI(uri)
-	normalizedUri, err := module.AddItem(uri)
+	normalizedUri, err := module.ModuleInterface.AddItem(uri)
 	raven.CheckError(err)
 
 	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, module)
