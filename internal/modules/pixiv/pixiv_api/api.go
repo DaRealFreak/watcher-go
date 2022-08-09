@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -43,7 +43,7 @@ func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer stri
 		},
 		oAuth2Account: oAuthClient,
 		referer:       referer,
-		rateLimiter:   rate.NewLimiter(rate.Every(2*time.Second), 1),
+		rateLimiter:   rate.NewLimiter(rate.Every(2500*time.Millisecond), 1),
 		ctx:           context.Background(),
 	}
 }

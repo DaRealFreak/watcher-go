@@ -15,8 +15,9 @@ func (m *pixiv) parseUser(item *models.TrackedItem) error {
 	if err != nil {
 		switch err.(type) {
 		case pixivapi.UserUnavailableError:
-			log.WithField("module", m.Key).Warning(
-				"couldn't retrieve user details, changing artist to complete",
+			log.WithField("module", m.Key).Warningf(
+				"couldn't retrieve user details, changing artist to complete (%s)",
+				item.URI,
 			)
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 
