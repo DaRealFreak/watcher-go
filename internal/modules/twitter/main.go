@@ -25,15 +25,17 @@ import (
 // twitter contains the implementation of the ModuleInterface
 type twitter struct {
 	*models.Module
-	twitterAPI        *api.TwitterAPI
-	twitterGraphQlAPI *graphql_api.TwitterGraphQlAPI
-	settings          twitterSettings
+	twitterAPI          *api.TwitterAPI
+	twitterGraphQlAPI   *graphql_api.TwitterGraphQlAPI
+	normalizedUriRegexp *regexp.Regexp
+	settings            twitterSettings
 }
 
 type twitterSettings struct {
 	Api struct {
 		UseGraphQlApi bool `mapstructure:"use_graph_ql_api"`
 	} `mapstructure:"api"`
+	ConvertNameToId bool `mapstructure:"convert_name_to_id"`
 }
 
 // nolint: gochecknoinits
@@ -49,11 +51,13 @@ func NewBareModule() *models.Module {
 		RequiresLogin: false,
 		LoggedIn:      true,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile(".*twitter.com"),
+			regexp.MustCompile(`.*twitter.com`),
+			regexp.MustCompile(`twitter:(graphQL|api)/\d+/.*`),
 		},
 	}
 	module.ModuleInterface = &twitter{
-		Module: module,
+		Module:              module,
+		normalizedUriRegexp: regexp.MustCompile(`twitter:(graphQL|api)/\d+/.*`),
 	}
 
 	// register module to log formatter
@@ -72,6 +76,11 @@ func (m *twitter) InitializeModule() {
 		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
 		&m.settings,
 	))
+
+	// already initialized
+	if m.Session != nil || (m.twitterGraphQlAPI != nil && m.twitterGraphQlAPI.Session != nil) {
+		return
+	}
 
 	if !m.settings.Api.UseGraphQlApi {
 		oauthClient := m.DbIO.GetOAuthClient(m)
@@ -118,9 +127,60 @@ func (m *twitter) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *twitter) Parse(item *models.TrackedItem) error {
+	if m.settings.ConvertNameToId && !m.normalizedUriRegexp.MatchString(item.URI) {
+		newUri, err := m.AddItem(item.URI)
+		if err == nil {
+			m.DbIO.ChangeTrackedItemUri(item, newUri)
+		} else {
+			log.WithField("module", item.Module).Warningf(
+				"unable to convert screen name to ID for URI %s (%s)", item.URI, err.Error(),
+			)
+		}
+	}
+
 	return m.parsePage(item)
 }
 
 func (m *twitter) AddItem(uri string) (string, error) {
-	return strings.ReplaceAll(uri, "mobile.twitter.com", "twitter.com"), nil
+	uri = strings.ReplaceAll(uri, "mobile.twitter.com", "twitter.com")
+
+	if m.settings.ConvertNameToId {
+		// we require the API to extract the twitter ID, so initialize the module if it's not initialized yet
+		if m.Session == nil && (m.twitterGraphQlAPI == nil || m.twitterGraphQlAPI.Session == nil) {
+			m.InitializeModule()
+		}
+
+		if match, err := regexp.MatchString(".*twitter.com", uri); err == nil && match {
+			screenName, screenNameErr := m.extractScreenName(uri)
+			if screenNameErr != nil {
+				return uri, screenNameErr
+			}
+
+			if m.settings.Api.UseGraphQlApi {
+				userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+				if userErr != nil {
+					return uri, userErr
+				}
+
+				uri = fmt.Sprintf(
+					"twitter:graphQL/%s/%s",
+					userInformation.Data.User.Result.RestID.String(),
+					userInformation.Data.User.Result.Legacy.ScreenName,
+				)
+			} else {
+				userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
+				if userErr != nil {
+					return uri, userErr
+				}
+
+				uri = fmt.Sprintf(
+					"twitter:api/%s/%s",
+					userInformation.Data.ID.String(),
+					userInformation.Data.Username,
+				)
+			}
+		}
+	}
+
+	return uri, nil
 }

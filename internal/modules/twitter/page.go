@@ -12,10 +12,20 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 )
 
-func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName string) error {
-	userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
-	if userErr != nil {
-		return userErr
+func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName string) (err error) {
+	var userId string
+	if m.normalizedUriRegexp.MatchString(item.URI) {
+		userId, err = m.extractId(item.URI)
+		if err != nil {
+			return err
+		}
+	} else {
+		userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+		if userErr != nil {
+			return userErr
+		}
+
+		userId = userInformation.Data.User.Result.RestID.String()
 	}
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
@@ -28,7 +38,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 	for !foundCurrentItem {
 		timeline, timeLineErr := m.twitterGraphQlAPI.UserTimelineV2(
-			userInformation.Data.User.Result.RestID.String(),
+			userId,
 			bottomCursor,
 		)
 		if timeLineErr != nil {
@@ -63,10 +73,24 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 	return nil
 }
 
-func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName string) error {
-	userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
-	if userErr != nil {
-		return userErr
+func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName string) (err error) {
+	var userId string
+	var userName string
+	if m.normalizedUriRegexp.MatchString(item.URI) {
+		userId, err = m.extractId(item.URI)
+		if err != nil {
+			return err
+		}
+
+		userName, _ = m.extractScreenName(item.URI)
+	} else {
+		userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
+		if userErr != nil {
+			return userErr
+		}
+
+		userId = userInformation.Data.ID.String()
+		userName = userInformation.Data.Username
 	}
 
 	var (
@@ -76,7 +100,7 @@ func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName str
 	)
 
 	for {
-		tweets, timeLineErr := m.twitterAPI.UserTimelineV2(userInformation.Data.ID.String(), item.CurrentItem, "", paginationToken)
+		tweets, timeLineErr := m.twitterAPI.UserTimelineV2(userId, item.CurrentItem, "", paginationToken)
 		if timeLineErr != nil {
 			return timeLineErr
 		}
@@ -102,7 +126,7 @@ func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName str
 				}
 
 				// attach username to the tweet
-				tweet.AuthorName = userInformation.Data.Username
+				tweet.AuthorName = userName
 
 				newMediaTweets = append(newMediaTweets, tweet)
 			}
@@ -145,8 +169,27 @@ func (m *twitter) parsePage(item *models.TrackedItem) error {
 	}
 }
 
+func (m *twitter) extractId(uri string) (string, error) {
+	if m.normalizedUriRegexp.MatchString(uri) {
+		results := regexp.MustCompile(`twitter:(?:graphQL|api)/(\d+)/.*`).FindStringSubmatch(uri)
+		if len(results) != 2 {
+			return "", fmt.Errorf("unexpected amount of results during screen name extraction of uri %s", uri)
+		}
+
+		return results[1], nil
+	}
+
+	return "", fmt.Errorf("uri \"%s\" not matching the regular expression", uri)
+}
+
 func (m *twitter) extractScreenName(uri string) (string, error) {
-	results := regexp.MustCompile(`.*twitter.com/([^/]+)?(?:$|/)`).FindStringSubmatch(uri)
+	var results []string
+	if m.normalizedUriRegexp.MatchString(uri) {
+		results = regexp.MustCompile(`twitter:(?:graphQL|api)/\d+/(.*)`).FindStringSubmatch(uri)
+	} else {
+		results = regexp.MustCompile(`.*twitter.com/([^/]+)?(?:$|/)`).FindStringSubmatch(uri)
+	}
+
 	if len(results) != 2 {
 		return "", fmt.Errorf("unexpected amount of results during screen name extraction of uri %s", uri)
 	}
