@@ -144,12 +144,12 @@ func (m *twitter) Parse(item *models.TrackedItem) error {
 func (m *twitter) AddItem(uri string) (string, error) {
 	uri = strings.ReplaceAll(uri, "mobile.twitter.com", "twitter.com")
 
-	if m.settings.ConvertNameToId {
-		// we require the API to extract the twitter ID, so initialize the module if it's not initialized yet
-		if m.Session == nil && (m.twitterGraphQlAPI == nil || m.twitterGraphQlAPI.Session == nil) {
-			m.InitializeModule()
-		}
+	// we require the API to extract the twitter ID, so initialize the module if it's not initialized yet
+	if m.Session == nil && (m.twitterGraphQlAPI == nil || m.twitterGraphQlAPI.Session == nil) {
+		m.InitializeModule()
+	}
 
+	if m.settings.ConvertNameToId {
 		if match, err := regexp.MatchString(".*twitter.com", uri); err == nil && match {
 			screenName, screenNameErr := m.extractScreenName(uri)
 			if screenNameErr != nil {
@@ -158,7 +158,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 
 			if m.settings.Api.UseGraphQlApi {
 				userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
-				if userErr != nil {
+				if userErr != nil || userInformation == nil || len(userInformation.Data.User.Result.RestID.String()) == 0 {
 					return uri, userErr
 				}
 
@@ -169,7 +169,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 				)
 			} else {
 				userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
-				if userErr != nil {
+				if userErr != nil || userInformation == nil || len(userInformation.Data.ID.String()) == 0 {
 					return uri, userErr
 				}
 
