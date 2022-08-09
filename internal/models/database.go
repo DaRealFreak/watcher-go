@@ -9,6 +9,8 @@ type DatabaseInterface interface {
 	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
 	GetTrackedItemsByDomain(domain string, includeCompleted bool) []*TrackedItem
 	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
+	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
+	ChangeTrackedItemUri(trackedItem *TrackedItem, uri string)
 	CreateTrackedItem(uri string, module ModuleInterface)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 
@@ -17,7 +19,6 @@ type DatabaseInterface interface {
 	CreateAccount(user string, password string, module ModuleInterface)
 	GetFirstOrCreateAccount(user string, password string, module ModuleInterface) *Account
 	GetAccount(module ModuleInterface) *Account
-	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 
 	// OAuth2 client storage functionality
 
@@ -48,9 +49,10 @@ type Account struct {
 
 // TrackedItem contains all required data from tracked items in the application
 type TrackedItem struct {
-	ID          int
-	URI         string
-	CurrentItem string
-	Module      string
-	Complete    bool
+	ID           int
+	URI          string
+	CurrentItem  string
+	Module       string
+	LastModified sql.NullTime
+	Complete     bool
 }
