@@ -150,17 +150,21 @@ func (m *patreon) AddItem(uri string) (string, error) {
 		m.Login(account)
 	}
 
-	creatorId, idErr := m.getCreatorID(uri)
-	if idErr != nil {
-		return uri, idErr
-	}
+	if !m.normalizedUriRegexp.MatchString(uri) {
+		creatorId, idErr := m.getCreatorID(uri)
+		if idErr != nil {
+			return uri, idErr
+		}
 
-	creatorName, nameErr := m.getCreatorName(uri)
-	if nameErr != nil {
-		return uri, nameErr
-	}
+		creatorName, nameErr := m.getCreatorName(uri)
+		if nameErr != nil {
+			return uri, nameErr
+		}
 
-	return fmt.Sprintf("patreon://creator/%d/%s", creatorId, creatorName), nil
+		return fmt.Sprintf("patreon://creator/%d/%s", creatorId, creatorName), nil
+	} else {
+		return uri, nil
+	}
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

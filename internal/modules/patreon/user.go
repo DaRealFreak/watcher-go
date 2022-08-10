@@ -34,7 +34,7 @@ type userResponse struct {
 // getCreatorName returns the username
 func (m *patreon) getCreatorName(campaignUri string) (string, error) {
 	if strings.Contains(campaignUri, "https://www.patreon.com/") {
-		return strings.Split(campaignUri, "https://www.patreon.com/")[1], nil
+		return strings.Split(strings.Split(campaignUri, "https://www.patreon.com/")[1], "/")[0], nil
 	} else {
 		return "", fmt.Errorf("campaign URL does not start with \"https://www.patreon.com/\"")
 	}
