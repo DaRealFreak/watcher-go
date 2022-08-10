@@ -43,7 +43,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName)),
+						m.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
 					),
 					attachment.Attributes.URL,
 				); err != nil {
@@ -67,7 +67,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName)),
+						m.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
 					),
 					attachment.Attributes.DownloadURL,
 				); err != nil {

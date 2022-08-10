@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -21,14 +20,24 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // patreon contains the implementation of the ModuleInterface
 type patreon struct {
 	*models.Module
-	loginCsrfPattern  *regexp.Regexp
-	creatorIdPattern  *regexp.Regexp
-	creatorUriPattern *regexp.Regexp
+	loginCsrfPattern    *regexp.Regexp
+	creatorIdPattern    *regexp.Regexp
+	creatorUriPattern   *regexp.Regexp
+	normalizedUriRegexp *regexp.Regexp
+	settings            patreonSettings
+}
+
+type patreonSettings struct {
+	Cloudflare struct {
+		UserAgent string `mapstructure:"user_agent"`
+	} `mapstructure:"cloudflare"`
+	ConvertNameToId bool `mapstructure:"convert_name_to_id"`
 }
 
 type loginAttributes struct {
@@ -80,10 +89,11 @@ func NewBareModule() *models.Module {
 		},
 	}
 	module.ModuleInterface = &patreon{
-		Module:            module,
-		loginCsrfPattern:  regexp.MustCompile(`window\.patreon\.csrfSignature = "(.*)";`),
-		creatorIdPattern:  regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
-		creatorUriPattern: regexp.MustCompile(`patreon://creator/([\d]+)`),
+		Module:              module,
+		loginCsrfPattern:    regexp.MustCompile(`window\.patreon\.csrfSignature = "(.*)";`),
+		creatorIdPattern:    regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
+		creatorUriPattern:   regexp.MustCompile(`patreon://creator/(\d+)`),
+		normalizedUriRegexp: regexp.MustCompile(`patreon://creator/(\d+)/.*`),
 	}
 
 	// register module to log formatter
@@ -97,6 +107,17 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *patreon) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
+	// already initialized
+	if m.Session != nil {
+		return
+	}
+
 	// initialize session
 	m.Session = session.NewSession(m.Key)
 
@@ -106,24 +127,40 @@ func (m *patreon) InitializeModule() {
 	// add CloudFlare bypass
 	cloudflareOptions := cloudflarebp.GetDefaultOptions()
 	cloudflareOptions.Headers["Accept-Encoding"] = "gzip, deflate, br"
-	cloudflareOptions.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0"
+	cloudflareOptions.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
 	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
 }
 
 func (m *patreon) AddItem(uri string) (string, error) {
-	res, err := m.Session.Get(uri)
-	if err != nil {
-		return uri, err
+	// we require the session to check for the creator ID
+	if m.Session == nil {
+		m.InitializeModule()
+
+		// we're not converting the uri
+		if !m.settings.ConvertNameToId {
+			return uri, nil
+		}
+
+		// login if we have an account, we can't extract the creator ID without an account
+		account := m.DbIO.GetAccount(m)
+		if account == nil {
+			return uri, fmt.Errorf("an account is required for the extraction of the creator ID")
+		}
+
+		m.Login(account)
 	}
 
-	creatorIDMatches := m.creatorIdPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
-	if len(creatorIDMatches) != 2 {
-		return uri, fmt.Errorf("unexpected amount of matches in search of creator id ")
+	creatorId, idErr := m.getCreatorID(uri)
+	if idErr != nil {
+		return uri, idErr
 	}
 
-	creatorID, _ := strconv.ParseInt(creatorIDMatches[1], 10, 64)
+	creatorName, nameErr := m.getCreatorName(uri)
+	if nameErr != nil {
+		return uri, nameErr
+	}
 
-	return fmt.Sprintf("patreon://creator/%d", creatorID), nil
+	return fmt.Sprintf("patreon://creator/%d/%s", creatorId, creatorName), nil
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -221,5 +258,16 @@ func (m *patreon) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *patreon) Parse(item *models.TrackedItem) error {
+	if m.settings.ConvertNameToId && !m.normalizedUriRegexp.MatchString(item.URI) {
+		newUri, err := m.AddItem(item.URI)
+		if err == nil {
+			m.DbIO.ChangeTrackedItemUri(item, newUri)
+		} else {
+			log.WithField("module", item.Module).Warningf(
+				"unable to convert campaign URL to ID for %s (%s)", item.URI, err.Error(),
+			)
+		}
+	}
+
 	return m.parseCampaign(item)
 }

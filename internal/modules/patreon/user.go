@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 )
@@ -30,8 +31,27 @@ type userResponse struct {
 	} `json:"data"`
 }
 
+// getCreatorName returns the username
+func (m *patreon) getCreatorName(campaignUri string) (string, error) {
+	if strings.Contains(campaignUri, "https://www.patreon.com/") {
+		return strings.Split(campaignUri, "https://www.patreon.com/")[1], nil
+	} else {
+		return "", fmt.Errorf("campaign URL does not start with \"https://www.patreon.com/\"")
+	}
+}
+
 // getCreatorID extracts the creator ID from the campaign URI
 func (m *patreon) getCreatorID(campaignURI string) (int, error) {
+	if match := m.normalizedUriRegexp.MatchString(campaignURI); match {
+		results := m.normalizedUriRegexp.FindStringSubmatch(campaignURI)
+		if len(results) != 2 {
+			return 0, fmt.Errorf("unexpected amount of results during screen name extraction of uri %s", campaignURI)
+		}
+
+		userId, _ := strconv.ParseInt(results[1], 10, 64)
+		return int(userId), nil
+	}
+
 	res, err := m.Session.Get(campaignURI)
 	if err != nil {
 		return 0, err
