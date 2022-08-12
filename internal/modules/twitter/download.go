@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -40,7 +39,15 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 				downloadItem.FileURI,
 			)
 			if err != nil {
-				return err
+				switch err.(type) {
+				case graphql_api.DMCAError:
+					log.WithField("module", m.ModuleKey).Warnf(
+						fmt.Sprintf("received 403 status code for URI \"%s\", content got most likely DMCA'd, skipping", downloadItem.FileURI),
+					)
+
+				default:
+					return err
+				}
 			}
 		}
 		m.DbIO.UpdateTrackedItem(trackedItem, tweet.SortIndex.String())
