@@ -46,7 +46,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		}
 
 		for _, tweet := range timeline.TweetEntries() {
-			itemID, _ := strconv.ParseInt(tweet.SortIndex.String(), 10, 64)
+			itemID, _ := strconv.ParseInt(tweet.Content.ItemContent.TweetResults.Result.RestID.String(), 10, 64)
 			if itemID <= currentItemID {
 				foundCurrentItem = true
 				break

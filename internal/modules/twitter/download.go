@@ -50,7 +50,7 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 				}
 			}
 		}
-		m.DbIO.UpdateTrackedItem(trackedItem, tweet.SortIndex.String())
+		m.DbIO.UpdateTrackedItem(trackedItem, tweet.Content.ItemContent.TweetResults.Result.RestID.String())
 	}
 
 	return nil

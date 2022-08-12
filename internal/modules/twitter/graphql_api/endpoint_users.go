@@ -9,9 +9,8 @@ import (
 )
 
 type Tweet struct {
-	EntryID   string      `json:"entryId"`
-	SortIndex json.Number `json:"sortIndex"`
-	Content   struct {
+	EntryID string `json:"entryId"`
+	Content struct {
 		EntryType   string `json:"entryType"`
 		Value       string `json:"value"`
 		CursorType  string `json:"cursorType"`
@@ -99,11 +98,11 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			}
 
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.SortIndex.String(),
+				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%s",
-					tw.SortIndex.String(),
+					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
 					tmpModule.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
 				),
@@ -111,11 +110,11 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			})
 		} else {
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.SortIndex.String(),
+				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%s",
-					tw.SortIndex.String(),
+					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
 					tmpModule.GetFileName(mediaEntry.MediaURL),
 				),
