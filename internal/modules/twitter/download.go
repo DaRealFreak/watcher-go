@@ -28,7 +28,7 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 		downloadItems := tweet.DownloadItems()
 		for i := range downloadItems {
 			// iterate reverse over the download items to download the cover image last
-			downloadItem := downloadItems[len(downloadItems)-1-i]
+			downloadItem := downloadItems[i]
 			err := m.twitterGraphQlAPI.Session.DownloadFile(
 				path.Join(
 					viper.GetString("download.directory"),

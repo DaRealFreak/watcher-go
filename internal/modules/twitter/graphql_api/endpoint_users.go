@@ -101,9 +101,10 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
-					"%s_%s_%s",
+					"%s_%s_%d_%s",
 					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					len(items)+1,
 					tmpModule.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
 				),
 				FileURI: mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL,
@@ -113,9 +114,10 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
-					"%s_%s_%s",
+					"%s_%s_%d_%s",
 					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					len(items)+1,
 					tmpModule.GetFileName(mediaEntry.MediaURL),
 				),
 				FileURI: mediaEntry.MediaURL,
