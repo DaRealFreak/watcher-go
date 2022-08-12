@@ -41,7 +41,7 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 			if err != nil {
 				switch err.(type) {
 				case graphql_api.DMCAError:
-					log.WithField("module", m.ModuleKey).Warnf(
+					log.WithField("module", m.ModuleKey()).Warnf(
 						fmt.Sprintf("received 403 status code for URI \"%s\", content got most likely DMCA'd, skipping", downloadItem.FileURI),
 					)
 
