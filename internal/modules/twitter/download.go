@@ -71,7 +71,7 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 			),
 		)
 
-		for _, media := range tweet.Attachments.Media {
+		for i, media := range tweet.Attachments.Media {
 			if media.Type == "video" || media.Type == "animated_gif" {
 				tweetV1, singleTweetErr := m.twitterAPI.SingleTweetV1(
 					tweet.ID.String(),
@@ -106,7 +106,12 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 								viper.GetString("download.directory"),
 								m.Key,
 								m.SanitizePath(tweet.AuthorName, false),
-								fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL)),
+								fmt.Sprintf(
+									"%s_%s_%d_%s",
+									tweet.ID, tweet.AuthorID.String(),
+									i+1,
+									m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL),
+								),
 							),
 							entity.VideoInfo.Variants[highestBitRateIndex].URL,
 						); err != nil {
@@ -120,7 +125,7 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 						viper.GetString("download.directory"),
 						m.Key,
 						m.SanitizePath(tweet.AuthorName, false),
-						fmt.Sprintf("%s_%s_%s", tweet.ID, tweet.AuthorID.String(), m.GetFileName(media.URL)),
+						fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, m.GetFileName(media.URL)),
 					),
 					media.URL,
 				); err != nil {
