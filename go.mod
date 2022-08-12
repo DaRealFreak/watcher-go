@@ -19,7 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.8.0
 	github.com/tcnksm/go-gitconfig v0.1.2
 	golang.org/x/image v0.0.0-20220722155232-062f8c9fd539
 	golang.org/x/net v0.0.0-20220809012201-f428fae20770
