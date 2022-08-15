@@ -4,9 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 // nolint: gochecknoglobals
@@ -21,18 +20,19 @@ func TestMain(m *testing.M) {
 	}
 
 	// initialize the shared API instance
-	daNAPI = NewDeviantartNAPI("deviantart API", testAccount)
-	daNAPI.AddRoundTrippers("")
+	daNAPI = NewDeviantartNAPI("deviantart API")
+	daNAPI.AddRoundTrippers("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0")
+	err := daNAPI.Login(testAccount)
+	if err != nil {
+		daNAPI = nil
+		println("unable to login")
+		os.Exit(-1)
+	}
 
 	// run the unit tests
 	os.Exit(m.Run())
 }
 
 func TestNewDeviantartAPI(t *testing.T) {
-	res, err := daNAPI.DeviationSearch("Aunt Cass", "", "")
-	assert.New(t).NoError(err)
-	assert.New(t).Equal(24, len(res.Deviations))
-	assert.New(t).Equal(true, res.HasMore)
-
-	println(len(res.Deviations))
+	assert.New(t).NotNil(daNAPI)
 }

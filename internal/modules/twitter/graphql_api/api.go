@@ -34,7 +34,7 @@ func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
 
 	return &TwitterGraphQlAPI{
 		Session:     graphQLSession,
-		rateLimiter: rate.NewLimiter(rate.Every(1*time.Second), 1),
+		rateLimiter: rate.NewLimiter(rate.Every(1500*time.Millisecond), 1),
 		ctx:         context.Background(),
 	}
 }

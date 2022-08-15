@@ -1,4 +1,4 @@
-package api
+package login
 
 import (
 	"encoding/json"
@@ -9,14 +9,17 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// loginInfo contains all relevant information from the login page
-type loginInfo struct {
+type DeviantArtLogin struct {
+}
+
+// Info contains all relevant information from the login page
+type Info struct {
 	CSRFToken string `json:"csrfToken"`
 }
 
-// getLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
-func (g ImplicitGrantDeviantart) getLoginCSRFToken(res *http.Response) (*loginInfo, error) {
-	var currentLoginInfo loginInfo
+// GetLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
+func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
+	var currentLoginInfo Info
 
 	jsonPattern := regexp.MustCompile(`JSON.parse\((?P<Number>.*csrfToken.*?)\);`)
 

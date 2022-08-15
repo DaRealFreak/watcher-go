@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
 	implicitoauth2 "github.com/DaRealFreak/watcher-go/pkg/oauth2"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/oauth2"
@@ -17,6 +18,7 @@ import (
 // ImplicitGrantDeviantart is the implementation of the ImplicitGrant interface
 type ImplicitGrantDeviantart struct {
 	implicitoauth2.ImplicitGrant
+	login.DeviantArtLogin
 	account  *models.Account
 	loginTry uint
 	loggedIn bool
@@ -52,7 +54,7 @@ func (g *ImplicitGrantDeviantart) Login() error {
 		return err
 	}
 
-	info, err := g.getLoginCSRFToken(res)
+	info, err := g.GetLoginCSRFToken(res)
 	if err != nil {
 		return err
 	}
