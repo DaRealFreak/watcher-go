@@ -11,6 +11,4 @@ func TestDeviationsUser(t *testing.T) {
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(MaxLimit, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
-
-	println(len(res.Deviations))
 }

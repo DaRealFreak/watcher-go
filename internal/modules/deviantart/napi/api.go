@@ -29,6 +29,15 @@ type Author struct {
 	Username   string      `json:"username"`
 }
 
+type Collection struct {
+	FolderId       json.Number `json:"folderId"`
+	CollectionUuid string      `json:"gallectionUuid"`
+	Type           string      `json:"type"`
+	Description    string      `json:"description"`
+	Owner          *Author     `json:"owner"`
+	Size           json.Number `json:"size"`
+}
+
 type Deviation struct {
 	DeviationId    json.Number `json:"deviationId"`
 	Type           string      `json:"type"`
@@ -55,7 +64,7 @@ type MediaType struct {
 	Types    string       `json:"t"`
 	Height   json.Number  `json:"h"`
 	Width    json.Number  `json:"w"`
-	Quality  *json.Number `json:"q"`
+	Quality  string       `json:"q"`
 	FileSize *json.Number `json:"f"`
 	URL      *string      `json:"b"`
 }
@@ -89,8 +98,6 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	if err != nil {
 		return err
 	}
-
-	println(info.CSRFToken)
 
 	if !(info.CSRFToken != "") {
 		return fmt.Errorf("could not retrieve CSRF token from login page")

@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeviantartNAPI_DeviationSearch(t *testing.T) {
-	res, err := daNAPI.DeviationSearch("Aunt Cass", "", "")
+func TestDeviantartNAPI_JournalSearch(t *testing.T) {
+	res, err := daNAPI.JournalSearch("Aunt Cass", "", "")
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(24, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
 }
 
-func TestDeviantartNAPI_DeviationTag(t *testing.T) {
-	res, err := daNAPI.DeviationTag("pyra", "", "")
+func TestDeviantartNAPI_JournalTag(t *testing.T) {
+	res, err := daNAPI.JournalTag("Pyra", "", "")
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(24, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
