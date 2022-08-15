@@ -8,8 +8,8 @@ import (
 type SearchResponse struct {
 	HasMore        bool         `json:"hasMore"`
 	NextCursor     string       `json:"nextCursor"`
-	EstimatedTotal json.Number  `json:"estTotal"`
-	CurrentOffset  json.Number  `json:"currentOffset"`
+	EstimatedTotal *json.Number `json:"estTotal"`
+	CurrentOffset  *json.Number `json:"currentOffset"`
 	Deviations     []*Deviation `json:"deviations"`
 }
 

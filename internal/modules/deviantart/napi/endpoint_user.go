@@ -23,10 +23,10 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 		values.Set("folder", strconv.Itoa(folder))
 	}
 
-	if allFolders {
+	// if no folder is passed "all_folder" should be true as it is from the original API
+	// (no "folder" or "all_folder" argument passed returned the same results as "all_folder=true")
+	if folder == 0 || allFolders {
 		values.Set("all_folder", "true")
-	} else {
-		values.Set("all_folder", "false")
 	}
 
 	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/gallery/contents?" + values.Encode()
@@ -39,5 +39,4 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 	err = a.mapAPIResponse(response, &userResponse)
 
 	return &userResponse, err
-
 }
