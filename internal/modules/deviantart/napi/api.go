@@ -18,6 +18,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/jaytaylor/html2text"
 	"golang.org/x/time/rate"
 )
@@ -31,6 +32,9 @@ const MaxLimit = 60
 // OrderMostRecent is the value for the order parameter to sort by most recent results
 // the default API response would sort by recommendation (which is useless)
 const OrderMostRecent = "most-recent"
+
+// MediaTypeFullView is the best type by default if the original file is not accessible
+const MediaTypeFullView = "fullview"
 
 type Author struct {
 	UserId     json.Number `json:"userId"`
@@ -108,15 +112,19 @@ type Media struct {
 	BaseUri    string       `json:"baseUri"`
 	PrettyName string       `json:"prettyName"`
 	Types      []*MediaType `json:"types"`
+	Token      *Token       `json:"token"`
 }
 
+type Token []string
+
 type MediaType struct {
-	Types    string       `json:"t"`
-	Height   json.Number  `json:"h"`
-	Width    json.Number  `json:"w"`
-	Quality  string       `json:"q"`
-	FileSize *json.Number `json:"f"`
-	URL      *string      `json:"b"`
+	Types    string      `json:"t"`
+	Height   json.Number `json:"h"`
+	Width    json.Number `json:"w"`
+	Crop     string      `json:"c"`
+	Quality  *string     `json:"q"`
+	FileSize json.Number `json:"f"`
+	URL      *string     `json:"b"`
 }
 
 // DeviantartNAPI contains all required items to communicate with the API
@@ -226,6 +234,31 @@ func (a *DeviantartNAPI) applyRateLimit() {
 	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }
 
+func (t *MediaType) GetCrop(prettyName string) string {
+	return strings.ReplaceAll(t.Crop, "<prettyName>", prettyName)
+}
+
+func (d *Deviation) GetPrettyName() string {
+	if d.Media.PrettyName != "" {
+		return d.Media.PrettyName
+	} else {
+		return fmt.Sprintf(
+			"%s_by_%s",
+			strings.ToLower(strings.ReplaceAll(fp.SanitizePath(d.Title, false), " ", "_")),
+			strings.ToLower(strings.ReplaceAll(fp.SanitizePath(d.Author.Username, false), " ", "_")),
+		)
+	}
+}
+
+func (m *Media) GetType(mediaTypeTitle string) *MediaType {
+	for _, mediaType := range m.Types {
+		if mediaType.Types == mediaTypeTitle {
+			return mediaType
+		}
+	}
+	return nil
+}
+
 func (m *Media) GetHighestQualityVideoType() (bestMediaType *MediaType) {
 	fileSize := 0
 	for _, mediaType := range m.Types {
@@ -260,4 +293,12 @@ func (d *Deviation) GetLiteratureContent() (string, error) {
 	} else {
 		return html2text.FromString(d.TextContent.Html.Markup)
 	}
+}
+
+func (t *Token) GetToken() string {
+	for _, singleToken := range *t {
+		return singleToken
+	}
+
+	return ""
 }
