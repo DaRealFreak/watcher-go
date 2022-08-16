@@ -1,5 +1,3 @@
-// Package deviantart contains the implementation of the deviantart module
-// nolint: dupl
 package deviantart
 
 import (
