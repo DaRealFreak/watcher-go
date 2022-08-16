@@ -140,9 +140,17 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case m.daPattern.galleryPattern.MatchString(item.URI):
 		return m.parseGallery(item)
 	case m.daPattern.collectionPattern.MatchString(item.URI):
-		return m.parseCollection(item)
+		if m.settings.UseDevAPI {
+			return m.parseCollectionDevAPI(item)
+		} else {
+			return m.parseCollectionNapi(item)
+		}
 	case m.daPattern.collectionUUIDPattern.MatchString(item.URI):
-		return m.parseCollectionUUID(item)
+		if m.settings.UseDevAPI {
+			return m.parseCollectionUUIDDevAPI(item)
+		} else {
+			return m.parseCollectionUUIDNapi(item)
+		}
 	case m.daPattern.tagPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {
 			return m.parseTagDevAPI(item)

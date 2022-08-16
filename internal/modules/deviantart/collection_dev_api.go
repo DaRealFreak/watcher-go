@@ -10,7 +10,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseCollection(item *models.TrackedItem) error {
+func (m *deviantArt) parseCollectionDevAPI(item *models.TrackedItem) error {
 	username := m.daPattern.collectionPattern.FindStringSubmatch(item.URI)[1]
 	collectionID := m.daPattern.collectionPattern.FindStringSubmatch(item.URI)[2]
 	collectionIntID, _ := strconv.ParseInt(collectionID, 10, 64)
@@ -19,9 +19,9 @@ func (m *deviantArt) parseCollection(item *models.TrackedItem) error {
 	if err != nil {
 		return err
 	} else if collectionName == "All" {
-		// special case since the API won't return the "All" folder and we can't retrieve the folder ID
+		// special case since the API won't return the "All" folder, and we can't retrieve the folder ID
 		// with the Eclipse theme which is enforced for new users....
-		return m.parseAllCollections(username)
+		return m.parseAllCollectionsDevAPI(username)
 	}
 
 	collectionUUID, err := m.daAPI.CollectionFolderIDToUUID(username, int(collectionIntID))
@@ -29,7 +29,7 @@ func (m *deviantArt) parseCollection(item *models.TrackedItem) error {
 		return err
 	}
 
-	downloadQueue, err := m.getCollectionDownloadQueue(item, username, collectionUUID)
+	downloadQueue, err := m.getCollectionDownloadQueueDevAPI(item, username, collectionUUID)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (m *deviantArt) parseCollection(item *models.TrackedItem) error {
 }
 
 // parseAllCollections parses all favourites of the passed user
-func (m *deviantArt) parseAllCollections(user string) error {
+func (m *deviantArt) parseAllCollectionsDevAPI(user string) error {
 	folderResults, err := m.daAPI.CollectionFolders(user, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return err
@@ -64,11 +64,11 @@ func (m *deviantArt) parseAllCollections(user string) error {
 	return nil
 }
 
-func (m *deviantArt) parseCollectionUUID(item *models.TrackedItem) error {
+func (m *deviantArt) parseCollectionUUIDDevAPI(item *models.TrackedItem) error {
 	username := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[1]
 	collectionUUID := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[2]
 
-	downloadQueue, err := m.getCollectionDownloadQueue(item, username, collectionUUID)
+	downloadQueue, err := m.getCollectionDownloadQueueDevAPI(item, username, collectionUUID)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (m *deviantArt) parseCollectionUUID(item *models.TrackedItem) error {
 	return m.processDownloadQueue(downloadQueue, item)
 }
 
-func (m *deviantArt) getCollectionDownloadQueue(
+func (m *deviantArt) getCollectionDownloadQueueDevAPI(
 	item *models.TrackedItem, username string, collectionUUID string,
 ) ([]downloadQueueItemDevAPI, error) {
 	var downloadQueue []downloadQueueItemDevAPI
