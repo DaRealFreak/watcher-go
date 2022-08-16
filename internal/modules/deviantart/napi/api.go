@@ -331,6 +331,11 @@ func (f *Overview) FindFolderByFolderUuid(folderUuid string) *Folder {
 }
 
 func (f *Overview) FindFolderByFolderId(folderId int) *Folder {
+	// all folder has always the folder id -1 while it has no id in the URL, so we set it here manually
+	if folderId == 0 {
+		folderId = -1
+	}
+
 	for _, module := range f.SectionData.Modules {
 		if module.Name == ModuleNameFolders {
 			for _, folder := range module.ModuleData.Folders.Results {
