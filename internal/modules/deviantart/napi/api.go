@@ -127,6 +127,14 @@ type MediaType struct {
 	URL      *string     `json:"b"`
 }
 
+type Folder struct {
+	FolderId       json.Number `json:"folderId"`
+	GallectionUuid string      `json:"gallectionUuid"`
+	Type           string      `json:"type"`
+	Name           string      `json:"name"`
+	Owner          *Author     `json:"owner"`
+}
+
 // DeviantartNAPI contains all required items to communicate with the API
 type DeviantartNAPI struct {
 	login.DeviantArtLogin
@@ -295,10 +303,45 @@ func (d *Deviation) GetLiteratureContent() (string, error) {
 	}
 }
 
+func (d *Deviation) GetPublishedTimestamp() string {
+	t, _ := time.Parse(DateLayout, d.PublishedTime)
+	return strconv.Itoa(int(t.Unix()))
+}
+
 func (t *Token) GetToken() string {
 	for _, singleToken := range *t {
 		return singleToken
 	}
 
 	return ""
+}
+
+func (f *FavoritesOverview) FindFolderByFolderUuid(folderUuid string) *Folder {
+	for _, module := range f.SectionData.Modules {
+		if module.Name == ModuleNameFolders {
+			for _, folder := range module.ModuleData.Folders.Results {
+				if folder.GallectionUuid == folderUuid {
+					return folder
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (f *FavoritesOverview) FindFolderByFolderId(folderId int) *Folder {
+	for _, module := range f.SectionData.Modules {
+		if module.Name == ModuleNameFolders {
+			for _, folder := range module.ModuleData.Folders.Results {
+				if currentFolderId, err := folder.FolderId.Int64(); err == nil {
+					if int(currentFolderId) == folderId {
+						return folder
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
