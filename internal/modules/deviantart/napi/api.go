@@ -18,10 +18,19 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/jaytaylor/html2text"
 	"golang.org/x/time/rate"
 )
 
+// DateLayout is the date layout for parsing json times from the API
+const DateLayout = "2006-01-02T15:04:05-0700"
+
+// MaxLimit is the max limit of results for API endpoints who accept a limit parameter
 const MaxLimit = 60
+
+// OrderMostRecent is the value for the order parameter to sort by most recent results
+// the default API response would sort by recommendation (which is useless)
+const OrderMostRecent = "most-recent"
 
 type Author struct {
 	UserId     json.Number `json:"userId"`
@@ -39,19 +48,60 @@ type Collection struct {
 }
 
 type Deviation struct {
-	DeviationId    json.Number `json:"deviationId"`
-	Type           string      `json:"type"`
-	TypeID         json.Number `json:"typeId"`
-	URL            string      `json:"url"`
-	Title          string      `json:"title"`
-	IsJournal      bool        `json:"isJournal"`
-	IsVideo        bool        `json:"isVideo"`
-	PublishedTime  string      `json:"publishedTime"`
-	IsDeleted      bool        `json:"isDeleted"`
-	IsDownloadable bool        `json:"isDownloadable"`
-	IsBlocked      bool        `json:"isBlocked"`
-	Author         *Author     `json:"author"`
-	Media          *Media      `json:"media"`
+	DeviationId    json.Number  `json:"deviationId"`
+	Type           string       `json:"type"`
+	TypeID         json.Number  `json:"typeId"`
+	URL            string       `json:"url"`
+	Title          string       `json:"title"`
+	IsJournal      bool         `json:"isJournal"`
+	IsVideo        bool         `json:"isVideo"`
+	PublishedTime  string       `json:"publishedTime"`
+	IsDeleted      bool         `json:"isDeleted"`
+	IsDownloadable bool         `json:"isDownloadable"`
+	IsBlocked      bool         `json:"isBlocked"`
+	Author         *Author      `json:"author"`
+	Media          *Media       `json:"media"`
+	TextContent    *TextContent `json:"textContent"`
+	Extended       *Extended    `json:"extended"`
+}
+
+type TextContent struct {
+	Excerpt string `json:"excerpt"`
+	Html    struct {
+		Type   string `json:"type"`
+		Markup string `json:"markup"`
+	} `json:"html"`
+}
+
+type Draft struct {
+	Blocks []struct {
+		Key               string        `json:"key"`
+		Text              string        `json:"text"`
+		Type              string        `json:"type"`
+		Depth             json.Number   `json:"depth"`
+		InlineStyleRanges []interface{} `json:"inlineStyleRanges"`
+		EntityRanges      []interface{} `json:"entityRanges"`
+		Data              interface{}   `json:"data"`
+	} `json:"blocks"`
+	EntityMap interface{} `json:"entityMap"`
+}
+
+type Extended struct {
+	DeviationUuid string `json:"deviationUuid"`
+	OriginalFile  *struct {
+		Type     string      `json:"type"`
+		Width    json.Number `json:"width"`
+		Height   json.Number `json:"height"`
+		Filesize json.Number `json:"filesize"`
+	} `json:"originalFile"`
+	Download *struct {
+		URL      string      `json:"url"`
+		Type     string      `json:"type"`
+		Width    json.Number `json:"width"`
+		Height   json.Number `json:"height"`
+		FileSize json.Number `json:"filesize"`
+	} `json:"download"`
+	DescriptionText *TextContent `json:"descriptionText"`
 }
 
 type Media struct {
@@ -190,4 +240,24 @@ func (m *Media) GetHighestQualityVideoType() (bestMediaType *MediaType) {
 	}
 
 	return bestMediaType
+}
+
+func (d *Draft) GetText() (text string) {
+	for _, block := range d.Blocks {
+		text += block.Text + "\n"
+	}
+
+	return text
+}
+
+func (d *Deviation) GetLiteratureContent() (string, error) {
+	if d.TextContent.Html.Type == "draft" {
+		var draft Draft
+		if err := json.Unmarshal([]byte(d.TextContent.Html.Markup), &draft); err != nil {
+			return "", err
+		}
+		return draft.GetText(), nil
+	} else {
+		return html2text.FromString(d.TextContent.Html.Markup)
+	}
 }

@@ -9,7 +9,9 @@ import (
 type UserResponse struct {
 	HasMore    bool         `json:"hasMore"`
 	NextOffset *json.Number `json:"nextOffset"`
-	Deviations []*Deviation `json:"results"`
+	Deviations []*struct {
+		Deviation *Deviation `json:"deviation"`
+	} `json:"results"`
 }
 
 func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int, limit int, allFolders bool) (*UserResponse, error) {

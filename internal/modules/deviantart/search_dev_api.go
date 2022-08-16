@@ -11,7 +11,7 @@ import (
 )
 
 func (m *deviantArt) parseSearch(item *models.TrackedItem) error {
-	var downloadQueue []downloadQueueItem
+	var downloadQueue []downloadQueueItemDevAPI
 
 	u, err := url.Parse(item.URI)
 	if err != nil {
@@ -39,7 +39,7 @@ func (m *deviantArt) parseSearch(item *models.TrackedItem) error {
 			}
 
 			if item.CurrentItem == "" || publishedTime > currentItemID {
-				downloadQueue = append(downloadQueue, downloadQueueItem{
+				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
 					downloadTag: m.SanitizePath(searchTag, false),

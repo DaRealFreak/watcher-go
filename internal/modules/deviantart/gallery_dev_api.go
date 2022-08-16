@@ -9,7 +9,7 @@ import (
 )
 
 func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
-	var downloadQueue []downloadQueueItem
+	var downloadQueue []downloadQueueItemDevAPI
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
@@ -41,7 +41,7 @@ func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
 			}
 
 			if item.CurrentItem == "" || publishedTime > currentItemID {
-				downloadQueue = append(downloadQueue, downloadQueueItem{
+				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
 					downloadTag: path.Join(m.SanitizePath(username, false), m.SanitizePath(galleryName, false)),

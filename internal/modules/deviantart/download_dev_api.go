@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -19,9 +21,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type downloadQueueItem struct {
+type downloadQueueItemDevAPI struct {
 	itemID      string
 	deviation   *api.Deviation
+	downloadTag string
+}
+
+type downloadQueueItemNAPI struct {
+	itemID      string
+	deviation   *napi.Deviation
 	downloadTag string
 }
 
@@ -40,7 +48,7 @@ func (l *downloadLog) downloadedFiles() (downloadedFiles []string) {
 	return downloadedFiles
 }
 
-func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, trackedItem *models.TrackedItem) error {
+func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItemDevAPI, trackedItem *models.TrackedItem) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
@@ -100,7 +108,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItem, tra
 	return nil
 }
 
-func (m *deviantArt) downloadFlash(item downloadQueueItem, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadFlash(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	// download content is always equal to the flash object in the API response
 	if downloadLog.download == "" || (downloadLog.download != "" && filepath.Ext(downloadLog.download) != ".swf") {
 		return m.daAPI.DownloadFile(
@@ -119,7 +127,7 @@ func (m *deviantArt) downloadFlash(item downloadQueueItem, downloadLog *download
 	return nil
 }
 
-func (m *deviantArt) downloadVideo(item downloadQueueItem) error {
+func (m *deviantArt) downloadVideo(item downloadQueueItemDevAPI) error {
 	var (
 		biggestFileSize int
 		biggestVideo    string
@@ -145,7 +153,7 @@ func (m *deviantArt) downloadVideo(item downloadQueueItem) error {
 	)
 }
 
-func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	if item.deviation.DeviationDownload != nil && item.deviation.Content != nil {
 		tmpFile, err := ioutil.TempFile("", ".*")
 		defer raven.CheckFileRemoval(tmpFile)
@@ -193,7 +201,7 @@ func (m *deviantArt) downloadContent(item downloadQueueItem, downloadLog *downlo
 	return m.downloadThumbs(item, downloadLog)
 }
 
-func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	// compare thumb and download/content
 	if len(item.deviation.Thumbs) == 0 {
 		return nil
@@ -257,7 +265,7 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItem, downloadLog *downloa
 	)
 }
 
-func (m *deviantArt) downloadDeviation(item downloadQueueItem, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadDeviation(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	deviationDownload, err := m.daAPI.DeviationDownloadFallback(item.deviation.DeviationURL)
 	if err != nil {
 		deviationDownload, err = m.daAPI.DeviationDownload(item.deviation.DeviationID)
@@ -288,7 +296,7 @@ func (m *deviantArt) downloadDeviation(item downloadQueueItem, downloadLog *down
 	return nil
 }
 
-func (m *deviantArt) downloadHTMLContent(item downloadQueueItem) error {
+func (m *deviantArt) downloadHTMLContent(item downloadQueueItemDevAPI) error {
 	// deviation has text so we retrieve the full content
 	deviationContent, err := m.daAPI.DeviationContent(item.deviation.DeviationID)
 	if err != nil {
