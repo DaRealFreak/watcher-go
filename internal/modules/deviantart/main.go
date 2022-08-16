@@ -130,7 +130,11 @@ func (m *deviantArt) Login(account *models.Account) bool {
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	switch {
 	case m.daPattern.feedPattern.MatchString(item.URI):
-		return m.parseFeed(item)
+		if m.settings.UseDevAPI {
+			return m.parseFeedDevApi(item)
+		} else {
+			return m.parseFeedNapi(item)
+		}
 	case m.daPattern.userPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {
 			return m.parseUserDevAPI(item)
