@@ -32,7 +32,7 @@ func (i *downloadQueueItemNAPI) GetFileName(fileType int) (filename string) {
 	case downloadQueueItemNAPIDownloadFile:
 		return fmt.Sprintf(
 			"%s_%s_d_%s%s",
-			i.itemID,
+			i.deviation.GetPublishedTimestamp(),
 			i.deviation.DeviationId.String(),
 			fp.SanitizePath(i.deviation.GetPrettyName(), false),
 			fp.GetFileExtension(i.deviation.Extended.Download.URL),
@@ -40,7 +40,7 @@ func (i *downloadQueueItemNAPI) GetFileName(fileType int) (filename string) {
 	case downloadQueueItemNAPIContentFile:
 		return fmt.Sprintf(
 			"%s_%s_c_%s%s",
-			i.itemID,
+			i.deviation.GetPublishedTimestamp(),
 			i.deviation.DeviationId.String(),
 			fp.SanitizePath(i.deviation.GetPrettyName(), false),
 			fp.GetFileExtension(i.deviation.Media.BaseUri),
@@ -121,16 +121,18 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 		}
 
 		switch deviationItem.deviation.Type {
-		case "literature":
+		case "journal", "literature":
 			if err = m.downloadLiteratureNapi(deviationItem); err != nil {
 				return err
 			}
 			break
-		default:
+		case "image", "pdf", "film":
 			if err = m.downloadContentNapi(deviationItem); err != nil {
 				return err
 			}
 			break
+		default:
+			return fmt.Errorf("unknown deviation type: \"%s\"", deviationItem.deviation.Type)
 		}
 
 		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
@@ -147,7 +149,7 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 				deviationItem.downloadTag,
 				fmt.Sprintf(
 					"%s_%s_v_%s%s",
-					deviationItem.itemID,
+					deviationItem.deviation.GetPublishedTimestamp(),
 					deviationItem.deviation.DeviationId.String(),
 					m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 					m.GetFileExtension(*highestQualityVideoType.URL),
@@ -217,12 +219,12 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 			deviationItem.downloadTag,
 			fmt.Sprintf(
 				"%s_%s_td_%s.txt",
-				deviationItem.itemID,
+				deviationItem.deviation.GetPublishedTimestamp(),
 				deviationItem.deviation.DeviationId.String(),
 				m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 			),
 		)
-		log.WithField("module", m.Key).Debug("downloading description: \"%s\"", filePath)
+		log.WithField("module", m.Key).Debugf("downloading description: \"%s\"", filePath)
 
 		if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 			return err
@@ -243,7 +245,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 		deviationItem.downloadTag,
 		fmt.Sprintf(
 			"%s_%s_t_%s.txt",
-			deviationItem.itemID,
+			deviationItem.deviation.GetPublishedTimestamp(),
 			deviationItem.deviation.DeviationId.String(),
 			m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 		),
