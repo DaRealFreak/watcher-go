@@ -9,7 +9,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseUser(item *models.TrackedItem) error {
+func (m *deviantArt) parseUserDevAPI(item *models.TrackedItem) error {
 	var downloadQueue []downloadQueueItemDevAPI
 
 	username := m.daPattern.userPattern.FindStringSubmatch(item.URI)[1]

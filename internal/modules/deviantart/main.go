@@ -9,6 +9,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -18,14 +19,19 @@ import (
 type deviantArt struct {
 	*models.Module
 	daAPI     *api.DeviantartAPI
+	nAPI      *napi.DeviantartNAPI
 	daPattern deviantArtPattern
 	settings  deviantArtSettings
 }
 
 type deviantArtSettings struct {
+	Download struct {
+		DescriptionMinLength int `mapstructure:"description_min_length"`
+	} `json:"download"`
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`
+	UseDevAPI bool `mapstructure:"use_dev_api"`
 }
 
 type deviantArtPattern struct {
@@ -85,23 +91,37 @@ func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	m.daAPI = api.NewDeviantartAPI(m.Key, account)
+	if m.settings.UseDevAPI {
+		m.daAPI = api.NewDeviantartAPI(m.Key, account)
 
-	usedProxy := m.GetProxySettings()
-	if usedProxy.Enable {
-		if err := m.daAPI.UserSession.SetProxy(usedProxy); err != nil {
-			return false
+		usedProxy := m.GetProxySettings()
+		if usedProxy.Enable {
+			if err := m.daAPI.UserSession.SetProxy(usedProxy); err != nil {
+				return false
+			}
+
+			if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
+				return false
+			}
 		}
 
-		if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
-			return false
+		m.daAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
+
+		res, err := m.daAPI.Placebo()
+		m.LoggedIn = err == nil && res.Status == "success"
+	} else {
+		m.nAPI = napi.NewDeviantartNAPI(m.Key)
+		usedProxy := m.GetProxySettings()
+		if usedProxy.Enable {
+			if err := m.nAPI.UserSession.SetProxy(usedProxy); err != nil {
+				return false
+			}
 		}
+
+		m.nAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
+		err := m.nAPI.Login(account)
+		m.LoggedIn = err == nil
 	}
-
-	m.daAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
-
-	res, err := m.daAPI.Placebo()
-	m.LoggedIn = err == nil && res.Status == "success"
 
 	return m.LoggedIn
 }
@@ -112,7 +132,11 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case m.daPattern.feedPattern.MatchString(item.URI):
 		return m.parseFeed(item)
 	case m.daPattern.userPattern.MatchString(item.URI):
-		return m.parseUser(item)
+		if m.settings.UseDevAPI {
+			return m.parseUserDevAPI(item)
+		} else {
+			return m.parseUserNapi(item)
+		}
 	case m.daPattern.galleryPattern.MatchString(item.URI):
 		return m.parseGallery(item)
 	case m.daPattern.collectionPattern.MatchString(item.URI):
@@ -120,7 +144,11 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	case m.daPattern.collectionUUIDPattern.MatchString(item.URI):
 		return m.parseCollectionUUID(item)
 	case m.daPattern.tagPattern.MatchString(item.URI):
-		return m.parseTag(item)
+		if m.settings.UseDevAPI {
+			return m.parseTagDevAPI(item)
+		} else {
+			return m.parseTagNapi(item)
+		}
 	case m.daPattern.searchPattern.MatchString(item.URI):
 		return m.parseSearch(item)
 	default:

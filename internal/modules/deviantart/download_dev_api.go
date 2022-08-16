@@ -8,12 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
 	watcherIO "github.com/DaRealFreak/watcher-go/pkg/io"
 	"github.com/jaytaylor/html2text"
@@ -24,12 +21,6 @@ import (
 type downloadQueueItemDevAPI struct {
 	itemID      string
 	deviation   *api.Deviation
-	downloadTag string
-}
-
-type downloadQueueItemNAPI struct {
-	itemID      string
-	deviation   *napi.Deviation
 	downloadTag string
 }
 
