@@ -10,7 +10,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseSearch(item *models.TrackedItem) error {
+func (m *deviantArt) parseSearchDevAPI(item *models.TrackedItem) error {
 	var downloadQueue []downloadQueueItemDevAPI
 
 	u, err := url.Parse(item.URI)

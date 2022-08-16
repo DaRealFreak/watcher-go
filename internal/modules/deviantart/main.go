@@ -138,7 +138,11 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 			return m.parseUserNapi(item)
 		}
 	case m.daPattern.galleryPattern.MatchString(item.URI):
-		return m.parseGallery(item)
+		if m.settings.UseDevAPI {
+			return m.parseGalleryDevAPI(item)
+		} else {
+			return m.parseGalleryNapi(item)
+		}
 	case m.daPattern.collectionPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {
 			return m.parseCollectionDevAPI(item)
@@ -158,7 +162,11 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 			return m.parseTagNapi(item)
 		}
 	case m.daPattern.searchPattern.MatchString(item.URI):
-		return m.parseSearch(item)
+		if m.settings.UseDevAPI {
+			return m.parseSearchDevAPI(item)
+		} else {
+			return m.parseSearchNapi(item)
+		}
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}

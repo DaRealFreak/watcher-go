@@ -8,7 +8,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 )
 
-func (m *deviantArt) parseGallery(item *models.TrackedItem) error {
+func (m *deviantArt) parseGalleryDevAPI(item *models.TrackedItem) error {
 	var downloadQueue []downloadQueueItemDevAPI
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)

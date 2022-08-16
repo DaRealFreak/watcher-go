@@ -16,7 +16,7 @@ type UserResponse struct {
 
 const ModuleNameFolders = "folders"
 
-type FavoritesOverview struct {
+type Overview struct {
 	SectionData struct {
 		Modules []*struct {
 			Name       string `json:"name"`
@@ -32,7 +32,29 @@ type FavoritesOverview struct {
 	} `json:"sectionData"`
 }
 
-func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit int, withSubFolders bool) (*FavoritesOverview, error) {
+func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit int, withSubFolders bool) (*Overview, error) {
+	values := url.Values{
+		"username":         {username},
+		"deviations_limit": {strconv.Itoa(deviationsLimit)},
+	}
+
+	if withSubFolders {
+		values.Set("with_subfolders", "true")
+	}
+
+	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/init/gallery?" + values.Encode()
+	response, err := a.UserSession.Get(apiUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	var favoritesOverview Overview
+	err = a.mapAPIResponse(response, &favoritesOverview)
+
+	return &favoritesOverview, err
+}
+
+func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit int, withSubFolders bool) (*Overview, error) {
 	values := url.Values{
 		"username":         {username},
 		"deviations_limit": {strconv.Itoa(deviationsLimit)},
@@ -48,7 +70,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 		return nil, err
 	}
 
-	var favoritesOverview FavoritesOverview
+	var favoritesOverview Overview
 	err = a.mapAPIResponse(response, &favoritesOverview)
 
 	return &favoritesOverview, err
@@ -91,7 +113,7 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 	}
 
 	if folder > 0 {
-		values.Set("folder", strconv.Itoa(folder))
+		values.Set("folderid", strconv.Itoa(folder))
 	}
 
 	// if no folder is passed "all_folder" should be true as it is from the original API

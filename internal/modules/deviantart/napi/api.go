@@ -316,7 +316,7 @@ func (t *Token) GetToken() string {
 	return ""
 }
 
-func (f *FavoritesOverview) FindFolderByFolderUuid(folderUuid string) *Folder {
+func (f *Overview) FindFolderByFolderUuid(folderUuid string) *Folder {
 	for _, module := range f.SectionData.Modules {
 		if module.Name == ModuleNameFolders {
 			for _, folder := range module.ModuleData.Folders.Results {
@@ -330,7 +330,7 @@ func (f *FavoritesOverview) FindFolderByFolderUuid(folderUuid string) *Folder {
 	return nil
 }
 
-func (f *FavoritesOverview) FindFolderByFolderId(folderId int) *Folder {
+func (f *Overview) FindFolderByFolderId(folderId int) *Folder {
 	for _, module := range f.SectionData.Modules {
 		if module.Name == ModuleNameFolders {
 			for _, folder := range module.ModuleData.Folders.Results {
