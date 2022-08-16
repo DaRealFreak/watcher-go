@@ -17,7 +17,7 @@ func (a *DeviantartNAPI) CollectionSearch(search string, cursor string, order st
 	values := url.Values{
 		"q": {search},
 		// set order to most-recent by default, update if set later
-		"order": {"most-recent"},
+		"order": {OrderMostRecent},
 	}
 
 	if cursor != "" {

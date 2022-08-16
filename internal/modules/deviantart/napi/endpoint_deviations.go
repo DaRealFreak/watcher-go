@@ -58,7 +58,7 @@ func (a *DeviantartNAPI) DeviationSearch(search string, cursor string, order str
 	values := url.Values{
 		"q": {search},
 		// set order to most-recent by default, update if set later
-		"order": {"most-recent"},
+		"order": {OrderMostRecent},
 	}
 
 	if cursor != "" {

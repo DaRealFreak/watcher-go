@@ -121,30 +121,16 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 		}
 
 		switch deviationItem.deviation.Type {
-		case "image":
-			if err = m.downloadContentNapi(deviationItem); err != nil {
-				return err
-			}
-			break
-		case "pdf":
-			if err = m.downloadContentNapi(deviationItem); err != nil {
-				return err
-			}
-			break
-		case "film":
-			if err = m.downloadContentNapi(deviationItem); err != nil {
-				return err
-			}
-			break
 		case "literature":
 			if err = m.downloadLiteratureNapi(deviationItem); err != nil {
 				return err
 			}
 			break
 		default:
-			println("unknown")
-			println(deviationItem.deviation.Type)
-			os.Exit(-1)
+			if err = m.downloadContentNapi(deviationItem); err != nil {
+				return err
+			}
+			break
 		}
 
 		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
@@ -183,10 +169,11 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	downloadedContentFile := false
 
 	// either the item is not downloadable or it has a different file size to download the full view (or no file size response)
-	if !deviationItem.deviation.IsDownloadable || (deviationItem.deviation.IsDownloadable &&
-		deviationItem.deviation.Extended.Download.FileSize.String() != fullViewType.FileSize.String() &&
-		fullViewType.FileSize.String() != "" &&
-		fullViewType.FileSize.String() != "0") {
+	if !deviationItem.deviation.IsDownloadable ||
+		(deviationItem.deviation.IsDownloadable &&
+			deviationItem.deviation.Extended.Download.FileSize.String() != fullViewType.FileSize.String() &&
+			fullViewType.FileSize.String() != "" &&
+			fullViewType.FileSize.String() != "0") {
 		downloadedContentFile = true
 		if err := m.nAPI.UserSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
 			return err
@@ -194,7 +181,9 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	}
 
 	// image comparison if we downloaded the content file and the deviation is downloadable
-	if downloadedContentFile && deviationItem.deviation.IsDownloadable {
+	if downloadedContentFile &&
+		deviationItem.deviation.IsDownloadable &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" {
 		downloadFilePath, _ := filepath.Abs(
 			path.Join(viper.GetString("download.directory"),
 				m.Key,
@@ -259,7 +248,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 			m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 		),
 	)
-	log.WithField("module", m.Key).Debug("downloading literature: \"%s\"", filePath)
+	log.WithField("module", m.Key).Debugf("downloading literature: \"%s\"", filePath)
 
 	if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err

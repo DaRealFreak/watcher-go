@@ -8,7 +8,7 @@ func (a *DeviantartNAPI) JournalSearch(search string, cursor string, order strin
 	values := url.Values{
 		"q": {search},
 		// set order to most-recent by default, update if set later
-		"order": {"most-recent"},
+		"order": {OrderMostRecent},
 	}
 
 	if cursor != "" {
@@ -35,7 +35,7 @@ func (a *DeviantartNAPI) JournalTag(tag string, cursor string, order string) (*S
 	values := url.Values{
 		"tag": {tag},
 		// set order to most-recent by default, update if set later
-		"order": {"most-recent"},
+		"order": {OrderMostRecent},
 	}
 
 	if cursor != "" {
