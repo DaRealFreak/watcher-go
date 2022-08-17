@@ -75,8 +75,10 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			return err
 		}
 
-		// update the deviation with the extended deviation response
-		deviationItem.deviation = res.Deviation
+		if res.Deviation != nil {
+			// update the deviation with the extended deviation response if exists as extended
+			deviationItem.deviation = res.Deviation
+		}
 
 		// ensure download directory, needed for only text artists
 		m.nAPI.UserSession.EnsureDownloadDirectory(
@@ -88,7 +90,7 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			),
 		)
 
-		if deviationItem.deviation.IsDownloadable {
+		if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
 			if err = m.nAPI.UserSession.DownloadFile(
 				path.Join(viper.GetString("download.directory"),
 					m.Key,
@@ -172,6 +174,7 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 
 	// either the item is not downloadable or it has a different file size to download the full view (or no file size response)
 	if !deviationItem.deviation.IsDownloadable ||
+		deviationItem.deviation.Extended == nil ||
 		(deviationItem.deviation.IsDownloadable &&
 			deviationItem.deviation.Extended.Download.FileSize.String() != fullViewType.FileSize.String() &&
 			fullViewType.FileSize.String() != "" &&
@@ -185,6 +188,7 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	// image comparison if we downloaded the content file and the deviation is downloadable
 	if downloadedContentFile &&
 		deviationItem.deviation.IsDownloadable &&
+		deviationItem.deviation.Extended != nil &&
 		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" {
 		downloadFilePath, _ := filepath.Abs(
 			path.Join(viper.GetString("download.directory"),
@@ -208,6 +212,11 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 }
 
 func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI) error {
+	// if we couldn't retrieve the extended response we can't access the markup anyway
+	if deviationItem.deviation.Extended == nil {
+		return nil
+	}
+
 	text, err := html2text.FromString(deviationItem.deviation.Extended.DescriptionText.Html.Markup)
 	if err != nil {
 		return err
