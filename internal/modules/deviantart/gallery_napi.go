@@ -2,6 +2,7 @@ package deviantart
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,9 +29,14 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	}
 
 	if strings.ToLower(galleryFolder.Owner.Username) != username {
-		uri := fmt.Sprintf("https://www.deviantart.com/%s/gallery/%d", strings.ToLower(galleryFolder.Owner.Username), galleryIntID)
+		uri := fmt.Sprintf(
+			"https://www.deviantart.com/%s/gallery/%d/%s",
+			galleryFolder.Owner.GetUsernameUrl(),
+			galleryIntID,
+			strings.ToLower(url.PathEscape(strings.ReplaceAll(galleryFolder.Name, " ", "-"))),
+		)
 		log.WithField("module", m.ModuleKey()).Warnf(
-			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+			"gallery owner changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
 			uri,
 		)

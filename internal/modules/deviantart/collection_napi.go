@@ -2,6 +2,7 @@ package deviantart
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -45,9 +46,14 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	}
 
 	if strings.ToLower(collectionFolder.Owner.Username) != username {
-		uri := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", strings.ToLower(collectionFolder.Owner.Username), collectionIntID)
+		uri := fmt.Sprintf(
+			"https://www.deviantart.com/%s/favourites/%d/%s",
+			collectionFolder.Owner.GetUsernameUrl(),
+			collectionIntID,
+			strings.ToLower(url.PathEscape(strings.ReplaceAll(collectionFolder.Name, " ", "-"))),
+		)
 		log.WithField("module", m.ModuleKey()).Warnf(
-			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+			"collection owner changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
 			uri,
 		)

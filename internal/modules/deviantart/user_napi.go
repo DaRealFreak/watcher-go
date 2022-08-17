@@ -3,12 +3,14 @@
 package deviantart
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	log "github.com/sirupsen/logrus"
 )
 
 func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
@@ -17,6 +19,22 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 	username := m.daPattern.userPattern.FindStringSubmatch(item.URI)[1]
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
+
+	userInfo, err := m.nAPI.UserInfo(username, napi.UserInfoExpandDefault)
+	if err != nil {
+		return err
+	}
+
+	if strings.ToLower(userInfo.User.Username) != username {
+		uri := fmt.Sprintf("https://www.deviantart.com/%s", userInfo.User.GetUsernameUrl())
+		log.WithField("module", m.ModuleKey()).Warnf(
+			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+			item.URI,
+			uri,
+		)
+
+		m.DbIO.ChangeTrackedItemUri(item, uri)
+	}
 
 	response, err := m.nAPI.DeviationsUser(username, 0, 0, napi.MaxLimit, true)
 	if err != nil {
