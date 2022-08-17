@@ -248,6 +248,10 @@ func (a *DeviantartNAPI) applyRateLimit() {
 	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }
 
+func (a *Author) GetUsernameUrl() string {
+	return strings.ToLower(url.PathEscape(a.Username))
+}
+
 func (t *MediaType) GetCrop(prettyName string) string {
 	return strings.ReplaceAll(t.Crop, "<prettyName>", prettyName)
 }

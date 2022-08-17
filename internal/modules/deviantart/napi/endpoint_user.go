@@ -32,6 +32,34 @@ type Overview struct {
 	} `json:"sectionData"`
 }
 
+type UserInfo struct {
+	User            *Author     `json:"user"`
+	DeviationsCount json.Number `json:"deviationsCount"`
+}
+
+const UserInfoExpandDefault = "user.stats,user.profile,user.watch"
+
+func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, error) {
+	values := url.Values{
+		"username": {username},
+	}
+
+	if expand != "" {
+		values.Set("expand", expand)
+	}
+
+	apiUrl := "https://www.deviantart.com/_napi/shared_api/user/info?" + values.Encode()
+	response, err := a.UserSession.Get(apiUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo UserInfo
+	err = a.mapAPIResponse(response, &userInfo)
+
+	return &userInfo, err
+}
+
 func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit int, withSubFolders bool) (*Overview, error) {
 	values := url.Values{
 		"username":         {username},
