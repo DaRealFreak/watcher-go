@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-
-	"github.com/DaRealFreak/watcher-go/pkg/fp"
-
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
 )
 
 func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
@@ -25,6 +25,17 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	galleryFolder := galleries.FindFolderByFolderId(int(galleryIntID))
 	if galleryFolder == nil {
 		return fmt.Errorf("unable to find gallery")
+	}
+
+	if strings.ToLower(galleryFolder.Owner.Username) != username {
+		uri := fmt.Sprintf("https://www.deviantart.com/%s/gallery/%d", strings.ToLower(galleryFolder.Owner.Username), galleryIntID)
+		log.WithField("module", m.ModuleKey()).Warnf(
+			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+			item.URI,
+			uri,
+		)
+
+		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}
 
 	return m.parseGalleryByFolderNapi(item, galleryFolder)

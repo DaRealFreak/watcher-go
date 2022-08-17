@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-
-	"github.com/DaRealFreak/watcher-go/pkg/fp"
-
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
 )
 
 func (m *deviantArt) parseCollectionUUIDNapi(item *models.TrackedItem) error {
@@ -42,6 +42,17 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	collectionFolder := favoritesOverView.FindFolderByFolderId(int(collectionIntID))
 	if collectionFolder == nil {
 		return fmt.Errorf("unable to find collection")
+	}
+
+	if strings.ToLower(collectionFolder.Owner.Username) != username {
+		uri := fmt.Sprintf("https://www.deviantart.com/%s/favourites/%d", strings.ToLower(collectionFolder.Owner.Username), collectionIntID)
+		log.WithField("module", m.ModuleKey()).Warnf(
+			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+			item.URI,
+			uri,
+		)
+
+		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}
 
 	return m.parseCollectionByFolderNapi(item, collectionFolder)
