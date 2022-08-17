@@ -52,21 +52,27 @@ type Collection struct {
 }
 
 type Deviation struct {
-	DeviationId    json.Number  `json:"deviationId"`
-	Type           string       `json:"type"`
-	TypeID         json.Number  `json:"typeId"`
-	URL            string       `json:"url"`
-	Title          string       `json:"title"`
-	IsJournal      bool         `json:"isJournal"`
-	IsVideo        bool         `json:"isVideo"`
-	PublishedTime  string       `json:"publishedTime"`
-	IsDeleted      bool         `json:"isDeleted"`
-	IsDownloadable bool         `json:"isDownloadable"`
-	IsBlocked      bool         `json:"isBlocked"`
-	Author         *Author      `json:"author"`
-	Media          *Media       `json:"media"`
-	TextContent    *TextContent `json:"textContent"`
-	Extended       *Extended    `json:"extended"`
+	DeviationId       json.Number        `json:"deviationId"`
+	Type              string             `json:"type"`
+	TypeID            json.Number        `json:"typeId"`
+	URL               string             `json:"url"`
+	Title             string             `json:"title"`
+	IsJournal         bool               `json:"isJournal"`
+	IsVideo           bool               `json:"isVideo"`
+	PublishedTime     string             `json:"publishedTime"`
+	IsDeleted         bool               `json:"isDeleted"`
+	IsDownloadable    bool               `json:"isDownloadable"`
+	IsBlocked         bool               `json:"isBlocked"`
+	Author            *Author            `json:"author"`
+	Media             *Media             `json:"media"`
+	TextContent       *TextContent       `json:"textContent"`
+	Extended          *Extended          `json:"extended"`
+	PremiumFolderData *PremiumFolderData `json:"premiumFolderData"`
+}
+
+type PremiumFolderData struct {
+	Type      string `json:"type"`
+	HasAccess bool   `json:"hasAccess"`
 }
 
 type TextContent struct {

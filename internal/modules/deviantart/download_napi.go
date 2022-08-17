@@ -75,6 +75,17 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			return err
 		}
 
+		if res.Deviation.PremiumFolderData != nil && !res.Deviation.PremiumFolderData.HasAccess {
+			log.WithField("module", m.Key).Warnf(
+				fmt.Sprintf(
+					"no access to deviation \"%s\", deviation is only available to %s, skipping",
+					deviationItem.deviation.URL,
+					res.Deviation.PremiumFolderData.Type,
+				),
+			)
+			continue
+		}
+
 		if res.Deviation != nil {
 			// update the deviation with the extended deviation response if exists as extended
 			deviationItem.deviation = res.Deviation
@@ -128,7 +139,7 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 				return err
 			}
 			break
-		case "image", "pdf", "film":
+		case "image", "pdf", "film", "status":
 			if err = m.downloadContentNapi(deviationItem); err != nil {
 				return err
 			}
