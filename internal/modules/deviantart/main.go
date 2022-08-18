@@ -26,8 +26,9 @@ type deviantArt struct {
 
 type deviantArtSettings struct {
 	Download struct {
-		DescriptionMinLength int `mapstructure:"description_min_length"`
-	} `json:"download"`
+		DescriptionMinLength int  `mapstructure:"description_min_length"`
+		FollowForContent     bool `mapstructure:"follow_for_content"`
+	} `mapstructure:"download"`
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`

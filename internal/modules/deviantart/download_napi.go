@@ -64,92 +64,117 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			),
 		)
 
-		deviationId, _ := strconv.ParseInt(deviationItem.deviation.DeviationId.String(), 10, 64)
-		deviationType := napi.DeviationTypeArt
-		if deviationItem.deviation.IsJournal {
-			deviationType = napi.DeviationTypeJournal
-		}
-
-		res, err := m.nAPI.ExtendedDeviation(int(deviationId), deviationItem.deviation.Author.Username, deviationType, false)
-		if err != nil {
+		if err := m.downloadDeviationNapi(trackedItem, deviationItem); err != nil {
 			return err
 		}
+	}
 
-		if res.Deviation.PremiumFolderData != nil && !res.Deviation.PremiumFolderData.HasAccess {
-			log.WithField("module", m.Key).Warnf(
-				fmt.Sprintf(
-					"no access to deviation \"%s\", deviation is only available to %s, skipping",
-					deviationItem.deviation.URL,
-					res.Deviation.PremiumFolderData.Type,
-				),
-			)
-			continue
+	return nil
+}
+
+func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI) error {
+	deviationId, _ := strconv.ParseInt(deviationItem.deviation.DeviationId.String(), 10, 64)
+	deviationType := napi.DeviationTypeArt
+	if deviationItem.deviation.IsJournal {
+		deviationType = napi.DeviationTypeJournal
+	}
+
+	res, err := m.nAPI.ExtendedDeviation(int(deviationId), deviationItem.deviation.Author.Username, deviationType, false)
+	if err != nil {
+		return err
+	}
+
+	if res.Deviation.PremiumFolderData != nil && !res.Deviation.PremiumFolderData.HasAccess {
+		if res.Deviation.PremiumFolderData.Type == napi.PremiumFolderDataWatcherType && m.settings.Download.FollowForContent {
+			watchRes, watchErr := m.nAPI.WatchUser(res.Deviation.Author.Username)
+			if watchErr != nil {
+				return watchErr
+			}
+
+			if watchRes.Success {
+				log.WithField("module", m.Key).Info(
+					fmt.Sprintf("followed user \"%s\" for deviation", res.Deviation.Author.Username),
+				)
+			} else {
+				return fmt.Errorf("unable to follow user \"%s\" for deviation, skipping", res.Deviation.Author.Username)
+			}
+
+			return m.downloadDeviationNapi(trackedItem, deviationItem)
 		}
 
-		if res.Deviation != nil {
-			// update the deviation with the extended deviation response if exists as extended
-			deviationItem.deviation = res.Deviation
-		}
-
-		// ensure download directory, needed for only text artists
-		m.nAPI.UserSession.EnsureDownloadDirectory(
-			path.Join(
-				viper.GetString("download.directory"),
-				m.Key,
-				deviationItem.downloadTag,
-				"tmp.txt",
+		log.WithField("module", m.Key).Warnf(
+			fmt.Sprintf(
+				"no access to deviation \"%s\", deviation is only available to %s, skipping",
+				deviationItem.deviation.URL,
+				res.Deviation.PremiumFolderData.Type,
 			),
 		)
+		return nil
+	}
 
-		if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
-			if err = m.nAPI.UserSession.DownloadFile(
-				path.Join(viper.GetString("download.directory"),
-					m.Key,
-					deviationItem.downloadTag,
-					deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
-				), deviationItem.deviation.Extended.Download.URL); err != nil {
-				return err
-			}
-		}
+	if res.Deviation != nil {
+		// update the deviation with the extended deviation response if exists as extended
+		deviationItem.deviation = res.Deviation
+	}
 
-		// handle token if set
-		if deviationItem.deviation.Media.Token != nil && deviationItem.deviation.Media.Token.GetToken() != "" {
-			fileUri, _ := url.Parse(deviationItem.deviation.Media.BaseUri)
-			fragments := fileUri.Query()
-			fragments.Set("token", deviationItem.deviation.Media.Token.GetToken())
-			fileUri.RawQuery = fragments.Encode()
-			deviationItem.deviation.Media.BaseUri = fileUri.String()
-		}
+	// ensure download directory, needed for only text artists
+	m.nAPI.UserSession.EnsureDownloadDirectory(
+		path.Join(
+			viper.GetString("download.directory"),
+			m.Key,
+			deviationItem.downloadTag,
+			"tmp.txt",
+		),
+	)
 
-		fullViewType := deviationItem.deviation.Media.GetType(napi.MediaTypeFullView)
-		if fullViewType != nil {
-			fileUri, _ := url.Parse(deviationItem.deviation.Media.BaseUri)
-			fileUri.Path += fullViewType.GetCrop(deviationItem.deviation.Media.PrettyName)
-			deviationItem.deviation.Media.BaseUri = fileUri.String()
-		}
-
-		// download description if above the min length
-		if err = m.downloadDescriptionNapi(deviationItem); err != nil {
+	if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
+		if err = m.nAPI.UserSession.DownloadFile(
+			path.Join(viper.GetString("download.directory"),
+				m.Key,
+				deviationItem.downloadTag,
+				deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
+			), deviationItem.deviation.Extended.Download.URL); err != nil {
 			return err
 		}
-
-		switch deviationItem.deviation.Type {
-		case "journal", "literature":
-			if err = m.downloadLiteratureNapi(deviationItem); err != nil {
-				return err
-			}
-			break
-		case "image", "pdf", "film", "status":
-			if err = m.downloadContentNapi(deviationItem); err != nil {
-				return err
-			}
-			break
-		default:
-			return fmt.Errorf("unknown deviation type: \"%s\"", deviationItem.deviation.Type)
-		}
-
-		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
 	}
+
+	// handle token if set
+	if deviationItem.deviation.Media.Token != nil && deviationItem.deviation.Media.Token.GetToken() != "" {
+		fileUri, _ := url.Parse(deviationItem.deviation.Media.BaseUri)
+		fragments := fileUri.Query()
+		fragments.Set("token", deviationItem.deviation.Media.Token.GetToken())
+		fileUri.RawQuery = fragments.Encode()
+		deviationItem.deviation.Media.BaseUri = fileUri.String()
+	}
+
+	fullViewType := deviationItem.deviation.Media.GetType(napi.MediaTypeFullView)
+	if fullViewType != nil {
+		fileUri, _ := url.Parse(deviationItem.deviation.Media.BaseUri)
+		fileUri.Path += fullViewType.GetCrop(deviationItem.deviation.Media.PrettyName)
+		deviationItem.deviation.Media.BaseUri = fileUri.String()
+	}
+
+	// download description if above the min length
+	if err = m.downloadDescriptionNapi(deviationItem); err != nil {
+		return err
+	}
+
+	switch deviationItem.deviation.Type {
+	case "journal", "literature":
+		if err = m.downloadLiteratureNapi(deviationItem); err != nil {
+			return err
+		}
+		break
+	case "image", "pdf", "film", "status":
+		if err = m.downloadContentNapi(deviationItem); err != nil {
+			return err
+		}
+		break
+	default:
+		return fmt.Errorf("unknown deviation type: \"%s\"", deviationItem.deviation.Type)
+	}
+
+	m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
 
 	return nil
 }

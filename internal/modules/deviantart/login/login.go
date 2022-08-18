@@ -1,10 +1,8 @@
 package login
 
 import (
-	"encoding/json"
 	"net/http"
 	"regexp"
-	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -21,7 +19,7 @@ type Info struct {
 func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
 	var currentLoginInfo Info
 
-	jsonPattern := regexp.MustCompile(`JSON.parse\((?P<Number>.*csrfToken.*?)\);`)
+	jsonPattern := regexp.MustCompile(`.*\\"csrfToken\\":\\"(?P<Number>[^\\"]+)\\".*`)
 
 	document, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
@@ -37,16 +35,7 @@ func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
 
 		scriptContent := selection.Text()
 		if jsonPattern.MatchString(scriptContent) {
-			var s string
-
-			s, err = strconv.Unquote(jsonPattern.FindStringSubmatch(scriptContent)[1])
-			if err != nil {
-				return
-			}
-
-			if err = json.Unmarshal([]byte(s), &currentLoginInfo); err != nil {
-				return
-			}
+			currentLoginInfo.CSRFToken = jsonPattern.FindStringSubmatch(scriptContent)[1]
 		}
 	})
 

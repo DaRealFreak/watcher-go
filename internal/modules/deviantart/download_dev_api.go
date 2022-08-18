@@ -72,7 +72,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItemDevAP
 		}
 
 		if deviationItem.deviation.IsDownloadable {
-			if err := m.downloadDeviation(deviationItem, &itemDownloadLog); err != nil {
+			if err := m.downloadDeviationDevAPI(deviationItem, &itemDownloadLog); err != nil {
 				return err
 			}
 		}
@@ -256,7 +256,7 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 	)
 }
 
-func (m *deviantArt) downloadDeviation(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
+func (m *deviantArt) downloadDeviationDevAPI(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	deviationDownload, err := m.daAPI.DeviationDownloadFallback(item.deviation.DeviationURL)
 	if err != nil {
 		deviationDownload, err = m.daAPI.DeviationDownload(item.deviation.DeviationID)
