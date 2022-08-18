@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 const LanguageMetaType = 8
@@ -200,8 +201,8 @@ func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string
 				galleryItems = append(galleryItems, &downloadGalleryItem{
 					item: &models.DownloadQueueItem{
 						ItemID:          string(galleryItem.ID),
-						DownloadTag:     fmt.Sprintf("%s/%s%s (%s)", "books", m.SanitizePath(bookTag, false), bookLanguage, bookId),
-						FileName:        fmt.Sprintf("%d_%s", i+1, m.GetFileName(galleryItem.FileURL)),
+						DownloadTag:     fmt.Sprintf("%s/%s%s (%s)", "books", fp.SanitizePath(bookTag, false), bookLanguage, bookId),
+						FileName:        fmt.Sprintf("%d_%s", i+1, fp.GetFileName(galleryItem.FileURL)),
 						FileURI:         galleryItem.FileURL,
 						FallbackFileURI: galleryItem.SampleURL,
 					},

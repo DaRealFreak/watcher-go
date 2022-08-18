@@ -6,6 +6,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *deviantArt) parseTagNapi(item *models.TrackedItem) error {
@@ -36,7 +37,7 @@ func (m *deviantArt) parseTagNapi(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
 					itemID:      strconv.Itoa(int(t.Unix())),
 					deviation:   deviation,
-					downloadTag: m.SanitizePath(tag, false),
+					downloadTag: fp.SanitizePath(tag, false),
 				})
 			} else {
 				foundCurrentItem = true

@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package models
+package fp
 
 import (
 	"strings"
@@ -9,7 +9,7 @@ import (
 )
 
 // TruncateMaxLength checks for length of the passed path part to ensure the max path length
-func (t Module) TruncateMaxLength(s string) string {
+func TruncateMaxLength(s string) string {
 	// -5 for prefixes and null byte ending
 	if syscall.MAX_PATH-5 > len(s) {
 		return s

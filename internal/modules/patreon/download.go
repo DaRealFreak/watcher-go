@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -37,13 +38,13 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 		for _, attachment := range data.Attachments {
 			switch attachment.Type {
 			case "attachment":
-				fileName := m.SanitizePath(attachment.Attributes.Name, false)
+				fileName := fp.SanitizePath(attachment.Attributes.Name, false)
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						m.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
+						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
 					),
 					attachment.Attributes.URL,
 				); err != nil {
@@ -61,13 +62,13 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					continue
 				}
 
-				fileName := m.SanitizePath(m.GetFileName(attachment.Attributes.FileName), false)
+				fileName := fp.SanitizePath(fp.GetFileName(attachment.Attributes.FileName), false)
 				if err := m.Session.DownloadFile(
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
-						m.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
+						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
 					),
 					attachment.Attributes.DownloadURL,
 				); err != nil {

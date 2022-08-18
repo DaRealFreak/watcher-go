@@ -13,6 +13,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -82,9 +83,9 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	}
 
 	if postInfo.Body.ImageForShare != "" {
-		fileName := fmt.Sprintf("0_%s", m.GetFileName(postInfo.Body.ImageForShare))
+		fileName := fmt.Sprintf("0_%s", fp.GetFileName(postInfo.Body.ImageForShare))
 
-		if err := m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
 				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -95,7 +96,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	}
 
 	for i, image := range postInfo.Body.PostBody.Images {
-		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(image.OriginalURL))
+		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(image.OriginalURL))
 
 		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
@@ -139,7 +140,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	}
 
 	for i, file := range postInfo.ImagesFromBlocks() {
-		fileName := fmt.Sprintf("%d_%s", i+1, m.GetFileName(file))
+		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(file))
 
 		if err := m.fanboxAPI.Session.DownloadFile(
 			path.Join(
@@ -157,7 +158,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 
 func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.Illustration) error {
 	for _, metaPage := range illust.MetaPages {
-		fileName := m.GetFileName(metaPage.ImageURLs.Original)
+		fileName := fp.GetFileName(metaPage.ImageURLs.Original)
 
 		if err := m.mobileAPI.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
@@ -169,7 +170,7 @@ func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.I
 	}
 
 	if illust.MetaSinglePage.OriginalImageURL != nil {
-		fileName := m.GetFileName(*illust.MetaSinglePage.OriginalImageURL)
+		fileName := fp.GetFileName(*illust.MetaSinglePage.OriginalImageURL)
 
 		return m.mobileAPI.Session.DownloadFile(
 			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
@@ -189,7 +190,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 
 	fileName := fmt.Sprintf(
 		"%s%s",
-		strings.TrimSuffix(m.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip"),
+		strings.TrimSuffix(fp.GetFileName(apiRes.Metadata.ZipURLs.Medium), ".zip"),
 		m.settings.Animation.Format,
 	)
 

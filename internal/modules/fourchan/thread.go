@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PuerkitoBio/goquery"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	"github.com/PuerkitoBio/goquery"
 )
 
 // parseThread parses thread searches
@@ -56,7 +56,7 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 					ItemID:      strconv.Itoa(itemID),
 					DownloadTag: fmt.Sprintf("%s (%s)", threadTitle, threadID),
 					FileURI:     fmt.Sprintf(contentUrls[itemID]),
-					FileName:    fmt.Sprintf(fmt.Sprintf("%d_%s", itemID, m.GetFileName(contentUrls[itemID]))),
+					FileName:    fmt.Sprintf(fmt.Sprintf("%d_%s", itemID, fp.GetFileName(contentUrls[itemID]))),
 				})
 			}
 		}
@@ -80,7 +80,7 @@ func (m *fourChan) getThreadTitle(html string) (title string) {
 		title = titleTag.Text()
 	})
 
-	return m.SanitizePath(title, false)
+	return fp.SanitizePath(title, false)
 }
 
 func (m *fourChan) getThreadContents(html string) map[int]string {

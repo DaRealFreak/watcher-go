@@ -1,14 +1,14 @@
 //go:build !windows
 // +build !windows
 
-package models
+package fp
 
 import (
 	"strings"
 )
 
 // TruncateMaxLength checks for length of the passed path part to ensure the max path length
-func (t Module) TruncateMaxLength(s string) string {
+func TruncateMaxLength(s string) string {
 	if 4096 > len(s) {
 		return s
 	}

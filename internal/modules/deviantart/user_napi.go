@@ -1,5 +1,3 @@
-// Package deviantart contains the implementation of the deviantart module
-// nolint: dupl
 package deviantart
 
 import (
@@ -10,6 +8,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -52,7 +51,7 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
 					itemID:      strconv.Itoa(int(t.Unix())),
 					deviation:   result.Deviation,
-					downloadTag: m.SanitizePath(result.Deviation.Author.Username, false),
+					downloadTag: fp.SanitizePath(result.Deviation.Author.Username, false),
 				})
 			} else {
 				foundCurrentItem = true

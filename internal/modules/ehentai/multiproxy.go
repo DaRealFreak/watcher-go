@@ -7,15 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/time/rate"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 type proxySession struct {
@@ -172,8 +171,8 @@ func (m *ehentai) downloadItemSession(
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
-			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
-			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
 		),
 		downloadQueueItem.FileURI,
 	)

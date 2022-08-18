@@ -6,6 +6,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
 )
@@ -164,7 +165,7 @@ func (m *ehentai) getDownloadQueueItem(
 			item.galleryTitle,
 			m.searchGalleryIDPattern.FindStringSubmatch(trackedItem.URI)[1],
 		),
-		FileName: m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + m.GetFileName(imageURL),
+		FileName: m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + fp.GetFileName(imageURL),
 		FileURI:  imageURL,
 	}, nil
 }
@@ -174,5 +175,5 @@ func (m *ehentai) extractGalleryTitle(html string) (galleryTitle string) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	galleryTitle = document.Find("div#gd2 > h1#gn").Text()
 
-	return m.SanitizePath(galleryTitle, false)
+	return fp.SanitizePath(galleryTitle, false)
 }

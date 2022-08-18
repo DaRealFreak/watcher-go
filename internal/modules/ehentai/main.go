@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/http"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -193,8 +193,8 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
-			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
-			m.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
 		),
 		downloadQueueItem.FileURI,
 	)

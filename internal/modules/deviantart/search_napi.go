@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
@@ -46,7 +46,7 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
 					itemID:      strconv.Itoa(int(t.Unix())),
 					deviation:   deviation,
-					downloadTag: m.SanitizePath(searchTag, false),
+					downloadTag: fp.SanitizePath(searchTag, false),
 				})
 			} else {
 				foundCurrentItem = true

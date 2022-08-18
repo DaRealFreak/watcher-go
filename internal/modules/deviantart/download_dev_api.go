@@ -11,6 +11,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
 	watcherIO "github.com/DaRealFreak/watcher-go/pkg/io"
 	"github.com/jaytaylor/html2text"
@@ -109,7 +110,7 @@ func (m *deviantArt) downloadFlash(item downloadQueueItemDevAPI, downloadLog *do
 				fmt.Sprintf(
 					"%s_f_%s.swf",
 					item.deviation.PublishedTime,
-					strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
+					strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
 				),
 			), item.deviation.Flash.Src,
 		)
@@ -137,8 +138,8 @@ func (m *deviantArt) downloadVideo(item downloadQueueItemDevAPI) error {
 			fmt.Sprintf(
 				"%s_c_%s%s",
 				item.deviation.PublishedTime,
-				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-				m.GetFileExtension(biggestVideo),
+				strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+				fp.GetFileExtension(biggestVideo),
 			),
 		), biggestVideo,
 	)
@@ -165,8 +166,8 @@ func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *
 				fmt.Sprintf(
 					"%s_c_%s%s",
 					item.deviation.PublishedTime,
-					strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-					m.GetFileExtension(item.deviation.Content.Src),
+					strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+					fp.GetFileExtension(item.deviation.Content.Src),
 				),
 			))
 			if err = watcherIO.CopyFile(tmpFile.Name(), downloadLog.content); err != nil {
@@ -180,8 +181,8 @@ func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *
 			fmt.Sprintf(
 				"%s_c_%s%s",
 				item.deviation.PublishedTime,
-				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-				m.GetFileExtension(item.deviation.Content.Src),
+				strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+				fp.GetFileExtension(item.deviation.Content.Src),
 			),
 		))
 		if err := m.daAPI.DownloadFile(downloadLog.content, item.deviation.Content.Src); err != nil {
@@ -222,8 +223,8 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 			fmt.Sprintf(
 				"%s_tmb_%s%s",
 				item.deviation.PublishedTime,
-				strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-				m.GetFileExtension(lastThumb.Src),
+				strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+				fp.GetFileExtension(lastThumb.Src),
 			),
 		)); err != nil {
 			return err
@@ -250,8 +251,8 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 		fmt.Sprintf(
 			"%s_tmb_%s%s",
 			item.deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-			m.GetFileExtension(lastThumb.Src),
+			strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+			fp.GetFileExtension(lastThumb.Src),
 		)),
 	)
 }
@@ -272,8 +273,8 @@ func (m *deviantArt) downloadDeviationDevAPI(item downloadQueueItemDevAPI, downl
 		fmt.Sprintf(
 			"%s_d_%s%s",
 			item.deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
-			m.GetFileExtension(deviationDownload.Src),
+			strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
+			fp.GetFileExtension(deviationDownload.Src),
 		),
 	))
 
@@ -305,7 +306,7 @@ func (m *deviantArt) downloadHTMLContent(item downloadQueueItemDevAPI) error {
 		fmt.Sprintf(
 			"%s_t_%s.txt",
 			item.deviation.PublishedTime,
-			strings.ReplaceAll(m.SanitizePath(item.deviation.Title, false), " ", "_"),
+			strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
 		),
 	)
 	if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {

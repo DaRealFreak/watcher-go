@@ -7,6 +7,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -33,8 +34,8 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 				path.Join(
 					viper.GetString("download.directory"),
 					m.Key,
-					m.TruncateMaxLength(m.SanitizePath(downloadItem.DownloadTag, false)),
-					m.TruncateMaxLength(m.SanitizePath(downloadItem.FileName, false)),
+					fp.TruncateMaxLength(fp.SanitizePath(downloadItem.DownloadTag, false)),
+					fp.TruncateMaxLength(fp.SanitizePath(downloadItem.FileName, false)),
 				),
 				downloadItem.FileURI,
 			)
@@ -105,12 +106,12 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 							path.Join(
 								viper.GetString("download.directory"),
 								m.Key,
-								m.SanitizePath(tweet.AuthorName, false),
+								fp.SanitizePath(tweet.AuthorName, false),
 								fmt.Sprintf(
 									"%s_%s_%d_%s",
 									tweet.ID, tweet.AuthorID.String(),
 									i+1,
-									m.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL),
+									fp.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL),
 								),
 							),
 							entity.VideoInfo.Variants[highestBitRateIndex].URL,
@@ -124,8 +125,8 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						m.SanitizePath(tweet.AuthorName, false),
-						fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, m.GetFileName(media.URL)),
+						fp.SanitizePath(tweet.AuthorName, false),
+						fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, fp.GetFileName(media.URL)),
 					),
 					media.URL,
 				); err != nil {

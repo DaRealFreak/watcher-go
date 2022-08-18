@@ -8,6 +8,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *deviantArt) parseCollectionDevAPI(item *models.TrackedItem) error {
@@ -106,7 +107,7 @@ func (m *deviantArt) getCollectionDownloadQueueDevAPI(
 				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(m.SanitizePath(username, false), m.SanitizePath(collectionName, false)),
+					downloadTag: path.Join(fp.SanitizePath(username, false), fp.SanitizePath(collectionName, false)),
 				})
 			} else {
 				foundCurrentItem = true

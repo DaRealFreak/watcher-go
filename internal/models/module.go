@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
 	internalHttp "github.com/DaRealFreak/watcher-go/internal/http"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,18 +81,6 @@ func (t *Module) SetCfg(cfg *configuration.AppConfiguration) {
 	t.Cfg = cfg
 }
 
-// GetFileName retrieves the file name of a passed uri
-func (t *Module) GetFileName(uri string) string {
-	parsedURI, _ := url.Parse(uri)
-	return filepath.Base(parsedURI.Path)
-}
-
-// GetFileExtension retrieves the file extension of a passed uri
-func (t *Module) GetFileExtension(uri string) string {
-	parsedURI, _ := url.Parse(uri)
-	return filepath.Ext(parsedURI.Path)
-}
-
 // ReverseDownloadQueueItems reverses the download queue items to get the oldest items first
 // to be able to interrupt the update process anytime
 func (t *Module) ReverseDownloadQueueItems(downloadQueue []DownloadQueueItem) []DownloadQueueItem {
@@ -143,8 +131,8 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 			path.Join(
 				viper.GetString("download.directory"),
 				t.Key,
-				t.TruncateMaxLength(t.SanitizePath(data.DownloadTag, false)),
-				t.TruncateMaxLength(t.SanitizePath(data.FileName, false)),
+				fp.TruncateMaxLength(fp.SanitizePath(data.DownloadTag, false)),
+				fp.TruncateMaxLength(fp.SanitizePath(data.FileName, false)),
 			),
 			data.FileURI,
 		)
@@ -156,31 +144,6 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 	}
 
 	return nil
-}
-
-// SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
-// and trims the result
-func (t Module) SanitizePath(path string, allowSeparator bool) string {
-	var reservedCharacters *regexp.Regexp
-	if allowSeparator {
-		reservedCharacters = regexp.MustCompile("[:\"*?<>|]+")
-	} else {
-		reservedCharacters = regexp.MustCompile("[\\\\/:\"*?<>|]+")
-	}
-
-	path = reservedCharacters.ReplaceAllString(path, "_")
-	path = strings.ReplaceAll(path, "\t", " ")
-	for strings.Contains(path, "__") {
-		path = strings.Replace(path, "__", "_", -1)
-	}
-
-	for strings.Contains(path, "..") {
-		path = strings.Replace(path, "..", ".", -1)
-	}
-
-	path = strings.Trim(path, "_")
-
-	return strings.Trim(path, " ")
 }
 
 // GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure

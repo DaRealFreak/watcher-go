@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/DaRealFreak/watcher-go/internal/models"
 	pixivapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 // UserInfo contains the ID, displayed name and the follow status
@@ -35,7 +35,7 @@ type UserIllusts struct {
 
 // GetUserTag returns the default download tag for illustrations of the user context
 func (u *UserInfo) GetUserTag() string {
-	return fmt.Sprintf("%d/%s", u.ID, models.Module{}.SanitizePath(u.Name, false))
+	return fmt.Sprintf("%d/%s", u.ID, fp.SanitizePath(u.Name, false))
 }
 
 // GetUserDetail returns the user details from the API

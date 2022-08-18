@@ -7,9 +7,9 @@ import (
 	"path"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
 )
 
 type apiResponse struct {
@@ -140,8 +140,8 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 					galleryItems = append(galleryItems, &downloadGalleryItem{
 						item: &models.DownloadQueueItem{
 							ItemID:          string(data.ID),
-							DownloadTag:     path.Join(m.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
-							FileName:        string(data.ID) + "_" + m.GetFileName(data.FileURL),
+							DownloadTag:     path.Join(fp.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
+							FileName:        string(data.ID) + "_" + fp.GetFileName(data.FileURL),
 							FileURI:         data.FileURL,
 							FallbackFileURI: data.SampleURL,
 						},

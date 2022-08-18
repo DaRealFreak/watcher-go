@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -67,7 +68,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		)
 
 		item.FileURI = item.FallbackFileURI
-		ext := m.GetFileExtension(item.FileName)
+		ext := fp.GetFileExtension(item.FileName)
 		fileName := strings.TrimRight(item.FileName, ext)
 		item.FileName = fmt.Sprintf("%s_fallback%s", fileName, ext)
 
@@ -149,9 +150,9 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		for i, singleItem := range data.items {
 			singleItem.item.FileName = fmt.Sprintf("%d_%s", i+1, singleItem.item.FileName)
 			singleItem.item.DownloadTag = fmt.Sprintf("%s/%s/%s",
-				m.SanitizePath(tagName, false),
+				fp.SanitizePath(tagName, false),
 				"books",
-				fmt.Sprintf("%s%s (%s)", m.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
+				fmt.Sprintf("%s%s (%s)", fp.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
 			)
 
 			if expired, err := m.downloadDownloadQueueItem(trackedItem, singleItem.item); expired || err != nil {

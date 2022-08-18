@@ -208,8 +208,8 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 					"%s_%s_v_%s%s",
 					deviationItem.deviation.GetPublishedTimestamp(),
 					deviationItem.deviation.DeviationId.String(),
-					m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
-					m.GetFileExtension(*highestQualityVideoType.URL),
+					fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+					fp.GetFileExtension(*highestQualityVideoType.URL),
 				),
 			), *highestQualityVideoType.URL); err != nil {
 			return err
@@ -285,7 +285,7 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 				"%s_%s_td_%s.txt",
 				deviationItem.deviation.GetPublishedTimestamp(),
 				deviationItem.deviation.DeviationId.String(),
-				m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+				fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 			),
 		)
 		log.WithField("module", m.Key).Debugf("downloading description: \"%s\"", filePath)
@@ -311,7 +311,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 			"%s_%s_t_%s.txt",
 			deviationItem.deviation.GetPublishedTimestamp(),
 			deviationItem.deviation.DeviationId.String(),
-			m.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+			fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 		),
 	)
 	log.WithField("module", m.Key).Debugf("downloading literature: \"%s\"", filePath)

@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
@@ -138,7 +139,7 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 	filePath := path.Join(viper.GetString("download.directory"),
 		m.Key,
 		m.getAuthor(doc),
-		m.SanitizePath(storyId[0]+"_"+m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
+		fp.SanitizePath(storyId[0]+"_"+m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),
 	)
 
 	// ensure download directory since we directly create the files

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -85,11 +86,11 @@ func (m *nhentai) getGalleryImageUrls(html string, title string) (galleryItems [
 				ItemID: strconv.Itoa(i + 1),
 				DownloadTag: fmt.Sprintf(
 					"%s %s(%s)",
-					m.SanitizePath(title, false),
+					fp.SanitizePath(title, false),
 					languageTag,
 					m.galleryIDPattern.FindStringSubmatch(imageUri.String())[1],
 				),
-				FileName: fmt.Sprintf("%d_%s", i+1, m.GetFileName(imageUri.String())),
+				FileName: fmt.Sprintf("%d_%s", i+1, fp.GetFileName(imageUri.String())),
 				FileURI:  imageUri.String(),
 			})
 		})
@@ -102,7 +103,7 @@ func (m *nhentai) extractGalleryTitle(html string) (galleryTitle string) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	galleryTitle = document.Find("div#info > h1.title").Text()
 
-	return m.SanitizePath(galleryTitle, false)
+	return fp.SanitizePath(galleryTitle, false)
 }
 
 // getGalleryLanguages extracts the language tags from the galleries and returns them joined with ", "

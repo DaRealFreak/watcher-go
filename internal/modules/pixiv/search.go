@@ -8,6 +8,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *pixiv) parseSearch(item *models.TrackedItem) error {
@@ -52,7 +53,7 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 			if item.CurrentItem == "" || illustration.ID > int(currentItemID) {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
 					ItemID:       illustration.ID,
-					DownloadTag:  m.SanitizePath(searchWord, false),
+					DownloadTag:  fp.SanitizePath(searchWord, false),
 					DownloadItem: illustration,
 				})
 			} else {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 // FanboxUser contains the relevant information of the user passed from the API
@@ -46,7 +46,7 @@ type PostInfo struct {
 
 // GetUserTag returns the default download tag for illustrations of the user context
 func (u *FanboxUser) GetUserTag() string {
-	return fmt.Sprintf("%s/%s", u.UserID.String(), models.Module{}.SanitizePath(u.Name, false))
+	return fmt.Sprintf("%s/%s", u.UserID.String(), fp.SanitizePath(u.Name, false))
 }
 
 // GetCreator requests the creator information from the unofficial fanbox/creator endpoint

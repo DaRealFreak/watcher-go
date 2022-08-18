@@ -1,5 +1,3 @@
-// Package deviantart contains the implementation of the deviantart module
-// nolint: dupl
 package deviantart
 
 import (
@@ -8,6 +6,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *deviantArt) parseSearchDevAPI(item *models.TrackedItem) error {
@@ -42,7 +41,7 @@ func (m *deviantArt) parseSearchDevAPI(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: m.SanitizePath(searchTag, false),
+					downloadTag: fp.SanitizePath(searchTag, false),
 				})
 			} else {
 				foundCurrentItem = true

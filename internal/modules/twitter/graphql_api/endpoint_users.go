@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 type Tweet struct {
@@ -84,8 +85,6 @@ func (t *Timeline) TweetEntries() (tweets []*Tweet) {
 
 // DownloadItems returns the normalized DownloadQueueItems from the tweet objects
 func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
-	tmpModule := models.Module{}
-
 	for _, mediaEntry := range tw.Content.ItemContent.TweetResults.Result.Legacy.ExtendedEntities.Media {
 		if mediaEntry.Type == "video" || mediaEntry.Type == "animated_gif" {
 			highestBitRateIndex := 0
@@ -105,7 +104,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
 					len(items)+1,
-					tmpModule.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
+					fp.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
 				),
 				FileURI: mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL,
 			})
@@ -118,7 +117,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
 					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
 					len(items)+1,
-					tmpModule.GetFileName(mediaEntry.MediaURL),
+					fp.GetFileName(mediaEntry.MediaURL),
 				),
 				FileURI: mediaEntry.MediaURL,
 			})
