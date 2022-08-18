@@ -99,7 +99,16 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 				return fmt.Errorf("unable to follow user \"%s\" for deviation, skipping", res.Deviation.Author.Username)
 			}
 
-			return m.downloadDeviationNapi(trackedItem, deviationItem)
+			if err = m.downloadDeviationNapi(trackedItem, deviationItem); err != nil {
+				return err
+			}
+
+			if m.settings.Download.UnfollowAfterDownload {
+				_, err = m.nAPI.UnwatchUser(res.Deviation.Author.Username)
+				return err
+			} else {
+				return nil
+			}
 		}
 
 		log.WithField("module", m.Key).Warnf(
