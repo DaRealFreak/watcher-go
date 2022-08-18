@@ -19,3 +19,15 @@ func TestDeviationsUser(t *testing.T) {
 	assert.New(t).Equal(MaxLimit, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
 }
+
+func TestDeviantartNAPI_WatchUser(t *testing.T) {
+	res, err := daNAPI.WatchUser("Zerion")
+	assert.New(t).NoError(err)
+	assert.New(t).Equal(true, res.Success)
+}
+
+func TestDeviantartNAPI_UnwatchUser(t *testing.T) {
+	res, err := daNAPI.UnwatchUser("Zerion")
+	assert.New(t).NoError(err)
+	assert.New(t).Equal(true, res.Success)
+}

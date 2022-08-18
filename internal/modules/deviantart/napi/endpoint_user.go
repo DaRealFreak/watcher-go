@@ -2,8 +2,10 @@ package napi
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 type UserResponse struct {
@@ -14,29 +16,12 @@ type UserResponse struct {
 	} `json:"results"`
 }
 
-const ModuleNameFolders = "folders"
-
-type Overview struct {
-	SectionData struct {
-		Modules []*struct {
-			Name       string `json:"name"`
-			ModuleData struct {
-				DataKey string `json:"dataKey"`
-				Folders struct {
-					HasMore    bool        `json:"hasMore"`
-					NextOffset json.Number `json:"nextOffset"`
-					Results    []*Folder   `json:"results"`
-				} `json:"folders"`
-			} `json:"moduleData"`
-		} `json:"modules"`
-	} `json:"sectionData"`
-}
-
 type UserInfo struct {
 	User            *Author     `json:"user"`
 	DeviationsCount json.Number `json:"deviationsCount"`
 }
 
+// UserInfoExpandDefault is the string value for the default expand parameter for the user info
 const UserInfoExpandDefault = "user.stats,user.profile,user.watch"
 
 func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, error) {
@@ -160,4 +145,76 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 	err = a.mapAPIResponse(response, &userResponse)
 
 	return &userResponse, err
+}
+
+type WatchResponse struct {
+	Success bool `json:"success"`
+}
+
+func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
+	res, err := a.UserSession.Get(fmt.Sprintf("https://www.deviantart.com/%s", username))
+	if err != nil {
+		return nil, err
+	}
+
+	csrf, csrfErr := a.GetLoginCSRFToken(res)
+	if csrfErr != nil {
+		return nil, csrfErr
+	}
+
+	values := map[string]string{
+		"username":   username,
+		"csrf_token": csrf.CSRFToken,
+	}
+
+	jsonString, _ := json.Marshal(values)
+	bodyReader := strings.NewReader(string(jsonString))
+
+	res, err = a.UserSession.GetClient().Post(
+		"https://www.deviantart.com/_napi/shared_api/watch",
+		"application/json",
+		bodyReader,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var watchResponse WatchResponse
+	err = a.mapAPIResponse(res, &watchResponse)
+
+	return &watchResponse, err
+}
+
+func (a *DeviantartNAPI) UnwatchUser(username string) (*WatchResponse, error) {
+	res, err := a.UserSession.Get(fmt.Sprintf("https://www.deviantart.com/%s", username))
+	if err != nil {
+		return nil, err
+	}
+
+	csrf, csrfErr := a.GetLoginCSRFToken(res)
+	if csrfErr != nil {
+		return nil, csrfErr
+	}
+
+	values := map[string]string{
+		"username":   username,
+		"csrf_token": csrf.CSRFToken,
+	}
+
+	jsonString, _ := json.Marshal(values)
+	bodyReader := strings.NewReader(string(jsonString))
+
+	res, err = a.UserSession.GetClient().Post(
+		"https://www.deviantart.com/_napi/shared_api/unwatch",
+		"application/json",
+		bodyReader,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var watchResponse WatchResponse
+	err = a.mapAPIResponse(res, &watchResponse)
+
+	return &watchResponse, err
 }

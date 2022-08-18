@@ -36,6 +36,12 @@ const OrderMostRecent = "most-recent"
 // MediaTypeFullView is the best type by default if the original file is not accessible
 const MediaTypeFullView = "fullview"
 
+// ModuleNameFolders is the string value for the module listing all available folders (galleries and collections)
+const ModuleNameFolders = "folders"
+
+// PremiumFolderDataWatcherType is the string value for premium folders requiring you to watch the author
+const PremiumFolderDataWatcherType = "watchers"
+
 type Author struct {
 	UserId     json.Number `json:"userId"`
 	UseridUuid string      `json:"useridUuid"`
@@ -141,6 +147,22 @@ type Folder struct {
 	Owner          *Author     `json:"owner"`
 }
 
+type Overview struct {
+	SectionData struct {
+		Modules []*struct {
+			Name       string `json:"name"`
+			ModuleData struct {
+				DataKey string `json:"dataKey"`
+				Folders struct {
+					HasMore    bool        `json:"hasMore"`
+					NextOffset json.Number `json:"nextOffset"`
+					Results    []*Folder   `json:"results"`
+				} `json:"folders"`
+			} `json:"moduleData"`
+		} `json:"modules"`
+	} `json:"sectionData"`
+}
+
 // DeviantartNAPI contains all required items to communicate with the API
 type DeviantartNAPI struct {
 	login.DeviantArtLogin
@@ -217,7 +239,7 @@ func (a *DeviantartNAPI) AddRoundTrippers(userAgent string) {
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type
-func (a *DeviantartNAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
+func (a *DeviantartNAPI) mapAPIResponse(res *http.Response, apiRes interface{}) error {
 	out, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
