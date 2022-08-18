@@ -225,6 +225,10 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	)
 
 	fullViewType := deviationItem.deviation.Media.GetType(napi.MediaTypeFullView)
+	if fullViewType == nil {
+		return nil
+	}
+
 	downloadedContentFile := false
 
 	// either the item is not downloadable or it has a different file size to download the full view (or no file size response)
