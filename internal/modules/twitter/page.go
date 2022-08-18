@@ -49,19 +49,21 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			if m.settings.ConvertNameToId &&
 				tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName != screenName {
 				screenName = tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName
-				uri := fmt.Sprintf(
-					"twitter:graphQL/%s/%s",
-					userId,
-					tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
-				)
+				if screenName != "" {
+					uri := fmt.Sprintf(
+						"twitter:graphQL/%s/%s",
+						userId,
+						tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
+					)
 
-				log.WithField("module", m.ModuleKey()).Warnf(
-					"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
-					item.URI,
-					uri,
-				)
+					log.WithField("module", m.ModuleKey()).Warnf(
+						"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+						item.URI,
+						uri,
+					)
 
-				m.DbIO.ChangeTrackedItemUri(item, uri)
+					m.DbIO.ChangeTrackedItemUri(item, uri)
+				}
 			}
 
 			itemID, _ := strconv.ParseInt(tweet.Content.ItemContent.TweetResults.Result.RestID.String(), 10, 64)
@@ -135,19 +137,21 @@ func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName str
 
 			if m.settings.ConvertNameToId && tweet.AuthorName != screenName {
 				screenName = tweet.AuthorName
-				uri := fmt.Sprintf(
-					"twitter:api/%s/%s",
-					userId,
-					tweet.AuthorName,
-				)
+				if screenName != "" {
+					uri := fmt.Sprintf(
+						"twitter:api/%s/%s",
+						userId,
+						tweet.AuthorName,
+					)
 
-				log.WithField("module", m.ModuleKey()).Warnf(
-					"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
-					item.URI,
-					uri,
-				)
+					log.WithField("module", m.ModuleKey()).Warnf(
+						"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+						item.URI,
+						uri,
+					)
 
-				m.DbIO.ChangeTrackedItemUri(item, uri)
+					m.DbIO.ChangeTrackedItemUri(item, uri)
+				}
 			}
 
 			if len(tweet.Attachments.MediaKeys) > 0 {

@@ -30,6 +30,14 @@ func (e DMCAError) Error() string {
 	return "content got most likely DMCAed"
 }
 
+type RateLimitError struct {
+	error
+}
+
+func (e RateLimitError) Error() string {
+	return "rate limit exceeded"
+}
+
 // NewTwitterSession initializes a new session
 func NewTwitterSession(moduleKey string) *TwitterSession {
 	return &TwitterSession{*session.NewSession(moduleKey)}
@@ -52,6 +60,13 @@ func (s *TwitterSession) Get(uri string) (response *http.Response, err error) {
 			// if no error occurred and status code is okay to break out of the loop
 			// 4xx & 5xx are client/server error codes, so we check for < 400
 			return response, err
+
+		case response.StatusCode == 429:
+			// we are being rate limited
+			// graphQL is not intended for public use so no rate limit is known, just sleep for an extended period of time
+			err = RateLimitError{}
+			time.Sleep(time.Duration(try+1) * 20 * time.Second)
+			break
 
 		case response.StatusCode == 403 && !regexp.MustCompile(`https://twitter.com/i/api/graphql.*`).MatchString(uri):
 			return response, DMCAError{}

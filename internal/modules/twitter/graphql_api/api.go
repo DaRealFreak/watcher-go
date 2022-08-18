@@ -58,7 +58,7 @@ func (a *TwitterGraphQlAPI) mapAPIResponse(res *http.Response, apiRes interface{
 	if res.StatusCode >= 400 {
 		var apiErr TwitterError
 
-		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+		if err = json.Unmarshal([]byte(content), &apiErr); err == nil {
 			return apiErr
 		}
 
@@ -66,7 +66,7 @@ func (a *TwitterGraphQlAPI) mapAPIResponse(res *http.Response, apiRes interface{
 	}
 
 	// unmarshal the request content into the response struct
-	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+	if err = json.Unmarshal([]byte(content), &apiRes); err != nil {
 		return err
 	}
 
