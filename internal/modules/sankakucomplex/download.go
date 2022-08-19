@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
@@ -86,6 +88,13 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		return true, m.Parse(trackedItem)
 	}
 
+	if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 &&
+		item.FallbackFileURI == item.FileURI &&
+		regexp.MustCompile(`/books\?`).MatchString(trackedItem.URI) {
+		log.WithField("module", m.Key).Warnf("skipping book item: %s, status code was 404", item.ItemID)
+		return false, nil
+	}
+
 	return false, err
 }
 
@@ -105,11 +114,9 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
 			if err != nil {
-				if err.Error() == "unexpected returned status code: 404" {
+				if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 {
 					// continue on 404 errors, since they most likely won't get fixed
-					log.WithField("module", m.Key).Warn(
-						fmt.Sprintf("skipping item: %s, status code was 404", data.item.ItemID),
-					)
+					log.WithField("module", m.Key).Warnf("skipping item: %s, status code was 404", data.item.ItemID)
 				} else if m.settings.Download.SkipBrokenStreams && strings.HasPrefix(err.Error(), "stream error: stream ID") {
 					// skip broken streams if configured to do so
 					log.WithField("module", m.Key).Warn(
@@ -155,13 +162,13 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 				fmt.Sprintf("%s%s (%s)", fp.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
 			)
 
-			if expired, err := m.downloadDownloadQueueItem(trackedItem, singleItem.item); expired || err != nil {
-				if err != nil {
-					return err
+			if expired, downloadErr := m.downloadDownloadQueueItem(trackedItem, singleItem.item); expired || downloadErr != nil {
+				if downloadErr != nil {
+					return downloadErr
 				}
 				// on no error we still break the download queue after we ran into expired links
 				if expired {
-					break
+					return m.Parse(trackedItem)
 				}
 			}
 		}

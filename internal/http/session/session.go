@@ -19,6 +19,15 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type StatusError struct {
+	error
+	StatusCode int
+}
+
+func (e StatusError) Error() string {
+	return fmt.Sprintf("unexpected status code: %d", e.StatusCode)
+}
+
 // DefaultSession is an extension to the implemented SessionInterface for HTTP sessions
 type DefaultSession struct {
 	watcherHttp.Session
@@ -134,7 +143,9 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string) error {
 	s.EnsureDownloadDirectory(filepath)
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("unexpected returned status code: %d", resp.StatusCode)
+		return StatusError{
+			StatusCode: resp.StatusCode,
+		}
 	}
 
 	// create the file
