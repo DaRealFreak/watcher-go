@@ -37,6 +37,7 @@ type deviantArtSettings struct {
 }
 
 type deviantArtPattern struct {
+	artPattern            *regexp.Regexp
 	feedPattern           *regexp.Regexp
 	userPattern           *regexp.Regexp
 	galleryPattern        *regexp.Regexp
@@ -131,6 +132,12 @@ func (m *deviantArt) Login(account *models.Account) bool {
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	switch {
+	case m.daPattern.artPattern.MatchString(item.URI):
+		if m.settings.UseDevAPI {
+			return nil
+		} else {
+			return m.parseArtNapi(item)
+		}
 	case m.daPattern.feedPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {
 			return m.parseFeedDevApi(item)
@@ -182,6 +189,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 // extracted from the NewBareModule function to test in Unit Tests
 func getDeviantArtPattern() deviantArtPattern {
 	return deviantArtPattern{
+		artPattern:            regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/art/(?:[^/?&]+?)-(\d+)$`),
 		userPattern:           regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)(?:/gallery|/gallery/all)?(?:/)?$`),
 		feedPattern:           regexp.MustCompile(`https://www.deviantart.com(?:/)?$`),
 		galleryPattern:        regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/(\d+).*`),
