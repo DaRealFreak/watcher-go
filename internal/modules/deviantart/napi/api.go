@@ -53,6 +53,7 @@ type Collection struct {
 	CollectionUuid string      `json:"gallectionUuid"`
 	Type           string      `json:"type"`
 	Description    string      `json:"description"`
+	Name           string      `json:"name"`
 	Owner          *Author     `json:"owner"`
 	Size           json.Number `json:"size"`
 }
@@ -154,9 +155,9 @@ type Overview struct {
 			ModuleData struct {
 				DataKey string `json:"dataKey"`
 				Folders struct {
-					HasMore    bool        `json:"hasMore"`
-					NextOffset json.Number `json:"nextOffset"`
-					Results    []*Folder   `json:"results"`
+					HasMore    bool          `json:"hasMore"`
+					NextOffset json.Number   `json:"nextOffset"`
+					Results    []*Collection `json:"results"`
 				} `json:"folders"`
 			} `json:"moduleData"`
 		} `json:"modules"`
@@ -348,13 +349,16 @@ func (t *Token) GetToken() string {
 	return ""
 }
 
-func (f *Overview) FindFolderByFolderUuid(folderUuid string) *Folder {
-	for _, module := range f.SectionData.Modules {
-		if module.Name == ModuleNameFolders {
-			for _, folder := range module.ModuleData.Folders.Results {
-				if folder.GallectionUuid == folderUuid {
-					return folder
-				}
+func (c *CollectionsUserResponse) FindFolderByFolderId(folderId int) *Collection {
+	// all folder has always the folder id -1 while it has no id in the URL, so we set it here manually
+	if folderId == 0 {
+		folderId = -1
+	}
+
+	for _, collection := range c.Collections {
+		if currentFolderId, err := collection.FolderId.Int64(); err == nil {
+			if int(currentFolderId) == folderId {
+				return collection
 			}
 		}
 	}
@@ -362,21 +366,10 @@ func (f *Overview) FindFolderByFolderUuid(folderUuid string) *Folder {
 	return nil
 }
 
-func (f *Overview) FindFolderByFolderId(folderId int) *Folder {
-	// all folder has always the folder id -1 while it has no id in the URL, so we set it here manually
-	if folderId == 0 {
-		folderId = -1
-	}
-
-	for _, module := range f.SectionData.Modules {
-		if module.Name == ModuleNameFolders {
-			for _, folder := range module.ModuleData.Folders.Results {
-				if currentFolderId, err := folder.FolderId.Int64(); err == nil {
-					if int(currentFolderId) == folderId {
-						return folder
-					}
-				}
-			}
+func (c *CollectionsUserResponse) FindFolderByFolderUuid(folderUuid string) *Collection {
+	for _, collection := range c.Collections {
+		if collection.CollectionUuid == folderUuid {
+			return collection
 		}
 	}
 

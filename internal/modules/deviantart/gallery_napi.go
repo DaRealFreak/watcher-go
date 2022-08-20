@@ -18,12 +18,18 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	galleryID := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[2]
 	galleryIntID, _ := strconv.ParseInt(galleryID, 10, 64)
 
-	galleries, err := m.nAPI.GalleriesOverviewUser(username, napi.MaxLimit, true)
-	if err != nil {
-		return err
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeGallery, false)
+	galleryFolder := res.FindFolderByFolderId(int(galleryIntID))
+	for galleryFolder == nil && res.HasMore {
+		nextOffset, _ := res.NextOffset.Int64()
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeGallery, false)
+		if err != nil {
+			return err
+		}
+
+		galleryFolder = res.FindFolderByFolderId(int(galleryIntID))
 	}
 
-	galleryFolder := galleries.FindFolderByFolderId(int(galleryIntID))
 	if galleryFolder == nil {
 		return fmt.Errorf("unable to find gallery")
 	}
@@ -47,7 +53,7 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	return m.parseGalleryByFolderNapi(item, galleryFolder)
 }
 
-func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryFolder *napi.Folder) error {
+func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryFolder *napi.Collection) error {
 	var downloadQueue []downloadQueueItemNAPI
 
 	foundCurrentItem := false

@@ -17,12 +17,18 @@ func (m *deviantArt) parseCollectionUUIDNapi(item *models.TrackedItem) error {
 	username := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[1]
 	collectionUUID := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[2]
 
-	favoritesOverView, err := m.nAPI.FavoritesOverviewUser(username, napi.MaxLimit, true)
-	if err != nil {
-		return err
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false)
+	collectionFolder := res.FindFolderByFolderUuid(collectionUUID)
+	for collectionFolder == nil && res.HasMore {
+		nextOffset, _ := res.NextOffset.Int64()
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false)
+		if err != nil {
+			return err
+		}
+
+		collectionFolder = res.FindFolderByFolderUuid(collectionUUID)
 	}
 
-	collectionFolder := favoritesOverView.FindFolderByFolderUuid(collectionUUID)
 	if collectionFolder == nil {
 		return fmt.Errorf("unable to find collection")
 	}
@@ -35,12 +41,18 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	collectionID := m.daPattern.collectionPattern.FindStringSubmatch(item.URI)[2]
 	collectionIntID, _ := strconv.ParseInt(collectionID, 10, 64)
 
-	favoritesOverView, err := m.nAPI.FavoritesOverviewUser(username, napi.MaxLimit, true)
-	if err != nil {
-		return err
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false)
+	collectionFolder := res.FindFolderByFolderId(int(collectionIntID))
+	for collectionFolder == nil && res.HasMore {
+		nextOffset, _ := res.NextOffset.Int64()
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false)
+		if err != nil {
+			return err
+		}
+
+		collectionFolder = res.FindFolderByFolderId(int(collectionIntID))
 	}
 
-	collectionFolder := favoritesOverView.FindFolderByFolderId(int(collectionIntID))
 	if collectionFolder == nil {
 		return fmt.Errorf("unable to find collection")
 	}
@@ -64,7 +76,7 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	return m.parseCollectionByFolderNapi(item, collectionFolder)
 }
 
-func (m *deviantArt) parseCollectionByFolderNapi(item *models.TrackedItem, collectionFolder *napi.Folder) error {
+func (m *deviantArt) parseCollectionByFolderNapi(item *models.TrackedItem, collectionFolder *napi.Collection) error {
 	var downloadQueue []downloadQueueItemNAPI
 
 	foundCurrentItem := false

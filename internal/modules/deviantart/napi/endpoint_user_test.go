@@ -7,9 +7,9 @@ import (
 )
 
 func TestFavoritesUser(t *testing.T) {
-	res, err := daNAPI.DeviationsUser("Zerion", 0, 0, MaxLimit, true)
+	res, err := daNAPI.FavoritesUser("Zerion", 0, 0, 25, true)
 	assert.New(t).NoError(err)
-	assert.New(t).Equal(MaxLimit, len(res.Deviations))
+	assert.New(t).Equal(25, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
 }
 
