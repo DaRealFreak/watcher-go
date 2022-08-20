@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
@@ -42,14 +41,9 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		for _, result := range response.Deviations {
-			t, dateErr := time.Parse(napi.DateLayout, result.Deviation.PublishedTime)
-			if dateErr != nil {
-				return dateErr
-			}
-
-			if item.CurrentItem == "" || t.Unix() > currentItemID {
+			if item.CurrentItem == "" || result.Deviation.GetPublishedTime().Unix() > currentItemID {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:      strconv.Itoa(int(t.Unix())),
+					itemID:      result.Deviation.GetPublishedTimestamp(),
 					deviation:   result.Deviation,
 					downloadTag: fp.SanitizePath(result.Deviation.Author.Username, false),
 				})

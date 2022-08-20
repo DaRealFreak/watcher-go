@@ -344,6 +344,11 @@ func (d *Deviation) GetPublishedTimestamp() string {
 	return strconv.Itoa(int(t.Unix()))
 }
 
+func (d *Deviation) GetPublishedTime() time.Time {
+	t, _ := time.Parse(DateLayout, d.PublishedTime)
+	return t
+}
+
 func (t *Token) GetToken() string {
 	for _, singleToken := range *t {
 		return singleToken

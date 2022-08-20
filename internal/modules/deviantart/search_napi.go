@@ -3,7 +3,6 @@ package deviantart
 import (
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
@@ -37,14 +36,9 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 				continue
 			}
 
-			t, dateErr := time.Parse(napi.DateLayout, deviation.PublishedTime)
-			if dateErr != nil {
-				return dateErr
-			}
-
-			if item.CurrentItem == "" || t.Unix() > currentItemID {
+			if item.CurrentItem == "" || deviation.GetPublishedTime().Unix() > currentItemID {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:      strconv.Itoa(int(t.Unix())),
+					itemID:      deviation.GetPublishedTimestamp(),
 					deviation:   deviation,
 					downloadTag: fp.SanitizePath(searchTag, false),
 				})

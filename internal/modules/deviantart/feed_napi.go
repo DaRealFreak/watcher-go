@@ -2,10 +2,8 @@ package deviantart
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
@@ -27,14 +25,9 @@ func (m *deviantArt) parseFeedNapi(item *models.TrackedItem) error {
 				continue
 			}
 
-			t, dateErr := time.Parse(napi.DateLayout, deviation.PublishedTime)
-			if dateErr != nil {
-				return dateErr
-			}
-
-			if item.CurrentItem == "" || t.Unix() > currentItemID {
+			if item.CurrentItem == "" || deviation.GetPublishedTime().Unix() > currentItemID {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:      strconv.Itoa(int(t.Unix())),
+					itemID:      deviation.GetPublishedTimestamp(),
 					deviation:   deviation,
 					downloadTag: fp.SanitizePath("home_feed", false),
 				})
