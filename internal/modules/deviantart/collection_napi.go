@@ -17,11 +17,11 @@ func (m *deviantArt) parseCollectionUUIDNapi(item *models.TrackedItem) error {
 	username := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[1]
 	collectionUUID := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[2]
 
-	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false)
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false, true)
 	collectionFolder := res.FindFolderByFolderUuid(collectionUUID)
 	for collectionFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
-		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false)
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false, false)
 		if err != nil {
 			return err
 		}
@@ -41,11 +41,11 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	collectionID := m.daPattern.collectionPattern.FindStringSubmatch(item.URI)[2]
 	collectionIntID, _ := strconv.ParseInt(collectionID, 10, 64)
 
-	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false)
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false, true)
 	collectionFolder := res.FindFolderByFolderId(int(collectionIntID))
 	for collectionFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
-		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false)
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false, false)
 		if err != nil {
 			return err
 		}

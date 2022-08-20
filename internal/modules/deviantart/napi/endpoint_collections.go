@@ -25,16 +25,13 @@ const FolderTypeFavourites = "collection"
 const CollectionLimit = 1000
 
 func (a *DeviantartNAPI) CollectionsUser(
-	username string, offset int, limit int, folderType string, withSubFolders bool,
+	username string, offset int, limit int, folderType string, withSubFolders bool, includeAllFolder bool,
 ) (*CollectionsUserResponse, error) {
 	values := url.Values{
 		"username": {username},
 		"offset":   {strconv.Itoa(offset)},
 		"limit":    {strconv.Itoa(limit)},
-	}
-
-	if folderType != "" {
-		values.Set("type", folderType)
+		"type":     {folderType},
 	}
 
 	if withSubFolders {
@@ -50,7 +47,33 @@ func (a *DeviantartNAPI) CollectionsUser(
 	}
 
 	var searchResponse CollectionsUserResponse
-	err = a.mapAPIResponse(response, &searchResponse)
+	if err = a.mapAPIResponse(response, &searchResponse); err != nil {
+		return &searchResponse, err
+	}
+
+	// unofficial option since the "All" folder is not an official folder but returned in the user profile initialisation
+	// since it is used in f.e. author update and contains the folder size we merge both API responses
+	if includeAllFolder {
+		var allCollection *Collection
+		switch folderType {
+		case FolderTypeGallery:
+			favorites, favoritesErr := a.GalleriesOverviewUser(username, MaxLimit, false)
+			if favoritesErr != nil {
+				return &searchResponse, favoritesErr
+			}
+
+			allCollection = favorites.FindFolderByFolderId(FolderIdAllFolder)
+		case FolderTypeFavourites:
+			favorites, favoritesErr := a.FavoritesOverviewUser(username, MaxLimit, false)
+			if favoritesErr != nil {
+				return &searchResponse, favoritesErr
+			}
+
+			allCollection = favorites.FindFolderByFolderId(FolderIdAllFolder)
+		}
+
+		searchResponse.Collections = append([]*Collection{allCollection}, searchResponse.Collections...)
+	}
 
 	return &searchResponse, err
 }

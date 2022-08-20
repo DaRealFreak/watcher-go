@@ -7,12 +7,12 @@ import (
 )
 
 func TestDeviantartNAPI_CollectionsUser(t *testing.T) {
-	res, err := daNAPI.CollectionsUser("GeneralDelta", 0, 50, FolderTypeFavourites, false)
+	res, err := daNAPI.CollectionsUser("GeneralDelta", 0, 50, FolderTypeFavourites, false, true)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(50, len(res.Collections))
 	assert.New(t).Equal(true, res.HasMore)
 
-	res, err = daNAPI.CollectionsUser("GeneralDelta", 0, 50, FolderTypeGallery, false)
+	res, err = daNAPI.CollectionsUser("GeneralDelta", 0, 50, FolderTypeGallery, false, true)
 	assert.New(t).NoError(err)
 	assert.New(t).NotEqual(50, len(res.Collections))
 	assert.New(t).Equal(false, res.HasMore)

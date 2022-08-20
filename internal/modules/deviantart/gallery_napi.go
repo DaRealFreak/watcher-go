@@ -18,11 +18,11 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	galleryID := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[2]
 	galleryIntID, _ := strconv.ParseInt(galleryID, 10, 64)
 
-	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeGallery, false)
+	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeGallery, false, true)
 	galleryFolder := res.FindFolderByFolderId(int(galleryIntID))
 	for galleryFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
-		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeGallery, false)
+		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeGallery, false, false)
 		if err != nil {
 			return err
 		}

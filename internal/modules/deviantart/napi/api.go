@@ -39,6 +39,9 @@ const MediaTypeFullView = "fullview"
 // ModuleNameFolders is the string value for the module listing all available folders (galleries and collections)
 const ModuleNameFolders = "folders"
 
+// FolderIdAllFolder is the int value for the folder ID of the "All" folder, which is not an official folder
+const FolderIdAllFolder = -1
+
 // PremiumFolderDataWatcherType is the string value for premium folders requiring you to watch the author
 const PremiumFolderDataWatcherType = "watchers"
 
@@ -352,7 +355,7 @@ func (t *Token) GetToken() string {
 func (c *CollectionsUserResponse) FindFolderByFolderId(folderId int) *Collection {
 	// all folder has always the folder id -1 while it has no id in the URL, so we set it here manually
 	if folderId == 0 {
-		folderId = -1
+		folderId = FolderIdAllFolder
 	}
 
 	for _, collection := range c.Collections {
@@ -370,6 +373,20 @@ func (c *CollectionsUserResponse) FindFolderByFolderUuid(folderUuid string) *Col
 	for _, collection := range c.Collections {
 		if collection.CollectionUuid == folderUuid {
 			return collection
+		}
+	}
+
+	return nil
+}
+
+func (o *Overview) FindFolderByFolderId(folderId int) *Collection {
+	for _, module := range o.SectionData.Modules {
+		if module.Name == "folders" {
+			for _, folder := range module.ModuleData.Folders.Results {
+				if singleFolderId, err := folder.FolderId.Int64(); err == nil && int(singleFolderId) == folderId {
+					return folder
+				}
+			}
 		}
 	}
 
