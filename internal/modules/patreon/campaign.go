@@ -33,6 +33,11 @@ type campaignPost struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		} `json:"post_file"`
+		Embed struct {
+			Description string `json:"description"`
+			Html        string `json:"html"`
+			URL         string `json:"url"`
+		} `json:"embed"`
 	} `json:"attributes"`
 	Relationships struct {
 		AttachmentSection struct {
@@ -122,7 +127,7 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 func (m *patreon) extractPostDownload(
 	creatorID int, campaign *userResponse, postID int64, post *campaignPost, postsData *campaignResponse,
 ) *postDownload {
-	postDownload := &postDownload{
+	download := &postDownload{
 		CreatorID:   creatorID,
 		CreatorName: campaign.Data.Attributes.FullName,
 		PostID:      int(postID),
@@ -136,22 +141,22 @@ func (m *patreon) extractPostDownload(
 
 	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
 		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
-			postDownload.Attachments = append(postDownload.Attachments, include)
+			download.Attachments = append(download.Attachments, include)
 		}
 	}
 
 	for _, attachment := range post.Relationships.ImageSection.ImageAttachments {
 		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
-			postDownload.Attachments = append(postDownload.Attachments, include)
+			download.Attachments = append(download.Attachments, include)
 		}
 	}
 
-	return postDownload
+	return download
 }
 
 // reverseDownloadQueue reverses the download queue to download the oldest items first
 func (m *patreon) reverseDownloadQueue(downloadQueue []*postDownload) []*postDownload {
-	// reverse to add oldest posts first
+	// reverse to add the oldest posts first
 	for i, j := 0, len(downloadQueue)-1; i < j; i, j = i+1, j-1 {
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
