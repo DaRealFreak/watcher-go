@@ -47,7 +47,7 @@ func (f *ModuleFactory) GetAllModules() []*models.Module {
 	return f.modules
 }
 
-// GetModule returns a module by it's key
+// GetModule returns a module by its key
 func (f *ModuleFactory) GetModule(moduleName string) *models.Module {
 	for _, module := range f.modules {
 		if module.Key == moduleName {
@@ -71,6 +71,19 @@ func (f *ModuleFactory) GetModuleFromURI(uri string) *models.Module {
 	raven.CheckError(fmt.Errorf("no module is registered which can parse based on the url %s", uri))
 
 	return nil
+}
+
+// CanParse can be used to check if f.e. a found URL can be parsed
+func (f *ModuleFactory) CanParse(uri string) bool {
+	for _, patternCollection := range f.uriSchemas {
+		for _, pattern := range patternCollection {
+			if pattern.MatchString(uri) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // GetModulesFromURIs returns the selected modules in bulk for urls
