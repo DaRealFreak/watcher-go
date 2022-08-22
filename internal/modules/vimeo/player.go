@@ -43,7 +43,7 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 	}
 
 	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s/config", results[1])
-	if len(results) == 3 {
+	if len(results) == 3 && results[2] != "" {
 		playerUrl += "?h=" + results[2]
 	}
 

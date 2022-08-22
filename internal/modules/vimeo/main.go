@@ -37,7 +37,7 @@ func NewBareModule() *models.Module {
 	}
 	module.ModuleInterface = &vimeo{
 		Module:                 module,
-		defaultVideoURLPattern: regexp.MustCompile(`https://vimeo.com/(\d+)(?:/)(\w+|$)`),
+		defaultVideoURLPattern: regexp.MustCompile(`https://vimeo.com/(\d+)(?:/)?(\w+|$)`),
 		masterJsonPattern:      regexp.MustCompile(`.*/master.json.*`),
 	}
 

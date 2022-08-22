@@ -3,7 +3,6 @@ package vimeo
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -103,25 +102,24 @@ func (m *vimeo) parseVideo(item *models.TrackedItem, masterJSONUrl string, video
 
 	baseURL = baseURL.ResolveReference(ref)
 
-	// ToDo: complete item here if no error occurred
-	return m.downloadVideo(masterJsonContent, baseURL, videoTitle)
+	if err = m.downloadVideo(masterJsonContent, baseURL, videoTitle); err != nil {
+		return err
+	}
+
+	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+
+	return nil
 }
 
 func (m *vimeo) downloadVideo(content MasterJsonContent, baseURL *url.URL, videoTitle string) error {
-	typeUrl, parseErr := url.Parse(content.GetBestVideo().IndexSegments)
-	if parseErr != nil {
-		return parseErr
-	}
-
-	fileType := fp.GetFileExtension(typeUrl.Path)
 	finalFilePath := path.Join(
 		viper.GetString("download.directory"),
 		m.Key,
-		fp.TruncateMaxLength(fp.SanitizePath(videoTitle, false))+fileType,
+		fp.TruncateMaxLength(fp.SanitizePath(videoTitle, false))+".mp4",
 	)
 	m.Session.EnsureDownloadDirectory(finalFilePath)
 
-	videoFile, err := ioutil.TempFile("", fmt.Sprintf(".*%s", fileType))
+	videoFile, err := ioutil.TempFile("", ".*.mp4")
 	if err != nil {
 		return err
 	}
