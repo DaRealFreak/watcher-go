@@ -10,14 +10,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/spf13/viper"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type Media struct {
@@ -115,7 +112,7 @@ func (m *vimeo) downloadVideo(content MasterJsonContent, baseURL *url.URL, video
 	finalFilePath := path.Join(
 		viper.GetString("download.directory"),
 		m.Key,
-		fp.TruncateMaxLength(fp.SanitizePath(videoTitle, false))+".mp4",
+		fp.TruncateMaxLength(fp.SanitizePath(videoTitle+".mp4", false)),
 	)
 	m.Session.EnsureDownloadDirectory(finalFilePath)
 
