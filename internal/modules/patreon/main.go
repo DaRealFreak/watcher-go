@@ -84,7 +84,7 @@ func NewBareModule() *models.Module {
 		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile(".*patreon.com"),
+			regexp.MustCompile(`https://www.patreon.com`),
 			regexp.MustCompile("patreon://creator/"),
 		},
 	}
@@ -174,7 +174,7 @@ func (m *patreon) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *patreon) Login(account *models.Account) bool {
-	loginData := loginFormData{
+	formData := loginFormData{
 		Data: loginData{
 			Type: "user",
 			Attributes: loginAttributes{
@@ -185,7 +185,7 @@ func (m *patreon) Login(account *models.Account) bool {
 		},
 	}
 
-	data, err := json.Marshal(loginData)
+	data, err := json.Marshal(formData)
 	if err != nil {
 		log.WithField("module", m.Key).Error(err)
 	}
@@ -251,7 +251,7 @@ func (m *patreon) Login(account *models.Account) bool {
 		}
 	}
 
-	if err := json.Unmarshal([]byte(loginRes), &loginSuccess); err != nil {
+	if err = json.Unmarshal([]byte(loginRes), &loginSuccess); err != nil {
 		log.WithField("module", m.Key).Error(err)
 	}
 

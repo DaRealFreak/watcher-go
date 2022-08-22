@@ -8,10 +8,13 @@ import (
 	"io/ioutil"
 	"net/url"
 	"strconv"
-
-	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/PuerkitoBio/goquery"
+	log "github.com/sirupsen/logrus"
 )
 
 // campaignResponse contains the struct for most relevant data of posts
@@ -123,21 +126,70 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 	return m.processDownloadQueue(m.reverseDownloadQueue(postDownloads), item)
 }
 
+func (m *patreon) extractIframeSources(html string) (results []string) {
+	if document, err := goquery.NewDocumentFromReader(io.NopCloser(strings.NewReader(html))); err == nil {
+		document.Find("iframe[src]").Each(func(i int, iframeTag *goquery.Selection) {
+			srcUrl, _ := iframeTag.Attr("src")
+			parsedUrl, parseErr := url.Parse(srcUrl)
+			if parseErr == nil {
+				switch parsedUrl.Host {
+				case "cdn.embedly.com":
+					if parsedUrl.Query().Has("src") {
+						results = append(results, parsedUrl.Query()["src"]...)
+					}
+				default:
+					results = append(results, srcUrl)
+				}
+			}
+		})
+	}
+
+	return results
+}
+
 // extractPostDownload extracts the relevant download data for from the passed post
 func (m *patreon) extractPostDownload(
 	creatorID int, campaign *userResponse, postID int64, post *campaignPost, postsData *campaignResponse,
 ) *postDownload {
 	download := &postDownload{
-		CreatorID:   creatorID,
-		CreatorName: campaign.Data.Attributes.FullName,
-		PostID:      int(postID),
-		PatreonURL:  post.Attributes.PatreonURL,
+		CreatorID:    creatorID,
+		CreatorName:  campaign.Data.Attributes.FullName,
+		PostID:       int(postID),
+		PatreonURL:   post.Attributes.PatreonURL,
+		ExternalURLs: []string{},
 	}
 
-	// ignore embedded videos
-	if post.Attributes.PostType == "video_embed" {
-		return nil
+	if post.Attributes.Embed.Html != "" {
+		externalUrls := m.extractIframeSources(post.Attributes.Embed.Html)
+		factory := modules.GetModuleFactory()
+		for _, externalUrl := range externalUrls {
+			if factory.CanParse(externalUrl) {
+				embedUrl, _ := url.Parse(externalUrl)
+				parsedQueryString, _ := url.ParseQuery(embedUrl.RawQuery)
+				parsedQueryString["referer"] = []string{post.Attributes.PatreonURL}
+				embedUrl.RawQuery = parsedQueryString.Encode()
+				download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
+			} else {
+				log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalUrl)
+			}
+		}
 	}
+
+	/*
+		// external URLs are still the same even if the embedded link is updated (because of f.e. wrong links)
+		// caused a lot of inaccessible downloads and parsing the embedded HTML was more reliable
+		if post.Attributes.Embed.URL != "" {
+			if modules.GetModuleFactory().CanParse(post.Attributes.Embed.URL) {
+				embedUrl, _ := url.Parse(post.Attributes.Embed.URL)
+				parsedQueryString, _ := url.ParseQuery(embedUrl.RawQuery)
+				parsedQueryString["referer"] = []string{post.Attributes.PatreonURL}
+				embedUrl.RawQuery = parsedQueryString.Encode()
+				download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
+			} else {
+				log.Warnf("unable to parse found URL: \"%s\"", post.Attributes.Embed.URL)
+			}
+		}
+	*/
 
 	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
 		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
@@ -145,9 +197,12 @@ func (m *patreon) extractPostDownload(
 		}
 	}
 
-	for _, attachment := range post.Relationships.ImageSection.ImageAttachments {
-		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
-			download.Attachments = append(download.Attachments, include)
+	// ignore embedded videos and links, since the chance for actual images instead of link previews is low
+	if post.Attributes.PostType != "video_embed" && post.Attributes.PostType != "link" {
+		for _, attachment := range post.Relationships.ImageSection.ImageAttachments {
+			if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
+				download.Attachments = append(download.Attachments, include)
+			}
 		}
 	}
 

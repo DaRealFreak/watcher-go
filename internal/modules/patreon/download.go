@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -14,11 +15,12 @@ import (
 
 // postDownload is the struct used for downloading post contents
 type postDownload struct {
-	PostID      int
-	CreatorID   int
-	CreatorName string
-	PatreonURL  string
-	Attachments []*campaignInclude
+	PostID       int
+	CreatorID    int
+	CreatorName  string
+	PatreonURL   string
+	Attachments  []*campaignInclude
+	ExternalURLs []string
 }
 
 func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *models.TrackedItem) error {
@@ -74,6 +76,24 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				); err != nil {
 					return err
 				}
+			}
+		}
+
+		for _, externalURL := range data.ExternalURLs {
+			module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
+			module.InitializeModule()
+			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, module)
+			if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
+				log.WithField("module", m.Key).Info(
+					fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
+				)
+				newItem.CurrentItem = ""
+				m.DbIO.ChangeTrackedItemCompleteStatus(newItem, false)
+				m.DbIO.UpdateTrackedItem(newItem, "")
+			}
+
+			if err := module.Parse(newItem); err != nil {
+				return err
 			}
 		}
 
