@@ -171,6 +171,7 @@ func (m *ehentai) downloadItemSession(
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
+			fp.TruncateMaxLength(fp.SanitizePath(strings.TrimSpace(trackedItem.SubFolder), false)),
 			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
 			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
 		),

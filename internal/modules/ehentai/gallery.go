@@ -125,7 +125,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 		newGalleryLinks.Each(func(index int, row *goquery.Selection) {
 			url, exists := row.Attr("href")
 			if exists {
-				newGalleryItem = m.DbIO.GetFirstOrCreateTrackedItem(url, m)
+				newGalleryItem = m.DbIO.GetFirstOrCreateTrackedItem(url, m.getSubFolder(item), m)
 				log.WithField("module", m.Key).Info("added gallery to tracked items: " + url)
 			}
 		})

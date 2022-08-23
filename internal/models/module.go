@@ -131,6 +131,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 			path.Join(
 				viper.GetString("download.directory"),
 				t.Key,
+				fp.TruncateMaxLength(fp.SanitizePath(trackedItem.SubFolder, false)),
 				fp.TruncateMaxLength(fp.SanitizePath(data.DownloadTag, false)),
 				fp.TruncateMaxLength(fp.SanitizePath(data.FileName, false)),
 			),

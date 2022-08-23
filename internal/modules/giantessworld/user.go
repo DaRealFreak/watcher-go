@@ -109,7 +109,7 @@ func (m *giantessWorld) addNewStories(item *models.TrackedItem, newStories []sto
 	for _, story := range newStories {
 		m.DbIO.UpdateTrackedItem(item, story.chapterUpdate)
 
-		newItem := m.DbIO.GetFirstOrCreateTrackedItem(story.chapterURL, m)
+		newItem := m.DbIO.GetFirstOrCreateTrackedItem(story.chapterURL, "", m)
 		if newItem.CurrentItem == "" {
 			// if story doesn't have a current item yet, it's probably a new story
 			log.WithField("module", m.Key).Info("added story to tracked items: " + story.chapterURL)

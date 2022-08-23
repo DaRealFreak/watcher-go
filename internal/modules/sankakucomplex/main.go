@@ -108,10 +108,10 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 		}
 
 		bookUri := fmt.Sprintf("https://beta.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
-		bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, m)
+		bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, "", m)
 
 		galleryUri := fmt.Sprintf("https://beta.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, "", m)
 
 		if err = m.Parse(bookItem); err != nil {
 			return err

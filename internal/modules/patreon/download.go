@@ -82,7 +82,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 		for _, externalURL := range data.ExternalURLs {
 			module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
 			module.InitializeModule()
-			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, module)
+			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
 			if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
 				log.WithField("module", m.Key).Info(
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),

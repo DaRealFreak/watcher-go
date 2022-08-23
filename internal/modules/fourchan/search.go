@@ -82,7 +82,7 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 			),
 		)
 
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery, m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery, "", m)
 		if m.Cfg.Run.ForceNew && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),

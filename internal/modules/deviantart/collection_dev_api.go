@@ -47,7 +47,7 @@ func (m *deviantArt) parseAllCollectionsDevAPI(user string) error {
 
 	for _, folder := range folderResults.Results {
 		appURL := fmt.Sprintf("DeviantArt://collection/%s/%s", user, url.PathEscape(folder.FolderUUID))
-		m.DbIO.GetFirstOrCreateTrackedItem(appURL, m)
+		m.DbIO.GetFirstOrCreateTrackedItem(appURL, "", m)
 	}
 
 	for folderResults.NextOffset != nil && folderResults.HasMore {
@@ -58,7 +58,7 @@ func (m *deviantArt) parseAllCollectionsDevAPI(user string) error {
 
 		for _, folder := range folderResults.Results {
 			appURL := fmt.Sprintf("DeviantArt://collection/%s/%s", user, url.PathEscape(folder.FolderUUID))
-			m.DbIO.GetFirstOrCreateTrackedItem(appURL, m)
+			m.DbIO.GetFirstOrCreateTrackedItem(appURL, "", m)
 		}
 	}
 

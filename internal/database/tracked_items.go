@@ -112,12 +112,12 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) []
 // GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
 func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module models.ModuleInterface) *models.TrackedItem {
-	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri = ? and module = ?")
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri = ? and subfolder = ? and module = ?")
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
-	rows, err := stmt.Query(uri, module.ModuleKey())
-	raven.CheckError(err)
+	rows, QueryErr := stmt.Query(uri, subFolder, module.ModuleKey())
+	raven.CheckError(QueryErr)
 
 	defer raven.CheckClosure(rows)
 
@@ -143,7 +143,7 @@ func (db *DbIO) CreateTrackedItem(uri string, subFolder string, module models.Mo
 
 	defer raven.CheckClosure(stmt)
 
-	_, err = stmt.Exec(uri, module.ModuleKey())
+	_, err = stmt.Exec(uri, subFolder, module.ModuleKey())
 	raven.CheckError(err)
 }
 

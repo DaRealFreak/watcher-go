@@ -2,6 +2,8 @@ package nhentai
 
 import (
 	"fmt"
+	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -86,7 +88,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 	)
 
 	for _, gallery := range itemQueue {
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
 		if m.Cfg.Run.ForceNew && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
@@ -108,7 +110,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 			),
 		)
 
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
 		if err = m.Parse(galleryItem); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
@@ -120,6 +122,33 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 	}
 
 	return nil
+}
+
+func (m *nhentai) getSubFolder(item *models.TrackedItem) string {
+	search := regexp.MustCompile(`https://nhentai.net/search/.*`)
+	if search.MatchString(item.URI) {
+		parsedUrl, _ := url.Parse(item.URI)
+		if parsedUrl.Query().Has("q") {
+			return fmt.Sprintf("search %s", parsedUrl.Query().Get("q"))
+		}
+	}
+
+	// if search was not matching we only have those options left
+	subFolderTags := []string{"artist", "tag", "parody", "character"}
+	folder := regexp.MustCompile(`https://nhentai.net/\w+/([^/?&]+)/$`)
+
+	for _, subFolder := range subFolderTags {
+		subFolderRegexp := regexp.MustCompile(fmt.Sprintf(`https://nhentai.net/%s/.*`, subFolder))
+		if subFolderRegexp.MatchString(item.URI) {
+			matches := folder.FindStringSubmatch(item.URI)
+			if len(matches) > 1 {
+				return fmt.Sprintf("%s %s", subFolder, matches[1])
+			}
+		}
+	}
+
+	// no matches at all
+	return ""
 }
 
 // getSearchGalleryUrls returns all gallery URLs from the passed HTML
