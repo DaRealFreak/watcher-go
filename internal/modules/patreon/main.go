@@ -85,6 +85,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`https://www.patreon.com`),
+			regexp.MustCompile(`(https://www.|^)patreon.com`),
 			regexp.MustCompile("patreon://creator/"),
 		},
 	}
