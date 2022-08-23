@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	factory := modules.GetModuleFactory()
 	test := factory.GetAllModules()[0]
 	dbIO.GetFirstOrCreateAccount("test_user", "test_pass", test)
-	dbIO.GetFirstOrCreateTrackedItem(test.Key, test)
+	dbIO.GetFirstOrCreateTrackedItem(test.Key, "", test)
 
 	// run the unit tests
 	code := m.Run()

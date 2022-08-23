@@ -14,7 +14,7 @@ func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	normalizedUri, err := module.ModuleInterface.AddItem(uri)
 	raven.CheckError(err)
 
-	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, module)
+	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, "", module)
 
 	if currentItem != "" {
 		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)

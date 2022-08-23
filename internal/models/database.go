@@ -8,11 +8,12 @@ type DatabaseInterface interface {
 
 	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
 	GetTrackedItemsByDomain(domain string, includeCompleted bool) []*TrackedItem
-	GetFirstOrCreateTrackedItem(uri string, module ModuleInterface) *TrackedItem
+	GetFirstOrCreateTrackedItem(uri string, subFolder string, module ModuleInterface) *TrackedItem
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 	ChangeTrackedItemUri(trackedItem *TrackedItem, uri string)
-	CreateTrackedItem(uri string, module ModuleInterface)
+	CreateTrackedItem(uri string, subFolder string, module ModuleInterface)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
+	ChangeTrackedItemSubFolder(trackedItem *TrackedItem, subFolder string)
 
 	// account storage functionality
 
@@ -51,6 +52,7 @@ type Account struct {
 type TrackedItem struct {
 	ID           int
 	URI          string
+	SubFolder    string
 	CurrentItem  string
 	Module       string
 	LastModified sql.NullTime

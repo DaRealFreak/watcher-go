@@ -231,7 +231,7 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 		Long:  "updates the saved current item of an item in the database, creates an entry if it doesn't exist yet",
 		Run: func(cmd *cobra.Command, args []string) {
 			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-			trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+			trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
 			cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
 		},
 	}
@@ -290,7 +290,7 @@ func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
 				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, false)
 			}
 		},
@@ -309,7 +309,7 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, module)
+				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
 				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, true)
 			}
 		},
