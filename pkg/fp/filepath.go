@@ -37,13 +37,23 @@ func SanitizePath(path string, allowSeparator bool) string {
 
 // GetFileName retrieves the file name of a passed uri
 func GetFileName(uri string) string {
-	parsedURI, _ := url.Parse(uri)
+	parsedURI, parsedErr := url.Parse(uri)
+	if parsedErr != nil {
+		// fallback to filepath on f.e. invalid escape errors since they don't apply to filenames
+		_, file := filepath.Split(uri)
+		return strings.TrimSuffix(file, filepath.Ext(file))
+	}
 	return filepath.Base(parsedURI.Path)
 }
 
 // GetFileExtension retrieves the file extension of a passed uri
 func GetFileExtension(uri string) string {
-	parsedURI, _ := url.Parse(uri)
+	parsedURI, parsedErr := url.Parse(uri)
+	if parsedErr != nil {
+		// fallback to filepath on f.e. invalid escape errors since they don't apply to filenames
+		_, file := filepath.Split(uri)
+		return filepath.Ext(file)
+	}
 	return filepath.Ext(parsedURI.Path)
 }
 
