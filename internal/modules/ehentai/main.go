@@ -41,7 +41,6 @@ type ehentai struct {
 }
 
 type ehentaiSettings struct {
-	Proxy       http.ProxySettings   `mapstructure:"proxy"`
 	Loop        bool                 `mapstructure:"loop"`
 	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 	MultiProxy  bool                 `mapstructure:"multiproxy"`
@@ -220,8 +219,8 @@ func (m *ehentai) setProxyMethod() error {
 		return nil
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
-	case !m.settings.Loop && m.settings.Proxy.Enable:
-		return m.ehSession.SetProxy(&m.settings.Proxy)
+	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
+		return m.ehSession.SetProxy(m.GetProxySettings())
 	case m.settings.Loop:
 		if m.settings.MultiProxy {
 			// ToDo:
