@@ -76,10 +76,10 @@ func (m *ehentai) getFreeProxy() *proxySession {
 	return nil
 }
 
-func (m *ehentai) getProxyError() error {
+func (m *ehentai) getProxyError() *proxySession {
 	for _, proxy := range m.proxies {
 		if proxy.occurredError != nil {
-			return proxy.occurredError
+			return proxy
 		}
 	}
 
@@ -106,8 +106,12 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 		}
 
 		// handle if errors occurred in previous downloads
-		if err := m.getProxyError(); err != nil {
-			return m.getProxyError()
+		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
+			log.WithField("module", m.Key).Warnf(
+				"error occurred during download for proxy: %s",
+				erroneousProxy.proxy.Host,
+			)
+			return m.getProxyError().occurredError
 		}
 
 		if m.hasFreeProxy() {
@@ -133,8 +137,12 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	m.multiProxy.waitGroup.Wait()
 
 	// handle if errors occurred in previous downloads
-	if err := m.getProxyError(); err != nil {
-		return m.getProxyError()
+	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
+		log.WithField("module", m.Key).Warnf(
+			"error occurred during download for proxy: %s",
+			erroneousProxy.proxy.Host,
+		)
+		return m.getProxyError().occurredError
 	}
 
 	// if no error occurred update the tracked item to the last item ID

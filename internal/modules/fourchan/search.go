@@ -2,13 +2,13 @@ package fourchan
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
+	log "github.com/sirupsen/logrus"
 )
 
 // parseSearch parses searches
@@ -16,6 +16,10 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 	res, err := m.Session.Get(item.URI)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.Search.CategorizeSearch && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
 
 	html, _ := m.Session.GetDocument(res).Html()
@@ -82,7 +86,7 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 			),
 		)
 
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery, "", m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery, m.getSubFolder(item), m)
 		if m.Cfg.Run.ForceNew && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
@@ -105,6 +109,30 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 	}
 
 	return nil
+}
+
+func (m *fourChan) getSubFolder(item *models.TrackedItem) string {
+	// don't categorize searches, so return empty string
+	if !m.settings.Search.CategorizeSearch {
+		return ""
+	}
+
+	// if we inherit the sub folder from the search item
+	// and the sub folder isn't empty return it instead of searching everytime
+	if m.settings.Search.InheritSubFolder && item.SubFolder != "" {
+		return item.SubFolder
+	}
+
+	folder := regexp.MustCompile(`.*search/(?:\w+/)?([^/?&]+).*`)
+	if folder.MatchString(item.URI) {
+		results := folder.FindStringSubmatch(item.URI)
+		if len(results) == 2 {
+			return fmt.Sprintf("search %s", results[1])
+		}
+	}
+
+	// no matches found for search
+	return ""
 }
 
 func (m *fourChan) getThreads(html string) (threads []string) {

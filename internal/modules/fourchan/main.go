@@ -2,6 +2,7 @@
 package fourchan
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -11,12 +12,21 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // fourChan contains the implementation of the ModuleInterface
 type fourChan struct {
 	*models.Module
 	threadPattern *regexp.Regexp
+	settings      *fourChanSettings
+}
+
+type fourChanSettings struct {
+	Search struct {
+		CategorizeSearch bool `mapstructure:"categorize_search"`
+		InheritSubFolder bool `mapstructure:"inherit_sub_folder"`
+	} `mapstructure:"search"`
 }
 
 // init function registers the bare and the normal module to the module factories
@@ -51,6 +61,12 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *fourChan) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
 

@@ -30,6 +30,10 @@ type nhentaiSettings struct {
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`
+	Search struct {
+		CategorizeSearch bool `mapstructure:"categorize_search"`
+		InheritSubFolder bool `mapstructure:"inherit_sub_folder"`
+	} `mapstructure:"search"`
 }
 
 // nolint: gochecknoinits

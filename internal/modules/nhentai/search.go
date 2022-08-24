@@ -25,6 +25,10 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		return err
 	}
 
+	if m.settings.Search.CategorizeSearch && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
+	}
+
 	if response.StatusCode == 503 {
 		return fmt.Errorf(
 			"returned status code was 503, check cloudflare.user_agent setting and cf_clearance cookie." +
@@ -125,6 +129,17 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 }
 
 func (m *nhentai) getSubFolder(item *models.TrackedItem) string {
+	// don't categorize searches, so return empty string
+	if !m.settings.Search.CategorizeSearch {
+		return ""
+	}
+
+	// if we inherit the sub folder from the search item
+	// and the sub folder isn't empty return it instead of searching everytime
+	if m.settings.Search.InheritSubFolder && item.SubFolder != "" {
+		return item.SubFolder
+	}
+
 	search := regexp.MustCompile(`https://nhentai.net/search/.*`)
 	if search.MatchString(item.URI) {
 		parsedUrl, _ := url.Parse(item.URI)

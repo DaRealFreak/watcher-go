@@ -25,6 +25,10 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		return err
 	}
 
+	if m.settings.Search.CategorizeSearch && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
+	}
+
 	var itemQueue []searchGalleryItem
 
 	html, _ := m.Session.GetDocument(response).Html()
@@ -123,6 +127,17 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 }
 
 func (m *ehentai) getSubFolder(item *models.TrackedItem) string {
+	// don't categorize searches, so return empty string
+	if !m.settings.Search.CategorizeSearch {
+		return ""
+	}
+
+	// if we inherit the sub folder from the search item
+	// and the sub folder isn't empty return it instead of searching everytime
+	if m.settings.Search.InheritSubFolder && item.SubFolder != "" {
+		return item.SubFolder
+	}
+
 	search := regexp.MustCompile(`https://exhentai.org/.*f_search=.*`)
 	if search.MatchString(item.URI) {
 		parsedUrl, _ := url.Parse(item.URI)

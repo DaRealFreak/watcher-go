@@ -41,10 +41,14 @@ type ehentai struct {
 }
 
 type ehentaiSettings struct {
-	Loop        bool                 `mapstructure:"loop"`
 	Proxy       http.ProxySettings   `mapstructure:"proxy"`
+	Loop        bool                 `mapstructure:"loop"`
 	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 	MultiProxy  bool                 `mapstructure:"multiproxy"`
+	Search      struct {
+		CategorizeSearch bool `mapstructure:"categorize_search"`
+		InheritSubFolder bool `mapstructure:"inherit_sub_folder"`
+	} `mapstructure:"search"`
 }
 
 // nolint: gochecknoinits
