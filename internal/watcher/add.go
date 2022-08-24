@@ -14,10 +14,12 @@ func (app *Watcher) AddItemByURI(uri string, currentItem string) {
 	normalizedUri, err := module.ModuleInterface.AddItem(uri)
 	raven.CheckError(err)
 
-	trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, "", module)
+	trackedItems := app.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 
-	if currentItem != "" {
-		app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
+	for _, trackedItem := range trackedItems {
+		if len(trackedItems) == 0 {
+			app.DbCon.UpdateTrackedItem(trackedItem, currentItem)
+		}
 	}
 }
 

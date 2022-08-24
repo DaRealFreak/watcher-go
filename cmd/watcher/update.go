@@ -221,26 +221,42 @@ func (cli *CliApplication) getDisableOAuthClientCommand() *cobra.Command {
 // getUpdateItemCommand returns the command for the update item sub command
 func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 	var (
-		url     string
-		current string
+		url       string
+		current   string
+		subFolder string
 	)
 
 	itemCmd := &cobra.Command{
 		Use:   "item",
 		Short: "updates the saved current item",
 		Long:  "updates the saved current item of an item in the database, creates an entry if it doesn't exist yet",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flags().Changed("current") && !cmd.Flags().Changed("subfolder") {
+				return fmt.Errorf("either current or subfolder is required as argument")
+			}
+
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-			trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
-			cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
+			trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+			for _, trackedItem := range trackedItems {
+				if cmd.Flags().Changed("current") {
+					cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
+				}
+
+				if cmd.Flags().Changed("subfolder") {
+					cli.watcher.DbCon.ChangeTrackedItemSubFolder(trackedItem, subFolder)
+				}
+			}
 		},
 	}
 
 	itemCmd.Flags().StringVarP(&url, "url", "u", "", "url of tracked item you want to update (required)")
 	itemCmd.Flags().StringVarP(&current, "current", "c", "", "current item in case you don't want to download older items")
+	itemCmd.Flags().StringVarP(&subFolder, "subfolder", "f", "", "subfolder path for additional grouping")
 
 	_ = itemCmd.MarkFlagRequired("url")
-	_ = itemCmd.MarkFlagRequired("current")
 
 	itemCmd.AddCommand(cli.getEnableItemCommand())
 	itemCmd.AddCommand(cli.getDisableItemCommand())
@@ -290,8 +306,10 @@ func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
-				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, false)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				for _, trackedItem := range trackedItems {
+					cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, false)
+				}
 			}
 		},
 	}
@@ -309,8 +327,10 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItem := cli.watcher.DbCon.GetFirstOrCreateTrackedItem(url, "", module)
-				cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, true)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				for _, trackedItem := range trackedItems {
+					cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, true)
+				}
 			}
 		},
 	}

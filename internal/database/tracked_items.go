@@ -31,11 +31,10 @@ func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
 
 // GetTrackedItems retrieves all tracked items from the sqlite database
 // if module is set limit the results use the passed module as restraint
-func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) []*models.TrackedItem {
+func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted bool) (items []*models.TrackedItem) {
 	var (
-		items []*models.TrackedItem
-		rows  *sql.Rows
-		err   error
+		rows *sql.Rows
+		err  error
 	)
 
 	if module == nil {
@@ -75,11 +74,10 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 }
 
 // GetTrackedItemsByDomain retrieves all tracked items from the sqlite database based on the domain
-func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) []*models.TrackedItem {
+func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (items []*models.TrackedItem) {
 	var (
-		items []*models.TrackedItem
-		rows  *sql.Rows
-		err   error
+		rows *sql.Rows
+		err  error
 	)
 
 	var stmt *sql.Stmt
@@ -134,6 +132,34 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module
 	}
 
 	return &item
+}
+
+// GetAllOrCreateTrackedItemIgnoreSubFolder checks if an item exists already, else creates it, ignores sub folders
+// returns the already persisted or the newly created item
+func (db *DbIO) GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module models.ModuleInterface) (items []*models.TrackedItem) {
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri = ? and module = ?")
+	defer raven.CheckClosure(stmt)
+	raven.CheckError(err)
+
+	rows, QueryErr := stmt.Query(uri, module.ModuleKey())
+	raven.CheckError(QueryErr)
+
+	defer raven.CheckClosure(rows)
+
+	for rows.Next() {
+		item := models.TrackedItem{}
+
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Complete)
+		raven.CheckError(err)
+
+		items = append(items, &item)
+	}
+
+	if len(items) == 0 {
+		items = append(items, db.GetFirstOrCreateTrackedItem(uri, "", module))
+	}
+
+	return items
 }
 
 // CreateTrackedItem inserts the passed uri and the module into the tracked_items table

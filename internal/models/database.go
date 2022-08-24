@@ -6,9 +6,10 @@ import "database/sql"
 type DatabaseInterface interface {
 	// tracked item storage functionality
 
-	GetTrackedItems(module ModuleInterface, includeCompleted bool) []*TrackedItem
-	GetTrackedItemsByDomain(domain string, includeCompleted bool) []*TrackedItem
+	GetTrackedItems(module ModuleInterface, includeCompleted bool) (items []*TrackedItem)
+	GetTrackedItemsByDomain(domain string, includeCompleted bool) (items []*TrackedItem)
 	GetFirstOrCreateTrackedItem(uri string, subFolder string, module ModuleInterface) *TrackedItem
+	GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module ModuleInterface) (items []*TrackedItem)
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
 	ChangeTrackedItemUri(trackedItem *TrackedItem, uri string)
 	CreateTrackedItem(uri string, subFolder string, module ModuleInterface)

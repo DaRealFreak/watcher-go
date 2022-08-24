@@ -127,14 +127,16 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 
 			normalizedUri, err := module.ModuleInterface.AddItem(itemURL)
 			raven.CheckError(err)
-			trackedItem := app.DbCon.GetFirstOrCreateTrackedItem(normalizedUri, "", module)
 
-			// skip completed item if we aren't forcing new
-			if trackedItem.Complete && !app.Cfg.Run.ForceNew {
-				continue
+			items := app.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
+			for _, trackedItem := range items {
+				// skip completed item if we aren't forcing new
+				if trackedItem.Complete && !app.Cfg.Run.ForceNew {
+					continue
+				}
+
+				trackedItems = append(trackedItems, trackedItem)
 			}
-
-			trackedItems = append(trackedItems, trackedItem)
 		}
 	case len(app.Cfg.Run.ModuleURL) > 0:
 		for _, moduleURL := range app.Cfg.Run.ModuleURL {
