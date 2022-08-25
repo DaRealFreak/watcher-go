@@ -24,8 +24,9 @@ type fourChan struct {
 
 type fourChanSettings struct {
 	Search struct {
-		CategorizeSearch bool `mapstructure:"categorize_search"`
-		InheritSubFolder bool `mapstructure:"inherit_sub_folder"`
+		BlacklistedTags  []string `mapstructure:"blacklisted_tags"`
+		CategorizeSearch bool     `mapstructure:"categorize_search"`
+		InheritSubFolder bool     `mapstructure:"inherit_sub_folder"`
 	} `mapstructure:"search"`
 }
 

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
@@ -33,6 +35,18 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 
 		html, _ := m.Session.GetDocument(res).Html()
 		threadTitle := m.getThreadTitle(html)
+		for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
+			if strings.Contains(strings.ToLower(threadTitle), strings.ToLower(blacklistedTag)) {
+				log.WithField("module", m.Key).Warnf(
+					"thread title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+					threadTitle,
+					blacklistedTag,
+				)
+				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+				return nil
+			}
+		}
+
 		contentUrls := m.getThreadContents(html)
 
 		keys := make([]int, 0, len(contentUrls))

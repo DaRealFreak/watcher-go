@@ -9,6 +9,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
+	log "github.com/sirupsen/logrus"
 )
 
 // parseGallery parses the tracked item if we detected a tracked gallery
@@ -30,6 +31,18 @@ func (m *nhentai) parseGallery(item *models.TrackedItem) error {
 	var downloadQueue []models.DownloadQueueItem
 
 	galleryTitle := m.extractGalleryTitle(html)
+	for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
+		if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
+			log.WithField("module", m.Key).Warnf(
+				"gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+				galleryTitle,
+				blacklistedTag,
+			)
+			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+			return nil
+		}
+	}
+
 	galleryItems := m.getGalleryImageUrls(html, galleryTitle)
 
 	// iterate backwards over the items to be able to break on the first match
