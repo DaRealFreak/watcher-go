@@ -164,15 +164,52 @@ func (m *ehentai) downloadItemSession(
 		return
 	}
 
+	if err = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index); err != nil {
+		if downloadQueueItem.FallbackFileURI == "" {
+			downloadSession.occurredError = err
+			downloadSession.inUse = false
+			m.multiProxy.waitGroup.Done()
+			return
+		}
+
+		if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 {
+			data.uri = downloadQueueItem.FallbackFileURI
+			fallback, fallbackErr := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
+			if fallbackErr != nil {
+				downloadSession.occurredError = fallbackErr
+				downloadSession.inUse = false
+				m.multiProxy.waitGroup.Done()
+				return
+			}
+
+			log.WithField("module", m.Key).Warnf(
+				"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+				data.uri,
+				fallback.FileURI,
+			)
+
+			downloadQueueItem.FileURI = fallback.FileURI
+			downloadQueueItem.FallbackFileURI = ""
+
+			// retry the fallback once and override the previous error with the new result
+			downloadSession.occurredError = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index)
+		}
+	}
+
+	downloadSession.inUse = false
+	m.multiProxy.waitGroup.Done()
+}
+
+func (m *ehentai) downloadImageSession(
+	downloadSession *proxySession, trackedItem *models.TrackedItem, downloadQueueItem *models.DownloadQueueItem, index int,
+) error {
 	// check for limit
 	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 		log.WithField("module", m.Key).Info("download limit reached, skipping galleries from now on")
 		m.downloadLimitReached = true
 
-		downloadSession.occurredError = fmt.Errorf("download limit reached")
-		m.multiProxy.waitGroup.Done()
-		return
+		return fmt.Errorf("download limit reached")
 	}
 
 	downloadSession.occurredError = downloadSession.session.DownloadFile(
@@ -185,10 +222,6 @@ func (m *ehentai) downloadItemSession(
 		),
 		downloadQueueItem.FileURI,
 	)
-
-	// if error == 404
-	// img normally has onerror tag: onerror="this.onerror=null; nl('43323-460857')"
-	// -> current url + "?nl=43323-460857
 
 	if downloadSession.occurredError == nil {
 		downloadSession.inUse = false
@@ -207,5 +240,5 @@ func (m *ehentai) downloadItemSession(
 		}
 	}
 
-	m.multiProxy.waitGroup.Done()
+	return downloadSession.occurredError
 }

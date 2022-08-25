@@ -2,6 +2,7 @@ package ehentai
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/http"
@@ -168,9 +169,10 @@ func (m *ehentai) getDownloadQueueItem(
 	}
 
 	document := downloadSession.GetDocument(response)
-	imageURL, _ := document.Find("img#img").Attr("src")
+	imageTag := document.Find("img#img")
+	imageURL, _ := imageTag.Attr("src")
 
-	return &models.DownloadQueueItem{
+	downloadQueueItem := &models.DownloadQueueItem{
 		ItemID: item.id,
 		DownloadTag: fmt.Sprintf(
 			"%s (%s)",
@@ -179,7 +181,19 @@ func (m *ehentai) getDownloadQueueItem(
 		),
 		FileName: m.galleryImageIndexPattern.FindStringSubmatch(item.id)[1] + "_" + fp.GetFileName(imageURL),
 		FileURI:  imageURL,
-	}, nil
+	}
+
+	if onError, exists := imageTag.Attr("onerror"); exists {
+		fallbackRegexp := regexp.MustCompile(`this.onerror=null; nl\('(\d+-\d+)'\)`)
+		if fallbackRegexp.MatchString(onError) {
+			matches := fallbackRegexp.FindStringSubmatch(onError)
+			if len(matches) == 2 {
+				downloadQueueItem.FallbackFileURI = item.uri + "?nl=" + matches[1]
+			}
+		}
+	}
+
+	return downloadQueueItem, nil
 }
 
 // extractGalleryTitle extracts the gallery title from the passed HTML

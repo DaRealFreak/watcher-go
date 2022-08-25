@@ -176,15 +176,46 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 		return err
 	}
 
+	if err = m.downloadImage(trackedItem, downloadQueueItem); err != nil {
+		if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 && downloadQueueItem.FallbackFileURI != "" {
+			data.uri = downloadQueueItem.FallbackFileURI
+			fallback, fallbackErr := m.getDownloadQueueItem(m.Session, trackedItem, data)
+			if fallbackErr != nil {
+				return fallbackErr
+			}
+
+			log.WithField("module", m.Key).Warnf(
+				"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+				data.uri,
+				fallback.FileURI,
+			)
+
+			downloadQueueItem.FileURI = fallback.FileURI
+			downloadQueueItem.FallbackFileURI = ""
+
+			// retry the fallback once and return that error (if occurred)
+			return m.downloadImage(trackedItem, downloadQueueItem)
+		}
+		// if not returned from the previous checks just return the error
+		return err
+	}
+
+	// if no error occurred update the tracked item
+	m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
+
+	return nil
+}
+
+func (m *ehentai) downloadImage(trackedItem *models.TrackedItem, downloadQueueItem *models.DownloadQueueItem) error {
 	// check for limit
 	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
 		if m.settings.Loop {
-			if err = m.setProxyMethod(); err != nil {
+			if err := m.setProxyMethod(); err != nil {
 				return err
 			}
 
-			return m.downloadItem(trackedItem, data)
+			return m.downloadImage(trackedItem, downloadQueueItem)
 		}
 
 		log.WithField("module", m.Key).Info("download limit reached, skipping galleries from now on")
@@ -193,7 +224,7 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 		return fmt.Errorf("download limit reached")
 	}
 
-	err = m.Session.DownloadFile(
+	return m.Session.DownloadFile(
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
@@ -203,14 +234,6 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 		),
 		downloadQueueItem.FileURI,
 	)
-	if err != nil {
-		return err
-	}
-
-	// if no error occurred update the tracked item
-	m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
-
-	return nil
 }
 
 // setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
