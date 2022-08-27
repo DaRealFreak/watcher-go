@@ -19,15 +19,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type StatusError struct {
-	error
-	StatusCode int
-}
-
-func (e StatusError) Error() string {
-	return fmt.Sprintf("unexpected status code: %d", e.StatusCode)
-}
-
 // DefaultSession is an extension to the implemented SessionInterface for HTTP sessions
 type DefaultSession struct {
 	watcherHttp.Session
