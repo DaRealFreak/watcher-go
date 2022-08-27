@@ -172,28 +172,27 @@ func (m *ehentai) downloadItemSession(
 			return
 		}
 
-		if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 {
-			data.uri = downloadQueueItem.FallbackFileURI
-			fallback, fallbackErr := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
-			if fallbackErr != nil {
-				downloadSession.occurredError = fallbackErr
-				downloadSession.inUse = false
-				m.multiProxy.waitGroup.Done()
-				return
-			}
-
-			log.WithField("module", m.Key).Warnf(
-				"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
-				data.uri,
-				fallback.FileURI,
-			)
-
-			downloadQueueItem.FileURI = fallback.FileURI
-			downloadQueueItem.FallbackFileURI = ""
-
-			// retry the fallback once and override the previous error with the new result
-			downloadSession.occurredError = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index)
+		// we have a fallback URI
+		data.uri = downloadQueueItem.FallbackFileURI
+		fallback, fallbackErr := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
+		if fallbackErr != nil {
+			downloadSession.occurredError = fallbackErr
+			downloadSession.inUse = false
+			m.multiProxy.waitGroup.Done()
+			return
 		}
+
+		log.WithField("module", m.Key).Warnf(
+			"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+			data.uri,
+			fallback.FileURI,
+		)
+
+		downloadQueueItem.FileURI = fallback.FileURI
+		downloadQueueItem.FallbackFileURI = ""
+
+		// retry the fallback once and override the previous error with the new result
+		downloadSession.occurredError = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index)
 	}
 
 	downloadSession.inUse = false

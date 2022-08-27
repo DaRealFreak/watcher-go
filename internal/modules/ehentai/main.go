@@ -177,7 +177,7 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 	}
 
 	if err = m.downloadImage(trackedItem, downloadQueueItem); err != nil {
-		if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 && downloadQueueItem.FallbackFileURI != "" {
+		if downloadQueueItem.FallbackFileURI != "" {
 			data.uri = downloadQueueItem.FallbackFileURI
 			fallback, fallbackErr := m.getDownloadQueueItem(m.Session, trackedItem, data)
 			if fallbackErr != nil {
