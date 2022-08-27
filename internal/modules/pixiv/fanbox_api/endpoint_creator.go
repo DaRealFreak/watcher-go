@@ -91,10 +91,10 @@ func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfo, error) {
 
 	res, err := a.Session.Get(url)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	if err := a.mapAPIResponse(res, &postInfo); err != nil {
+	if err = a.mapAPIResponse(res, &postInfo); err != nil {
 		return nil, err
 	}
 

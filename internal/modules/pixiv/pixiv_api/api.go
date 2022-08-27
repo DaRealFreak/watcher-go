@@ -33,7 +33,7 @@ type PixivAPI struct {
 // NewPixivAPI returned a pixiv API struct with already configured round trips
 func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer string) *PixivAPI {
 	return &PixivAPI{
-		Session: session.NewSession(moduleKey),
+		Session: session.NewSession(moduleKey, PixivErrorHandler{}, session.DefaultErrorHandler{}),
 		OAuth2Config: &oauth2.Config{
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",

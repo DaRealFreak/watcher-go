@@ -20,6 +20,10 @@ type MobileAPIError struct {
 	} `json:"error"`
 }
 
+type OffsetError struct {
+	APIError
+}
+
 // IllustrationUnavailableError will get returned from the illustration detail API request
 // if the illustration got either deleted or made unavailable in general
 type IllustrationUnavailableError struct {

@@ -1,17 +1,20 @@
 package pixiv
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	pixivapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 )
 
 func (m *pixiv) parseUser(item *models.TrackedItem) error {
 	userID, _ := strconv.ParseInt(m.patterns.memberPattern.FindStringSubmatch(item.URI)[1], 10, 64)
 
-	_, err := m.mobileAPI.GetUserDetail(int(userID))
+	userDetail, err := m.mobileAPI.GetUserDetail(int(userID))
 	if err != nil {
 		switch err.(type) {
 		case pixivapi.UserUnavailableError:
@@ -25,6 +28,10 @@ func (m *pixiv) parseUser(item *models.TrackedItem) error {
 		default:
 			return err
 		}
+	}
+
+	if m.settings.UseSubFolderAsUsername && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, userDetail.User.Name)
 	}
 
 	var downloadQueue []*downloadQueueItem
@@ -42,7 +49,7 @@ func (m *pixiv) parseUser(item *models.TrackedItem) error {
 			if item.CurrentItem == "" || illustration.ID > int(currentItemID) {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
 					ItemID:       illustration.ID,
-					DownloadTag:  illustration.User.GetUserTag(),
+					DownloadTag:  m.getIllustDownloadTag(item, illustration.User),
 					DownloadItem: illustration,
 				})
 			} else {
@@ -67,4 +74,16 @@ func (m *pixiv) parseUser(item *models.TrackedItem) error {
 	}
 
 	return m.processDownloadQueue(downloadQueue, item)
+}
+
+func (m *pixiv) getIllustDownloadTag(item *models.TrackedItem, user mobileapi.UserInfo) string {
+	if m.settings.UseSubFolderAsUsername && item.SubFolder != "" {
+		return fmt.Sprintf(
+			"%d/%s",
+			user.ID,
+			fp.TruncateMaxLength(fp.SanitizePath(item.SubFolder, false)),
+		)
+	} else {
+		return user.GetUserTag()
+	}
 }

@@ -30,11 +30,18 @@ type DefaultErrorHandler struct {
 func (e DefaultErrorHandler) CheckResponse(response *http.Response) (error error, fatal bool) {
 	switch {
 	case response.StatusCode < 400:
+		// everything is okay
 		return nil, false
-	default:
+	case response.StatusCode == 403 || response.StatusCode == 404:
+		// return 403 and 404 status codes as fatal
 		return StatusError{
 			StatusCode: response.StatusCode,
 		}, true
+	default:
+		// retry other status codes
+		return StatusError{
+			StatusCode: response.StatusCode,
+		}, false
 	}
 }
 

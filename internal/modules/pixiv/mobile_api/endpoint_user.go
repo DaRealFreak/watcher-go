@@ -95,11 +95,11 @@ func (a *MobileAPI) GetUserIllustsByURL(url string) (*UserIllusts, error) {
 
 	res, err := a.Session.Get(url)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var userIllusts UserIllusts
-	if err := a.MapAPIResponse(res, &userIllusts); err != nil {
+	if err = a.MapAPIResponse(res, &userIllusts); err != nil {
 		return nil, err
 	}
 

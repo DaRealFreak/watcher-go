@@ -34,7 +34,8 @@ type pixiv struct {
 }
 
 type pixivSettings struct {
-	Animation struct {
+	UseSubFolderAsUsername bool `mapstructure:"use_sub_folder_as_username"`
+	Animation              struct {
 		Format                string `mapstructure:"format"`
 		LowQualityGifFallback bool   `mapstructure:"fallback_gif"`
 	} `mapstructure:"animation"`

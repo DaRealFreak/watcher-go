@@ -75,7 +75,7 @@ func (a *MobileAPI) GetSearchIllustByURL(url string) (*SearchIllust, error) {
 
 	res, err := a.Session.Get(url)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var searchIllust SearchIllust

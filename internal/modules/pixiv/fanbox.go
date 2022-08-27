@@ -1,10 +1,13 @@
 package pixiv
 
 import (
+	"fmt"
 	"path"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
 func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
@@ -27,7 +30,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 			if item.CurrentItem == "" || postID != currentItemID {
 				downloadQueue = append(downloadQueue, &downloadQueueItem{
 					ItemID:       int(postID),
-					DownloadTag:  path.Join(fanboxPost.User.GetUserTag(), "fanbox"),
+					DownloadTag:  path.Join(m.getFanboxDownloadTag(item, fanboxPost.User), "fanbox"),
 					DownloadItem: fanboxPost,
 				})
 			} else {
@@ -52,4 +55,16 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 	}
 
 	return m.processDownloadQueue(downloadQueue, item)
+}
+
+func (m *pixiv) getFanboxDownloadTag(item *models.TrackedItem, user fanboxapi.FanboxUser) string {
+	if m.settings.UseSubFolderAsUsername && item.SubFolder != "" {
+		return fmt.Sprintf(
+			"%s/%s",
+			user.UserID,
+			fp.TruncateMaxLength(fp.SanitizePath(item.SubFolder, false)),
+		)
+	} else {
+		return user.GetUserTag()
+	}
 }
