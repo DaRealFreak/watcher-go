@@ -13,6 +13,10 @@ import (
 )
 
 func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName string) (err error) {
+	if m.settings.UseSubFolderForAuthorName && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, screenName)
+	}
+
 	var userId string
 	if m.normalizedUriRegexp.MatchString(item.URI) {
 		userId, err = m.extractId(item.URI)
@@ -111,6 +115,10 @@ func (m *twitter) parsePageDeveloperApi(item *models.TrackedItem, screenName str
 
 		userId = userInformation.Data.ID.String()
 		userName = userInformation.Data.Username
+	}
+
+	if m.settings.UseSubFolderForAuthorName && item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, userName)
 	}
 
 	var (

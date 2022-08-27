@@ -34,7 +34,7 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 				path.Join(
 					viper.GetString("download.directory"),
 					m.Key,
-					fp.TruncateMaxLength(fp.SanitizePath(downloadItem.DownloadTag, false)),
+					fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(trackedItem, downloadItem), false)),
 					fp.TruncateMaxLength(fp.SanitizePath(downloadItem.FileName, false)),
 				),
 				downloadItem.FileURI,
@@ -106,13 +106,13 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 							path.Join(
 								viper.GetString("download.directory"),
 								m.Key,
-								fp.SanitizePath(tweet.AuthorName, false),
-								fmt.Sprintf(
+								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTagFromTweet(trackedItem, tweet), false)),
+								fp.TruncateMaxLength(fmt.Sprintf(
 									"%s_%s_%d_%s",
 									tweet.ID, tweet.AuthorID.String(),
 									i+1,
 									fp.GetFileName(entity.VideoInfo.Variants[highestBitRateIndex].URL),
-								),
+								)),
 							),
 							entity.VideoInfo.Variants[highestBitRateIndex].URL,
 						); err != nil {
@@ -125,8 +125,8 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 					path.Join(
 						viper.GetString("download.directory"),
 						m.Key,
-						fp.SanitizePath(tweet.AuthorName, false),
-						fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, fp.GetFileName(media.URL)),
+						fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTagFromTweet(trackedItem, tweet), false)),
+						fp.TruncateMaxLength(fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, fp.GetFileName(media.URL))),
 					),
 					media.URL,
 				); err != nil {
@@ -139,4 +139,20 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 	}
 
 	return nil
+}
+
+func (m *twitter) getDownloadTag(item *models.TrackedItem, downloadItem *models.DownloadQueueItem) string {
+	if m.settings.UseSubFolderForAuthorName && item.SubFolder != "" {
+		return item.SubFolder
+	}
+
+	return downloadItem.DownloadTag
+}
+
+func (m *twitter) getDownloadTagFromTweet(item *models.TrackedItem, downloadItem api.TweetV2) string {
+	if m.settings.UseSubFolderForAuthorName && item.SubFolder != "" {
+		return item.SubFolder
+	}
+
+	return downloadItem.AuthorName
 }
