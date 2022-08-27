@@ -35,8 +35,8 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		response, err = m.mobileAPI.GetSearchIllust(searchWord, searchMode, mobileapi.SearchOrderDateDescending, offset, 0, startDate, endDate)
-		if err != nil {
-			if _, ok := err.(pixivapi.OffsetError); ok {
+		if err != nil || len(response.Illustrations) == 0 {
+			if _, ok := err.(pixivapi.OffsetError); ok || (err == nil && len(response.Illustrations) == 0) {
 				if len(downloadQueue) > 0 {
 					lastIllustration := downloadQueue[len(downloadQueue)-1].DownloadItem.(mobileapi.Illustration)
 					offset = 0
@@ -45,7 +45,9 @@ func (m *pixiv) parseSearch(item *models.TrackedItem) error {
 					startDate = &tmp
 					continue
 				}
-			} else {
+			}
+
+			if err != nil {
 				return err
 			}
 		}
