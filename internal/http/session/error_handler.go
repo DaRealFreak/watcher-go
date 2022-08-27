@@ -24,22 +24,17 @@ func (e WrittenSizeError) Error() string {
 	return e.Message
 }
 
-type Errorhandler interface {
-	CheckResponse(response *http.Response) error
-	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
-}
-
 type DefaultErrorHandler struct {
 }
 
-func (e DefaultErrorHandler) CheckResponse(response *http.Response) error {
+func (e DefaultErrorHandler) CheckResponse(response *http.Response) (error error, fatal bool) {
 	switch {
 	case response.StatusCode < 400:
-		return nil
+		return nil, false
 	default:
 		return StatusError{
 			StatusCode: response.StatusCode,
-		}
+		}, true
 	}
 }
 

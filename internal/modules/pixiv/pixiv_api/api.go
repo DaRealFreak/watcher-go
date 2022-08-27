@@ -94,15 +94,15 @@ func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err e
 			mobileAPIError MobileAPIError
 		)
 
-		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+		if err = json.Unmarshal([]byte(content), &apiErr); err == nil {
 			return apiErr
 		}
 
-		if err := json.Unmarshal([]byte(content), &apiReqErr); err == nil {
+		if err = json.Unmarshal([]byte(content), &apiReqErr); err == nil {
 			return &apiReqErr
 		}
 
-		if err := json.Unmarshal([]byte(content), &mobileAPIError); err == nil {
+		if err = json.Unmarshal([]byte(content), &mobileAPIError); err == nil {
 			return &mobileAPIError
 		}
 
@@ -110,7 +110,7 @@ func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err e
 	}
 
 	// unmarshal the request content into the response struct
-	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+	if err = json.Unmarshal([]byte(content), &apiRes); err != nil {
 		return err
 	}
 

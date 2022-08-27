@@ -10,12 +10,16 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
+
 	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"golang.org/x/time/rate"
 )
+
+const CookieAuth = "auth_token"
 
 // TwitterGraphQlAPI contains all required items to communicate with the GraphQL API
 type TwitterGraphQlAPI struct {
@@ -26,7 +30,7 @@ type TwitterGraphQlAPI struct {
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
-	graphQLSession := NewTwitterSession(moduleKey)
+	graphQLSession := session.NewSession(moduleKey, TwitterErrorHandler{})
 
 	client := graphQLSession.GetClient()
 	options := cloudflarebp.GetDefaultOptions()

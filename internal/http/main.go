@@ -3,14 +3,12 @@ package http
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,16 +19,20 @@ import (
 
 // SessionInterface of used functions from the application to eventually change the underlying library
 type SessionInterface interface {
-	Get(uri string) (response *http.Response, err error)
-	Post(uri string, data url.Values) (response *http.Response, err error)
-	DownloadFile(filepath string, uri string) (err error)
+	Get(uri string, errorHandlers ...ErrorHandler) (response *http.Response, err error)
+	Post(uri string, data url.Values, errorHandlers ...ErrorHandler) (response *http.Response, err error)
+	DownloadFile(filepath string, uri string, errorHandlers ...ErrorHandler) (err error)
 	EnsureDownloadDirectory(fileName string)
-	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() *http.Client
 	UpdateTreeFolderChangeTimes(filePath string)
 	SetProxy(proxySettings *ProxySettings) (err error)
 	SetClient(client *http.Client)
+}
+
+type ErrorHandler interface {
+	CheckResponse(response *http.Response) (error error, fatal bool)
+	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
@@ -61,26 +63,6 @@ func (s *Session) EnsureDownloadDirectory(fileName string) {
 	}
 }
 
-// CheckDownloadedFileForErrors compares the downloaded file with the content length header of the request if set
-// also checks if the written bytes are more not equal or less than 0 which is definitely an unwanted result
-func (s *Session) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error) {
-	if val, ok := responseHeader["Content-Length"]; ok {
-		var fileSize int
-		fileSize, err = strconv.Atoi(val[0])
-		if err == nil {
-			if writtenSize != int64(fileSize) {
-				return fmt.Errorf("written file size doesn't match the header content length value")
-			}
-		}
-	}
-
-	if writtenSize <= 0 {
-		err = fmt.Errorf("written content has a size of 0 bytes")
-	}
-
-	return err
-}
-
 // GetDocument converts the http response to a *goquery.Document
 func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	var (
@@ -103,8 +85,8 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 
 	defer raven.CheckClosure(reader)
 
-	document, err := goquery.NewDocumentFromReader(reader)
-	raven.CheckError(err)
+	document, documentErr := goquery.NewDocumentFromReader(reader)
+	raven.CheckError(documentErr)
 
 	return document
 }
@@ -112,31 +94,29 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 // UpdateTreeFolderChangeTimes recursively updates the folder access and modification times
 // to indicate changes in the data for file explorers
 func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
-	filePath, err := filepath.Abs(filePath)
-	if err != nil {
+	absFilePath, absErr := filepath.Abs(filePath)
+	if absErr != nil {
 		return
 	}
 
-	baseDirectory, err := filepath.Abs(viper.GetString("download.directory"))
-	if err != nil {
+	baseDirectory, baseDirErr := filepath.Abs(viper.GetString("download.directory"))
+	if baseDirErr != nil {
 		return
 	}
 
 	for {
-		parentDir := filepath.Dir(filePath)
+		parentDir := filepath.Dir(absFilePath)
 		// if we reached the top level or the module directory we break the update loop
-		if parentDir == filePath || parentDir == baseDirectory {
+		if parentDir == absFilePath || parentDir == baseDirectory {
 			break
 		}
 
 		currentTime := time.Now().Local()
-
-		err = os.Chtimes(parentDir, currentTime, currentTime)
-		if err != nil {
+		if err := os.Chtimes(parentDir, currentTime, currentTime); err != nil {
 			return
 		}
 
 		// update our file path for the parent folder
-		filePath = parentDir
+		absFilePath = parentDir
 	}
 }

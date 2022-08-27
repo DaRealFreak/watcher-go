@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -58,17 +60,18 @@ func (m *gdrive) downloadFiles(sortedFiles []*drive.File, item *models.TrackedIt
 			return fmt.Errorf("unexpected returned status code: %d", res.StatusCode)
 		}
 
-		localFile, err := os.Create(localFilePath)
-		if err != nil {
-			return err
+		localFile, localFileErr := os.Create(localFilePath)
+		if localFileErr != nil {
+			return localFileErr
 		}
 
-		written, err := io.Copy(localFile, res.Body)
-		if err != nil {
-			return err
+		written, copyErr := io.Copy(localFile, res.Body)
+		if copyErr != nil {
+			return copyErr
 		}
 
-		if err := m.Session.CheckDownloadedFileForErrors(written, res.Header); err != nil {
+		errorHandler := session.DefaultErrorHandler{}
+		if err = errorHandler.CheckDownloadedFileForErrors(written, res.Header); err != nil {
 			return err
 		}
 
