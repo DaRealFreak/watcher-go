@@ -20,7 +20,7 @@ func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
 			subfolder     VARCHAR(255) DEFAULT '',
 			current_item  VARCHAR(255) DEFAULT '',
 			module        VARCHAR(255) DEFAULT '' NOT NULL ,
-			last_modified DATETIME 	   DEFAULT strftime('%s', 'now'),
+			last_modified DATETIME 	   DEFAULT (strftime('%s','now')),
 			complete      BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`

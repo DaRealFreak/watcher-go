@@ -45,8 +45,7 @@ func (db *DbIO) CloseConnection() {
 // RemoveDatabase removes the currently set database, used primarily for unit tests
 func RemoveDatabase() {
 	if _, err := os.Stat(viper.GetString("Database.Path")); err == nil {
-		err := os.Remove(viper.GetString("Database.Path"))
-		if err != nil {
+		if err = os.Remove(viper.GetString("Database.Path")); err != nil {
 			panic(err)
 		}
 	}
