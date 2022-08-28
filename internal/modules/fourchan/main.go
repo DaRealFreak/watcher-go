@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -18,8 +19,12 @@ import (
 // fourChan contains the implementation of the ModuleInterface
 type fourChan struct {
 	*models.Module
-	threadPattern *regexp.Regexp
-	settings      *fourChanSettings
+	threadPattern  *regexp.Regexp
+	settings       *fourChanSettings
+	multiThreading struct {
+		filteredDownloadQueue []models.DownloadQueueItem
+		waitGroup             sync.WaitGroup
+	}
 }
 
 type fourChanSettings struct {

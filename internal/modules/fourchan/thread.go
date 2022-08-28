@@ -61,11 +61,6 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 
 		for _, itemID := range keys {
 			if item.CurrentItem == "" || itemID > int(currentItemID) {
-				// filter out deleted/not indexed entries
-				if res, _ = m.Session.GetClient().Get(contentUrls[itemID]); res.StatusCode == 404 {
-					continue
-				}
-
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemID:      strconv.Itoa(itemID),
 					DownloadTag: fmt.Sprintf("%s (%s)", threadTitle, threadID),
@@ -74,6 +69,8 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 				})
 			}
 		}
+
+		downloadQueue = m.filterDownloadQueue(downloadQueue)
 
 		if err = m.ProcessDownloadQueue(downloadQueue, item); err != nil {
 			return err
@@ -86,6 +83,44 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 	}
 
 	return nil
+}
+
+func (m *fourChan) filterDownloadQueue(downloadQueue []models.DownloadQueueItem) []models.DownloadQueueItem {
+	log.WithField("module", m.Key).Infof(
+		"checking availability of %d found items",
+		len(downloadQueue),
+	)
+
+	// reset possible previous download queues
+	m.multiThreading.filteredDownloadQueue = []models.DownloadQueueItem{}
+
+	// limit to 4 routines at the same time
+	guard := make(chan struct{}, 4)
+	for _, downloadQueueItem := range downloadQueue {
+		guard <- struct{}{}
+		m.multiThreading.waitGroup.Add(1)
+		go func(downloadQueueItem models.DownloadQueueItem) {
+			m.checkDownloadQueueItem(downloadQueueItem)
+			<-guard
+			m.multiThreading.waitGroup.Done()
+		}(downloadQueueItem)
+	}
+
+	m.multiThreading.waitGroup.Wait()
+
+	return m.multiThreading.filteredDownloadQueue
+}
+
+func (m *fourChan) checkDownloadQueueItem(downloadQueueItem models.DownloadQueueItem) {
+	if res, _ := m.Session.GetClient().Get(downloadQueueItem.FileURI); res.StatusCode == 404 {
+		log.WithField("module", m.Key).Debugf(
+			"received 404 status code trying to reach url \"%s\", skipping item",
+			downloadQueueItem.FileURI,
+		)
+		return
+	}
+
+	m.multiThreading.filteredDownloadQueue = append(m.multiThreading.filteredDownloadQueue, downloadQueueItem)
 }
 
 func (m *fourChan) getThreadTitle(html string) (title string) {
