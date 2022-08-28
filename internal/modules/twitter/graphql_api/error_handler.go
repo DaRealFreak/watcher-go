@@ -58,7 +58,7 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 			return DMCAError{}, true
 		}
 	case response.StatusCode == 404:
-		if strings.Contains(response.Request.URL.String(), "https://pbs.twimg.com/media/") {
+		if strings.Contains(response.Request.URL.Hostname(), ".twimg.com") {
 			return DeletedMediaError{}, true
 		}
 	}
