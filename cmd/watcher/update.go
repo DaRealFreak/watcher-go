@@ -258,8 +258,13 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 
 	_ = itemCmd.MarkFlagRequired("url")
 
+	// enable/disable status
 	itemCmd.AddCommand(cli.getEnableItemCommand())
 	itemCmd.AddCommand(cli.getDisableItemCommand())
+
+	// favorite status
+	itemCmd.AddCommand(cli.getFavoriteItemCommand())
+	itemCmd.AddCommand(cli.getUnfavoriteItemCommand())
 
 	return itemCmd
 }
@@ -336,6 +341,48 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 	}
 
 	return enableCmd
+}
+
+// getFavoriteItemCommand returns the command for the update item favorite sub command
+func (cli *CliApplication) getFavoriteItemCommand() *cobra.Command {
+	favoriteCmd := &cobra.Command{
+		Use:   "favorite [urls]",
+		Short: "favorites passed items",
+		Long:  "changes the favorite status on the passed items to true, causing them to get updated first",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, url := range args {
+				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				for _, trackedItem := range trackedItems {
+					cli.watcher.DbCon.ChangeTrackedItemFavoriteStatus(trackedItem, true)
+				}
+			}
+		},
+	}
+
+	return favoriteCmd
+}
+
+// getDisableItemCommand returns the command for the update item disable sub command
+func (cli *CliApplication) getUnfavoriteItemCommand() *cobra.Command {
+	unfavoriteCmd := &cobra.Command{
+		Use:   "unfavorite [urls]",
+		Short: "removes passed items from favorites",
+		Long:  "changes the favorite status on the passed items to false, causing them to get updated chronically",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, url := range args {
+				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				for _, trackedItem := range trackedItems {
+					cli.watcher.DbCon.ChangeTrackedItemFavoriteStatus(trackedItem, false)
+				}
+			}
+		},
+	}
+
+	return unfavoriteCmd
 }
 
 // getEnableCookieCommand returns the command for the update cookie enable sub command
