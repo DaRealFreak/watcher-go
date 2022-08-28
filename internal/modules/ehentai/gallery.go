@@ -146,11 +146,6 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 		return true, newGalleryItem
 	}
 
-	if strings.Contains(html, "Your IP address has been temporarily banned for excessive pageloads") {
-		log.WithField("module", m.Key).Warning("your ip address has been temporarily banned for excessive pageloads")
-		return true, nil
-	}
-
 	if strings.Contains(html, "document.location = \"https://exhentai.org/\";") {
 		log.WithField("module", m.Key).Warning("this gallery has been removed due to a copyright claim")
 		return true, nil

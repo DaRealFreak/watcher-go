@@ -32,11 +32,6 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	var itemQueue []searchGalleryItem
 
 	html, _ := m.Session.GetDocument(response).Html()
-
-	if strings.Contains(html, "Your IP address has been temporarily banned for excessive pageloads") {
-		return fmt.Errorf("your IP address has been temporarily banned for excessive pageloads")
-	}
-
 	foundCurrentItem := false
 
 	for !foundCurrentItem {
