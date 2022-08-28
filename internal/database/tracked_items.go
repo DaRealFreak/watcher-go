@@ -21,6 +21,7 @@ func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
 			current_item  VARCHAR(255) DEFAULT '',
 			module        VARCHAR(255) DEFAULT '' NOT NULL ,
 			last_modified DATETIME 	   DEFAULT (strftime('%s','now')),
+			favorite      BOOLEAN      DEFAULT FALSE NOT NULL,
 			complete      BOOLEAN      DEFAULT FALSE NOT NULL
 		);
 	`
@@ -39,17 +40,17 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 
 	if module == nil {
 		if includeCompleted {
-			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items ORDER BY module, uid")
+			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items ORDER BY module, favorite DESC, uid")
 		} else {
-			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE NOT complete ORDER BY module, uid")
+			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete ORDER BY module, favorite DESC, uid")
 		}
 	} else {
 		var stmt *sql.Stmt
 
 		if includeCompleted {
-			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE module = ? ORDER BY uid")
+			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE module = ? ORDER BY favorite DESC, uid")
 		} else {
-			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE NOT complete AND module = ? ORDER BY uid")
+			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete AND module = ? ORDER BY favorite DESC, uid")
 		}
 		defer raven.CheckClosure(stmt)
 		raven.CheckError(err)
@@ -64,7 +65,7 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -83,9 +84,9 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 	var stmt *sql.Stmt
 
 	if includeCompleted {
-		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri LIKE ? ORDER BY uid")
+		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri LIKE ? ORDER BY favorite DESC, uid")
 	} else {
-		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE NOT complete AND uri LIKE ? ORDER BY uid")
+		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete AND uri LIKE ? ORDER BY favorite DESC, uid")
 	}
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
@@ -98,7 +99,7 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -110,7 +111,7 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 // GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
 func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module models.ModuleInterface) *models.TrackedItem {
-	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri = ? and subfolder = ? and module = ?")
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri = ? and subfolder = ? and module = ?")
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
@@ -123,7 +124,7 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module
 
 	if rows.Next() {
 		// item already persisted
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
 		raven.CheckError(err)
 	} else {
 		// create the item and call the same function again
@@ -137,7 +138,7 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module
 // GetAllOrCreateTrackedItemIgnoreSubFolder checks if an item exists already, else creates it, ignores sub folders
 // returns the already persisted or the newly created item
 func (db *DbIO) GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module models.ModuleInterface) (items []*models.TrackedItem) {
-	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, complete FROM tracked_items WHERE uri = ? and module = ?")
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri = ? and module = ?")
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
@@ -149,7 +150,7 @@ func (db *DbIO) GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module mode
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -230,4 +231,24 @@ func (db *DbIO) ChangeTrackedItemSubFolder(trackedItem *models.TrackedItem, subF
 	raven.CheckError(err)
 
 	trackedItem.SubFolder = subFolder
+}
+
+// ChangeTrackedItemFavoriteStatus changes the favorite status of the passed tracked item in the database
+func (db *DbIO) ChangeTrackedItemFavoriteStatus(trackedItem *models.TrackedItem, favorite bool) {
+	var favoriteInt int8
+	if favorite {
+		favoriteInt = 1
+	} else {
+		favoriteInt = 0
+	}
+
+	stmt, err := db.connection.Prepare("UPDATE tracked_items SET last_modified = strftime('%s', 'now'), favorite = ? WHERE uid = ?")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(favoriteInt, trackedItem.ID)
+	raven.CheckError(err)
+
+	trackedItem.Favorite = favorite
 }

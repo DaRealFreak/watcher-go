@@ -15,6 +15,7 @@ type DatabaseInterface interface {
 	CreateTrackedItem(uri string, subFolder string, module ModuleInterface)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 	ChangeTrackedItemSubFolder(trackedItem *TrackedItem, subFolder string)
+	ChangeTrackedItemFavoriteStatus(trackedItem *TrackedItem, favorite bool)
 
 	// account storage functionality
 
@@ -38,24 +39,4 @@ type DatabaseInterface interface {
 	CreateCookie(name string, value string, expiration sql.NullTime, module ModuleInterface)
 	UpdateCookie(name string, value string, expirationString string, module ModuleInterface)
 	UpdateCookieDisabledStatus(name string, disabled bool, module ModuleInterface)
-}
-
-// Account contains all required data from accounts in the application
-type Account struct {
-	ID       int
-	Module   string
-	Username string
-	Password string
-	Disabled bool
-}
-
-// TrackedItem contains all required data from tracked items in the application
-type TrackedItem struct {
-	ID           int
-	URI          string
-	SubFolder    string
-	CurrentItem  string
-	Module       string
-	LastModified sql.NullTime
-	Complete     bool
 }
