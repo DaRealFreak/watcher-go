@@ -2,6 +2,7 @@ package graphql_api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -13,6 +14,14 @@ type DMCAError struct {
 
 func (e DMCAError) Error() string {
 	return "content got most likely DMCAed"
+}
+
+type DeletedMediaError struct {
+	error
+}
+
+func (e DeletedMediaError) Error() string {
+	return "content got deleted"
 }
 
 type RateLimitError struct {
@@ -41,13 +50,16 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 		// graphQL is not intended for public use so no rate limit is known, just sleep for an extended period of time
 		time.Sleep(time.Minute)
 		return RateLimitError{}, false
-
 	case response.StatusCode == 403:
 		if e.hasSetCookieHeader(response) {
 			// simply retry if we first had to refresh/set cookies
 			return CSRFError{}, false
 		} else {
 			return DMCAError{}, true
+		}
+	case response.StatusCode == 404:
+		if strings.Contains(response.Request.URL.String(), "https://pbs.twimg.com/media/") {
+			return DeletedMediaError{}, true
 		}
 	}
 
