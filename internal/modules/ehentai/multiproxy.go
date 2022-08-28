@@ -30,7 +30,7 @@ func (m *ehentai) initializeProxySessions() {
 	exURL, _ := url.Parse("https://exhentai.org")
 
 	for _, proxy := range m.settings.LoopProxies {
-		singleSession := session.NewSession(m.Key)
+		singleSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(2000*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))

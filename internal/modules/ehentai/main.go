@@ -92,8 +92,8 @@ func (m *ehentai) InitializeModule() {
 		&m.settings,
 	))
 
-	// set rate limiter on 1.5 seconds with burst limit of 1
-	m.ehSession = session.NewSession(m.Key)
+	// set rate limiter on 2.5 seconds with burst limit of 1
+	m.ehSession = session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
 	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(2500*time.Millisecond), 1)
 	m.Session = m.ehSession
 
