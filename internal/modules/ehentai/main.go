@@ -35,7 +35,6 @@ type ehentai struct {
 	proxies                  []*proxySession
 	multiProxy               struct {
 		currentIndexes []int
-		mutex          sync.Mutex
 		waitGroup      sync.WaitGroup
 	}
 }
