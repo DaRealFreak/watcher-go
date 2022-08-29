@@ -139,8 +139,11 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 				if data.FileURL != "" {
 					galleryItems = append(galleryItems, &downloadGalleryItem{
 						item: &models.DownloadQueueItem{
-							ItemID:          string(data.ID),
-							DownloadTag:     path.Join(fp.SanitizePath(originalTag, false), m.getTagSubDirectory(data)),
+							ItemID: string(data.ID),
+							DownloadTag: path.Join(
+								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(item), false)),
+								m.getTagSubDirectory(data),
+							),
 							FileName:        string(data.ID) + "_" + fp.GetFileName(data.FileURL),
 							FileURI:         data.FileURL,
 							FallbackFileURI: data.SampleURL,
@@ -179,7 +182,7 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) (string, error
 	return q["tags"][0], nil
 }
 
-// getTagSubDirectory returns possible sub directories since the books got kinda overhand
+// getTagSubDirectory returns possible subdirectories since the books got kinda overhand
 func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
 	for _, tag := range item.Tags {
 		if tag.NameEn == "doujinshi" {
@@ -188,4 +191,17 @@ func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
 	}
 
 	return ""
+}
+
+func (m *sankakuComplex) getDownloadTag(item *models.TrackedItem) string {
+	if item.SubFolder != "" {
+		return item.SubFolder
+	}
+
+	originalTag, err := m.extractItemTag(item)
+	if err != nil {
+		return ""
+	}
+
+	return originalTag
 }

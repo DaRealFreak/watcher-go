@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/viper"
 
@@ -95,8 +96,13 @@ func (m *sankakuComplex) Login(account *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
+	// update sub folder if not set yet
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getDownloadTag(item))
+	}
+
 	bookPattern := regexp.MustCompile(`/books\?`)
-	singleBookPattern := regexp.MustCompile(`/books/([\d]+)`)
+	singleBookPattern := regexp.MustCompile(`/books/(\d+)`)
 	wikiPattern := regexp.MustCompile(`/wiki`)
 
 	itemDownloadQueue := &downloadQueue{}
@@ -144,4 +150,19 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 	}
 
 	return m.processDownloadQueue(itemDownloadQueue, item)
+}
+
+func (m *sankakuComplex) AddItem(uri string) (string, error) {
+	if parsed, parsedErr := url.Parse(uri); parsedErr == nil {
+		queries := parsed.Query()
+		if queries.Has("tags") {
+			newTagQuery := strings.TrimSpace(strings.ReplaceAll(queries.Get("tags"), "order:popularity", ""))
+			queries.Set("tags", newTagQuery)
+			parsed.RawQuery = queries.Encode()
+		}
+
+		uri = parsed.String()
+	}
+
+	return uri, nil
 }
