@@ -119,7 +119,12 @@ func (m *ehentai) Login(account *models.Account) bool {
 		"ipb_login_submit": {"Login!"},
 	}
 
-	res, _ := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+	res, err := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+	if err != nil {
+		m.TriedLogin = true
+		return false
+	}
+
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
 	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
 	m.TriedLogin = true
