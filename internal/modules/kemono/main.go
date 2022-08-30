@@ -1,19 +1,30 @@
 package kemono
 
 import (
+	"fmt"
+	"net/url"
 	"regexp"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type kemono struct {
 	*models.Module
+	baseUrl  *url.URL
+	settings kemonoSettings
+}
+
+type kemonoSettings struct {
+	Search struct {
+		CategorizeSearch bool `mapstructure:"categorize_search"`
+	} `mapstructure:"search"`
 }
 
 // init function registers the bare and the normal module to the module factories
@@ -38,7 +49,7 @@ func NewBareModule() *models.Module {
 	// register module to log formatter
 	formatter.AddFieldMatchColorScheme("module", &formatter.FieldMatch{
 		Value: module.Key,
-		Color: "208:39",
+		Color: "232:208",
 	})
 
 	return module
@@ -46,6 +57,14 @@ func NewBareModule() *models.Module {
 
 // InitializeModule initializes the module
 func (m *kemono) InitializeModule() {
+	// initialize settings
+	raven.CheckError(viper.UnmarshalKey(
+		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
+		&m.settings,
+	))
+
+	m.baseUrl, _ = url.Parse("https://kemono.party")
+
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
 
@@ -65,14 +84,22 @@ func (m *kemono) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *kemono) Parse(item *models.TrackedItem) error {
-	return nil
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
+	}
+
+	return m.parseUser(item)
 }
 
-// AddRoundTrippers adds the round trippers for CloudFlare, adds a custom user agent
-// and implements the implicit OAuth2 authentication and sets the Token round tripper
-func (m *kemono) addRoundTrippers() {
-	client := m.Session.GetClient()
-	// apply CloudFlare bypass
-	options := cloudflarebp.GetDefaultOptions()
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
+func (m *kemono) getSubFolder(item *models.TrackedItem) string {
+	if item.SubFolder != "" {
+		return item.SubFolder
+	}
+
+	search := regexp.MustCompile(`https://kemono.party/([^/?&]+)/user/(\d+)`).FindStringSubmatch(item.URI)
+	if len(search) == 3 {
+		return fp.SanitizePath(fmt.Sprintf("%s/%s", search[1], search[2]), true)
+	}
+
+	return ""
 }
