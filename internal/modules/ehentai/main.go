@@ -44,9 +44,11 @@ type ehentaiSettings struct {
 	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 	MultiProxy  bool                 `mapstructure:"multiproxy"`
 	Search      struct {
-		BlacklistedTags  []string `mapstructure:"blacklisted_tags"`
-		CategorizeSearch bool     `mapstructure:"categorize_search"`
-		InheritSubFolder bool     `mapstructure:"inherit_sub_folder"`
+		LowPoweredTags    bool     `mapstructure:"low_powered_tags"`
+		ExpungedGalleries bool     `mapstructure:"expunged_galleries"`
+		BlacklistedTags   []string `mapstructure:"blacklisted_tags"`
+		CategorizeSearch  bool     `mapstructure:"categorize_search"`
+		InheritSubFolder  bool     `mapstructure:"inherit_sub_folder"`
 	} `mapstructure:"search"`
 }
 

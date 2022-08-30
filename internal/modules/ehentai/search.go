@@ -20,7 +20,12 @@ type searchGalleryItem struct {
 
 // parseSearch parses the tracked item if we detected a search/tag
 func (m *ehentai) parseSearch(item *models.TrackedItem) error {
-	response, err := m.Session.Get(item.URI)
+	searchUrl, searchErr := m.getSearchURL(item)
+	if searchErr != nil {
+		return searchErr
+	}
+
+	response, err := m.Session.Get(searchUrl)
 	if err != nil {
 		return err
 	}
@@ -183,4 +188,32 @@ func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 
 	pages = pages.Slice(pages.Length()-1, pages.Length())
 	return pages.Find("a[href]").Attr("href")
+}
+
+func (m *ehentai) getSearchURL(item *models.TrackedItem) (string, error) {
+	parsed, parsedErr := url.Parse(item.URI)
+	if parsedErr != nil {
+		return "", parsedErr
+	}
+
+	queries := parsed.Query()
+	queries.Set("advsearch", "1")
+	// search gallery name
+	queries.Set("f_sname", "on")
+	// search gallery tags
+	queries.Set("f_stags", "on")
+
+	if m.settings.Search.ExpungedGalleries {
+		// search expunged galleries
+		queries.Set("f_sh", "on")
+	}
+
+	if m.settings.Search.LowPoweredTags {
+		// search low powered tags
+		queries.Set("f_sdt1", "on")
+	}
+
+	parsed.RawQuery = queries.Encode()
+
+	return parsed.String(), nil
 }
