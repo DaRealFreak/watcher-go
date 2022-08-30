@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
@@ -67,7 +68,42 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 		}
 	}
 
+	factory := modules.GetModuleFactory()
+	for _, externalURL := range m.getExternalLinks(string(content)) {
+		if factory.CanParse(externalURL) {
+			module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
+			module.InitializeModule()
+			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
+			if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
+				log.WithField("module", m.Key).Info(
+					fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
+				)
+				newItem.CurrentItem = ""
+				m.DbIO.ChangeTrackedItemCompleteStatus(newItem, false)
+				m.DbIO.UpdateTrackedItem(newItem, "")
+			}
+
+			if err = module.Parse(newItem); err != nil {
+				return err
+			}
+		} else {
+			log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalURL)
+		}
+	}
+
 	return nil
+}
+
+func (m *kemono) getExternalLinks(html string) (links []string) {
+	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+	document.Find("div.post__body a:not([href^=\"/data\"])").Each(func(index int, row *goquery.Selection) {
+		uri, _ := row.Attr("href")
+		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
+			links = append(links, fileURL.String())
+		}
+	})
+
+	return links
 }
 
 func (m *kemono) getDownloadLinks(html string) (links []string) {
