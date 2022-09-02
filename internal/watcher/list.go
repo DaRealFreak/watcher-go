@@ -49,7 +49,7 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool, partial 
 	// initialize tab writer
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
-	_, _ = fmt.Fprintln(w, "ID\tModule\tUrl\tCurrent Item\tCompleted")
+	_, _ = fmt.Fprintln(w, "ID\tModule\tUrl\tCurrent Item\tSub Folder\tFavorite\tCompleted")
 
 	for _, item := range trackedItems {
 		if partial != "" {
@@ -60,11 +60,13 @@ func (app *Watcher) ListTrackedItems(uri string, includeCompleted bool, partial 
 
 		_, _ = fmt.Fprintf(
 			w,
-			"%d\t%s\t%s\t%s\t%t\n",
+			"%d\t%s\t%s\t%s\t%s\t%t\t%t\n",
 			item.ID,
 			item.Module,
 			item.URI,
 			item.CurrentItem,
+			item.SubFolder,
+			item.Favorite,
 			item.Complete,
 		)
 	}
