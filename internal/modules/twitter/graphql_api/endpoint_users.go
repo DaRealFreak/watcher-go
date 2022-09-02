@@ -65,7 +65,7 @@ type Timeline struct {
 }
 
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
-func (t *Timeline) TweetEntries() (tweets []*Tweet) {
+func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	for _, instruction := range t.Data.User.Result.TimelineV2.Timeline.Instructions {
 		if instruction.Type != "TimelineAddEntries" {
 			continue
@@ -74,6 +74,21 @@ func (t *Timeline) TweetEntries() (tweets []*Tweet) {
 		for _, entry := range instruction.Entries {
 			if entry.Content.EntryType != "TimelineTimelineItem" {
 				continue
+			}
+
+			if len(userIDs) != 0 {
+				inAllowedUsers := false
+				for _, userID := range userIDs {
+					if userID == entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String() {
+						inAllowedUsers = true
+						break
+					}
+				}
+
+				// not in allowed users, skip entry (most likely advertisement entries)
+				if !inAllowedUsers {
+					continue
+				}
 			}
 
 			tweets = append(tweets, entry)

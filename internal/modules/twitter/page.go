@@ -49,7 +49,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			return timeLineErr
 		}
 
-		for _, tweet := range timeline.TweetEntries() {
+		for _, tweet := range timeline.TweetEntries(userId) {
 			if m.settings.ConvertNameToId &&
 				tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName != screenName {
 				screenName = tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName
@@ -80,8 +80,9 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		}
 
 		bottomCursor = timeline.BottomCursor()
+
 		// no later page cursor available, so we can break here
-		if len(timeline.TweetEntries()) == 0 {
+		if len(timeline.TweetEntries(userId)) == 0 {
 			break
 		}
 	}
