@@ -239,7 +239,9 @@ func (cli *CliApplication) getUpdateItemCommand() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-			trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+			normalizedUri, err := module.ModuleInterface.AddItem(url)
+			raven.CheckError(err)
+			trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 			for _, trackedItem := range trackedItems {
 				if cmd.Flags().Changed("current") {
 					cli.watcher.DbCon.UpdateTrackedItem(trackedItem, current)
@@ -311,7 +313,9 @@ func (cli *CliApplication) getEnableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				normalizedUri, err := module.ModuleInterface.AddItem(url)
+				raven.CheckError(err)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 				for _, trackedItem := range trackedItems {
 					cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, false)
 				}
@@ -332,7 +336,9 @@ func (cli *CliApplication) getDisableItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				normalizedUri, err := module.ModuleInterface.AddItem(url)
+				raven.CheckError(err)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 				for _, trackedItem := range trackedItems {
 					cli.watcher.DbCon.ChangeTrackedItemCompleteStatus(trackedItem, true)
 				}
@@ -353,7 +359,9 @@ func (cli *CliApplication) getFavoriteItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				normalizedUri, err := module.ModuleInterface.AddItem(url)
+				raven.CheckError(err)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 				for _, trackedItem := range trackedItems {
 					cli.watcher.DbCon.ChangeTrackedItemFavoriteStatus(trackedItem, true)
 				}
@@ -374,7 +382,9 @@ func (cli *CliApplication) getUnfavoriteItemCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, url := range args {
 				module := cli.watcher.ModuleFactory.GetModuleFromURI(url)
-				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(url, module)
+				normalizedUri, err := module.ModuleInterface.AddItem(url)
+				raven.CheckError(err)
+				trackedItems := cli.watcher.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 				for _, trackedItem := range trackedItems {
 					cli.watcher.DbCon.ChangeTrackedItemFavoriteStatus(trackedItem, false)
 				}
