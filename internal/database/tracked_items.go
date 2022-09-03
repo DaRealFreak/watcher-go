@@ -252,3 +252,13 @@ func (db *DbIO) ChangeTrackedItemFavoriteStatus(trackedItem *models.TrackedItem,
 
 	trackedItem.Favorite = favorite
 }
+
+func (db *DbIO) DeleteTrackedItem(trackedItem *models.TrackedItem) {
+	stmt, err := db.connection.Prepare("DELETE FROM tracked_items WHERE uid = ?")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(trackedItem.ID)
+	raven.CheckError(err)
+}

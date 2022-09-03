@@ -16,6 +16,7 @@ type DatabaseInterface interface {
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)
 	ChangeTrackedItemSubFolder(trackedItem *TrackedItem, subFolder string)
 	ChangeTrackedItemFavoriteStatus(trackedItem *TrackedItem, favorite bool)
+	DeleteTrackedItem(trackedItem *TrackedItem)
 
 	// account storage functionality
 
