@@ -22,9 +22,6 @@ type kemono struct {
 }
 
 type kemonoSettings struct {
-	Search struct {
-		CategorizeSearch bool `mapstructure:"categorize_search"`
-	} `mapstructure:"search"`
 	SkipErrorsForExternalURLs bool `mapstructure:"skip_errors_for_external_urls"`
 }
 
