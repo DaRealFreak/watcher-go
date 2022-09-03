@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -47,8 +48,8 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 
 	content, _ := io.ReadAll(response.Body)
 
-	for index, link := range m.getDownloadLinks(string(content)) {
-		parsedLink, parsedErr := url.Parse(link)
+	for index, downloadItem := range m.getDownloadLinks(string(content)) {
+		parsedLink, parsedErr := url.Parse(downloadItem.FileURI)
 		if parsedErr != nil {
 			return parsedErr
 		}
@@ -62,8 +63,29 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 				fp.TruncateMaxLength(fp.SanitizePath(data.id, false)),
 				fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", data.id, index+1, fileName))),
 			),
-			link,
+			downloadItem.FileURI,
 		); err != nil {
+			if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
+				log.WithField("module", m.Key).Warnf(
+					"received 404 status code error \"%s\", trying thumbnail fallback url \"%s\"",
+					err.Error(),
+					downloadItem.FallbackFileURI,
+				)
+
+				if err = m.Session.DownloadFile(
+					path.Join(
+						viper.GetString("download.directory"),
+						m.Key,
+						fp.TruncateMaxLength(m.getSubFolder(item)),
+						fp.TruncateMaxLength(fp.SanitizePath(data.id, false)),
+						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_fallback_%s", data.id, index+1, fileName))),
+					),
+					downloadItem.FallbackFileURI,
+				); err != nil {
+					return err
+				}
+			}
+
 			return err
 		}
 	}
@@ -106,7 +128,7 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 	return links
 }
 
-func (m *kemono) getDownloadLinks(html string) (links []string) {
+func (m *kemono) getDownloadLinks(html string) (links []models.DownloadQueueItem) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find("a[href*='/data/'][href*='?f=']").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
@@ -115,7 +137,7 @@ func (m *kemono) getDownloadLinks(html string) (links []string) {
 			downloadLink := m.baseUrl.ResolveReference(fileURL).String()
 
 			for _, link := range links {
-				if link == downloadLink {
+				if link.ItemID == downloadLink {
 					alreadyAdded = true
 					break
 				}
@@ -123,7 +145,21 @@ func (m *kemono) getDownloadLinks(html string) (links []string) {
 
 			// only add links we didn't add yet
 			if !alreadyAdded {
-				links = append(links, m.baseUrl.ResolveReference(fileURL).String())
+				downloadItem := models.DownloadQueueItem{
+					ItemID:  downloadLink,
+					FileURI: downloadLink,
+				}
+
+				// check for fallback
+				thumbnails := row.Find("img[src*='/thumbnail/']")
+				if thumbnails.Length() > 0 {
+					fallBack, _ := thumbnails.First().Attr("src")
+					if fileURL, parseErr = url.Parse(fallBack); parseErr == nil {
+						downloadItem.FallbackFileURI = m.baseUrl.ResolveReference(fileURL).String()
+					}
+				}
+
+				links = append(links, downloadItem)
 			}
 		}
 	})
