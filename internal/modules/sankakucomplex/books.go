@@ -3,7 +3,7 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -33,7 +33,7 @@ type bookApiItem struct {
 
 // parseAPIBookResponse parses the book response from the API
 func (m *sankakuComplex) parseAPIResponse(response *http.Response, apiRes interface{}) error {
-	body, _ := ioutil.ReadAll(response.Body)
+	body, _ := io.ReadAll(response.Body)
 
 	err := json.Unmarshal(body, &apiRes)
 	if err != nil {

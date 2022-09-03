@@ -3,11 +3,12 @@ package internal
 
 import (
 	"encoding/json"
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/internal/models"
 
 	"golang.org/x/oauth2"
 )
@@ -50,7 +51,7 @@ func PasswordCredentialsToken(
 func RetrieveTokenFromResponse(response *http.Response) (*oauth2.Token, error) {
 	var token tokenResponse
 
-	bytes, err := ioutil.ReadAll(response.Body)
+	bytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}

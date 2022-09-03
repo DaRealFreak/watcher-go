@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -149,7 +149,7 @@ func (a *DeviantartAPI) request(method string, endpoint string, values url.Value
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *DeviantartAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	out, err := ioutil.ReadAll(res.Body)
+	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

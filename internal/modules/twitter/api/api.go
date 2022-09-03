@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -49,7 +49,7 @@ func NewTwitterAPI(moduleKey string, oAuth2Client *models.OAuthClient) *TwitterA
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *TwitterAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	out, err := ioutil.ReadAll(res.Body)
+	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

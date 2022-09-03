@@ -1,7 +1,6 @@
 package animation
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,7 +43,7 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 	}
 
 	// read file content to return it
-	content, err = ioutil.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+".webp"))
+	content, err = os.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+".webp"))
 	if err != nil {
 		return
 	}

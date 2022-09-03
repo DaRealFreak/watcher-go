@@ -1,7 +1,7 @@
 package api
 
 import (
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"testing"
@@ -39,7 +39,7 @@ func TestNewDeviantartAPI(t *testing.T) {
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)
 
-	contentAPI, err := ioutil.ReadAll(res.Body)
+	contentAPI, err := io.ReadAll(res.Body)
 	assert.New(t).NoError(err)
 
 	// toggle console exploit, we also require the first OAuth2 process to have succeeded
@@ -50,7 +50,7 @@ func TestNewDeviantartAPI(t *testing.T) {
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(200, res.StatusCode)
 
-	contentConsoleExploit, err := ioutil.ReadAll(res.Body)
+	contentConsoleExploit, err := io.ReadAll(res.Body)
 	assert.New(t).NoError(err)
 
 	assert.New(t).Equal(contentAPI, contentConsoleExploit)

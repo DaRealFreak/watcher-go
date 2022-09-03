@@ -105,7 +105,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 
 	// read file content to return it
 	// #nosec
-	content, err = ioutil.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
+	content, err = os.ReadFile(filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@ package jinjamodoki
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"regexp"
 	"strings"
@@ -83,7 +83,7 @@ func (m *jinjaModoki) InitializeModule() {
 	raven.CheckError(err)
 
 	// blacklisted IPs can't set access, so throw a fatal log if that occurs
-	content, _ := ioutil.ReadAll(res.Body)
+	content, _ := io.ReadAll(res.Body)
 	if strings.Contains(string(content),
 		"You are not allowed to change your access settings for browsing-restricted contents") {
 		log.WithField("module", m.Key).Fatal(

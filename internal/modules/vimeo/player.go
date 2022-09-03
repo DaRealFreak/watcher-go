@@ -3,7 +3,7 @@ package vimeo
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 )
@@ -64,7 +64,7 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 		return nil, err
 	}
 
-	out, readErr := ioutil.ReadAll(res.Body)
+	out, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return nil, readErr
 	}

@@ -6,9 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/configuration"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	"github.com/DaRealFreak/watcher-go/internal/configuration"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/internal/update"
 	"github.com/DaRealFreak/watcher-go/internal/version"

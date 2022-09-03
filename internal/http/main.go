@@ -3,8 +3,8 @@ package http
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -51,6 +51,33 @@ type ProxySettings struct {
 	Password string `mapstructure:"password"`
 }
 
+func (s ProxySettings) GetProxyType() string {
+	switch strings.ToUpper(s.Type) {
+	case "SOCKS5":
+		return "socks5"
+	case "HTTP":
+		return "http"
+	case "HTTPS", "":
+		return "https"
+	default:
+		return s.Type
+	}
+}
+
+func (s ProxySettings) GetProxyString() string {
+	var authString string
+	if s.Username != "" && s.Password != "" {
+		authString = fmt.Sprintf("%s:%s@", url.QueryEscape(s.Username), url.QueryEscape(s.Password))
+	}
+
+	return fmt.Sprintf(
+		"%s://%s%s:%d",
+		s.GetProxyType(),
+		authString,
+		url.QueryEscape(s.Host), s.Port,
+	)
+}
+
 // EnsureDownloadDirectory ensures that the download path already exists or creates it if not
 // this function panics when path can't be created
 func (s *Session) EnsureDownloadDirectory(fileName string) {
@@ -74,7 +101,7 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 	case "gzip":
 		reader, err = gzip.NewReader(response.Body)
 		if err == nil {
-			readerRes, readerErr := ioutil.ReadAll(reader)
+			readerRes, readerErr := io.ReadAll(reader)
 			raven.CheckError(readerErr)
 
 			response.Body = io.NopCloser(strings.NewReader(string(readerRes)))

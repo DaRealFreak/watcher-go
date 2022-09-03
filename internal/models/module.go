@@ -56,6 +56,14 @@ type Module struct {
 	Cfg            *configuration.AppConfiguration
 }
 
+type ModuleNotImplementedError struct {
+	error
+}
+
+func (e ModuleNotImplementedError) Error() string {
+	return "module is not implemented yet"
+}
+
 // AddItem gives the module the option to parse the uri before adding it to the database (f.e. for normalizing)
 func (t *Module) AddItem(uri string) (string, error) {
 	return uri, nil

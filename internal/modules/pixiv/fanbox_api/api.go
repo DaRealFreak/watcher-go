@@ -4,7 +4,7 @@ package fanboxapi
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -65,7 +65,7 @@ func (a *FanboxAPI) setPixivRoundTripper() {
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *FanboxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	out, err := ioutil.ReadAll(res.Body)
+	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

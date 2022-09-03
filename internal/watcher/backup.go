@@ -2,7 +2,7 @@ package watcher
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"runtime"
@@ -73,7 +73,7 @@ func (app *Watcher) backupTableAsSQL(writer archive.Writer, table string) {
 	buffer := new(bytes.Buffer)
 	raven.CheckError(app.DbCon.DumpTables(buffer, table))
 
-	content, err := ioutil.ReadAll(buffer)
+	content, err := io.ReadAll(buffer)
 	raven.CheckError(err)
 
 	_, err = writer.AddFile(table+".sql", content)

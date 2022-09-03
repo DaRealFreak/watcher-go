@@ -2,6 +2,7 @@ package ehentai
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -31,7 +32,7 @@ func (e ErrorHandler) CheckResponse(response *http.Response) (err error, fatal b
 		return IpBanSearchError{}, true
 	}
 
-	content, readErr := ioutil.ReadAll(response.Body)
+	content, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return readErr, true
 	}

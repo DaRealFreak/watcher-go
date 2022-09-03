@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -215,7 +215,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return err
 	}
 
-	content, err := ioutil.ReadAll(res.Body)
+	content, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (a *DeviantartNAPI) AddRoundTrippers(userAgent string) {
 
 // mapAPIResponse maps the API response into the passed APIResponse type
 func (a *DeviantartNAPI) mapAPIResponse(res *http.Response, apiRes interface{}) error {
-	out, err := ioutil.ReadAll(res.Body)
+	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

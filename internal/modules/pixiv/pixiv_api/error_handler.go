@@ -2,7 +2,7 @@ package pixivapi
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -14,7 +14,7 @@ func (e PixivErrorHandler) CheckResponse(response *http.Response) (err error, fa
 	case response.StatusCode == 400:
 		var mobileAPIError MobileAPIError
 
-		if content, readErr := ioutil.ReadAll(response.Body); readErr == nil {
+		if content, readErr := io.ReadAll(response.Body); readErr == nil {
 			if err = json.Unmarshal(content, &mobileAPIError); err == nil {
 				if mobileAPIError.ErrorDetails.Message == `{"offset":["Offset must be no more than 5000"]}` {
 					return OffsetError{

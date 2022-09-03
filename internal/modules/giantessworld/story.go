@@ -3,6 +3,7 @@ package giantessworld
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -89,7 +90,7 @@ func (m *giantessWorld) getChapterContent(base *url.URL, chapter string) (htmlCo
 		return nil, err
 	}
 
-	return ioutil.ReadAll(res.Body)
+	return io.ReadAll(res.Body)
 }
 
 // getNewChapters returns new chapters from the jump navigation

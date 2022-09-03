@@ -2,7 +2,7 @@ package kemono
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"path"
 	"strings"
@@ -45,7 +45,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 		return err
 	}
 
-	content, _ := ioutil.ReadAll(response.Body)
+	content, _ := io.ReadAll(response.Body)
 
 	for index, link := range m.getDownloadLinks(string(content)) {
 		parsedLink, parsedErr := url.Parse(link)

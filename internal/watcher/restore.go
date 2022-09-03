@@ -80,12 +80,12 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.Ap
 				return err
 			}
 
-			content, err := ioutil.ReadAll(file)
+			content, err := io.ReadAll(file)
 			if err != nil {
 				return err
 			}
 
-			err = ioutil.WriteFile(cfg.Database, content, os.ModePerm)
+			err = os.WriteFile(cfg.Database, content, os.ModePerm)
 			if err != nil {
 				return err
 			}
@@ -161,12 +161,12 @@ func (app *Watcher) restoreSettings(reader archive.Reader, cfg *configuration.Ap
 			return err
 		}
 
-		content, err := ioutil.ReadAll(file)
+		content, err := io.ReadAll(file)
 		if err != nil {
 			return err
 		}
 
-		return ioutil.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
+		return os.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
 	}
 
 	log.Warnf(

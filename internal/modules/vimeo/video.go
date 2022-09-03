@@ -3,6 +3,7 @@ package vimeo
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -82,7 +83,7 @@ func (m *vimeo) parseVideo(item *models.TrackedItem, masterJSONUrl string, video
 		return masterErr
 	}
 
-	out, readErr := ioutil.ReadAll(res.Body)
+	out, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return readErr
 	}
@@ -194,7 +195,7 @@ func (m *vimeo) downloadMedia(file *os.File, media *Media, baseURL url.URL) erro
 			return downloadErr
 		}
 
-		content, readErr := ioutil.ReadAll(res.Body)
+		content, readErr := io.ReadAll(res.Body)
 		if readErr != nil {
 			return readErr
 		}

@@ -4,7 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 
@@ -79,7 +79,7 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 		return nil, err
 	}
 
-	readerRes, readerErr := ioutil.ReadAll(reader)
+	readerRes, readerErr := io.ReadAll(reader)
 	raven.CheckError(readerErr)
 
 	var apiUserResponse userResponse

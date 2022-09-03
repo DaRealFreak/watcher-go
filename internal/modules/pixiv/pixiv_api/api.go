@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -80,7 +80,7 @@ func (a *PixivAPI) AddRoundTrippers() (err error) {
 
 // MapAPIResponse maps the API response into the passed APIResponse type
 func (a *PixivAPI) MapAPIResponse(res *http.Response, apiRes interface{}) (err error) {
-	out, err := ioutil.ReadAll(res.Body)
+	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

@@ -3,8 +3,8 @@ package jinjamodoki
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -106,7 +106,7 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 // - website doesn't allow public proxies, maybe list got updated
 func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
 	// #nosec
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		// error reading file, not downloaded properly?
 		return err

@@ -2,7 +2,7 @@ package pixiv
 
 import (
 	"archive/zip"
-	"io/ioutil"
+	"io"
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 )
@@ -16,5 +16,5 @@ func (m *pixiv) readZipFile(zf *zip.File) ([]byte, error) {
 
 	defer raven.CheckClosureNonFatal(f)
 
-	return ioutil.ReadAll(f)
+	return io.ReadAll(f)
 }

@@ -2,7 +2,7 @@
 package archivetest
 
 import (
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
@@ -25,7 +25,7 @@ func GetFile(t *testing.T, reader archive.Reader) {
 	for fileName, fileContent := range GetSharedTestFiles() {
 		reader, err := reader.GetFile(fileName)
 		assertion.NoError(err)
-		content, err := ioutil.ReadAll(reader)
+		content, err := io.ReadAll(reader)
 		assertion.NoError(err)
 		assertion.Equal(content, []byte(fileContent))
 	}

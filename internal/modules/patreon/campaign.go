@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"strconv"
 	"strings"
@@ -266,7 +265,7 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 		reader = res.Body
 	}
 
-	readerRes, readerErr := ioutil.ReadAll(reader)
+	readerRes, readerErr := io.ReadAll(reader)
 	raven.CheckError(readerErr)
 
 	var postsData campaignResponse
