@@ -105,8 +105,25 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 				m.DbIO.UpdateTrackedItem(newItem, "")
 			}
 
+			// don't delete previously already added items
+			deleteAfter := newItem.CurrentItem == ""
 			if err = module.Parse(newItem); err != nil {
-				return err
+				log.WithField("module", m.Key).Warnf(
+					"unable to parse external URL \"%s\" with error \"%s\", skipping",
+					newItem.URI,
+					err.Error(),
+				)
+				if !m.settings.SkipErrorsForExternalURLs {
+					if deleteAfter {
+						m.DbIO.DeleteTrackedItem(newItem)
+					}
+					return err
+				}
+			}
+
+			// delete newly created item after we parsed it
+			if deleteAfter {
+				m.DbIO.DeleteTrackedItem(newItem)
 			}
 		} else {
 			log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalURL)
