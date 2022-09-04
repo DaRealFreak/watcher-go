@@ -81,8 +81,12 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 
 		for _, externalURL := range data.ExternalURLs {
 			module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
-			module.InitializeModule()
+			if err := module.Load(); err != nil {
+				return err
+			}
 			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
+			// don't delete previously already added items
+			deleteAfter := newItem.CurrentItem == ""
 			if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
 				log.WithField("module", m.Key).Info(
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
@@ -93,7 +97,23 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			}
 
 			if err := module.Parse(newItem); err != nil {
-				return err
+				log.WithField("module", m.Key).Warnf(
+					"unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
+					newItem.URI,
+					data.PatreonURL,
+					err.Error(),
+				)
+				if !m.settings.SkipErrorsForExternalURLs {
+					if deleteAfter {
+						m.DbIO.DeleteTrackedItem(newItem)
+					}
+					return err
+				}
+			}
+
+			// delete newly created item after we parsed it
+			if deleteAfter {
+				m.DbIO.DeleteTrackedItem(newItem)
 			}
 		}
 

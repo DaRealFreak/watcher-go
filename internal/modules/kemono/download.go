@@ -94,8 +94,12 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 	for _, externalURL := range m.getExternalLinks(string(content)) {
 		if factory.CanParse(externalURL) {
 			module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
-			module.InitializeModule()
+			if err = module.Load(); err != nil {
+				return err
+			}
 			newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
+			// don't delete previously already added items
+			deleteAfter := newItem.CurrentItem == ""
 			if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
 				log.WithField("module", m.Key).Info(
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
@@ -105,12 +109,11 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 				m.DbIO.UpdateTrackedItem(newItem, "")
 			}
 
-			// don't delete previously already added items
-			deleteAfter := newItem.CurrentItem == ""
 			if err = module.Parse(newItem); err != nil {
 				log.WithField("module", m.Key).Warnf(
-					"unable to parse external URL \"%s\" with error \"%s\", skipping",
+					"unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
 					newItem.URI,
+					data.uri,
 					err.Error(),
 				)
 				if !m.settings.SkipErrorsForExternalURLs {
@@ -126,7 +129,10 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 				m.DbIO.DeleteTrackedItem(newItem)
 			}
 		} else {
-			log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalURL)
+			log.WithField("module", m.Key).Warnf("unable to parse URL \"%s\" found in post \"%s\"",
+				externalURL,
+				data.uri,
+			)
 		}
 	}
 
