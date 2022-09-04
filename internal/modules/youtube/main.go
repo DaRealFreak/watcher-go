@@ -45,6 +45,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`youtube.com`),
+			regexp.MustCompile(`youtu.be`),
 		},
 	}
 	module.ModuleInterface = &youtube{
