@@ -31,6 +31,8 @@ type ModuleInterface interface {
 	Parse(item *TrackedItem) error
 	// AddItem gives the module the option to parse the uri before adding it to the database (f.e. for normalizing)
 	AddItem(uri string) (string, error)
+	// Load initializes the module, logs in and updates the progress of the process
+	Load() error
 }
 
 // DownloadQueueItem is a generic struct in case the module doesn't require special actions
@@ -49,6 +51,7 @@ type Module struct {
 	Session        internalHttp.SessionInterface
 	Key            string
 	RequiresLogin  bool
+	Initialized    bool
 	LoggedIn       bool
 	TriedLogin     bool
 	URISchemas     []*regexp.Regexp
@@ -158,4 +161,51 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 // GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
 func (t *Module) GetViperModuleKey() string {
 	return strings.ReplaceAll(t.Key, ".", "_")
+}
+
+func (t *Module) Load() error {
+	if t.Initialized {
+		return nil
+	}
+
+	t.InitializeModule()
+
+	if t.TriedLogin {
+		return nil
+	}
+
+	account := t.DbIO.GetAccount(t)
+
+	// no account available but module requires a login
+	if account == nil {
+		if t.RequiresLogin {
+			log.WithField("module", t.Key).Errorf(
+				"module requires a login, but no account could be found",
+			)
+		} else {
+			t.Initialized = true
+			return nil
+		}
+	}
+
+	log.WithField("module", t.Key).Info(
+		fmt.Sprintf("logging in for module %s", t.Key),
+	)
+
+	// login into the module
+	if t.Login(account) {
+		log.WithField("module", t.Key).Info("login successful")
+	} else {
+		if t.RequiresLogin {
+			log.WithField("module", t.Key).Fatalf(
+				"module requires a login, but the login failed",
+			)
+		} else {
+			log.WithField("module", t.Key).Fatalf("login not successful")
+		}
+	}
+
+	t.Initialized = true
+
+	return nil
 }
