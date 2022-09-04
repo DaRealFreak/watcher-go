@@ -71,7 +71,7 @@ func NewBareModule() *models.Module {
 		patterns: pixivPattern{
 			searchPattern:       regexp.MustCompile(`(?:/tags/|/search.php.*word=)([^/?&]*)?`),
 			illustrationPattern: regexp.MustCompile(`(?:/artworks/|/member_illust.php?.*illust_id=)(\d*)?`),
-			fanboxPattern:       regexp.MustCompile(`(\w*)?.fanbox.cc`),
+			fanboxPattern:       regexp.MustCompile(`(?:www|(\w+))\.fanbox.cc/?(?:@(\w+)|.*)`),
 			memberPattern:       regexp.MustCompile(`(?:/member.php?.*id=|/member_illust.php?.*id=|/users/)(\d*)?`),
 		},
 	}
@@ -131,15 +131,6 @@ func (m *pixiv) Login(_ *models.Account) bool {
 // Parse parses the tracked item
 func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 	switch {
-	case m.patterns.searchPattern.MatchString(item.URI):
-		return m.parseSearch(item)
-	case m.patterns.illustrationPattern.MatchString(item.URI):
-		err = m.parseIllustration(item)
-		if err == nil {
-			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		}
-
-		return err
 	case m.patterns.fanboxPattern.MatchString(item.URI):
 		if m.fanboxAPI == nil {
 			m.fanboxAPI = fanboxapi.NewFanboxAPI(m.Key)
@@ -151,6 +142,15 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 		}
 
 		return m.parseFanbox(item)
+	case m.patterns.searchPattern.MatchString(item.URI):
+		return m.parseSearch(item)
+	case m.patterns.illustrationPattern.MatchString(item.URI):
+		err = m.parseIllustration(item)
+		if err == nil {
+			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+		}
+
+		return err
 	case m.patterns.memberPattern.MatchString(item.URI):
 		return m.parseUser(item)
 	default:

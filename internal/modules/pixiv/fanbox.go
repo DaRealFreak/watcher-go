@@ -11,7 +11,13 @@ import (
 )
 
 func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
-	creator := m.patterns.fanboxPattern.FindStringSubmatch(item.URI)[1]
+	var creator string
+	creatorMatches := m.patterns.fanboxPattern.FindStringSubmatch(item.URI)
+	if creatorMatches[1] != "" {
+		creator = creatorMatches[1]
+	} else {
+		creator = creatorMatches[2]
+	}
 
 	var downloadQueue []*downloadQueueItem
 
