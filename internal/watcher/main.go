@@ -83,9 +83,7 @@ func (app *Watcher) Run() {
 	} else {
 		for _, item := range trackedItems {
 			module := app.ModuleFactory.GetModule(item.Module)
-			if !module.LoggedIn && !module.TriedLogin {
-				app.loginToModule(module)
-			}
+			raven.CheckError(module.Load())
 
 			if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
 				log.WithField("module", module.Key).Info(
@@ -182,9 +180,7 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 		return
 	}
 
-	if !module.LoggedIn && !module.TriedLogin {
-		app.loginToModule(module)
-	}
+	raven.CheckError(module.Load())
 
 	for _, item := range trackedItems {
 		if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
@@ -204,39 +200,6 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
 			)
-		}
-	}
-}
-
-// loginToModule handles the login for modules, if an account exists: login
-func (app *Watcher) loginToModule(module *models.Module) {
-	account := app.DbCon.GetAccount(module)
-
-	// no account available but module requires a login
-	if account == nil {
-		if module.RequiresLogin {
-			log.WithField("module", module.Key).Errorf(
-				"module requires a login, but no account could be found",
-			)
-		} else {
-			return
-		}
-	}
-
-	log.WithField("module", module.Key).Info(
-		fmt.Sprintf("logging in for module %s", module.Key),
-	)
-
-	// login into the module
-	if module.Login(account) {
-		log.WithField("module", module.Key).Info("login successful")
-	} else {
-		if module.RequiresLogin {
-			log.WithField("module", module.Key).Fatalf(
-				"module requires a login, but the login failed",
-			)
-		} else {
-			log.WithField("module", module.Key).Fatalf("login not successful")
 		}
 	}
 }
