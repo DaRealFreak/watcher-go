@@ -211,7 +211,7 @@ func (m *ehentai) downloadImageSession(
 		return fmt.Errorf("download limit reached")
 	}
 
-	downloadSession.occurredError = downloadSession.session.DownloadFile(
+	downloadErr := downloadSession.session.DownloadFile(
 		path.Join(
 			viper.GetString("download.directory"),
 			m.Key,
@@ -222,7 +222,7 @@ func (m *ehentai) downloadImageSession(
 		downloadQueueItem.FileURI,
 	)
 
-	if downloadSession.occurredError == nil {
+	if downloadErr == nil {
 		downloadSession.inUse = false
 
 		if m.isLowestIndex(index) {
@@ -239,5 +239,5 @@ func (m *ehentai) downloadImageSession(
 		}
 	}
 
-	return downloadSession.occurredError
+	return downloadErr
 }
