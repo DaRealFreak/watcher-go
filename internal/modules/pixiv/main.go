@@ -224,3 +224,18 @@ func (m *pixiv) addRunCommand(command *cobra.Command) {
 	// add run command to parent command
 	command.AddCommand(runCmd)
 }
+
+func (m *pixiv) AddItem(uri string) (string, error) {
+	if m.patterns.fanboxPattern.MatchString(uri) {
+		var creator string
+		creatorMatches := m.patterns.fanboxPattern.FindStringSubmatch(uri)
+		if creatorMatches[1] != "" {
+			creator = creatorMatches[1]
+		} else {
+			creator = creatorMatches[2]
+		}
+		uri = fmt.Sprintf("https://%s.fanbox.cc/", creator)
+	}
+
+	return uri, nil
+}
