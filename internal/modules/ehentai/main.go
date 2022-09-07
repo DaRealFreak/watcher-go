@@ -26,6 +26,7 @@ import (
 // ehentai contains the implementation of the ModuleInterface and extends it by custom required values
 type ehentai struct {
 	*models.Module
+	rateLimit                int
 	downloadLimitReached     bool
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
@@ -50,6 +51,7 @@ type ehentaiSettings struct {
 		CategorizeSearch  bool     `mapstructure:"categorize_search"`
 		InheritSubFolder  bool     `mapstructure:"inherit_sub_folder"`
 	} `mapstructure:"search"`
+	RateLimit *int `mapstructure:"rate_limit"`
 }
 
 // nolint: gochecknoinits
@@ -93,9 +95,16 @@ func (m *ehentai) InitializeModule() {
 		&m.settings,
 	))
 
+	if m.settings.RateLimit != nil {
+		m.rateLimit = *m.settings.RateLimit
+	} else {
+		// default rate limit of 1 request every 2.5 seconds
+		m.rateLimit = 2500
+	}
+
 	// set rate limiter on 2.5 seconds with burst limit of 1
 	m.ehSession = session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
-	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(2500*time.Millisecond), 1)
+	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 	m.Session = m.ehSession
 
 	// set the proxy if requested

@@ -31,7 +31,7 @@ func (m *ehentai) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
-		singleSession.RateLimiter = rate.NewLimiter(rate.Every(2000*time.Millisecond), 1)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for session
 		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
 		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
