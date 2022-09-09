@@ -10,6 +10,7 @@ import (
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
 )
@@ -60,6 +61,7 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface
 
 		res, err := session.GetClient().Do(req)
 		if err != nil {
+			log.WithField("module", moduleKey).Fatalf("login failed with error: %s", err.Error())
 			return nil
 		}
 
