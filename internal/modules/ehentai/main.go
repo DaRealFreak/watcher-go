@@ -28,6 +28,7 @@ type ehentai struct {
 	*models.Module
 	rateLimit                int
 	downloadLimitReached     bool
+	ipBanned                 bool
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
@@ -152,11 +153,23 @@ func (m *ehentai) Login(account *models.Account) bool {
 }
 
 // Parse parses the tracked item
-func (m *ehentai) Parse(item *models.TrackedItem) error {
+func (m *ehentai) Parse(item *models.TrackedItem) (err error) {
+	if m.ipBanned {
+		return IpBanError{}
+	}
+
 	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
-		return m.parseGallery(item)
+		err = m.parseGallery(item)
 	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
-		return m.parseSearch(item)
+		err = m.parseSearch(item)
+	}
+
+	if _, ok := err.(IpBanError); ok {
+		m.ipBanned = true
+	}
+
+	if _, ok := err.(IpBanSearchError); ok {
+		m.ipBanned = true
 	}
 
 	return nil

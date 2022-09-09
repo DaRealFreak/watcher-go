@@ -3,7 +3,6 @@ package ehentai
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -41,12 +40,12 @@ func (e ErrorHandler) CheckResponse(response *http.Response) (err error, fatal b
 		return IpBanError{}, true
 	} else {
 		// reset reader for body
-		response.Body = ioutil.NopCloser(bytes.NewReader(content))
+		response.Body = io.NopCloser(bytes.NewReader(content))
 	}
 
 	return nil, false
 }
 
-func (e ErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
+func (e ErrorHandler) CheckDownloadedFileForErrors(_ int64, _ http.Header) error {
 	return nil
 }
