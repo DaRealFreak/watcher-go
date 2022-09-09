@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -146,7 +145,7 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 	// ensure download directory since we directly create the files
 	m.Session.EnsureDownloadDirectory(filePath)
 
-	err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm)
+	err = os.WriteFile(filePath, []byte(text), os.ModePerm)
 	if err != nil {
 		return err
 	}

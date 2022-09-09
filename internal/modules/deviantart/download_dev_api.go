@@ -2,7 +2,6 @@ package deviantart
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -147,7 +146,7 @@ func (m *deviantArt) downloadVideo(item downloadQueueItemDevAPI) error {
 
 func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *downloadLog) error {
 	if item.deviation.DeviationDownload != nil && item.deviation.Content != nil {
-		tmpFile, err := ioutil.TempFile("", ".*")
+		tmpFile, err := os.CreateTemp("", ".*")
 		defer raven.CheckFileRemoval(tmpFile)
 		if err != nil {
 			return err
@@ -206,7 +205,7 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 		return nil
 	}
 
-	tmpFile, err := ioutil.TempFile("", ".*")
+	tmpFile, err := os.CreateTemp("", ".*")
 	defer raven.CheckFileRemoval(tmpFile)
 	if err != nil {
 		return err
@@ -309,7 +308,7 @@ func (m *deviantArt) downloadHTMLContent(item downloadQueueItemDevAPI) error {
 			strings.ReplaceAll(fp.SanitizePath(item.deviation.Title, false), " ", "_"),
 		),
 	)
-	if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+	if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err
 	}
 

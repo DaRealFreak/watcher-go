@@ -14,15 +14,15 @@ func (m *pixiv) parseIllustration(item *models.TrackedItem) error {
 		return err
 	}
 
-	downloadQueueItem := &downloadQueueItem{
+	currentDownloadQueueItem := &downloadQueueItem{
 		ItemID:       details.Illustration.ID,
 		DownloadTag:  details.Illustration.User.GetUserTag(),
 		DownloadItem: details.Illustration,
 	}
 
 	if details.Illustration.Type == Ugoira {
-		return m.downloadUgoira(downloadQueueItem, details.Illustration.ID)
+		return m.downloadUgoira(currentDownloadQueueItem, details.Illustration.ID)
 	}
 
-	return m.downloadIllustration(downloadQueueItem, details.Illustration)
+	return m.downloadIllustration(currentDownloadQueueItem, details.Illustration)
 }

@@ -2,7 +2,6 @@ package database
 
 import (
 	"bufio"
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -22,7 +21,7 @@ var dbIO *DbIO
 // creates temporary file to use as database file to prevent previous data influencing the tests
 // and remove the database at the end again for a clean system
 func TestMain(m *testing.M) {
-	f, err := ioutil.TempFile("", "*.db")
+	f, err := os.CreateTemp("", "*.db")
 	if err != nil {
 		log.Fatal("couldn't create temporary database file for unit tests", err)
 	}

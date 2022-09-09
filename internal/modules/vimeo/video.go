@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -117,7 +116,7 @@ func (m *vimeo) downloadVideo(content MasterJsonContent, baseURL *url.URL, video
 	)
 	m.Session.EnsureDownloadDirectory(finalFilePath)
 
-	videoFile, err := ioutil.TempFile("", ".*.mp4")
+	videoFile, err := os.CreateTemp("", ".*.mp4")
 	if err != nil {
 		return err
 	}
@@ -134,7 +133,7 @@ func (m *vimeo) downloadVideo(content MasterJsonContent, baseURL *url.URL, video
 	}
 
 	if content.GetBestAudio() != nil {
-		audioFile, err = ioutil.TempFile("", ".*.mp3")
+		audioFile, err = os.CreateTemp("", ".*.mp3")
 		if err != nil {
 			return err
 		}

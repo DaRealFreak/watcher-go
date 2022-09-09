@@ -2,7 +2,6 @@ package deviantart
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -294,7 +293,7 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 		)
 		log.WithField("module", m.Key).Debugf("downloading description: \"%s\"", filePath)
 
-		if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+		if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 			return err
 		}
 	}
@@ -320,7 +319,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 	)
 	log.WithField("module", m.Key).Debugf("downloading literature: \"%s\"", filePath)
 
-	if err = ioutil.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+	if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err
 	}
 

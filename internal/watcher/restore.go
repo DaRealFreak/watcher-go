@@ -3,7 +3,6 @@ package watcher
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -122,7 +121,7 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.Ap
 func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames ...string) error {
 	for _, sqlFileName := range filesNames {
 		if exists, _ := reader.HasFile(sqlFileName); exists {
-			file, err := ioutil.TempFile("", "*.sql")
+			file, err := os.CreateTemp("", "*.sql")
 			if err != nil {
 				return err
 			}
@@ -132,11 +131,11 @@ func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames .
 				return err
 			}
 
-			if _, err := io.Copy(file, reader); err != nil {
+			if _, err = io.Copy(file, reader); err != nil {
 				return err
 			}
 
-			if err := app.DbCon.RestoreTableFromFile(file.Name()); err != nil {
+			if err = app.DbCon.RestoreTableFromFile(file.Name()); err != nil {
 				return err
 			}
 
