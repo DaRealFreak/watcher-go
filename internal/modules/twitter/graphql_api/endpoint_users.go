@@ -47,6 +47,17 @@ type Tweet struct {
 	} `json:"content"`
 }
 
+type StatusTweet struct {
+	Data struct {
+		ThreadedConversationWithInjectionsV2 struct {
+			Instructions []struct {
+				Type    string   `json:"type"`
+				Entries []*Tweet `json:"entries"`
+			} `json:"instructions"`
+		} `json:"threaded_conversation_with_injections_v2"`
+	} `json:"data"`
+}
+
 type Timeline struct {
 	Data struct {
 		User struct {

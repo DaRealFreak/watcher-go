@@ -118,6 +118,8 @@ func (m *twitter) InitializeModule() {
 			// ToDo: guest cookie
 		}
 	}
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -132,7 +134,7 @@ func (m *twitter) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *twitter) Parse(item *models.TrackedItem) error {
-	if m.settings.ConvertNameToId && !m.normalizedUriRegexp.MatchString(item.URI) {
+	if m.settings.ConvertNameToId && !m.normalizedUriRegexp.MatchString(item.URI) && !strings.Contains(item.URI, "/status/") {
 		newUri, err := m.AddItem(item.URI)
 		if err == nil {
 			m.DbIO.ChangeTrackedItemUri(item, newUri)
@@ -143,7 +145,11 @@ func (m *twitter) Parse(item *models.TrackedItem) error {
 		}
 	}
 
-	return m.parsePage(item)
+	if strings.Contains(item.URI, "/status/") {
+		return m.parseStatus(item)
+	} else {
+		return m.parsePage(item)
+	}
 }
 
 func (m *twitter) AddItem(uri string) (string, error) {
@@ -154,7 +160,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 		m.InitializeModule()
 	}
 
-	if m.settings.ConvertNameToId {
+	if m.settings.ConvertNameToId && !strings.Contains(uri, "/status/") {
 		if match, err := regexp.MatchString(".*twitter.com", uri); err == nil && match {
 			screenName, screenNameErr := m.extractScreenName(uri)
 			if screenNameErr != nil {
