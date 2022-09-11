@@ -69,6 +69,8 @@ func (m *chounyuu) InitializeModule() {
 	// set referer to new transport method
 	client := m.Session.GetClient()
 	client.Transport = m.SetReferer(client.Transport)
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

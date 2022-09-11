@@ -87,6 +87,8 @@ func (m *gdrive) InitializeModule() {
 
 	// since it technically is still a login but not required we'll call the login function nonetheless
 	m.Login(nil)
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

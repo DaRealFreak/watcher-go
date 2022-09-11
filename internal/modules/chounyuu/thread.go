@@ -68,7 +68,7 @@ func (m *chounyuu) parseThread(item *models.TrackedItem) error {
 			downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 		}
 
-		if err := m.ProcessDownloadQueue(downloadQueue, item); err != nil {
+		if err = m.ProcessDownloadQueue(downloadQueue, item); err != nil {
 			return err
 		}
 

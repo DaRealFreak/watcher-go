@@ -131,6 +131,8 @@ func (m *patreon) InitializeModule() {
 	cloudflareOptions.Headers["Accept-Encoding"] = "gzip, deflate, br"
 	cloudflareOptions.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
 	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
+
+	m.Initialized = true
 }
 
 func (m *patreon) AddItem(uri string) (string, error) {

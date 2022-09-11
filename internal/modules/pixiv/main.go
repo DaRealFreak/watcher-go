@@ -100,6 +100,8 @@ func (m *pixiv) InitializeModule() {
 	}[m.settings.Animation.Format] {
 		m.settings.Animation.Format = animation.FileFormatWebm
 	}
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

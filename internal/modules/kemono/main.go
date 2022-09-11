@@ -68,6 +68,8 @@ func (m *kemono) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

@@ -76,6 +76,8 @@ func (m *sankakuComplex) InitializeModule() {
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 
 	m.api = api.NewSankakuComplexApi(m.Key, m.Session, nil)
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

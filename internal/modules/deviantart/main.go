@@ -85,6 +85,8 @@ func (m *deviantArt) InitializeModule() {
 		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
 		&m.settings,
 	))
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
