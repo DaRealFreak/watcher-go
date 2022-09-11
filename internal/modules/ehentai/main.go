@@ -33,7 +33,6 @@ type ehentai struct {
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
 	settings                 *ehentaiSettings
-	ehSession                *session.DefaultSession
 	proxies                  []*proxySession
 	multiProxy               struct {
 		currentIndexes []int
@@ -104,12 +103,14 @@ func (m *ehentai) InitializeModule() {
 	}
 
 	// set rate limiter on 2.5 seconds with burst limit of 1
-	m.ehSession = session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
-	m.ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-	m.Session = m.ehSession
+	ehSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
+	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+	m.Session = ehSession
 
 	// set the proxy if requested
 	raven.CheckError(m.setProxyMethod())
+
+	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -272,14 +273,14 @@ func (m *ehentai) setProxyMethod() error {
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
-		return m.ehSession.SetProxy(m.GetProxySettings())
+		return m.Session.SetProxy(m.GetProxySettings())
 	case m.settings.Loop:
 		if m.settings.MultiProxy {
 			// ToDo:
 			// function to check for free proxy
 			// return new session (copied cookies from main session for login) with proxy applied
 			// free proxy after download
-			return m.ehSession.SetProxy(&m.settings.LoopProxies[0])
+			return m.Session.SetProxy(&m.settings.LoopProxies[0])
 		} else {
 			// reset proxy loop index if we reach the limit with the next iteration
 			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
@@ -287,7 +288,7 @@ func (m *ehentai) setProxyMethod() error {
 			}
 			m.ProxyLoopIndex++
 
-			return m.ehSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+			return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 		}
 	default:
 		return nil

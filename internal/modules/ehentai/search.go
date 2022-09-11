@@ -2,6 +2,7 @@ package ehentai
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -18,11 +19,38 @@ type searchGalleryItem struct {
 	uri string
 }
 
+// getSkCookie checks for the cookie "sk", since the search results are missing results without it
+// the cookie only gets set in a response of a gallery
+func (m *ehentai) getSkCookie(item *models.TrackedItem) (exists bool, value *http.Cookie) {
+	requestUrl, _ := url.Parse(item.URI)
+	cookies := m.Session.GetClient().Jar.Cookies(requestUrl)
+	for _, cookie := range cookies {
+		if cookie.Name == "sk" {
+			return true, cookie
+		}
+	}
+
+	return false, nil
+}
+
 // parseSearch parses the tracked item if we detected a search/tag
 func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	searchUrl, searchErr := m.getSearchURL(item)
 	if searchErr != nil {
 		return searchErr
+	}
+
+	if exists, _ := m.getSkCookie(item); !exists {
+		// call an example gallery, which will return a "Set-Cookie" header containing the required sk cookie
+		_, err := m.Session.Get("https://exhentai.org/g/1717239/a8f9b0c99c/")
+		if err != nil {
+			return err
+		}
+
+		existsNow, value := m.getSkCookie(item)
+		if existsNow {
+			m.DbIO.GetFirstOrCreateCookie("sk", value.Value, "", m)
+		}
 	}
 
 	response, err := m.Session.Get(searchUrl)
