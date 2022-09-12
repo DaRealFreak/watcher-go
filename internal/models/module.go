@@ -169,7 +169,7 @@ func (t *Module) Load() error {
 		return nil
 	}
 
-	if t.TriedLogin {
+	if t.TriedLogin || t.LoggedIn {
 		return nil
 	}
 
