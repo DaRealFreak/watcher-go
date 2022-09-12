@@ -173,7 +173,7 @@ func (m *ehentai) Parse(item *models.TrackedItem) (err error) {
 		m.ipBanned = true
 	}
 
-	return nil
+	return err
 }
 
 // processDownloadQueue processes the download queue consisting of gallery items
