@@ -179,8 +179,8 @@ type DeviantartNAPI struct {
 // NewDeviantartNAPI returns the settings of the DeviantArt API
 func NewDeviantartNAPI(moduleKey string) *DeviantartNAPI {
 	return &DeviantartNAPI{
-		UserSession: session.NewSession(moduleKey),
-		rateLimiter: rate.NewLimiter(rate.Every(2*time.Second), 1),
+		UserSession: session.NewSession(moduleKey, DeviantArtErrorHandler{moduleKey: moduleKey}),
+		rateLimiter: rate.NewLimiter(rate.Every(3*time.Second), 1),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 	}
