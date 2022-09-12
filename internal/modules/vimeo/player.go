@@ -48,15 +48,21 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 		return nil, fmt.Errorf("unsupported URL format")
 	}
 
+	var h string
+
 	// handle https://player.vimeo.com/video/123456/abc123 URLs
 	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s/config", results[1])
-	if len(results) == 3 && results[2] != "" {
-		playerUrl += "?h=" + results[2]
+	if results[2] != "" {
+		h = results[2]
 	}
 
 	// handle https://player.vimeo.com/video/123456?h=abc123 URLs
 	if len(results) == 4 && results[3] != "" {
-		playerUrl += "?h=" + results[3]
+		h = results[3]
+	}
+
+	if h != "" {
+		playerUrl += "?h=" + h
 	}
 
 	res, err := m.Session.Get(playerUrl)
