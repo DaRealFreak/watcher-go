@@ -165,6 +165,13 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string, errorHandlers
 		}
 	}
 
+	if err != nil {
+		// try to clean up failed file if it exists
+		if _, statErr := os.Stat(filepath); statErr == nil {
+			_ = os.Remove(filepath)
+		}
+	}
+
 	return err
 }
 
