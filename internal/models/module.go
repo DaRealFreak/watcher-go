@@ -69,7 +69,12 @@ func (e ModuleNotImplementedError) Error() string {
 
 // AddItem gives the module the option to parse the uri before adding it to the database (f.e. for normalizing)
 func (t *Module) AddItem(uri string) (string, error) {
-	return uri, nil
+	parsedUrl, err := url.Parse(uri)
+	if err != nil {
+		return uri, err
+	}
+
+	return parsedUrl.String(), nil
 }
 
 // ModuleKey returns the key of the module required to use as interface to prevent import cycles
