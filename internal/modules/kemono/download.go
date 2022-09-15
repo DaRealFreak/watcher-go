@@ -13,7 +13,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []*postItem) error {
@@ -57,7 +56,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 		fileName := fp.SanitizePath(parsedLink.Query().Get("f"), false)
 		if err = m.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"),
+				m.GetDownloadDirectory(),
 				m.Key,
 				fp.TruncateMaxLength(m.getSubFolder(item)),
 				fp.TruncateMaxLength(fp.SanitizePath(data.id, false)),
@@ -74,7 +73,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 
 				if err = m.Session.DownloadFile(
 					path.Join(
-						viper.GetString("download.directory"),
+						m.GetDownloadDirectory(),
 						m.Key,
 						fp.TruncateMaxLength(m.getSubFolder(item)),
 						fp.TruncateMaxLength(fp.SanitizePath(data.id, false)),

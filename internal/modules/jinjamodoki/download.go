@@ -12,7 +12,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
 )
 
@@ -70,7 +69,7 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 		data.restriction = false
 	}
 
-	filePath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, data.FileName)
+	filePath := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, data.FileName)
 
 	err := m.defaultSession.DownloadFile(
 		filePath,

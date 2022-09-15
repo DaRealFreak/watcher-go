@@ -15,7 +15,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // parseStory parses single stories
@@ -136,7 +135,8 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 
 	text = m.ensureUTF8(text)
 
-	filePath := path.Join(viper.GetString("download.directory"),
+	filePath := path.Join(
+		m.GetDownloadDirectory(),
 		m.Key,
 		m.getAuthor(doc),
 		fp.SanitizePath(storyId[0]+"_"+m.getStoryName(doc)+"_"+m.getChapterTitle(doc)+".txt", false),

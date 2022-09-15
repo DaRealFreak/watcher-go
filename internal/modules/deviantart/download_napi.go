@@ -14,7 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type downloadQueueItemNAPI struct {
@@ -138,7 +137,7 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 	// ensure download directory, needed for only text artists
 	m.nAPI.UserSession.EnsureDownloadDirectory(
 		path.Join(
-			viper.GetString("download.directory"),
+			m.GetDownloadDirectory(),
 			m.Key,
 			deviationItem.downloadTag,
 			"tmp.txt",
@@ -147,7 +146,8 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 
 	if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
 		if err = m.nAPI.UserSession.DownloadFile(
-			path.Join(viper.GetString("download.directory"),
+			path.Join(
+				m.GetDownloadDirectory(),
 				m.Key,
 				deviationItem.downloadTag,
 				deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
@@ -200,7 +200,8 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) error {
 	if highestQualityVideoType := deviationItem.deviation.Media.GetHighestQualityVideoType(); highestQualityVideoType != nil {
 		if err := m.nAPI.UserSession.DownloadFile(
-			path.Join(viper.GetString("download.directory"),
+			path.Join(
+				m.GetDownloadDirectory(),
 				m.Key,
 				deviationItem.downloadTag,
 				fmt.Sprintf(
@@ -216,7 +217,8 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	}
 
 	contentFilePath, _ := filepath.Abs(
-		path.Join(viper.GetString("download.directory"),
+		path.Join(
+			m.GetDownloadDirectory(),
 			m.Key,
 			deviationItem.downloadTag,
 			deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
@@ -249,7 +251,8 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 		deviationItem.deviation.Extended != nil &&
 		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" {
 		downloadFilePath, _ := filepath.Abs(
-			path.Join(viper.GetString("download.directory"),
+			path.Join(
+				m.GetDownloadDirectory(),
 				m.Key,
 				deviationItem.downloadTag,
 				deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
@@ -281,7 +284,8 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 	}
 
 	if len(text) > m.settings.Download.DescriptionMinLength {
-		filePath := path.Join(viper.GetString("download.directory"),
+		filePath := path.Join(
+			m.GetDownloadDirectory(),
 			m.Key,
 			deviationItem.downloadTag,
 			fmt.Sprintf(
@@ -307,7 +311,8 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 		return err
 	}
 
-	filePath := path.Join(viper.GetString("download.directory"),
+	filePath := path.Join(
+		m.GetDownloadDirectory(),
 		m.Key,
 		deviationItem.downloadTag,
 		fmt.Sprintf(

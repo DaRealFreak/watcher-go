@@ -145,7 +145,7 @@ func (m *youtube) Parse(item *models.TrackedItem) error {
 
 func (m *youtube) getCommand(item *models.TrackedItem) (args []string, err error) {
 	localFolder := filepath.Join(
-		viper.GetString("download.directory"),
+		m.GetDownloadDirectory(),
 		m.Key,
 	)
 	if item.SubFolder != "" {

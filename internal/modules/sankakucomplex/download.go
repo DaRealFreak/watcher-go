@@ -13,7 +13,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type downloadQueue struct {
@@ -59,7 +58,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	err = m.Session.DownloadFile(
-		path.Join(viper.GetString("download.directory"), m.Key, item.DownloadTag, item.FileName),
+		path.Join(m.GetDownloadDirectory(), m.Key, item.DownloadTag, item.FileName),
 		item.FileURI,
 	)
 

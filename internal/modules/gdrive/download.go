@@ -13,7 +13,6 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"google.golang.org/api/drive/v3"
 )
 
@@ -51,7 +50,7 @@ func (m *gdrive) downloadFiles(sortedFiles []*drive.File, item *models.TrackedIt
 		}
 
 		localFilePath := filepath.Join(
-			viper.GetString("download.directory"),
+			m.GetDownloadDirectory(),
 			m.Key, file.Name,
 		)
 		m.Session.EnsureDownloadDirectory(localFilePath)

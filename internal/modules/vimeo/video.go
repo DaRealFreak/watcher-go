@@ -14,7 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type Media struct {
@@ -110,7 +109,7 @@ func (m *vimeo) parseVideo(item *models.TrackedItem, masterJSONUrl string, video
 
 func (m *vimeo) downloadVideo(content MasterJsonContent, baseURL *url.URL, videoTitle string) error {
 	finalFilePath := path.Join(
-		viper.GetString("download.directory"),
+		m.GetDownloadDirectory(),
 		m.Key,
 		fp.TruncateMaxLength(fp.SanitizePath(videoTitle+".mp4", false)),
 	)

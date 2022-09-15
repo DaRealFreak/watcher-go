@@ -17,7 +17,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type downloadQueueItem struct {
@@ -96,7 +95,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 
 		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			postInfo.Body.ImageForShare,
 		); err != nil {
@@ -107,9 +106,9 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, image := range postInfo.Body.PostBody.Images {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(image.OriginalURL))
 
-		if err := m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			image.OriginalURL,
 		); err != nil {
@@ -121,9 +120,9 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, file := range postInfo.Body.PostBody.Files {
 		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
 
-		if err := m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			file.URL,
 		); err != nil {
@@ -137,9 +136,9 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		i += 1
 		fileName := fmt.Sprintf("%d_%s.%s", i, file.Name, file.Extension)
 
-		if err := m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			file.URL,
 		); err != nil {
@@ -151,9 +150,9 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, file := range postInfo.ImagesFromBlocks() {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(file))
 
-		if err := m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
 			file,
 		); err != nil {
@@ -170,7 +169,7 @@ func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.I
 		fileName := fp.GetFileName(metaPage.ImageURLs.Original)
 
 		if err := m.mobileAPI.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
+			path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName),
 			metaPage.ImageURLs.Original,
 		); err != nil {
 			// if download was not successful return the occurred error here
@@ -182,7 +181,7 @@ func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.I
 		fileName := fp.GetFileName(*illust.MetaSinglePage.OriginalImageURL)
 
 		return m.mobileAPI.Session.DownloadFile(
-			path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName),
+			path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName),
 			*illust.MetaSinglePage.OriginalImageURL,
 		)
 	}
@@ -244,7 +243,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 		return err
 	}
 
-	filepath := path.Join(viper.GetString("download.directory"), m.Key, data.DownloadTag, fileName)
+	filepath := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName)
 	log.WithField("module", m.Key).Debug(
 		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
 	)

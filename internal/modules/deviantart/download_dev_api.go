@@ -15,7 +15,6 @@ import (
 	watcherIO "github.com/DaRealFreak/watcher-go/pkg/io"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type downloadQueueItemDevAPI struct {
@@ -56,7 +55,7 @@ func (m *deviantArt) processDownloadQueue(downloadQueue []downloadQueueItemDevAP
 		// ensure download directory, needed for only text artists
 		m.daAPI.UserSession.EnsureDownloadDirectory(
 			path.Join(
-				viper.GetString("download.directory"),
+				m.GetDownloadDirectory(),
 				m.Key,
 				deviationItem.downloadTag,
 				"tmp.txt",
@@ -103,7 +102,8 @@ func (m *deviantArt) downloadFlash(item downloadQueueItemDevAPI, downloadLog *do
 	// download content is always equal to the flash object in the API response
 	if downloadLog.download == "" || (downloadLog.download != "" && filepath.Ext(downloadLog.download) != ".swf") {
 		return m.daAPI.DownloadFile(
-			path.Join(viper.GetString("download.directory"),
+			path.Join(
+				m.GetDownloadDirectory(),
 				m.Key,
 				item.downloadTag,
 				fmt.Sprintf(
@@ -131,7 +131,8 @@ func (m *deviantArt) downloadVideo(item downloadQueueItemDevAPI) error {
 	}
 
 	return m.daAPI.DownloadFile(
-		path.Join(viper.GetString("download.directory"),
+		path.Join(
+			m.GetDownloadDirectory(),
 			m.Key,
 			item.downloadTag,
 			fmt.Sprintf(
@@ -159,7 +160,8 @@ func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *
 		sim, err := duplication.CheckForSimilarity(downloadLog.download, tmpFile.Name())
 		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
 		if err != nil && sim <= 0.95 {
-			downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
+			downloadLog.content, _ = filepath.Abs(path.Join(
+				m.GetDownloadDirectory(),
 				m.Key,
 				item.downloadTag,
 				fmt.Sprintf(
@@ -174,7 +176,8 @@ func (m *deviantArt) downloadContent(item downloadQueueItemDevAPI, downloadLog *
 			}
 		}
 	} else if item.deviation.Content != nil {
-		downloadLog.content, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
+		downloadLog.content, _ = filepath.Abs(path.Join(
+			m.GetDownloadDirectory(),
 			m.Key,
 			item.downloadTag,
 			fmt.Sprintf(
@@ -216,7 +219,8 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 	}
 
 	if len(downloadLog.downloadedFiles()) == 0 {
-		if err = watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
+		if err = watcherIO.CopyFile(tmpFile.Name(), path.Join(
+			m.GetDownloadDirectory(),
 			m.Key,
 			item.downloadTag,
 			fmt.Sprintf(
@@ -244,7 +248,8 @@ func (m *deviantArt) downloadThumbs(item downloadQueueItemDevAPI, downloadLog *d
 		}
 	}
 
-	return watcherIO.CopyFile(tmpFile.Name(), path.Join(viper.GetString("download.directory"),
+	return watcherIO.CopyFile(tmpFile.Name(), path.Join(
+		m.GetDownloadDirectory(),
 		m.Key,
 		item.downloadTag,
 		fmt.Sprintf(
@@ -266,7 +271,8 @@ func (m *deviantArt) downloadDeviationDevAPI(item downloadQueueItemDevAPI, downl
 	}
 
 	item.deviation.DeviationDownload = deviationDownload
-	downloadLog.download, _ = filepath.Abs(path.Join(viper.GetString("download.directory"),
+	downloadLog.download, _ = filepath.Abs(path.Join(
+		m.GetDownloadDirectory(),
 		m.Key,
 		item.downloadTag,
 		fmt.Sprintf(
@@ -299,7 +305,8 @@ func (m *deviantArt) downloadHTMLContent(item downloadQueueItemDevAPI) error {
 		return err
 	}
 
-	filePath := path.Join(viper.GetString("download.directory"),
+	filePath := path.Join(
+		m.GetDownloadDirectory(),
 		m.Key,
 		item.downloadTag,
 		fmt.Sprintf(

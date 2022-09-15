@@ -13,7 +13,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
 )
 
@@ -213,7 +212,7 @@ func (m *ehentai) downloadImageSession(
 
 	downloadErr := downloadSession.session.DownloadFile(
 		path.Join(
-			viper.GetString("download.directory"),
+			m.GetDownloadDirectory(),
 			m.Key,
 			fp.TruncateMaxLength(fp.SanitizePath(strings.TrimSpace(trackedItem.SubFolder), false)),
 			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),

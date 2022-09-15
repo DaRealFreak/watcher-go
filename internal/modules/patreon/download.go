@@ -10,7 +10,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // postDownload is the struct used for downloading post contents
@@ -43,7 +42,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				fileName := fp.SanitizePath(attachment.Attributes.Name, false)
 				if err := m.Session.DownloadFile(
 					path.Join(
-						viper.GetString("download.directory"),
+						m.GetDownloadDirectory(),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
 						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),
@@ -67,7 +66,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				fileName := fp.SanitizePath(fp.GetFileName(attachment.Attributes.FileName), false)
 				if err := m.Session.DownloadFile(
 					path.Join(
-						viper.GetString("download.directory"),
+						m.GetDownloadDirectory(),
 						m.Key,
 						strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
 						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%d_%s", data.PostID, fileName))),

@@ -158,6 +158,16 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 	return nil
 }
 
+// GetDownloadDirectory returns the module download directory if set, else the default directory is getting returned
+func (t *Module) GetDownloadDirectory() string {
+	moduleDirectory := viper.GetString(fmt.Sprintf("Modules.%s.download.directory", t.GetViperModuleKey()))
+	if moduleDirectory != "" {
+		return moduleDirectory
+	}
+
+	return viper.GetString("download.directory")
+}
+
 // GetViperModuleKey returns the module key without "." characters since they'll ruin the generated tree structure
 func (t *Module) GetViperModuleKey() string {
 	return strings.ReplaceAll(t.Key, ".", "_")

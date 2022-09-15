@@ -9,7 +9,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet, trackedItem *models.TrackedItem) error {
@@ -32,7 +31,7 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 			downloadItem := downloadItems[i]
 			err := m.twitterGraphQlAPI.Session.DownloadFile(
 				path.Join(
-					viper.GetString("download.directory"),
+					m.GetDownloadDirectory(),
 					m.Key,
 					fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(trackedItem, downloadItem), false)),
 					fp.TruncateMaxLength(fp.SanitizePath(downloadItem.FileName, false)),
@@ -107,7 +106,7 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 
 						if err := m.twitterAPI.Session.DownloadFile(
 							path.Join(
-								viper.GetString("download.directory"),
+								m.GetDownloadDirectory(),
 								m.Key,
 								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTagFromTweet(trackedItem, tweet), false)),
 								fp.TruncateMaxLength(fmt.Sprintf(
@@ -126,7 +125,7 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 			} else {
 				if err := m.twitterAPI.Session.DownloadFile(
 					path.Join(
-						viper.GetString("download.directory"),
+						m.GetDownloadDirectory(),
 						m.Key,
 						fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTagFromTweet(trackedItem, tweet), false)),
 						fp.TruncateMaxLength(fmt.Sprintf("%s_%s_%d_%s", tweet.ID, tweet.AuthorID.String(), i+1, fp.GetFileName(media.URL))),
