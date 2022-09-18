@@ -22,7 +22,11 @@ type kemono struct {
 }
 
 type kemonoSettings struct {
-	SkipErrorsForExternalURLs bool `mapstructure:"skip_errors_for_external_urls"`
+	ExternalURLs struct {
+		DownloadExternalItems     bool `mapstructure:"download_external_items"`
+		PrintExternalItems        bool `mapstructure:"print_external_items"`
+		SkipErrorsForExternalURLs bool `mapstructure:"skip_errors_for_external_urls"`
+	} `mapstructure:"external_urls"`
 }
 
 // init function registers the bare and the normal module to the module factories

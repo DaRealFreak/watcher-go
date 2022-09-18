@@ -37,8 +37,12 @@ type patreonSettings struct {
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`
-	ConvertNameToId           bool `mapstructure:"convert_name_to_id"`
-	SkipErrorsForExternalURLs bool `mapstructure:"skip_errors_for_external_urls"`
+	ConvertNameToId bool `mapstructure:"convert_name_to_id"`
+	ExternalURLs    struct {
+		DownloadExternalItems     bool `mapstructure:"download_external_items"`
+		PrintExternalItems        bool `mapstructure:"print_external_items"`
+		SkipErrorsForExternalURLs bool `mapstructure:"skip_errors_for_external_urls"`
+	} `mapstructure:"external_urls"`
 }
 
 type loginAttributes struct {
