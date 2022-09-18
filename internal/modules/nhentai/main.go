@@ -88,8 +88,6 @@ func (m *nhentai) InitializeModule() {
 	options := cloudflarebp.GetDefaultOptions()
 	options.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
-
-	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

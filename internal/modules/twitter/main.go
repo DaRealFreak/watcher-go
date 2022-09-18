@@ -118,8 +118,6 @@ func (m *twitter) InitializeModule() {
 			// ToDo: guest cookie
 		}
 	}
-
-	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

@@ -63,8 +63,6 @@ func NewWatcher(cfg *configuration.AppConfiguration) *Watcher {
 func (app *Watcher) Run() {
 	trackedItems := app.getRelevantTrackedItems()
 
-	app.initializeUsedModules(trackedItems)
-
 	if app.Cfg.Run.RunParallel {
 		groupedItems := make(map[string][]*models.TrackedItem)
 		for _, item := range trackedItems {
@@ -200,38 +198,6 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
 			)
-		}
-	}
-}
-
-func (app *Watcher) initializeUsedModules(items []*models.TrackedItem) {
-	var initializedModules []string
-
-	for _, item := range items {
-		foundModule := false
-
-		for _, initializedModule := range initializedModules {
-			if item.Module == initializedModule {
-				foundModule = true
-				break
-			}
-		}
-
-		if !foundModule {
-			module := app.ModuleFactory.GetModuleFromURI(item.URI)
-			if app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
-				// don't initialize excluded modules
-				continue
-			}
-
-			log.WithField("module", module.Key).Debug(
-				"initializing module",
-			)
-			module.InitializeModule()
-			// set whatever cookies we have
-			module.SetCookies()
-
-			initializedModules = append(initializedModules, item.Module)
 		}
 	}
 }

@@ -109,8 +109,6 @@ func (m *ehentai) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.setProxyMethod())
-
-	m.Initialized = true
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
