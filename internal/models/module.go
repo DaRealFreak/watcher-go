@@ -179,10 +179,11 @@ func (t *Module) GetViperModuleKey() string {
 }
 
 func (t *Module) Load() error {
-	if !t.Initialized {
-		t.InitializeModule()
+	if t.Initialized {
 		return nil
 	}
+
+	t.InitializeModule()
 
 	if t.TriedLogin || t.LoggedIn {
 		return nil
