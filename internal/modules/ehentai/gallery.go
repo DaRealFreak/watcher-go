@@ -70,6 +70,12 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 			break
 		}
 
+		// change to next proxy to avoid IP ban
+		err = m.setProxyMethod()
+		if err != nil {
+			return err
+		}
+
 		response, _ = m.Session.Get(nextPageURL)
 		html, _ = m.Session.GetDocument(response).Html()
 	}

@@ -100,6 +100,12 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 			break
 		}
 
+		// change to next proxy to avoid IP ban
+		err = m.setProxyMethod()
+		if err != nil {
+			return err
+		}
+
 		response, err = m.Session.Get(nextPageURL)
 		if err != nil {
 			return err

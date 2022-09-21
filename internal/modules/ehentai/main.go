@@ -160,6 +160,12 @@ func (m *ehentai) Parse(item *models.TrackedItem) (err error) {
 	if strings.Contains(item.URI, "/g/") && !m.downloadLimitReached {
 		err = m.parseGallery(item)
 	} else if strings.Contains(item.URI, "/tag/") || strings.Contains(item.URI, "f_search=") {
+		// change to next proxy to avoid IP ban
+		err = m.setProxyMethod()
+		if err != nil {
+			return err
+		}
+
 		err = m.parseSearch(item)
 	}
 
@@ -273,21 +279,13 @@ func (m *ehentai) setProxyMethod() error {
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
 		return m.Session.SetProxy(m.GetProxySettings())
 	case m.settings.Loop:
-		if m.settings.MultiProxy {
-			// ToDo:
-			// function to check for free proxy
-			// return new session (copied cookies from main session for login) with proxy applied
-			// free proxy after download
-			return m.Session.SetProxy(&m.settings.LoopProxies[0])
-		} else {
-			// reset proxy loop index if we reach the limit with the next iteration
-			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-				m.ProxyLoopIndex = -1
-			}
-			m.ProxyLoopIndex++
-
-			return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+		// reset proxy loop index if we reach the limit with the next iteration
+		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+			m.ProxyLoopIndex = -1
 		}
+		m.ProxyLoopIndex++
+
+		return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:
 		return nil
 	}
