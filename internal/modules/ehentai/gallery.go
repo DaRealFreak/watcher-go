@@ -40,31 +40,28 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 
 	galleryTitle := m.extractGalleryTitle(html)
 
-	// check for forbidden tags
-	blacklisted, blacklistedTag := false, ""
-	for _, tag := range m.settings.Search.BlacklistedTags {
-		if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(tag)) {
-			blacklisted, blacklistedTag = true, tag
-			break
-		}
-	}
-
 	// check for exclusively allowed tags (if f.e. multiple languages are together in one gallery)
+	whitelisted := false
 	for _, tag := range m.settings.Search.WhitelistedTags {
 		if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(tag)) {
-			blacklisted = false
+			whitelisted = true
 			break
 		}
 	}
 
-	if blacklisted {
-		log.WithField("module", m.Key).Warnf(
-			"gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
-			galleryTitle,
-			blacklistedTag,
-		)
-		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
-		return nil
+	// if not exclusively allowed check for blacklisted tags
+	if !whitelisted {
+		for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
+			if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
+				log.WithField("module", m.Key).Warnf(
+					"gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+					galleryTitle,
+					blacklistedTag,
+				)
+				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+				return nil
+			}
+		}
 	}
 
 	foundCurrentItem := item.CurrentItem == ""
