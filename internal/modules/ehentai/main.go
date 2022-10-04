@@ -48,6 +48,7 @@ type ehentaiSettings struct {
 		LowPoweredTags    bool     `mapstructure:"low_powered_tags"`
 		ExpungedGalleries bool     `mapstructure:"expunged_galleries"`
 		BlacklistedTags   []string `mapstructure:"blacklisted_tags"`
+		WhitelistedTags   []string `mapstructure:"whitelisted_tags"`
 		CategorizeSearch  bool     `mapstructure:"categorize_search"`
 		InheritSubFolder  bool     `mapstructure:"inherit_sub_folder"`
 	} `mapstructure:"search"`
