@@ -9,6 +9,11 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
 
+type TimelineInterface interface {
+	TweetEntries(userIDs ...string) (tweets []*Tweet)
+	BottomCursor() string
+}
+
 type Tweet struct {
 	EntryID string `json:"entryId"`
 	Content struct {
@@ -22,10 +27,11 @@ type Tweet struct {
 					RestID json.Number `json:"rest_id"`
 					Core   struct {
 						UserResults struct {
-							Result User `json:"result"`
+							Result *User `json:"result"`
 						} `json:"user_results"`
 					} `json:"core"`
 					Legacy struct {
+						CreatedAt        *TwitterTime `json:"created_at"`
 						ExtendedEntities struct {
 							Media []struct {
 								ID        json.Number `json:"id_str"`
@@ -50,12 +56,14 @@ type Tweet struct {
 type StatusTweet struct {
 	Data struct {
 		ThreadedConversationWithInjectionsV2 struct {
-			Instructions []struct {
-				Type    string   `json:"type"`
-				Entries []*Tweet `json:"entries"`
-			} `json:"instructions"`
+			Instructions []TimelineInstruction `json:"instructions"`
 		} `json:"threaded_conversation_with_injections_v2"`
 	} `json:"data"`
+}
+
+type TimelineInstruction struct {
+	Type    string   `json:"type"`
+	Entries []*Tweet `json:"entries"`
 }
 
 type Timeline struct {
@@ -64,10 +72,7 @@ type Timeline struct {
 			Result struct {
 				TimelineV2 struct {
 					Timeline struct {
-						Instructions []struct {
-							Type    string   `json:"type"`
-							Entries []*Tweet `json:"entries"`
-						} `json:"instructions"`
+						Instructions []TimelineInstruction `json:"instructions"`
 					} `json:"timeline"`
 				} `json:"timeline_v2"`
 			} `json:"result"`
@@ -192,7 +197,7 @@ type UserInformation struct {
 func (a *TwitterGraphQlAPI) UserTimelineV2(
 	userId string,
 	cursor string,
-) (*Timeline, error) {
+) (TimelineInterface, error) {
 	a.applyRateLimit()
 
 	variables := map[string]interface{}{

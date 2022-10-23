@@ -3,8 +3,10 @@ package twitter
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
@@ -36,20 +38,37 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 	var (
 		foundCurrentItem bool
-		bottomCursor     string
-		newMediaTweets   []*graphql_api.Tweet
+
+		// user media variables
+		timeline       graphql_api.TimelineInterface
+		timelineErr    error
+		bottomCursor   string
+		newMediaTweets []*graphql_api.Tweet
+
+		// search variables
+		searchTime          *time.Time
+		searchedMediaTweets []*graphql_api.Tweet
 	)
 
 	for !foundCurrentItem {
-		timeline, timeLineErr := m.twitterGraphQlAPI.UserTimelineV2(
-			userId,
-			bottomCursor,
-		)
-		if timeLineErr != nil {
-			return timeLineErr
+		if searchTime != nil && len(newMediaTweets) > 0 {
+			timeline, timelineErr = m.twitterGraphQlAPI.Search(
+				screenName,
+				*searchTime,
+				bottomCursor,
+			)
+		} else {
+			timeline, timelineErr = m.twitterGraphQlAPI.UserTimelineV2(
+				userId,
+				bottomCursor,
+			)
+		}
+		if timelineErr != nil {
+			return timelineErr
 		}
 
-		for _, tweet := range timeline.TweetEntries(userId) {
+		tweetEntries := timeline.TweetEntries(userId)
+		for _, tweet := range tweetEntries {
 			if m.settings.ConvertNameToId &&
 				tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName != screenName {
 				screenName = tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName
@@ -77,13 +96,48 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			}
 
 			newMediaTweets = append(newMediaTweets, tweet)
+			if searchTime != nil {
+				// append to additional tweets if we are in search mode to retrieve new search time later on
+				searchedMediaTweets = append(searchedMediaTweets, tweet)
+			}
 		}
 
 		bottomCursor = timeline.BottomCursor()
 
-		// no later page cursor available, so we can break here
-		if len(timeline.TweetEntries(userId)) == 0 {
-			break
+		if searchTime != nil && len(tweetEntries) == 0 {
+			if len(searchedMediaTweets) > 0 {
+				// search is nearly random, so try to bring it in chronological order at least for the current items
+				sort.SliceStable(searchedMediaTweets, func(i, j int) bool {
+					return searchedMediaTweets[i].Content.ItemContent.TweetResults.Result.Legacy.CreatedAt.Time.Unix() < searchedMediaTweets[j].Content.ItemContent.TweetResults.Result.Legacy.CreatedAt.Time.Unix()
+				})
+
+				tmp := searchedMediaTweets[0].Content.ItemContent.TweetResults.Result.Legacy.CreatedAt.Time.AddDate(0, 0, 1)
+				// new search date is same as the previous one, break here
+				if tmp.Unix() == searchTime.Unix() {
+					break
+				}
+
+				// search until previous day of the last post (in case of multiple posts on the same day)
+				searchTime = &tmp
+
+				// reset searched media tweets
+				searchedMediaTweets = []*graphql_api.Tweet{}
+				bottomCursor = ""
+			} else {
+				break
+			}
+		}
+
+		if len(tweetEntries) == 0 {
+			if searchTime == nil && len(newMediaTweets) > 0 {
+				// search until previous day of the last post (in case of multiple posts on the same day) and reset cursor
+				tmp := newMediaTweets[len(newMediaTweets)-1].Content.ItemContent.TweetResults.Result.Legacy.CreatedAt.Time.AddDate(0, 0, 1)
+				searchTime = &tmp
+				bottomCursor = ""
+			} else if len(newMediaTweets) == 0 {
+				// no later page cursor available and no new tweets found to retrieve search date from, so break here
+				break
+			}
 		}
 	}
 
