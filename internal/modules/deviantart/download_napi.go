@@ -249,7 +249,8 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 	if downloadedContentFile &&
 		deviationItem.deviation.IsDownloadable &&
 		deviationItem.deviation.Extended != nil &&
-		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" {
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".zip" {
 		downloadFilePath, _ := filepath.Abs(
 			path.Join(
 				m.GetDownloadDirectory(),

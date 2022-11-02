@@ -60,7 +60,7 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 	return sim, err
 }
 
-// getSimilarity returns the similarity of the passed files in numerical percentage, the higher the more similar
+// getSimilarity returns the similarity of the passed files in numerical percentage, the higher, the more similar
 func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 	executable, args := imaging.GetImageMagickEnv("compare")
 	args = append(args, "-metric", "mse", file1, file2, "NULL:")
