@@ -173,6 +173,7 @@ type DeviantartNAPI struct {
 	UserSession watcherHttp.SessionInterface
 	rateLimiter *rate.Limiter
 	ctx         context.Context
+	csrfToken   string
 	moduleKey   string
 }
 
@@ -201,6 +202,8 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return fmt.Errorf("could not retrieve CSRF token from login page")
 	}
 
+	a.csrfToken = info.CSRFToken
+
 	values := url.Values{
 		"referer":    {"https://www.deviantart.com"},
 		"csrf_token": {info.CSRFToken},
@@ -215,15 +218,23 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return err
 	}
 
+	info, err = a.GetLoginCSRFToken(res)
+	if err != nil {
+		return err
+	}
+
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
 
-	if !strings.Contains(string(content), "\"loggedIn\":true") &&
+	if info.CSRFToken != "" &&
+		!strings.Contains(string(content), "\"loggedIn\":true") &&
 		!strings.Contains(string(content), "\\\"isLoggedIn\\\":true") {
 		return fmt.Errorf("login failed")
 	}
+
+	a.csrfToken = info.CSRFToken
 
 	return nil
 }

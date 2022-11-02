@@ -26,7 +26,8 @@ const UserInfoExpandDefault = "user.stats,user.profile,user.watch"
 
 func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, error) {
 	values := url.Values{
-		"username": {username},
+		"username":   {username},
+		"csrf_token": {a.csrfToken},
 	}
 
 	if expand != "" {
@@ -49,6 +50,7 @@ func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit 
 	values := url.Values{
 		"username":         {username},
 		"deviations_limit": {strconv.Itoa(deviationsLimit)},
+		"csrf_token":       {a.csrfToken},
 	}
 
 	if withSubFolders {
@@ -71,6 +73,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 	values := url.Values{
 		"username":         {username},
 		"deviations_limit": {strconv.Itoa(deviationsLimit)},
+		"csrf_token":       {a.csrfToken},
 	}
 
 	if withSubFolders {
@@ -91,9 +94,10 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 
 func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, limit int, allFolders bool) (*UserResponse, error) {
 	values := url.Values{
-		"username": {username},
-		"offset":   {strconv.Itoa(offset)},
-		"limit":    {strconv.Itoa(limit)},
+		"username":   {username},
+		"offset":     {strconv.Itoa(offset)},
+		"limit":      {strconv.Itoa(limit)},
+		"csrf_token": {a.csrfToken},
 	}
 
 	if folder > 0 {
@@ -120,9 +124,10 @@ func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, 
 
 func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int, limit int, allFolders bool) (*UserResponse, error) {
 	values := url.Values{
-		"username": {username},
-		"offset":   {strconv.Itoa(offset)},
-		"limit":    {strconv.Itoa(limit)},
+		"username":   {username},
+		"offset":     {strconv.Itoa(offset)},
+		"limit":      {strconv.Itoa(limit)},
+		"csrf_token": {a.csrfToken},
 	}
 
 	if folder > 0 {

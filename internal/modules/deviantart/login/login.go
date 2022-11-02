@@ -1,8 +1,10 @@
 package login
 
 import (
+	"io"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -38,6 +40,14 @@ func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
 			currentLoginInfo.CSRFToken = jsonPattern.FindStringSubmatch(scriptContent)[1]
 		}
 	})
+
+	html, parseErr := document.Html()
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	// set body again in case we have to read from the body again
+	res.Body = io.NopCloser(strings.NewReader(html))
 
 	return &currentLoginInfo, err
 }

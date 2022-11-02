@@ -28,10 +28,11 @@ func (a *DeviantartNAPI) CollectionsUser(
 	username string, offset int, limit int, folderType string, withSubFolders bool, includeAllFolder bool,
 ) (*CollectionsUserResponse, error) {
 	values := url.Values{
-		"username": {username},
-		"offset":   {strconv.Itoa(offset)},
-		"limit":    {strconv.Itoa(limit)},
-		"type":     {folderType},
+		"username":   {username},
+		"offset":     {strconv.Itoa(offset)},
+		"limit":      {strconv.Itoa(limit)},
+		"type":       {folderType},
+		"csrf_token": {a.csrfToken},
 	}
 
 	if withSubFolders {
@@ -82,7 +83,8 @@ func (a *DeviantartNAPI) CollectionSearch(search string, cursor string, order st
 	values := url.Values{
 		"q": {search},
 		// set order to most-recent by default, update if set later
-		"order": {OrderMostRecent},
+		"order":      {OrderMostRecent},
+		"csrf_token": {a.csrfToken},
 	}
 
 	if cursor != "" {
