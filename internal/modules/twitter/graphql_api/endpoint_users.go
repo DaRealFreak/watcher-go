@@ -95,7 +95,8 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 			if len(userIDs) != 0 {
 				inAllowedUsers := false
 				for _, userID := range userIDs {
-					if userID == entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String() {
+					if entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result != nil &&
+						userID == entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String() {
 						inAllowedUsers = true
 						break
 					}
