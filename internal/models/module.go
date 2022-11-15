@@ -145,7 +145,7 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 
 		err := t.Session.DownloadFile(
 			path.Join(
-				viper.GetString("download.directory"),
+				t.GetDownloadDirectory(),
 				t.Key,
 				fp.TruncateMaxLength(fp.SanitizePath(trackedItem.SubFolder, false)),
 				fp.TruncateMaxLength(fp.SanitizePath(data.DownloadTag, false)),
