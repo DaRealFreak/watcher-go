@@ -20,6 +20,7 @@ type postDownload struct {
 	PatreonURL   string
 	Attachments  []*campaignInclude
 	ExternalURLs []string
+	EditedAt     *Time
 }
 
 func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *models.TrackedItem) error {
@@ -120,9 +121,9 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					m.DbIO.DeleteTrackedItem(newItem)
 				}
 			}
-
-			m.DbIO.UpdateTrackedItem(item, strconv.Itoa(data.PostID))
 		}
+
+		m.DbIO.UpdateTrackedItem(item, strconv.Itoa(int(data.EditedAt.Unix())))
 	}
 
 	return nil

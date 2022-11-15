@@ -40,6 +40,7 @@ type campaignPost struct {
 			Html        string `json:"html"`
 			URL         string `json:"url"`
 		} `json:"embed"`
+		EditedAt *Time `json:"edited_at"`
 	} `json:"attributes"`
 	Relationships struct {
 		AttachmentSection struct {
@@ -103,12 +104,12 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		}
 
 		for _, post := range postsData.Posts {
-			postID, _ := strconv.ParseInt(post.ID.String(), 10, 64)
-			if item.CurrentItem != "" && postID == currentItemID {
+			if item.CurrentItem != "" && post.Attributes.EditedAt.Unix() <= currentItemID {
 				foundCurrentItem = true
 				break
 			}
 
+			postID, _ := strconv.ParseInt(post.ID.String(), 10, 64)
 			if download := m.extractPostDownload(creatorID, campaign, postID, post, postsData); download != nil {
 				postDownloads = append(postDownloads, download)
 			}
@@ -156,6 +157,7 @@ func (m *patreon) extractPostDownload(
 		PostID:       int(postID),
 		PatreonURL:   post.Attributes.PatreonURL,
 		ExternalURLs: []string{},
+		EditedAt:     post.Attributes.EditedAt,
 	}
 
 	if post.Attributes.Embed.Html != "" {
@@ -229,16 +231,17 @@ func (m *patreon) getCampaignPostsURI(campaignID int) string {
 		"fields[post]": {
 			"change_visibility_at,comment_count,content,current_user_can_delete,current_user_can_view," +
 				"current_user_has_liked,embed,image,is_paid,like_count,min_cents_pledged_to_view,post_file," +
-				"post_metadata,published_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url," +
+				"post_metadata,published_at,edited_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url," +
 				"teaser_text,title,upgrade_url,url,was_posted_by_campaign_owner",
 		},
 		"fields[user]": {"image_url,full_name,url"},
 		"fields[campaign]": {
 			"currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,is_monthly,name,url",
 		},
-		"fields[access_rule]":                {"access_rule_type,amount_cents"},
-		"fields[media]":                      {"id,image_urls,download_url,metadata,file_name"},
-		"sort":                               {"-published_at"},
+		"fields[access_rule]": {"access_rule_type,amount_cents"},
+		"fields[media]":       {"id,image_urls,download_url,metadata,file_name"},
+		// created_at, published_at, edited_at seem to be valid options
+		"sort":                               {"-edited_at"},
 		"filter[campaign_id]":                {strconv.Itoa(campaignID)},
 		"filter[exclude_inaccessible_posts]": {"true"},
 		"json-api-use-default-includes":      {"false"},
