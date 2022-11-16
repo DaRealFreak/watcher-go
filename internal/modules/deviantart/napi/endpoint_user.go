@@ -2,7 +2,6 @@ package napi
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -157,25 +156,15 @@ type WatchResponse struct {
 }
 
 func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
-	res, err := a.UserSession.Get(fmt.Sprintf("https://www.deviantart.com/%s", username))
-	if err != nil {
-		return nil, err
-	}
-
-	csrf, csrfErr := a.GetLoginCSRFToken(res)
-	if csrfErr != nil {
-		return nil, csrfErr
-	}
-
 	values := map[string]string{
 		"username":   username,
-		"csrf_token": csrf.CSRFToken,
+		"csrf_token": a.csrfToken,
 	}
 
 	jsonString, _ := json.Marshal(values)
 	bodyReader := strings.NewReader(string(jsonString))
 
-	res, err = a.UserSession.GetClient().Post(
+	res, err := a.UserSession.GetClient().Post(
 		"https://www.deviantart.com/_napi/shared_api/watch",
 		"application/json",
 		bodyReader,
@@ -191,25 +180,15 @@ func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
 }
 
 func (a *DeviantartNAPI) UnwatchUser(username string) (*WatchResponse, error) {
-	res, err := a.UserSession.Get(fmt.Sprintf("https://www.deviantart.com/%s", username))
-	if err != nil {
-		return nil, err
-	}
-
-	csrf, csrfErr := a.GetLoginCSRFToken(res)
-	if csrfErr != nil {
-		return nil, csrfErr
-	}
-
 	values := map[string]string{
 		"username":   username,
-		"csrf_token": csrf.CSRFToken,
+		"csrf_token": a.csrfToken,
 	}
 
 	jsonString, _ := json.Marshal(values)
 	bodyReader := strings.NewReader(string(jsonString))
 
-	res, err = a.UserSession.GetClient().Post(
+	res, err := a.UserSession.GetClient().Post(
 		"https://www.deviantart.com/_napi/shared_api/unwatch",
 		"application/json",
 		bodyReader,
