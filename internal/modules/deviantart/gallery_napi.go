@@ -64,6 +64,17 @@ func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryF
 		return err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, filepath.Join(
+			fp.SanitizePath(galleryFolder.Owner.Username, false),
+			fmt.Sprintf(
+				"%s_%s",
+				galleryFolder.FolderId.String(),
+				fp.SanitizePath(galleryFolder.Name, false),
+			),
+		))
+	}
+
 	for !foundCurrentItem {
 		for _, deviation := range response.Deviations {
 			if deviation.Deviation.Type == "tier" {
@@ -73,16 +84,9 @@ func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryF
 
 			if item.CurrentItem != deviation.Deviation.DeviationId.String() {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:    deviation.Deviation.DeviationId.String(),
-					deviation: deviation.Deviation,
-					downloadTag: filepath.Join(
-						fp.SanitizePath(galleryFolder.Owner.Username, false),
-						fmt.Sprintf(
-							"%s_%s",
-							galleryFolder.FolderId.String(),
-							fp.SanitizePath(galleryFolder.Name, false),
-						),
-					),
+					itemID:      deviation.Deviation.DeviationId.String(),
+					deviation:   deviation.Deviation,
+					downloadTag: fp.SanitizePath(item.SubFolder, true),
 				})
 			} else {
 				foundCurrentItem = true

@@ -28,6 +28,13 @@ func (m *deviantArt) parseGalleryDevAPI(item *models.TrackedItem) error {
 		return err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, path.Join(
+			fp.SanitizePath(username, false),
+			fp.SanitizePath(galleryName, false),
+		))
+	}
+
 	response, err := m.daAPI.Gallery(username, galleryUUID, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return err
@@ -45,7 +52,7 @@ func (m *deviantArt) parseGalleryDevAPI(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(fp.SanitizePath(username, false), fp.SanitizePath(galleryName, false)),
+					downloadTag: fp.SanitizePath(item.SubFolder, true),
 				})
 			} else {
 				foundCurrentItem = true

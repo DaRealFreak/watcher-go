@@ -90,6 +90,13 @@ func (m *deviantArt) getCollectionDownloadQueueDevAPI(
 		return nil, err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, path.Join(
+			fp.SanitizePath(username, false),
+			fp.SanitizePath(collectionName, false),
+		))
+	}
+
 	response, err := m.daAPI.Collection(username, collectionUUID, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return nil, err
@@ -107,7 +114,7 @@ func (m *deviantArt) getCollectionDownloadQueueDevAPI(
 				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: path.Join(fp.SanitizePath(username, false), fp.SanitizePath(collectionName, false)),
+					downloadTag: fp.SanitizePath(item.SubFolder, true),
 				})
 			} else {
 				foundCurrentItem = true

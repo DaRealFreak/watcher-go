@@ -20,6 +20,10 @@ func (m *deviantArt) parseTagNapi(item *models.TrackedItem) error {
 		return err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, tag)
+	}
+
 	for !foundCurrentItem {
 		for _, deviation := range response.Deviations {
 			if deviation.Type == "tier" {
@@ -31,7 +35,7 @@ func (m *deviantArt) parseTagNapi(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
 					itemID:      deviation.GetPublishedTimestamp(),
 					deviation:   deviation,
-					downloadTag: fp.SanitizePath(tag, false),
+					downloadTag: fp.SanitizePath(item.SubFolder, false),
 				})
 			} else {
 				foundCurrentItem = true

@@ -34,6 +34,10 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, userInfo.User.Username)
+	}
+
 	response, err := m.nAPI.DeviationsUser(username, 0, 0, napi.MaxLimit, true)
 	if err != nil {
 		return err
@@ -45,7 +49,7 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
 					itemID:      result.Deviation.GetPublishedTimestamp(),
 					deviation:   result.Deviation,
-					downloadTag: fp.SanitizePath(result.Deviation.Author.Username, false),
+					downloadTag: fp.SanitizePath(item.SubFolder, false),
 				})
 			} else {
 				foundCurrentItem = true

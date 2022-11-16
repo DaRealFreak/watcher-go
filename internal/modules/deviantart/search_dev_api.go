@@ -24,6 +24,10 @@ func (m *deviantArt) parseSearchDevAPI(item *models.TrackedItem) error {
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, searchTag)
+	}
+
 	response, err := m.daAPI.BrowseNewest(searchTag, 0, api.MaxDeviationsPerPage)
 	if err != nil {
 		return err
@@ -41,7 +45,7 @@ func (m *deviantArt) parseSearchDevAPI(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 					itemID:      deviation.PublishedTime,
 					deviation:   deviation,
-					downloadTag: fp.SanitizePath(searchTag, false),
+					downloadTag: fp.SanitizePath(item.SubFolder, false),
 				})
 			} else {
 				foundCurrentItem = true

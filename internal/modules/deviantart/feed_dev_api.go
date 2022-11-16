@@ -1,6 +1,7 @@
 package deviantart
 
 import (
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -18,6 +19,10 @@ func (m *deviantArt) parseFeedDevApi(item *models.TrackedItem) error {
 		return err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, "home_feed")
+	}
+
 	for !foundCurrentItem {
 		for _, feedItem := range response.Items {
 			var publishedTime int64
@@ -31,7 +36,7 @@ func (m *deviantArt) parseFeedDevApi(item *models.TrackedItem) error {
 					downloadQueue = append(downloadQueue, downloadQueueItemDevAPI{
 						itemID:      singleDeviation.PublishedTime,
 						deviation:   singleDeviation,
-						downloadTag: "watch_feed",
+						downloadTag: fp.SanitizePath(item.SubFolder, false),
 					})
 				}
 			} else {

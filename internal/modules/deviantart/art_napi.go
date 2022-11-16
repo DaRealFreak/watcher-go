@@ -22,11 +22,15 @@ func (m *deviantArt) parseArtNapi(item *models.TrackedItem) error {
 		return err
 	}
 
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, deviation.Deviation.Author.Username)
+	}
+
 	dl := []downloadQueueItemNAPI{
 		{
 			itemID:      deviation.Deviation.DeviationId.String(),
 			deviation:   deviation.Deviation,
-			downloadTag: fp.SanitizePath(deviation.Deviation.Author.Username, false),
+			downloadTag: fp.SanitizePath(item.SubFolder, false),
 		},
 	}
 
