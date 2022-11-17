@@ -2,12 +2,9 @@ package fp
 
 import (
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
-	"syscall"
 )
 
 // SanitizePath replaces reserved characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
@@ -55,15 +52,4 @@ func GetFileExtension(uri string) string {
 		return filepath.Ext(file)
 	}
 	return filepath.Ext(parsedURI.Path)
-}
-
-// MoveFile uses syscall to move file (even across drives, which isn't allowed normally for windows)
-func MoveFile(src string, dst string) error {
-	if runtime.GOOS == "windows" {
-		from, _ := syscall.UTF16PtrFromString(src)
-		to, _ := syscall.UTF16PtrFromString(dst)
-		return syscall.MoveFile(from, to)
-	} else {
-		return os.Rename(src, dst)
-	}
 }
