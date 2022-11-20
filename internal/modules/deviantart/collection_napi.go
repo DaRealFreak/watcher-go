@@ -2,15 +2,15 @@ package deviantart
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
 )
 
 func (m *deviantArt) parseCollectionUUIDNapi(item *models.TrackedItem) error {
@@ -18,12 +18,24 @@ func (m *deviantArt) parseCollectionUUIDNapi(item *models.TrackedItem) error {
 	collectionUUID := m.daPattern.collectionUUIDPattern.FindStringSubmatch(item.URI)[2]
 
 	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false, true)
+	if err != nil {
+		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
+	}
+
 	collectionFolder := res.FindFolderByFolderUuid(collectionUUID)
 	for collectionFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
 		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false, false)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 
 		collectionFolder = res.FindFolderByFolderUuid(collectionUUID)
@@ -42,12 +54,24 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 	collectionIntID, _ := strconv.ParseInt(collectionID, 10, 64)
 
 	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeFavourites, false, true)
+	if err != nil {
+		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
+	}
+
 	collectionFolder := res.FindFolderByFolderId(int(collectionIntID))
 	for collectionFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
 		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeFavourites, false, false)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 
 		collectionFolder = res.FindFolderByFolderId(int(collectionIntID))
@@ -85,6 +109,10 @@ func (m *deviantArt) parseCollectionByFolderNapi(item *models.TrackedItem, colle
 	response, err := m.nAPI.FavoritesUser(collectionFolder.Owner.Username, int(collectionId), 0, napi.MaxLimit, false)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
 	}
 
 	if item.SubFolder == "" {
@@ -125,6 +153,10 @@ func (m *deviantArt) parseCollectionByFolderNapi(item *models.TrackedItem, colle
 		response, err = m.nAPI.FavoritesUser(collectionFolder.Owner.Username, int(collectionId), int(nextOffSet), napi.MaxLimit, false)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 	}
 

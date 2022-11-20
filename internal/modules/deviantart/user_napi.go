@@ -2,13 +2,13 @@ package deviantart
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
+	"strconv"
+	"strings"
 )
 
 func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
@@ -21,6 +21,10 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 	userInfo, err := m.nAPI.UserInfo(username, napi.UserInfoExpandDefault)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
 	}
 
 	if strings.ToLower(userInfo.User.Username) != username {
@@ -41,6 +45,10 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 	response, err := m.nAPI.DeviationsUser(username, 0, 0, napi.MaxLimit, true)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
 	}
 
 	for !foundCurrentItem {
@@ -65,6 +73,10 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 		response, err = m.nAPI.DeviationsUser(username, 0, int(nextOffset), napi.MaxLimit, true)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 	}
 

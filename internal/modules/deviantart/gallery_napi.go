@@ -2,15 +2,15 @@ package deviantart
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	log "github.com/sirupsen/logrus"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
 )
 
 func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
@@ -19,12 +19,24 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 	galleryIntID, _ := strconv.ParseInt(galleryID, 10, 64)
 
 	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeGallery, false, true)
+	if err != nil {
+		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
+	}
+
 	galleryFolder := res.FindFolderByFolderId(int(galleryIntID))
 	for galleryFolder == nil && res.HasMore {
 		nextOffset, _ := res.NextOffset.Int64()
 		res, err = m.nAPI.CollectionsUser(username, int(nextOffset), napi.CollectionLimit, napi.FolderTypeGallery, false, false)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 
 		galleryFolder = res.FindFolderByFolderId(int(galleryIntID))
@@ -62,6 +74,10 @@ func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryF
 	response, err := m.nAPI.DeviationsUser(galleryFolder.Owner.Username, int(galleryId), 0, napi.MaxLimit, false)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
 	}
 
 	if item.SubFolder == "" {
@@ -102,6 +118,10 @@ func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryF
 		response, err = m.nAPI.DeviationsUser(galleryFolder.Owner.Username, int(galleryId), int(nextOffSet), napi.MaxLimit, false)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 	}
 

@@ -2,16 +2,15 @@ package deviantart
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
-	"net/url"
-	"time"
-
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
+	"net/url"
+	"time"
 )
 
 type proxySession struct {

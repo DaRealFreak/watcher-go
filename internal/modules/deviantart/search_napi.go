@@ -1,12 +1,12 @@
 package deviantart
 
 import (
-	"net/url"
-	"strconv"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	"net/url"
+	"strconv"
 )
 
 func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
@@ -27,6 +27,10 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 	response, err := m.nAPI.DeviationSearch(searchTag, "", napi.OrderMostRecent)
 	if err != nil {
 		return err
+	}
+
+	if m.settings.MultiProxy {
+		raven.CheckError(m.setProxyMethod())
 	}
 
 	if item.SubFolder == "" {
@@ -59,6 +63,10 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 		response, err = m.nAPI.DeviationSearch(searchTag, response.NextCursor, napi.OrderMostRecent)
 		if err != nil {
 			return err
+		}
+
+		if m.settings.MultiProxy {
+			raven.CheckError(m.setProxyMethod())
 		}
 	}
 

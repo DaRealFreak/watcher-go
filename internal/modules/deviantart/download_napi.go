@@ -3,18 +3,17 @@ package deviantart
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strconv"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
 	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strconv"
 )
 
 type downloadQueueItemNAPI struct {

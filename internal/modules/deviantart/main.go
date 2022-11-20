@@ -3,13 +3,8 @@ package deviantart
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/http"
-	"golang.org/x/time/rate"
-	"regexp"
-	"sync"
-	"time"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
@@ -17,6 +12,10 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
+	"regexp"
+	"sync"
+	"time"
 )
 
 // deviantArt contains the implementation of the ModuleInterface
@@ -134,7 +133,8 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		res, err := m.daAPI.Placebo()
 		m.LoggedIn = err == nil && res.Status == "success"
 	} else {
-		m.nAPI = napi.NewDeviantartNAPI(m.Key, rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1))
+		rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+		m.nAPI = napi.NewDeviantartNAPI(m.Key, rateLimiter)
 		// set the proxy if requested
 		raven.CheckError(m.setProxyMethod())
 
@@ -145,6 +145,7 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		// initialize proxy sessions after login
 		if m.LoggedIn && m.settings.MultiProxy {
 			m.initializeProxySessions()
+			rateLimiter.SetLimit(rate.Every(time.Duration(m.rateLimit/len(m.proxies)) * time.Millisecond))
 		}
 	}
 
