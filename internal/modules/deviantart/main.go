@@ -3,7 +3,11 @@ package deviantart
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/http"
+	"golang.org/x/time/rate"
 	"regexp"
+	"sync"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -18,14 +22,24 @@ import (
 // deviantArt contains the implementation of the ModuleInterface
 type deviantArt struct {
 	*models.Module
-	daAPI     *api.DeviantartAPI
-	nAPI      *napi.DeviantartNAPI
-	daPattern deviantArtPattern
-	settings  deviantArtSettings
+	rateLimit  int
+	daAPI      *api.DeviantartAPI
+	nAPI       *napi.DeviantartNAPI
+	daPattern  deviantArtPattern
+	settings   deviantArtSettings
+	proxies    []*proxySession
+	multiProxy struct {
+		currentIndexes []int
+		waitGroup      sync.WaitGroup
+	}
 }
 
 type deviantArtSettings struct {
-	Download struct {
+	Loop        bool                 `mapstructure:"loop"`
+	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
+	MultiProxy  bool                 `mapstructure:"multiproxy"`
+	RateLimit   *int                 `mapstructure:"rate_limit"`
+	Download    struct {
 		DescriptionMinLength  int  `mapstructure:"description_min_length"`
 		FollowForContent      bool `mapstructure:"follow_for_content"`
 		UnfollowAfterDownload bool `mapstructure:"unfollow_after_download"`
@@ -85,6 +99,13 @@ func (m *deviantArt) InitializeModule() {
 		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
 		&m.settings,
 	))
+
+	if m.settings.RateLimit != nil {
+		m.rateLimit = *m.settings.RateLimit
+	} else {
+		// default rate limit of 1 request every 4 seconds
+		m.rateLimit = 4000
+	}
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -113,17 +134,18 @@ func (m *deviantArt) Login(account *models.Account) bool {
 		res, err := m.daAPI.Placebo()
 		m.LoggedIn = err == nil && res.Status == "success"
 	} else {
-		m.nAPI = napi.NewDeviantartNAPI(m.Key)
-		usedProxy := m.GetProxySettings()
-		if usedProxy.Enable {
-			if err := m.nAPI.UserSession.SetProxy(usedProxy); err != nil {
-				return false
-			}
-		}
+		m.nAPI = napi.NewDeviantartNAPI(m.Key, rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1))
+		// set the proxy if requested
+		raven.CheckError(m.setProxyMethod())
 
 		m.nAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
 		err := m.nAPI.Login(account)
 		m.LoggedIn = err == nil
+
+		// initialize proxy sessions after login
+		if m.LoggedIn && m.settings.MultiProxy {
+			m.initializeProxySessions()
+		}
 	}
 
 	return m.LoggedIn
@@ -197,5 +219,31 @@ func getDeviantArtPattern() deviantArtPattern {
 		collectionUUIDPattern: regexp.MustCompile(`DeviantArt://collection/([^/?&]+?)/([^/?&]+)`),
 		tagPattern:            regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+)(?:$|/.*)`),
 		searchPattern:         regexp.MustCompile(`https://www.deviantart.com/search.*q=(.*)`),
+	}
+}
+
+// setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
+func (m *deviantArt) setProxyMethod() error {
+	switch {
+	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
+		return fmt.Errorf("you need to at least register 2 proxies to loop")
+	case m.settings.UseDevAPI && m.settings.Loop:
+		return fmt.Errorf("can't loop over proxies on dev API since it's API key based")
+	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
+		if m.settings.UseDevAPI {
+			return m.daAPI.UserSession.SetProxy(m.GetProxySettings())
+		} else {
+			return m.nAPI.UserSession.SetProxy(m.GetProxySettings())
+		}
+	case !m.settings.UseDevAPI && m.settings.Loop:
+		// reset proxy loop index if we reach the limit with the next iteration
+		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+			m.ProxyLoopIndex = -1
+		}
+		m.ProxyLoopIndex++
+
+		return m.nAPI.UserSession.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+	default:
+		return nil
 	}
 }

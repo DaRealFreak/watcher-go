@@ -2,6 +2,7 @@ package napi
 
 import (
 	"encoding/json"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"net/url"
 	"strconv"
 )
@@ -25,8 +26,12 @@ const DeviationTypeArt = "art"
 const DeviationTypeJournal = "journal"
 
 func (a *DeviantartNAPI) ExtendedDeviation(
-	deviationId int, username string, deviationType string, includeSession bool,
+	deviationId int, username string, deviationType string, includeSession bool, session http.SessionInterface,
 ) (*ExtendedDeviationResponse, error) {
+	if session == nil {
+		session = a.UserSession
+	}
+
 	values := url.Values{
 		"deviationid": {strconv.Itoa(deviationId)},
 		"type":        {deviationType},
@@ -44,7 +49,7 @@ func (a *DeviantartNAPI) ExtendedDeviation(
 	}
 
 	apiUrl := "https://www.deviantart.com/_napi/shared_api/deviation/extended_fetch?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := session.Get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

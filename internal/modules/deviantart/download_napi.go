@@ -2,6 +2,7 @@ package deviantart
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"net/url"
 	"os"
 	"path"
@@ -49,6 +50,12 @@ func (i *downloadQueueItemNAPI) GetFileName(fileType int) (filename string) {
 }
 
 func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem) error {
+	if m.settings.MultiProxy {
+		// reset usage and errors from previous galleries
+		m.resetProxies()
+		return m.processDownloadQueueMultiProxy(downloadQueue, trackedItem)
+	}
+
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
@@ -62,7 +69,7 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			),
 		)
 
-		if err := m.downloadDeviationNapi(trackedItem, deviationItem); err != nil {
+		if err := m.downloadDeviationNapi(trackedItem, deviationItem, nil, true); err != nil {
 			return err
 		}
 	}
@@ -70,21 +77,27 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 	return nil
 }
 
-func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI) error {
+func (m *deviantArt) downloadDeviationNapi(
+	trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface, update bool,
+) error {
+	if downloadSession == nil {
+		downloadSession = m.nAPI.UserSession
+	}
+
 	deviationId, _ := strconv.ParseInt(deviationItem.deviation.DeviationId.String(), 10, 64)
 	deviationType := napi.DeviationTypeArt
 	if deviationItem.deviation.IsJournal {
 		deviationType = napi.DeviationTypeJournal
 	}
 
-	res, err := m.nAPI.ExtendedDeviation(int(deviationId), deviationItem.deviation.Author.Username, deviationType, false)
+	res, err := m.nAPI.ExtendedDeviation(int(deviationId), deviationItem.deviation.Author.Username, deviationType, false, downloadSession)
 	if err != nil {
 		return err
 	}
 
 	if res.Deviation.PremiumFolderData != nil && !res.Deviation.PremiumFolderData.HasAccess {
 		if res.Deviation.PremiumFolderData.Type == napi.PremiumFolderDataWatcherType && m.settings.Download.FollowForContent {
-			watchRes, watchErr := m.nAPI.WatchUser(res.Deviation.Author.Username)
+			watchRes, watchErr := m.nAPI.WatchUser(res.Deviation.Author.Username, downloadSession)
 			if watchErr != nil {
 				return watchErr
 			}
@@ -97,12 +110,12 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 				return fmt.Errorf("unable to follow user \"%s\" for deviation, skipping", res.Deviation.Author.Username)
 			}
 
-			if err = m.downloadDeviationNapi(trackedItem, deviationItem); err != nil {
+			if err = m.downloadDeviationNapi(trackedItem, deviationItem, downloadSession, update); err != nil {
 				return err
 			}
 
 			if m.settings.Download.UnfollowAfterDownload {
-				watchRes, watchErr = m.nAPI.UnwatchUser(res.Deviation.Author.Username)
+				watchRes, watchErr = m.nAPI.UnwatchUser(res.Deviation.Author.Username, downloadSession)
 				if watchErr != nil {
 					return watchErr
 				}
@@ -135,7 +148,7 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 	}
 
 	// ensure download directory, needed for only text artists
-	m.nAPI.UserSession.EnsureDownloadDirectory(
+	downloadSession.EnsureDownloadDirectory(
 		path.Join(
 			m.GetDownloadDirectory(),
 			m.Key,
@@ -145,7 +158,7 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 	)
 
 	if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
-		if err = m.nAPI.UserSession.DownloadFile(
+		if err = downloadSession.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(),
 				m.Key,
@@ -184,7 +197,7 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 		}
 		break
 	case "image", "pdf", "film", "status":
-		if err = m.downloadContentNapi(deviationItem); err != nil {
+		if err = m.downloadContentNapi(deviationItem, downloadSession); err != nil {
 			return err
 		}
 		break
@@ -192,14 +205,20 @@ func (m *deviantArt) downloadDeviationNapi(trackedItem *models.TrackedItem, devi
 		return fmt.Errorf("unknown deviation type: \"%s\"", deviationItem.deviation.Type)
 	}
 
-	m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
+	if update {
+		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
+	}
 
 	return nil
 }
 
-func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) error {
+func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface) error {
+	if downloadSession == nil {
+		downloadSession = m.nAPI.UserSession
+	}
+
 	if highestQualityVideoType := deviationItem.deviation.Media.GetHighestQualityVideoType(); highestQualityVideoType != nil {
-		if err := m.nAPI.UserSession.DownloadFile(
+		if err := downloadSession.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(),
 				m.Key,
@@ -240,7 +259,7 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 			fullViewType.FileSize.String() != "" &&
 			fullViewType.FileSize.String() != "0") {
 		downloadedContentFile = true
-		if err := m.nAPI.UserSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
+		if err := downloadSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
 			return err
 		}
 	}
@@ -250,7 +269,8 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI) er
 		deviationItem.deviation.IsDownloadable &&
 		deviationItem.deviation.Extended != nil &&
 		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" &&
-		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".zip" {
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".zip" &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".pdf" {
 		downloadFilePath, _ := filepath.Abs(
 			path.Join(
 				m.GetDownloadDirectory(),

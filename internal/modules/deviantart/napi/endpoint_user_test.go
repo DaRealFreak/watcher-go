@@ -21,7 +21,7 @@ func TestDeviationsUser(t *testing.T) {
 }
 
 func TestDeviantartNAPI_WatchUser(t *testing.T) {
-	res, err := daNAPI.WatchUser("Zerion")
+	res, err := daNAPI.WatchUser("Zerion", nil)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(true, res.Success)
 }

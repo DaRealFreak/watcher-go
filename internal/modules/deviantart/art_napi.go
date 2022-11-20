@@ -17,7 +17,7 @@ func (m *deviantArt) parseArtNapi(item *models.TrackedItem) error {
 	}
 
 	deviationId, _ := strconv.ParseInt(results[2], 10, 64)
-	deviation, err := m.nAPI.ExtendedDeviation(int(deviationId), results[1], napi.DeviationTypeArt, false)
+	deviation, err := m.nAPI.ExtendedDeviation(int(deviationId), results[1], napi.DeviationTypeArt, false, nil)
 	if err != nil {
 		return err
 	}

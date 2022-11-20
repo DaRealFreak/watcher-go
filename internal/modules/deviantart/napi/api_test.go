@@ -1,8 +1,10 @@
 package napi
 
 import (
+	"golang.org/x/time/rate"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +22,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// initialize the shared API instance
-	daNAPI = NewDeviantartNAPI("deviantart API")
+	daNAPI = NewDeviantartNAPI("deviantart API", rate.NewLimiter(rate.Every(time.Duration(4000)*time.Millisecond), 1))
 	daNAPI.AddRoundTrippers("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0")
 	err := daNAPI.Login(testAccount)
 	if err != nil {

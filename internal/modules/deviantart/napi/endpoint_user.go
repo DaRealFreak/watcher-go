@@ -2,6 +2,7 @@ package napi
 
 import (
 	"encoding/json"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -155,7 +156,11 @@ type WatchResponse struct {
 	Success bool `json:"success"`
 }
 
-func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
+func (a *DeviantartNAPI) WatchUser(username string, session http.SessionInterface) (*WatchResponse, error) {
+	if session == nil {
+		session = a.UserSession
+	}
+
 	values := map[string]string{
 		"username":   username,
 		"csrf_token": a.csrfToken,
@@ -164,7 +169,7 @@ func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
 	jsonString, _ := json.Marshal(values)
 	bodyReader := strings.NewReader(string(jsonString))
 
-	res, err := a.UserSession.GetClient().Post(
+	res, err := session.GetClient().Post(
 		"https://www.deviantart.com/_napi/shared_api/watch",
 		"application/json",
 		bodyReader,
@@ -179,7 +184,11 @@ func (a *DeviantartNAPI) WatchUser(username string) (*WatchResponse, error) {
 	return &watchResponse, err
 }
 
-func (a *DeviantartNAPI) UnwatchUser(username string) (*WatchResponse, error) {
+func (a *DeviantartNAPI) UnwatchUser(username string, session http.SessionInterface) (*WatchResponse, error) {
+	if session == nil {
+		session = a.UserSession
+	}
+
 	values := map[string]string{
 		"username":   username,
 		"csrf_token": a.csrfToken,
@@ -188,7 +197,7 @@ func (a *DeviantartNAPI) UnwatchUser(username string) (*WatchResponse, error) {
 	jsonString, _ := json.Marshal(values)
 	bodyReader := strings.NewReader(string(jsonString))
 
-	res, err := a.UserSession.GetClient().Post(
+	res, err := session.GetClient().Post(
 		"https://www.deviantart.com/_napi/shared_api/unwatch",
 		"application/json",
 		bodyReader,
