@@ -78,11 +78,11 @@ func (a *FanboxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err 
 			apiReqErr APIRequestError
 		)
 
-		if err := json.Unmarshal([]byte(content), &apiErr); err == nil {
+		if err = json.Unmarshal([]byte(content), &apiErr); err == nil {
 			return apiErr
 		}
 
-		if err := json.Unmarshal([]byte(content), &apiReqErr); err == nil {
+		if err = json.Unmarshal([]byte(content), &apiReqErr); err == nil {
 			return &apiReqErr
 		}
 
@@ -90,7 +90,7 @@ func (a *FanboxAPI) mapAPIResponse(res *http.Response, apiRes interface{}) (err 
 	}
 
 	// unmarshal the request content into the response struct
-	if err := json.Unmarshal([]byte(content), &apiRes); err != nil {
+	if err = json.Unmarshal([]byte(content), &apiRes); err != nil {
 		return err
 	}
 

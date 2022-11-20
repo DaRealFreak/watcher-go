@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -88,6 +90,25 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	postInfo, err := m.fanboxAPI.GetPostInfo(int(postID))
 	if err != nil {
 		return err
+	}
+
+	pattern := regexp.MustCompile(`(?m)[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
+	for _, comment := range postInfo.CommentsFromAuthor() {
+		urlMatches := pattern.FindAllStringSubmatch(comment, -1)
+		if len(urlMatches) > 0 {
+			for _, match := range urlMatches {
+				q, _ := url.Parse(match[0])
+				log.WithField("module", m.Key).Warnf("found URL from author in comments: %s (%d)", q.String(), postID)
+			}
+		}
+	}
+
+	urlMatches := pattern.FindAllStringSubmatch(postInfo.Body.PostBody.Text, -1)
+	if len(urlMatches) > 0 {
+		for _, match := range urlMatches {
+			q, _ := url.Parse(match[0])
+			log.WithField("module", m.Key).Warnf("found URL from author in text body: %s (%d)", q.String(), postID)
+		}
 	}
 
 	if postInfo.Body.ImageForShare != "" {

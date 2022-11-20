@@ -8,6 +8,10 @@ import (
 // FanboxPostInfo contains the relevant fanbox post information
 type FanboxPostInfo struct {
 	Body struct {
+		User struct {
+			UserId string `json:"userId"`
+			Name   string `json:"name"`
+		} `json:"user"`
 		PostBody struct {
 			Text  string `json:"text"`
 			Files []*struct {
@@ -41,7 +45,30 @@ type FanboxPostInfo struct {
 		ID            json.Number `json:"id"`
 		Title         string      `json:"title"`
 		ImageForShare string      `json:"imageForShare"`
+		CommentList   struct {
+			Items []struct {
+				ID   string `json:"id"`
+				Body string `json:"body"`
+				User struct {
+					UserId string `json:"userId"`
+					Name   string `json:"name"`
+				} `json:"user"`
+			} `json:"items"`
+			NextUrl string `json:"nextUrl"`
+		} `json:"commentList"`
 	} `json:"body"`
+}
+
+func (i *FanboxPostInfo) CommentsFromAuthor() []string {
+	var comments []string
+
+	for _, comment := range i.Body.CommentList.Items {
+		if comment.User.UserId == i.Body.User.UserId {
+			comments = append(comments, comment.Body)
+		}
+	}
+
+	return comments
 }
 
 // ImagesFromBlocks returns all image URLs from the Blocks section of the fanbox post
@@ -66,7 +93,7 @@ func (a *FanboxAPI) GetPostInfo(postID int) (*FanboxPostInfo, error) {
 		return nil, err
 	}
 
-	if err := a.mapAPIResponse(res, &postInfo); err != nil {
+	if err = a.mapAPIResponse(res, &postInfo); err != nil {
 		return nil, err
 	}
 
