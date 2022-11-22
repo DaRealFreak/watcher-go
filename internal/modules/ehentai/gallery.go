@@ -49,8 +49,8 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 		}
 	}
 
-	// if not exclusively allowed check for blacklisted tags
-	if !whitelisted {
+	// if not exclusively allowed or explicitly run using the force parameter check for blacklisted tags
+	if !(whitelisted || m.Cfg.Run.ForceNew) {
 		for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
 			if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
 				log.WithField("module", m.Key).Warnf(

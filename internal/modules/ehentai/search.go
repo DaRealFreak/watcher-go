@@ -191,6 +191,14 @@ func (m *ehentai) getSubFolder(item *models.TrackedItem) string {
 		}
 	}
 
+	tag := regexp.MustCompile(`https://exhentai.org/tag/(.*)`)
+	if tag.MatchString(item.URI) {
+		results := tag.FindStringSubmatch(item.URI)
+		if len(results) == 2 {
+			return fmt.Sprintf("tag %s", results[1])
+		}
+	}
+
 	// no matches at all
 	return ""
 }

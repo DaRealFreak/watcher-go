@@ -3,6 +3,7 @@ package ehentai
 
 import (
 	"fmt"
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"net/url"
 	"path"
 	"regexp"
@@ -106,6 +107,14 @@ func (m *ehentai) InitializeModule() {
 	// set rate limiter on 2.5 seconds with burst limit of 1
 	ehSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+
+	client := ehSession.GetClient()
+	// apply CloudFlare bypass
+	options := cloudflarebp.GetDefaultOptions()
+	options.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0"
+
+	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
+
 	m.Session = ehSession
 
 	// set the proxy if requested
