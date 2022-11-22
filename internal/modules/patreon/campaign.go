@@ -40,7 +40,9 @@ type campaignPost struct {
 			Html        string `json:"html"`
 			URL         string `json:"url"`
 		} `json:"embed"`
-		EditedAt *Time `json:"edited_at"`
+		EditedAt    *Time `json:"edited_at"`
+		CreatedAt   *Time `json:"created_at"`
+		PublishedAt *Time `json:"published_at"`
 	} `json:"attributes"`
 	Relationships struct {
 		AttachmentSection struct {
@@ -104,7 +106,12 @@ func (m *patreon) parseCampaign(item *models.TrackedItem) error {
 		}
 
 		for _, post := range postsData.Posts {
-			if item.CurrentItem != "" && post.Attributes.EditedAt.Unix() <= currentItemID {
+			comparisonTime := post.Attributes.EditedAt
+			if comparisonTime == nil {
+				comparisonTime = post.Attributes.PublishedAt
+			}
+
+			if item.CurrentItem != "" && comparisonTime.Unix() <= currentItemID {
 				foundCurrentItem = true
 				break
 			}
@@ -151,13 +158,18 @@ func (m *patreon) extractIframeSources(html string) (results []string) {
 func (m *patreon) extractPostDownload(
 	creatorID int, campaign *userResponse, postID int64, post *campaignPost, postsData *campaignResponse,
 ) *postDownload {
+	comparisonTime := post.Attributes.EditedAt
+	if comparisonTime == nil {
+		comparisonTime = post.Attributes.PublishedAt
+	}
+
 	download := &postDownload{
 		CreatorID:    creatorID,
 		CreatorName:  campaign.Data.Attributes.FullName,
 		PostID:       int(postID),
 		PatreonURL:   post.Attributes.PatreonURL,
 		ExternalURLs: []string{},
-		EditedAt:     post.Attributes.EditedAt,
+		EditedAt:     comparisonTime,
 	}
 
 	if post.Attributes.Embed.Html != "" {
