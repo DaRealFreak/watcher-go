@@ -17,7 +17,6 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/deviantart"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/ehentai"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/fourchan"
-	_ "github.com/DaRealFreak/watcher-go/internal/modules/gdrive"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/giantessworld"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/jinjamodoki"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/kemono"
