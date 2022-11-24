@@ -51,7 +51,7 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		}
 
 		// increase offset for the next page
-		offset += 25
+		offset += 50
 		pageUrl, _ := url.Parse(item.URI)
 		queries := pageUrl.Query()
 		queries.Set("o", strconv.Itoa(offset))
@@ -73,7 +73,7 @@ func (m *kemono) getPostsUrls(html string) (postItems []*postItem) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find("article[data-user][data-id]").Each(func(index int, row *goquery.Selection) {
 		if dataId, exists := row.Attr("data-id"); exists {
-			uriTag := row.Find("header a[href*=\"post\"]")
+			uriTag := row.Find("a[href*=\"/post/\"]")
 			uri, _ := uriTag.Attr("href")
 			parsedUri, _ := url.Parse(uri)
 			absUri := m.baseUrl.ResolveReference(parsedUri)
