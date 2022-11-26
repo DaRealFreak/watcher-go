@@ -53,7 +53,16 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 			return parsedErr
 		}
 
-		fileName := fp.SanitizePath(parsedLink.Query().Get("f"), false)
+		fileName := fp.SanitizePath(fp.GetFileName(downloadItem.FileURI), false)
+		if parsedLink.Query().Get("f") != "" {
+			fileName = fp.SanitizePath(parsedLink.Query().Get("f"), false)
+		}
+
+		// ignore mega folder icons
+		if strings.Contains(fileName, "mega.nz_rich-folder") {
+			continue
+		}
+
 		if err = m.Session.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(),
@@ -163,6 +172,31 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 
 func (m *kemono) getDownloadLinks(html string) (links []models.DownloadQueueItem) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+	document.Find("div.post__content img[src]").Each(func(index int, row *goquery.Selection) {
+		uri, _ := row.Attr("src")
+		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
+			alreadyAdded := false
+			downloadLink := m.baseUrl.ResolveReference(fileURL).String()
+
+			for _, link := range links {
+				if link.ItemID == downloadLink {
+					alreadyAdded = true
+					break
+				}
+			}
+
+			// only add links we didn't add yet
+			if !alreadyAdded {
+				downloadItem := models.DownloadQueueItem{
+					ItemID:  downloadLink,
+					FileURI: downloadLink,
+				}
+
+				links = append(links, downloadItem)
+			}
+		}
+	})
+
 	document.Find("a[href*='/data/'][href*='?f=']").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
