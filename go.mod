@@ -24,7 +24,7 @@ require (
 	golang.org/x/image v0.2.0
 	golang.org/x/net v0.3.0
 	golang.org/x/oauth2 v0.2.0
-	golang.org/x/time v0.2.0
+	golang.org/x/time v0.3.0
 )
 
 require (
