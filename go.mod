@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tcnksm/go-gitconfig v0.1.2
-	golang.org/x/image v0.1.0
+	golang.org/x/image v0.2.0
 	golang.org/x/net v0.3.0
 	golang.org/x/oauth2 v0.2.0
 	golang.org/x/time v0.2.0
