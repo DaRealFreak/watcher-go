@@ -8,7 +8,7 @@ require (
 	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/dghubble/oauth1 v0.7.1
+	github.com/dghubble/oauth1 v0.7.2
 	github.com/getsentry/sentry-go v0.15.0
 	github.com/google/uuid v1.3.0
 	github.com/jaytaylor/html2text v0.0.0-20211105163654-bc68cce691ba
