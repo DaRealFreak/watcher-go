@@ -138,6 +138,17 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	// add items
 	for index, gallery := range itemQueue {
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
+		if m.ipBanned {
+			log.WithField("module", m.Key).Info(
+				fmt.Sprintf(
+					"download limit reached, skipping galleries for search item: \"%s\" (%0.2f%%)",
+					item.URI,
+					float64(index+1)/float64(len(itemQueue))*100,
+				),
+			)
+			break
+		}
+
 		if !galleryItem.Complete {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf(
@@ -222,14 +233,13 @@ func (m *ehentai) getSearchGalleryUrls(html string) []searchGalleryItem {
 // getNextSearchPageURL retrieves the url of the next page if it exists
 func (m *ehentai) getNextSearchPageURL(html string) (url string, exists bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	pages := document.Find("table.ptb td")
+	pages := document.Find("div.searchnav a#dnext")
 	// return empty url if we don't have any result due to f.e. removed galleries
 	if pages.Length() == 0 {
 		return "", false
 	}
 
-	pages = pages.Slice(pages.Length()-1, pages.Length())
-	return pages.Find("a[href]").Attr("href")
+	return pages.First().Attr("href")
 }
 
 func (m *ehentai) getSearchURL(item *models.TrackedItem) (string, error) {
