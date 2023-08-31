@@ -27,7 +27,7 @@ func TestDeviantartNAPI_WatchUser(t *testing.T) {
 }
 
 func TestDeviantartNAPI_UnwatchUser(t *testing.T) {
-	res, err := daNAPI.UnwatchUser("Zerion")
+	res, err := daNAPI.UnwatchUser("Zerion", nil)
 	assert.New(t).NoError(err)
 	assert.New(t).Equal(true, res.Success)
 }

@@ -170,6 +170,7 @@ type Overview struct {
 // DeviantartNAPI contains all required items to communicate with the API
 type DeviantartNAPI struct {
 	login.DeviantArtLogin
+	account     *models.Account
 	UserSession watcherHttp.SessionInterface
 	rateLimiter *rate.Limiter
 	ctx         context.Context
@@ -238,6 +239,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	}
 
 	a.csrfToken = info.CSRFToken
+	a.account = account
 
 	return nil
 }

@@ -74,7 +74,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*deviantart.com"),
-			regexp.MustCompile(`DeviantArt://.*`),
+			regexp.MustCompile(`deviantart://.*`),
 		},
 	}
 	module.ModuleInterface = &deviantArt{
@@ -217,7 +217,7 @@ func getDeviantArtPattern() deviantArtPattern {
 		feedPattern:           regexp.MustCompile(`https://www.deviantart.com(?:/)?$`),
 		galleryPattern:        regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/(\d+).*`),
 		collectionPattern:     regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/favourites(?:/(\d+))?.*`),
-		collectionUUIDPattern: regexp.MustCompile(`DeviantArt://collection/([^/?&]+?)/([^/?&]+)`),
+		collectionUUIDPattern: regexp.MustCompile(`deviantart://collection/([^/?&]+?)/([^/?&]+)`),
 		tagPattern:            regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+)(?:$|/.*)`),
 		searchPattern:         regexp.MustCompile(`https://www.deviantart.com/search.*q=(.*)`),
 	}
