@@ -83,7 +83,7 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 	raven.CheckError(readerErr)
 
 	var apiUserResponse userResponse
-	if err := json.Unmarshal(readerRes, &apiUserResponse); err != nil {
+	if err = json.Unmarshal(readerRes, &apiUserResponse); err != nil {
 		return nil, err
 	}
 

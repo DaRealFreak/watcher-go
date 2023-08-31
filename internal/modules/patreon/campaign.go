@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -172,19 +173,31 @@ func (m *patreon) extractPostDownload(
 		EditedAt:     comparisonTime,
 	}
 
+	factory := modules.GetModuleFactory()
 	if post.Attributes.Embed.Html != "" {
 		externalUrls := m.extractIframeSources(post.Attributes.Embed.Html)
-		factory := modules.GetModuleFactory()
 		for _, externalUrl := range externalUrls {
 			if factory.CanParse(externalUrl) {
 				embedUrl, _ := url.Parse(externalUrl)
 				parsedQueryString, _ := url.ParseQuery(embedUrl.RawQuery)
-				parsedQueryString["referer"] = []string{post.Attributes.PatreonURL}
+				parsedQueryString["referer"] = []string{post.Attributes.URL}
 				embedUrl.RawQuery = parsedQueryString.Encode()
 				download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
 			} else {
 				log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalUrl)
 			}
+		}
+	}
+
+	// if we have a URL without having extracted an external URL from the HTML we can add it without getting duplicates
+	if len(download.ExternalURLs) == 0 && post.Attributes.Embed.URL != "" {
+		if factory.CanParse(post.Attributes.Embed.URL) {
+			embedUrl, _ := url.Parse(post.Attributes.Embed.URL)
+			parsedQueryString, _ := url.ParseQuery(embedUrl.RawQuery)
+			embedUrl.RawQuery = parsedQueryString.Encode()
+			download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
+		} else {
+			log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", post.Attributes.Embed.URL)
 		}
 	}
 
@@ -235,10 +248,14 @@ func (m *patreon) reverseDownloadQueue(downloadQueue []*postDownload) []*postDow
 // getCampaignPostsURI returns the post public API URI for the first page
 func (m *patreon) getCampaignPostsURI(campaignID int) string {
 	values := url.Values{
-		"include": {
-			"user,attachments,user_defined_tags,campaign,poll.choices,poll.current_user_responses.user," +
-				"poll.current_user_responses.choice,poll.current_user_responses.poll,access_rules.tier.null," +
-				"images.null,audio.null",
+		"fields[access_rule]": {
+			"access_rule_type,amount_cents",
+		},
+		"fields[campaign]": {
+			"currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,is_monthly,name,url",
+		},
+		"fields[media]": {
+			"id,image_urls,download_url,metadata,file_name",
 		},
 		"fields[post]": {
 			"change_visibility_at,comment_count,content,current_user_can_delete,current_user_can_view," +
@@ -246,18 +263,18 @@ func (m *patreon) getCampaignPostsURI(campaignID int) string {
 				"post_metadata,published_at,edited_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url," +
 				"teaser_text,title,upgrade_url,url,was_posted_by_campaign_owner",
 		},
-		"fields[user]": {"image_url,full_name,url"},
-		"fields[campaign]": {
-			"currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,is_monthly,name,url",
-		},
-		"fields[access_rule]": {"access_rule_type,amount_cents"},
-		"fields[media]":       {"id,image_urls,download_url,metadata,file_name"},
-		// created_at, published_at, edited_at seem to be valid options
-		"sort":                               {"-edited_at"},
+		"fields[user]":                       {"image_url,full_name,url"},
 		"filter[campaign_id]":                {strconv.Itoa(campaignID)},
 		"filter[exclude_inaccessible_posts]": {"true"},
-		"json-api-use-default-includes":      {"false"},
-		"json-api-version":                   {"1.0"},
+		"include": {
+			"user,attachments,user_defined_tags,campaign,poll.choices,poll.current_user_responses.user," +
+				"poll.current_user_responses.choice,poll.current_user_responses.poll,access_rules.tier.null," +
+				"images.null,audio.null",
+		},
+		"json-api-use-default-includes": {"false"},
+		"json-api-version":              {"1.0"},
+		// created_at, published_at, edited_at seem to be valid options
+		"sort": {"-edited_at"},
 	}
 
 	return fmt.Sprintf("https://www.patreon.com/api/posts?%s", values.Encode())
@@ -265,10 +282,22 @@ func (m *patreon) getCampaignPostsURI(campaignID int) string {
 
 // getCampaignData returns the campaign data extracted from the passed campaignPostsUri
 func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, error) {
-	res, err := m.Session.Get(campaignPostsURI)
-	if err != nil {
-		return nil, err
-	}
+	client := m.Session.GetClient()
+	req, _ := http.NewRequest("GET", campaignPostsURI, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	res, err := client.Do(req)
+
+	//res, err := m.Session.Get(campaignPostsURI)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	var reader io.ReadCloser
 	if res.Header.Get("Content-Encoding") == "gzip" {
