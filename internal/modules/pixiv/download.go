@@ -92,7 +92,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		return err
 	}
 
-	pattern := regexp.MustCompile(`(?m)[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
+	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
 	for _, comment := range postInfo.CommentsFromAuthor() {
 		urlMatches := pattern.FindAllStringSubmatch(comment, -1)
 		if len(urlMatches) > 0 {
