@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -160,19 +161,64 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 	}
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("div.post__body a:not([href^=\"/data\"])").Each(func(index int, row *goquery.Selection) {
+	document.Find("div.post__body a:not([href*=\"kemono.party/data\"])").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
-			links = append(links, fileURL.String())
+			if !strings.Contains(fileURL.String(), ".fanbox.cc/") {
+				links = append(links, fileURL.String())
+			}
 		}
 	})
 
-	return links
+	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
+	urlMatches := pattern.FindAllStringSubmatch(document.Find("div.post__body").Text(), -1)
+	if len(urlMatches) > 0 {
+		for _, match := range urlMatches {
+			q, _ := url.Parse(match[0])
+			q.Scheme = "https"
+
+			if !strings.Contains(q.String(), ".fanbox.cc/") {
+				links = append(links, q.String())
+			}
+		}
+	}
+
+	document.Find("article.comment--user").Each(func(index int, row *goquery.Selection) {
+		urlMatches = pattern.FindAllStringSubmatch(row.Text(), -1)
+		if len(urlMatches) > 0 {
+			for _, match := range urlMatches {
+				q, _ := url.Parse(match[0])
+				q.Scheme = "https"
+
+				if !strings.Contains(q.String(), ".fanbox.cc/") {
+					links = append(links, q.String())
+				}
+			}
+		}
+	})
+
+	// remove potential duplicates
+	var uniqueLinks []string
+	for _, link := range links {
+		found := false
+		for _, uniqueLink := range uniqueLinks {
+			if uniqueLink == link {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			uniqueLinks = append(uniqueLinks, link)
+		}
+	}
+
+	return uniqueLinks
 }
 
 func (m *kemono) getDownloadLinks(html string) (links []models.DownloadQueueItem) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("div.post__content img[src]").Each(func(index int, row *goquery.Selection) {
+	document.Find("div.post__content img[src^=\"/\"]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("src")
 		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
 			alreadyAdded := false
