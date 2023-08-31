@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type StatusError struct {
@@ -37,6 +38,12 @@ func (e DefaultErrorHandler) CheckResponse(response *http.Response) (error error
 		return StatusError{
 			StatusCode: response.StatusCode,
 		}, true
+	case response.StatusCode == 429:
+		time.Sleep(time.Minute)
+
+		return StatusError{
+			StatusCode: response.StatusCode,
+		}, false
 	default:
 		// retry other status codes
 		return StatusError{
