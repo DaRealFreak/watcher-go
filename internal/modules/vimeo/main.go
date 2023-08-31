@@ -92,6 +92,9 @@ func (m *vimeo) Parse(item *models.TrackedItem) error {
 			)
 			tripper.referer = parsedQueryString.Get("referer")
 		}
+	} else {
+		m.addRoundTrippers()
+		return m.Parse(item)
 	}
 
 	masterJsonURL := item.URI

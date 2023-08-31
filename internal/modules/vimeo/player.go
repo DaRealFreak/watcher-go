@@ -3,9 +3,9 @@ package vimeo
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"io"
+	"regexp"
 )
 
 type PlayerJson struct {
@@ -48,10 +48,12 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 		return nil, fmt.Errorf("unsupported URL format")
 	}
 
+	var videoID string
 	var h string
 
+	videoID = results[1]
+
 	// handle https://player.vimeo.com/video/123456/abc123 URLs
-	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s/config", results[1])
 	if results[2] != "" {
 		h = results[2]
 	}
@@ -61,22 +63,53 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 		h = results[3]
 	}
 
-	if h != "" {
-		playerUrl += "?h=" + h
-	}
-
-	res, err := m.Session.Get(playerUrl)
+	apiUrl := m.getApiURL(videoID, h)
+	token, err := m.getJWT(item.URI)
 	if err != nil {
 		return nil, err
 	}
 
-	out, readErr := io.ReadAll(res.Body)
-	if readErr != nil {
-		return nil, readErr
+	apiResponse, apiErr := m.getVideoApiInfo(apiUrl, token)
+	if apiErr != nil {
+		return nil, apiErr
 	}
 
 	var playerJson PlayerJson
-	err = json.Unmarshal(out, &playerJson)
+
+	// video can't get displayed on vimeo.com,
+	// but we can still get the player config using the referer header and reading the player config from the script tag
+	if apiResponse.EmbedPlayerConfigUrl == "" {
+		playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s", videoID)
+		if h != "" {
+			playerUrl += fmt.Sprintf("?h=%s", h)
+		}
+
+		res, requestErr := m.Session.Get(playerUrl)
+		if requestErr != nil {
+			return nil, requestErr
+		}
+
+		out, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		playerConfig := regexp.MustCompile(`<script>window.playerConfig =(.*?)</script>`).FindSubmatch(out)[1]
+
+		err = json.Unmarshal(playerConfig, &playerJson)
+	} else {
+		res, requestErr := m.Session.Get(apiResponse.EmbedPlayerConfigUrl)
+		if requestErr != nil {
+			return nil, requestErr
+		}
+
+		out, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		err = json.Unmarshal(out, &playerJson)
+	}
 
 	return &playerJson, err
 }

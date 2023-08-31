@@ -23,6 +23,10 @@ func (rt *vimeoRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 		r.Header.Set("Referer", rt.referer)
 	}
 
+	if r.URL.String() == "https://vimeo.com/_next/jwt" {
+		r.Header.Set("X-Requested-With", "XMLHttpRequest")
+	}
+
 	if rt.inner == nil {
 		return http.DefaultTransport.RoundTrip(r)
 	}
