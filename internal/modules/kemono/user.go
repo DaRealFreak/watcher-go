@@ -58,6 +58,11 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		pageUrl.RawQuery = queries.Encode()
 
 		response, _ = m.Session.Get(pageUrl.String())
+		// new behavior of kemono.su is to redirect to the main page if the offset exceeds the last page
+		if response.Request.URL.String() != pageUrl.String() {
+			break
+		}
+
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 

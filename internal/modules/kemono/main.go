@@ -37,11 +37,11 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
-		Key:           "kemono.party",
+		Key:           "kemono.su",
 		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile(`kemono.party`),
+			regexp.MustCompile(`kemono.su`),
 		},
 	}
 	module.ModuleInterface = &kemono{
@@ -65,7 +65,7 @@ func (m *kemono) InitializeModule() {
 		&m.settings,
 	))
 
-	m.baseUrl, _ = url.Parse("https://kemono.party")
+	m.baseUrl, _ = url.Parse("https://kemono.su")
 
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
@@ -98,7 +98,7 @@ func (m *kemono) getSubFolder(item *models.TrackedItem) string {
 		return item.SubFolder
 	}
 
-	search := regexp.MustCompile(`https://kemono.party/([^/?&]+)/user/(\d+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://kemono.su/([^/?&]+)/user/(\d+)`).FindStringSubmatch(item.URI)
 	if len(search) == 3 {
 		return fp.SanitizePath(fmt.Sprintf("%s/%s", search[1], search[2]), true)
 	}

@@ -161,7 +161,7 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 	}
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("div.post__body a:not([href*=\"kemono.party/data\"])").Each(func(index int, row *goquery.Selection) {
+	document.Find("div.post__body a:not([href*=\"kemono.su/data\"])").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
 			if !strings.Contains(fileURL.String(), ".fanbox.cc/") {
