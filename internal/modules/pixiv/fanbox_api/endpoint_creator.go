@@ -58,7 +58,7 @@ func (a *FanboxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 		return nil, err
 	}
 
-	if err := a.mapAPIResponse(res, &info); err != nil {
+	if err = a.mapAPIResponse(res, &info); err != nil {
 		return nil, err
 	}
 
