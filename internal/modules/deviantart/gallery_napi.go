@@ -14,8 +14,16 @@ import (
 )
 
 func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
-	username := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[1]
-	galleryID := m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[2]
+	var galleryID string
+	var username string
+
+	if m.daPattern.scrapPattern.MatchString(item.URI) {
+		username = m.daPattern.scrapPattern.FindStringSubmatch(item.URI)[1]
+		galleryID = "-2"
+	} else {
+		username = m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[1]
+		galleryID = m.daPattern.galleryPattern.FindStringSubmatch(item.URI)[2]
+	}
 	galleryIntID, _ := strconv.ParseInt(galleryID, 10, 64)
 
 	res, err := m.nAPI.CollectionsUser(username, 0, napi.CollectionLimit, napi.FolderTypeGallery, false, true)

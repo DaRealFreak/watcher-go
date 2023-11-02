@@ -54,6 +54,7 @@ type deviantArtPattern struct {
 	feedPattern           *regexp.Regexp
 	userPattern           *regexp.Regexp
 	galleryPattern        *regexp.Regexp
+	scrapPattern          *regexp.Regexp
 	collectionUUIDPattern *regexp.Regexp
 	collectionPattern     *regexp.Regexp
 	tagPattern            *regexp.Regexp
@@ -179,6 +180,12 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 		} else {
 			return m.parseGalleryNapi(item)
 		}
+	case m.daPattern.scrapPattern.MatchString(item.URI):
+		if m.settings.UseDevAPI {
+			return fmt.Errorf("unable to parse scraps with dev API")
+		} else {
+			return m.parseGalleryNapi(item)
+		}
 	case m.daPattern.collectionPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {
 			return m.parseCollectionDevAPI(item)
@@ -216,6 +223,7 @@ func getDeviantArtPattern() deviantArtPattern {
 		userPattern:           regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)(?:/gallery|/gallery/all)?(?:/)?$`),
 		feedPattern:           regexp.MustCompile(`https://www.deviantart.com(?:/)?$`),
 		galleryPattern:        regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/(\d+).*`),
+		scrapPattern:          regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/gallery/scraps`),
 		collectionPattern:     regexp.MustCompile(`https://www.deviantart.com/([^/?&]+?)/favourites(?:/(\d+))?.*`),
 		collectionUUIDPattern: regexp.MustCompile(`deviantart://collection/([^/?&]+?)/([^/?&]+)`),
 		tagPattern:            regexp.MustCompile(`https://www.deviantart.com/tag/([^/?&]+)(?:$|/.*)`),
