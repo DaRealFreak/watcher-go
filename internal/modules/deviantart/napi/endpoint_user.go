@@ -140,6 +140,10 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 		values.Set("all_folder", "true")
 	}
 
+	if folder == -2 {
+		values.Set("scraps_folder", "true")
+	}
+
 	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/contents?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
