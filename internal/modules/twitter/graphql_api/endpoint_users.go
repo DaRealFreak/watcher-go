@@ -66,14 +66,12 @@ type TimelineInstruction struct {
 	Entries []*Tweet `json:"entries"`
 }
 
-type Timeline struct {
+type UserTimeline struct {
 	Data struct {
 		User struct {
 			Result struct {
 				TimelineV2 struct {
-					Timeline struct {
-						Instructions []TimelineInstruction `json:"instructions"`
-					} `json:"timeline"`
+					Timeline *Timeline `json:"timeline"`
 				} `json:"timeline_v2"`
 			} `json:"result"`
 		} `json:"user"`
@@ -81,38 +79,13 @@ type Timeline struct {
 }
 
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
-func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
-	for _, instruction := range t.Data.User.Result.TimelineV2.Timeline.Instructions {
-		if instruction.Type != "TimelineAddEntries" {
-			continue
-		}
+func (t *UserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
+	return t.Data.User.Result.TimelineV2.Timeline.TweetEntries(userIDs...)
+}
 
-		for _, entry := range instruction.Entries {
-			if entry.Content.EntryType != "TimelineTimelineItem" {
-				continue
-			}
-
-			if len(userIDs) != 0 {
-				inAllowedUsers := false
-				for _, userID := range userIDs {
-					if entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result != nil &&
-						userID == entry.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String() {
-						inAllowedUsers = true
-						break
-					}
-				}
-
-				// not in allowed users, skip entry (most likely advertisement entries)
-				if !inAllowedUsers {
-					continue
-				}
-			}
-
-			tweets = append(tweets, entry)
-		}
-	}
-
-	return tweets
+// BottomCursor checks for the next cursor in the timeline response
+func (t *UserTimeline) BottomCursor() string {
+	return t.Data.User.Result.TimelineV2.Timeline.BottomCursor()
 }
 
 // DownloadItems returns the normalized DownloadQueueItems from the tweet objects
@@ -159,25 +132,6 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 	return items
 }
 
-// BottomCursor checks for the next cursor in the timeline response
-func (t *Timeline) BottomCursor() string {
-	for _, instruction := range t.Data.User.Result.TimelineV2.Timeline.Instructions {
-		if instruction.Type != "TimelineAddEntries" {
-			continue
-		}
-
-		for _, entry := range instruction.Entries {
-			if entry.Content.CursorType != "Bottom" {
-				continue
-			}
-
-			return entry.Content.Value
-		}
-	}
-
-	return ""
-}
-
 type User struct {
 	ID     string      `json:"id"`
 	RestID json.Number `json:"rest_id"`
@@ -202,18 +156,13 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 	a.applyRateLimit()
 
 	variables := map[string]interface{}{
-		"userId":                      userId,
-		"count":                       40,
-		"includePromotedContent":      false,
-		"withSuperFollowsUserFields":  true,
-		"withDownvotePerspective":     false,
-		"withReactionsMetadata":       false,
-		"withReactionsPerspective":    false,
-		"withSuperFollowsTweetFields": true,
-		"withClientEventToken":        false,
-		"withBirdwatchNotes":          false,
-		"withVoice":                   true,
-		"withV2Timeline":              true,
+		"userId":                 userId,
+		"count":                  40,
+		"includePromotedContent": false,
+		"withClientEventToken":   false,
+		"withBirdwatchNotes":     false,
+		"withVoice":              true,
+		"withV2Timeline":         true,
 	}
 
 	if cursor != "" {
@@ -223,13 +172,30 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 	variablesJson, _ := json.Marshal(variables)
 
 	featuresJson, _ := json.Marshal(map[string]interface{}{
-		"dont_mention_me_view_api_enabled":      true,
-		"interactive_text_enabled":              true,
-		"responsive_web_uc_gql_enabled":         false,
-		"responsive_web_edit_tweet_api_enabled": false,
+		"responsive_web_graphql_exclude_directive_enabled":                        true,
+		"verified_phone_label_enabled":                                            false,
+		"responsive_web_home_pinned_timelines_enabled":                            true,
+		"creator_subscriptions_tweet_preview_api_enabled":                         true,
+		"responsive_web_graphql_timeline_navigation_enabled":                      true,
+		"responsive_web_graphql_skip_user_profile_image_extensions_enabled":       false,
+		"c9s_tweet_anatomy_moderator_badge_enabled":                               true,
+		"tweetypie_unmention_optimization_enabled":                                true,
+		"responsive_web_edit_tweet_api_enabled":                                   true,
+		"graphql_is_translatable_rweb_tweet_is_translatable_enabled":              true,
+		"view_counts_everywhere_api_enabled":                                      true,
+		"longform_notetweets_consumption_enabled":                                 true,
+		"responsive_web_twitter_article_tweet_consumption_enabled":                false,
+		"tweet_awards_web_tipping_enabled":                                        false,
+		"freedom_of_speech_not_reach_fetch_enabled":                               true,
+		"standardized_nudges_misinfo":                                             true,
+		"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+		"longform_notetweets_rich_text_read_enabled":                              true,
+		"longform_notetweets_inline_media_enabled":                                true,
+		"responsive_web_media_download_video_enabled":                             false,
+		"responsive_web_enhance_cards_enabled":                                    false,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/ZnNUqQaF7ZP5sJehbi2u6A/UserMedia"
+	apiURI := "https://twitter.com/i/api/graphql/7_ZP_xN3Bcq1I2QkK5yc2w/UserMedia"
 	values := url.Values{
 		"variables": {string(variablesJson)},
 		"features":  {string(featuresJson)},
@@ -240,7 +206,7 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		return nil, err
 	}
 
-	var timeline *Timeline
+	var timeline *UserTimeline
 	err = a.mapAPIResponse(res, &timeline)
 
 	return timeline, err
@@ -250,14 +216,28 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	a.applyRateLimit()
 
 	variablesJson, _ := json.Marshal(map[string]interface{}{
-		"screen_name":                username,
-		"withSafetyModeUserFields":   true,
-		"withSuperFollowsUserFields": true,
+		"screen_name":              username,
+		"withSafetyModeUserFields": true,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName"
+	// {"hidden_profile_likes_enabled":true,"hidden_profile_subscriptions_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":true,"subscriptions_verification_info_verified_since_enabled":true,"highlights_tweets_tab_ui_enabled":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true}
+	featuresJson, _ := json.Marshal(map[string]interface{}{
+		"hidden_profile_likes_enabled":                                      true,
+		"hidden_profile_subscriptions_enabled":                              true,
+		"responsive_web_graphql_exclude_directive_enabled":                  true,
+		"verified_phone_label_enabled":                                      false,
+		"subscriptions_verification_info_is_identity_verified_enabled":      true,
+		"subscriptions_verification_info_verified_since_enabled":            true,
+		"highlights_tweets_tab_ui_enabled":                                  true,
+		"creator_subscriptions_tweet_preview_api_enabled":                   true,
+		"responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+		"responsive_web_graphql_timeline_navigation_enabled":                true,
+	})
+
+	apiURI := "https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName"
 	values := url.Values{
 		"variables": {string(variablesJson)},
+		"features":  {string(featuresJson)},
 	}
 
 	res, err := a.apiGET(apiURI, values)

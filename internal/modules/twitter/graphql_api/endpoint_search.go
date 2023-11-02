@@ -27,126 +27,22 @@ type SearchEntry struct {
 	} `json:"content"`
 }
 
-type SearchTimeline struct {
-	GlobalObjects struct {
-		Tweets map[string]struct {
-			ID               json.Number  `json:"id_str"`
-			UserID           json.Number  `json:"user_id"`
-			CreatedAt        *TwitterTime `json:"created_at"`
-			ExtendedEntities struct {
-				Media []struct {
-					ID        json.Number `json:"id_str"`
-					Type      string      `json:"type"`
-					MediaURL  string      `json:"media_url_https"`
-					VideoInfo *struct {
-						Variants []struct {
-							Bitrate int    `json:"bitrate"`
-							URL     string `json:"URL"`
-						} `json:"variants"`
-					} `json:"video_info"`
-				} `json:"media"`
-			} `json:"extended_entities"`
-		} `json:"tweets"`
-		Users map[string]struct {
-			ID         json.Number `json:"id_str"`
-			Name       string      `json:"name"`
-			ScreenName string      `json:"screen_name"`
-		} `json:"users"`
-	} `json:"globalObjects"`
-	Timeline struct {
-		Instructions []struct {
-			AddEntries *struct {
-				Entries        []SearchEntry `json:"entries"`
-				EntryToReplace string        `json:"entryIdToReplace"`
-				Entry          SearchEntry   `json:"entry"`
-			} `json:"addEntries"`
-			ReplaceEntry *struct {
-				Entries        []SearchEntry `json:"entries"`
-				EntryToReplace string        `json:"entryIdToReplace"`
-				Entry          SearchEntry   `json:"entry"`
-			} `json:"replaceEntry"`
-		} `json:"instructions"`
-	} `json:"timeline"`
+type SearchTimelineData struct {
+	Data struct {
+		SearchByRawQuery struct {
+			SearchTimeline struct {
+				Timeline *Timeline `json:"timeline"`
+			} `json:"search_timeline"`
+		} `json:"search_by_raw_query"`
+	} `json:"data"`
 }
 
-// GetUserFromGlobalObjectsByUserID returns a User reference if it exists in the global objects of the search
-func (t *SearchTimeline) GetUserFromGlobalObjectsByUserID(userID string) *User {
-	for _, userEntry := range t.GlobalObjects.Users {
-		if userEntry.ID.String() == userID {
-			return &User{
-				// we don't have the ID in this context, only the Rest ID
-				ID:     "",
-				RestID: json.Number(userID),
-				Legacy: struct {
-					Name       string `json:"name"`
-					ScreenName string `json:"screen_name"`
-				}{
-					Name:       userEntry.Name,
-					ScreenName: userEntry.ScreenName,
-				},
-			}
-		}
-	}
-
-	return nil
+func (s *SearchTimelineData) TweetEntries(userIDs ...string) (tweets []*Tweet) {
+	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.TweetEntries(userIDs...)
 }
 
-func (t *SearchTimeline) GetTweetFromGlobalObjectsByTweetID(tweetID string) *Tweet {
-	for _, tweetEntry := range t.GlobalObjects.Tweets {
-		if tweetEntry.ID.String() == tweetID {
-			tweet := Tweet{}
-			tweet.EntryID = tweetID
-
-			// tweet specific strings we can't copy from our current context
-			tweet.Content.EntryType = "TimelineTimelineItem"
-			tweet.Content.ItemContent.ItemType = "TimelineTweet"
-			tweet.Content.ItemContent.TweetDisplayType = "Tweet"
-
-			tweet.Content.ItemContent.TweetResults.Result.RestID = json.Number(tweetID)
-			tweet.Content.ItemContent.TweetResults.Result.Legacy.CreatedAt = tweetEntry.CreatedAt
-			tweet.Content.ItemContent.TweetResults.Result.Legacy.ExtendedEntities = tweetEntry.ExtendedEntities
-			tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result = t.GetUserFromGlobalObjectsByUserID(tweetEntry.UserID.String())
-
-			return &tweet
-		}
-	}
-
-	return nil
-}
-
-func (t *SearchTimeline) TweetEntries(_ ...string) (tweets []*Tweet) {
-	for _, instructions := range t.Timeline.Instructions {
-		if instructions.AddEntries != nil {
-			for _, entry := range instructions.AddEntries.Entries {
-				if entry.Content.Item != nil && entry.Content.Item.Content.Tweet.DisplayType == "Tweet" {
-					tweets = append(tweets, t.GetTweetFromGlobalObjectsByTweetID(entry.Content.Item.Content.Tweet.ID.String()))
-				}
-			}
-		}
-	}
-
-	return tweets
-}
-
-func (t *SearchTimeline) BottomCursor() string {
-	for _, instruction := range t.Timeline.Instructions {
-		if instruction.AddEntries != nil {
-			for _, entry := range instruction.AddEntries.Entries {
-				if entry.Content.Operation != nil && entry.Content.Operation.Cursor.CursorType == "Bottom" {
-					return entry.Content.Operation.Cursor.Value
-				}
-			}
-		}
-
-		// page 2 and onward replace the cursor entry, only page 1 returns it in "addEntries"
-		if instruction.ReplaceEntry != nil {
-			if instruction.ReplaceEntry.Entry.Content.Operation.Cursor.CursorType == "Bottom" {
-				return instruction.ReplaceEntry.Entry.Content.Operation.Cursor.Value
-			}
-		}
-	}
-
-	return ""
+func (s *SearchTimelineData) BottomCursor() string {
+	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.BottomCursor()
 }
 
 func (a *TwitterGraphQlAPI) Search(
@@ -154,45 +50,46 @@ func (a *TwitterGraphQlAPI) Search(
 ) (TimelineInterface, error) {
 	a.applyRateLimit()
 
-	apiURI := "https://twitter.com/i/api/2/search/adaptive.json"
-	values := url.Values{
-		"include_profile_interstitial_type":    {"1"},
-		"include_blocking":                     {"1"},
-		"include_blocked_by":                   {"1"},
-		"include_followed_by":                  {"1"},
-		"include_want_retweets":                {"1"},
-		"include_mute_edge":                    {"1"},
-		"include_can_dm":                       {"1"},
-		"include_can_media_tag":                {"1"},
-		"include_ext_has_nft_avatar":           {"1"},
-		"skip_status":                          {"1"},
-		"cards_platform":                       {"Web-12"},
-		"include_cards":                        {"1"},
-		"include_ext_alt_text":                 {"true"},
-		"include_ext_limited_action_results":   {"false"},
-		"include_quote_count":                  {"true"},
-		"include_reply_count":                  {"1"},
-		"tweet_mode":                           {"extended"},
-		"include_ext_collab_control":           {"true"},
-		"include_entities":                     {"true"},
-		"include_user_entities":                {"true"},
-		"include_ext_media_color":              {"true"},
-		"include_ext_media_availability":       {"true"},
-		"include_ext_sensitive_media_warning":  {"true"},
-		"include_ext_trusted_friends_metadata": {"true"},
-		"send_error_codes":                     {"true"},
-		"simple_quoted_tweet":                  {"true"},
-		"q":                                    {fmt.Sprintf("(from:%s) until:%s filter:links", authorName, untilDate.Format("2006-01-02"))},
-		"count":                                {"20"},
-		"query_source":                         {"typed_query"},
-		"pc":                                   {"1"},
-		"spelling_corrections":                 {"1"},
-		"include_ext_edit_control":             {"true"},
-		"ext":                                  {"mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,enrichments,superFollowMetadata,unmentionInfo,editControl,collab_control,vibe"},
+	variables := map[string]interface{}{
+		"rawQuery":    fmt.Sprintf("(from:%s) until:%s filter:links", authorName, untilDate.Format("2006-01-02")),
+		"count":       40,
+		"querySource": "typed_query",
+		"product":     "Top",
 	}
 
 	if cursor != "" {
-		values.Set("cursor", cursor)
+		variables["cursor"] = cursor
+	}
+
+	variablesJson, _ := json.Marshal(variables)
+	featuresJson, _ := json.Marshal(map[string]interface{}{
+		"responsive_web_graphql_exclude_directive_enabled":                        true,
+		"verified_phone_label_enabled":                                            false,
+		"responsive_web_home_pinned_timelines_enabled":                            true,
+		"creator_subscriptions_tweet_preview_api_enabled":                         true,
+		"responsive_web_graphql_timeline_navigation_enabled":                      true,
+		"responsive_web_graphql_skip_user_profile_image_extensions_enabled":       false,
+		"c9s_tweet_anatomy_moderator_badge_enabled":                               true,
+		"tweetypie_unmention_optimization_enabled":                                true,
+		"responsive_web_edit_tweet_api_enabled":                                   true,
+		"graphql_is_translatable_rweb_tweet_is_translatable_enabled":              true,
+		"view_counts_everywhere_api_enabled":                                      true,
+		"longform_notetweets_consumption_enabled":                                 true,
+		"responsive_web_twitter_article_tweet_consumption_enabled":                false,
+		"tweet_awards_web_tipping_enabled":                                        false,
+		"freedom_of_speech_not_reach_fetch_enabled":                               true,
+		"standardized_nudges_misinfo":                                             true,
+		"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+		"longform_notetweets_rich_text_read_enabled":                              true,
+		"longform_notetweets_inline_media_enabled":                                true,
+		"responsive_web_media_download_video_enabled":                             false,
+		"responsive_web_enhance_cards_enabled":                                    false,
+	})
+
+	apiURI := "https://twitter.com/i/api/graphql/lZ0GCEojmtQfiUQa5oJSEw/SearchTimeline"
+	values := url.Values{
+		"variables": {string(variablesJson)},
+		"features":  {string(featuresJson)},
 	}
 
 	res, err := a.apiGET(apiURI, values)
@@ -200,8 +97,8 @@ func (a *TwitterGraphQlAPI) Search(
 		return nil, err
 	}
 
-	var timeline *SearchTimeline
-	err = a.mapAPIResponse(res, &timeline)
+	var timelineData *SearchTimelineData
+	err = a.mapAPIResponse(res, &timelineData)
 
-	return timeline, err
+	return timelineData, err
 }
