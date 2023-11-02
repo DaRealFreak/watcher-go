@@ -7,7 +7,7 @@ import (
 )
 
 func TestDeviantartNAPI_ExtendedDeviation(t *testing.T) {
-	res, err := daNAPI.ExtendedDeviation(941379360, "", "art", false, nil)
+	res, err := daNAPI.ExtendedDeviation(941379360, "shoiichii", "art", false, nil)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(res.Deviation.Extended)
 	assert.New(t).NotNil(res.Deviation.Extended.Download)

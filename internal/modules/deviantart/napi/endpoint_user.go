@@ -34,7 +34,7 @@ func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, er
 		values.Set("expand", expand)
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/shared_api/user/info?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dashared/user/info?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
@@ -57,16 +57,16 @@ func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit 
 		values.Set("with_subfolders", "true")
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/init/gallery?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dauserprofile/init/gallery?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	var favoritesOverview Overview
-	err = a.mapAPIResponse(response, &favoritesOverview)
+	var galleriesOverview Overview
+	err = a.mapAPIResponse(response, &galleriesOverview)
 
-	return &favoritesOverview, err
+	return &galleriesOverview, err
 }
 
 func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit int, withSubFolders bool) (*Overview, error) {
@@ -80,7 +80,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 		values.Set("with_subfolders", "true")
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/init/favourites?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dauserprofile/init/favourites?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
@@ -95,6 +95,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, limit int, allFolders bool) (*UserResponse, error) {
 	values := url.Values{
 		"username":   {username},
+		"type":       {"collection"},
 		"offset":     {strconv.Itoa(offset)},
 		"limit":      {strconv.Itoa(limit)},
 		"csrf_token": {a.csrfToken},
@@ -110,7 +111,7 @@ func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, 
 		values.Set("all_folder", "true")
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/collection/contents?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/contents?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
@@ -125,6 +126,7 @@ func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, 
 func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int, limit int, allFolders bool) (*UserResponse, error) {
 	values := url.Values{
 		"username":   {username},
+		"type":       {"gallery"},
 		"offset":     {strconv.Itoa(offset)},
 		"limit":      {strconv.Itoa(limit)},
 		"csrf_token": {a.csrfToken},
@@ -140,7 +142,7 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 		values.Set("all_folder", "true")
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/da-user-profile/api/gallery/contents?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/contents?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
@@ -170,7 +172,7 @@ func (a *DeviantartNAPI) WatchUser(username string, session http.SessionInterfac
 	bodyReader := strings.NewReader(string(jsonString))
 
 	res, err := session.GetClient().Post(
-		"https://www.deviantart.com/_napi/shared_api/watch",
+		"https://www.deviantart.com/_puppy/dashared/user/watch",
 		"application/json",
 		bodyReader,
 	)
@@ -198,7 +200,7 @@ func (a *DeviantartNAPI) UnwatchUser(username string, session http.SessionInterf
 	bodyReader := strings.NewReader(string(jsonString))
 
 	res, err := session.GetClient().Post(
-		"https://www.deviantart.com/_napi/shared_api/unwatch",
+		"https://www.deviantart.com/_puppy/dashared/user/unwatch",
 		"application/json",
 		bodyReader,
 	)

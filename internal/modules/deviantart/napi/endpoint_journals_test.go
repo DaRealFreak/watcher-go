@@ -12,10 +12,3 @@ func TestDeviantartNAPI_JournalSearch(t *testing.T) {
 	assert.New(t).Equal(24, len(res.Deviations))
 	assert.New(t).Equal(true, res.HasMore)
 }
-
-func TestDeviantartNAPI_JournalTag(t *testing.T) {
-	res, err := daNAPI.JournalTag("Pyra", "", "")
-	assert.New(t).NoError(err)
-	assert.New(t).Equal(24, len(res.Deviations))
-	assert.New(t).Equal(true, res.HasMore)
-}

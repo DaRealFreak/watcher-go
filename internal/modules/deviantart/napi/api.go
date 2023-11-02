@@ -152,19 +152,21 @@ type Folder struct {
 }
 
 type Overview struct {
-	SectionData struct {
-		Modules []*struct {
-			Name       string `json:"name"`
-			ModuleData struct {
-				DataKey string `json:"dataKey"`
-				Folders struct {
-					HasMore    bool          `json:"hasMore"`
-					NextOffset json.Number   `json:"nextOffset"`
-					Results    []*Collection `json:"results"`
-				} `json:"folders"`
-			} `json:"moduleData"`
-		} `json:"modules"`
-	} `json:"sectionData"`
+	Gruser struct {
+		Page struct {
+			Modules []*struct {
+				Name       string `json:"name"`
+				ModuleData struct {
+					DataKey string `json:"dataKey"`
+					Folders struct {
+						HasMore    bool          `json:"hasMore"`
+						NextOffset json.Number   `json:"nextOffset"`
+						Results    []*Collection `json:"results"`
+					} `json:"folders"`
+				} `json:"moduleData"`
+			} `json:"modules"`
+		} `json:"page"`
+	} `json:"gruser"`
 }
 
 // DeviantartNAPI contains all required items to communicate with the API
@@ -401,7 +403,7 @@ func (c *CollectionsUserResponse) FindFolderByFolderUuid(folderUuid string) *Col
 }
 
 func (o *Overview) FindFolderByFolderId(folderId int) *Collection {
-	for _, module := range o.SectionData.Modules {
+	for _, module := range o.Gruser.Page.Modules {
 		if module.Name == "folders" {
 			for _, folder := range module.ModuleData.Folders.Results {
 				if singleFolderId, err := folder.FolderId.Int64(); err == nil && int(singleFolderId) == folderId {

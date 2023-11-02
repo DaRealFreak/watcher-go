@@ -41,7 +41,7 @@ func (a *DeviantartNAPI) CollectionsUser(
 		values.Set("with_subfolders", "false")
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/shared_api/gallection/folders?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/folders?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (a *DeviantartNAPI) CollectionSearch(search string, cursor string, order st
 		values.Set("order", order)
 	}
 
-	apiUrl := "https://www.deviantart.com/_napi/da-browse/api/networkbar/search/collections?" + values.Encode()
+	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/search/collections?" + values.Encode()
 	response, err := a.UserSession.Get(apiUrl)
 	if err != nil {
 		return nil, err
