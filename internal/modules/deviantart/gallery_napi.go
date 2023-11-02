@@ -93,15 +93,15 @@ func (m *deviantArt) parseGalleryByFolderNapi(item *models.TrackedItem, galleryF
 
 	for !foundCurrentItem {
 		for _, deviation := range response.Deviations {
-			if deviation.Deviation.Type == "tier" {
+			if deviation.Type == "tier" {
 				// tier entries do not respect the "most-recent" order and have no content most of the time
 				continue
 			}
 
-			if item.CurrentItem != deviation.Deviation.DeviationId.String() {
+			if item.CurrentItem != deviation.DeviationId.String() {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:      deviation.Deviation.DeviationId.String(),
-					deviation:   deviation.Deviation,
+					itemID:      deviation.DeviationId.String(),
+					deviation:   deviation,
 					downloadTag: fp.SanitizePath(item.SubFolder, true),
 				})
 			} else {

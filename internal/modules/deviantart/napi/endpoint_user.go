@@ -11,9 +11,7 @@ import (
 type UserResponse struct {
 	HasMore    bool         `json:"hasMore"`
 	NextOffset *json.Number `json:"nextOffset"`
-	Deviations []*struct {
-		Deviation *Deviation `json:"deviation"`
-	} `json:"results"`
+	Deviations []*Deviation `json:"results"`
 }
 
 type UserInfo struct {

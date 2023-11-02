@@ -53,10 +53,10 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 
 	for !foundCurrentItem {
 		for _, result := range response.Deviations {
-			if item.CurrentItem == "" || result.Deviation.GetPublishedTime().Unix() > currentItemID {
+			if item.CurrentItem == "" || result.GetPublishedTime().Unix() > currentItemID {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{
-					itemID:      result.Deviation.GetPublishedTimestamp(),
-					deviation:   result.Deviation,
+					itemID:      result.GetPublishedTimestamp(),
+					deviation:   result,
 					downloadTag: fp.SanitizePath(item.SubFolder, false),
 				})
 			} else {
