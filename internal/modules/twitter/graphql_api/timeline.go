@@ -20,6 +20,11 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 				continue
 			}
 
+			// possibly blocked tweet in your region or you got blocked
+			if entry.Content.ItemContent.TweetResults.Result == nil {
+				continue
+			}
+
 			if len(userIDs) != 0 {
 				inAllowedUsers := false
 				for _, userID := range userIDs {
