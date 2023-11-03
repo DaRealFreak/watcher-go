@@ -44,6 +44,10 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 }
 
 func (t *Timeline) BottomCursor() string {
+	if t == nil {
+		return ""
+	}
+
 	for _, instruction := range t.Instructions {
 		if instruction.Type != "TimelineAddEntries" {
 			continue
