@@ -68,6 +68,11 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		}
 
 		tweetEntries := timeline.TweetEntries(userId)
+		if len(tweetEntries) == 0 && searchTime == nil {
+			// we only want to check entries if we are not in search mode, and we should have at least one entry
+			log.WithField("module", m.ModuleKey()).Warnf("no tweet entries found for user %s, possibly banned/deleted", screenName)
+		}
+
 		for _, tweet := range tweetEntries {
 			if m.settings.ConvertNameToId &&
 				tweet.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName != screenName {
