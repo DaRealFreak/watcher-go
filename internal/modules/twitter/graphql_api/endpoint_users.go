@@ -14,6 +14,43 @@ type TimelineInterface interface {
 	BottomCursor() string
 }
 
+// TweetData returns the actual tweet entry
+func (s *SingleTweet) TweetData() *SingleTweet {
+	// "__typename": "TweetWithVisibilityResults" wraps the actual tweet data into another tweet object
+	// unsure if this is the case for more types currently
+	if s.Tweet != nil {
+		return s.Tweet
+	} else {
+		return s
+	}
+}
+
+type SingleTweet struct {
+	Tweet  *SingleTweet `json:"tweet"`
+	RestID json.Number  `json:"rest_id"`
+	Core   struct {
+		UserResults struct {
+			Result *User `json:"result"`
+		} `json:"user_results"`
+	} `json:"core"`
+	Legacy struct {
+		CreatedAt        *TwitterTime `json:"created_at"`
+		ExtendedEntities struct {
+			Media []struct {
+				ID        json.Number `json:"id_str"`
+				Type      string      `json:"type"`
+				MediaURL  string      `json:"media_url_https"`
+				VideoInfo *struct {
+					Variants []struct {
+						Bitrate int    `json:"bitrate"`
+						URL     string `json:"URL"`
+					} `json:"variants"`
+				} `json:"video_info"`
+			} `json:"media"`
+		} `json:"extended_entities"`
+	} `json:"legacy"`
+}
+
 type Tweet struct {
 	EntryID string `json:"entryId"`
 	Content struct {
@@ -23,30 +60,7 @@ type Tweet struct {
 		ItemContent struct {
 			ItemType     string `json:"itemType"`
 			TweetResults struct {
-				Result struct {
-					RestID json.Number `json:"rest_id"`
-					Core   struct {
-						UserResults struct {
-							Result *User `json:"result"`
-						} `json:"user_results"`
-					} `json:"core"`
-					Legacy struct {
-						CreatedAt        *TwitterTime `json:"created_at"`
-						ExtendedEntities struct {
-							Media []struct {
-								ID        json.Number `json:"id_str"`
-								Type      string      `json:"type"`
-								MediaURL  string      `json:"media_url_https"`
-								VideoInfo *struct {
-									Variants []struct {
-										Bitrate int    `json:"bitrate"`
-										URL     string `json:"URL"`
-									} `json:"variants"`
-								} `json:"video_info"`
-							} `json:"media"`
-						} `json:"extended_entities"`
-					} `json:"legacy"`
-				} `json:"result"`
+				Result *SingleTweet `json:"result"`
 			} `json:"tweet_results"`
 			TweetDisplayType string `json:"tweetDisplayType"`
 		} `json:"itemContent"`
@@ -90,7 +104,7 @@ func (t *UserTimeline) BottomCursor() string {
 
 // DownloadItems returns the normalized DownloadQueueItems from the tweet objects
 func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
-	for _, mediaEntry := range tw.Content.ItemContent.TweetResults.Result.Legacy.ExtendedEntities.Media {
+	for _, mediaEntry := range tw.Content.ItemContent.TweetResults.Result.TweetData().Legacy.ExtendedEntities.Media {
 		if mediaEntry.Type == "video" || mediaEntry.Type == "animated_gif" {
 			highestBitRateIndex := 0
 			highestBitRate := 0
@@ -102,12 +116,12 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			}
 
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
-				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
+				ItemID:      tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+				DownloadTag: tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
-					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
-					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+					tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
 					len(items)+1,
 					fp.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
 				),
@@ -115,12 +129,12 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			})
 		} else {
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.Content.ItemContent.TweetResults.Result.RestID.String(),
-				DownloadTag: tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.Legacy.ScreenName,
+				ItemID:      tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+				DownloadTag: tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
-					tw.Content.ItemContent.TweetResults.Result.RestID.String(),
-					tw.Content.ItemContent.TweetResults.Result.Core.UserResults.Result.RestID.String(),
+					tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+					tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
 					len(items)+1,
 					fp.GetFileName(mediaEntry.MediaURL),
 				),
