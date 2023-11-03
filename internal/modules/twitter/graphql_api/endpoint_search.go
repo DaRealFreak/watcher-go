@@ -52,9 +52,9 @@ func (a *TwitterGraphQlAPI) Search(
 
 	variables := map[string]interface{}{
 		"rawQuery":    fmt.Sprintf("(from:%s) until:%s filter:links", authorName, untilDate.Format("2006-01-02")),
-		"count":       40,
+		"count":       20,
 		"querySource": "typed_query",
-		"product":     "Top",
+		"product":     "Media",
 	}
 
 	if cursor != "" {

@@ -104,7 +104,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 		bottomCursor = timeline.BottomCursor()
 
-		if searchTime != nil && len(tweetEntries) == 0 {
+		if searchTime != nil && (len(tweetEntries) == 0 || bottomCursor == "") {
 			if len(searchedMediaTweets) > 0 {
 				// search is nearly random, so try to bring it in chronological order at least for the current items
 				sort.SliceStable(searchedMediaTweets, func(i, j int) bool {

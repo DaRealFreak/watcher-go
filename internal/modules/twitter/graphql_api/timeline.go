@@ -6,6 +6,10 @@ type Timeline struct {
 
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
 func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
+	if t == nil {
+		return tweets
+	}
+
 	for _, instruction := range t.Instructions {
 		if instruction.Type != "TimelineAddEntries" {
 			continue
