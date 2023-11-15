@@ -96,7 +96,7 @@ func NewBareModule() *models.Module {
 	}
 	module.ModuleInterface = &patreon{
 		Module:              module,
-		loginCsrfPattern:    regexp.MustCompile(`window\.patreon\.csrfSignature = "(.*)";`),
+		loginCsrfPattern:    regexp.MustCompile(`"csrfSignature":"(.*)","pageLoadEventName`),
 		creatorIdPattern:    regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
 		creatorUriPattern:   regexp.MustCompile(`patreon://creator/(\d+)`),
 		normalizedUriRegexp: regexp.MustCompile(`patreon://creator/(\d+)/.*`),
