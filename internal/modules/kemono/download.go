@@ -102,7 +102,11 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 	factory := modules.GetModuleFactory()
 	for _, externalURL := range m.getExternalLinks(string(content)) {
 		if m.settings.ExternalURLs.PrintExternalItems {
-			log.WithField("module", m.Key).Infof("found external URL: \"%s\"", externalURL)
+			log.WithField("module", m.Key).Infof(
+				"found external URL: \"%s\" in post \"%s\"",
+				externalURL,
+				data.uri,
+			)
 		}
 
 		if m.settings.ExternalURLs.DownloadExternalItems {

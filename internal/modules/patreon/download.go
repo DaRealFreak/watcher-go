@@ -81,7 +81,11 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 
 		for _, externalURL := range data.ExternalURLs {
 			if m.settings.ExternalURLs.PrintExternalItems {
-				log.WithField("module", m.Key).Infof("found external URL: \"%s\"", externalURL)
+				log.WithField("module", m.Key).Infof(
+					"found external URL: \"%s\" in post \"%s\"",
+					externalURL,
+					data.PatreonURL,
+				)
 			}
 
 			if m.settings.ExternalURLs.DownloadExternalItems {
