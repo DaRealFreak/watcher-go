@@ -22,7 +22,8 @@ func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
 			module        VARCHAR(255) DEFAULT '' NOT NULL ,
 			last_modified DATETIME 	   DEFAULT (strftime('%s','now')),
 			favorite      BOOLEAN      DEFAULT FALSE NOT NULL,
-			complete      BOOLEAN      DEFAULT FALSE NOT NULL
+			complete      BOOLEAN      DEFAULT FALSE NOT NULL,
+			notes         TEXT         DEFAULT '' NOT NULL
 		);
 	`
 	_, err = connection.Exec(sqlStatement)
