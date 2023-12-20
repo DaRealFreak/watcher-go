@@ -7,8 +7,8 @@ import (
 )
 
 func TestTwitterGraphQlAPI_Search(t *testing.T) {
-	untilDate := time.Date(2014, time.Month(12), 16, 0, 0, 0, 0, time.UTC)
-	res, err := twitterAPI.Search("dareaifreak", untilDate, "")
+	untilDate := time.Date(2022, time.Month(1), 2, 0, 0, 0, 0, time.UTC)
+	res, err := twitterAPI.Search("anybrody", untilDate, "")
 	assert.New(t).NoError(err)
-	assert.New(t).Equal(1, len(res.TweetEntries()))
+	assert.New(t).Equal(48, len(res.TweetEntries()))
 }

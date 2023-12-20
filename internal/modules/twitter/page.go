@@ -75,13 +75,13 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 		for _, tweet := range tweetEntries {
 			if m.settings.ConvertNameToId &&
-				tweet.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName != screenName {
-				screenName = tweet.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName
+				tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName != screenName {
+				screenName = tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName
 				if screenName != "" {
 					uri := fmt.Sprintf(
 						"twitter:graphQL/%s/%s",
 						userId,
-						tweet.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+						tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
 					)
 
 					log.WithField("module", m.ModuleKey()).Warnf(
@@ -94,7 +94,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 				}
 			}
 
-			itemID, _ := strconv.ParseInt(tweet.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(), 10, 64)
+			itemID, _ := strconv.ParseInt(tweet.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(), 10, 64)
 			if itemID <= currentItemID {
 				foundCurrentItem = true
 				break
@@ -113,10 +113,10 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			if len(searchedMediaTweets) > 0 {
 				// search is nearly random, so try to bring it in chronological order at least for the current items
 				sort.SliceStable(searchedMediaTweets, func(i, j int) bool {
-					return searchedMediaTweets[i].Content.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.Unix() < searchedMediaTweets[j].Content.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.Unix()
+					return searchedMediaTweets[i].Item.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.Unix() < searchedMediaTweets[j].Item.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.Unix()
 				})
 
-				tmp := searchedMediaTweets[0].Content.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.AddDate(0, 0, 1)
+				tmp := searchedMediaTweets[0].Item.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.AddDate(0, 0, 1)
 				// new search date is same as the previous one, break here
 				if tmp.Unix() == searchTime.Unix() {
 					break
@@ -136,7 +136,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		if len(tweetEntries) == 0 {
 			if searchTime == nil && len(newMediaTweets) > 0 {
 				// search until previous day of the last post (in case of multiple posts on the same day) and reset cursor
-				tmp := newMediaTweets[len(newMediaTweets)-1].Content.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.AddDate(0, 0, 1)
+				tmp := newMediaTweets[len(newMediaTweets)-1].Item.ItemContent.TweetResults.Result.TweetData().Legacy.CreatedAt.Time.AddDate(0, 0, 1)
 				searchTime = &tmp
 				bottomCursor = ""
 			} else if len(newMediaTweets) == 0 {

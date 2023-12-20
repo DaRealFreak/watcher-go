@@ -1,7 +1,18 @@
 package graphql_api
 
 type Timeline struct {
-	Instructions []TimelineInstruction `json:"instructions"`
+	Instructions []struct {
+		Type    string `json:"type"`
+		Entries []struct {
+			EntryID string `json:"entryId"`
+			Content struct {
+				EntryType  string   `json:"entryType"`
+				Value      string   `json:"value"`
+				CursorType string   `json:"cursorType"`
+				Items      []*Tweet `json:"items"`
+			} `json:"content"`
+		} `json:"entries"`
+	} `json:"instructions"`
 }
 
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
@@ -16,32 +27,34 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 		}
 
 		for _, entry := range instruction.Entries {
-			if entry.Content.EntryType != "TimelineTimelineItem" {
+			if entry.Content.Items == nil {
 				continue
 			}
 
-			// possibly blocked tweet in your region or you got blocked
-			if entry.Content.ItemContent.TweetResults.Result == nil {
-				continue
-			}
+			for _, item := range entry.Content.Items {
+				// possibly blocked tweet in your region or you got blocked
+				if item.Item.ItemContent.TweetResults.Result.TweetData() == nil {
+					continue
+				}
 
-			if len(userIDs) != 0 {
-				inAllowedUsers := false
-				for _, userID := range userIDs {
-					if entry.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result != nil &&
-						userID == entry.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String() {
-						inAllowedUsers = true
-						break
+				if len(userIDs) != 0 {
+					inAllowedUsers := false
+					for _, userID := range userIDs {
+						if item.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result != nil &&
+							userID == item.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String() {
+							inAllowedUsers = true
+							break
+						}
+					}
+
+					// not in allowed users, skip entry (most likely advertisement entries)
+					if !inAllowedUsers {
+						continue
 					}
 				}
 
-				// not in allowed users, skip entry (most likely advertisement entries)
-				if !inAllowedUsers {
-					continue
-				}
+				tweets = append(tweets, item)
 			}
-
-			tweets = append(tweets, entry)
 		}
 	}
 

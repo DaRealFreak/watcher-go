@@ -5,6 +5,16 @@ import (
 	"net/url"
 )
 
+type StatusTweet struct {
+	Data struct {
+		ThreadedConversationWithInjectionsV2 *Timeline `json:"threaded_conversation_with_injections_v2"`
+	} `json:"data"`
+}
+
+func (t *StatusTweet) TweetEntries() (tweets []*Tweet) {
+	return t.Data.ThreadedConversationWithInjectionsV2.TweetEntries()
+}
+
 func (a *TwitterGraphQlAPI) StatusTweet(
 	tweetID string,
 ) (*StatusTweet, error) {
@@ -63,22 +73,4 @@ func (a *TwitterGraphQlAPI) StatusTweet(
 	err = a.mapAPIResponse(res, &timeline)
 
 	return timeline, err
-}
-
-func (t StatusTweet) TweetEntries() (tweets []*Tweet) {
-	for _, instruction := range t.Data.ThreadedConversationWithInjectionsV2.Instructions {
-		if instruction.Type != "TimelineAddEntries" {
-			continue
-		}
-
-		for _, entry := range instruction.Entries {
-			if entry.Content.EntryType != "TimelineTimelineItem" {
-				continue
-			}
-
-			tweets = append(tweets, entry)
-		}
-	}
-
-	return tweets
 }

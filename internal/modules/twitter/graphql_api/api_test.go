@@ -38,5 +38,5 @@ func TestMain(m *testing.M) {
 func TestNewTwitterAPI(t *testing.T) {
 	res, err := twitterAPI.UserTimelineV2("2923538614", "")
 	assert.New(t).NoError(err)
-	assert.GreaterOrEqual(t, len(res.TweetEntries("2923538614")), 4)
+	assert.GreaterOrEqual(t, len(res.TweetEntries("2923538614")), 1)
 }

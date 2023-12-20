@@ -18,11 +18,34 @@ type TimelineInterface interface {
 func (s *SingleTweet) TweetData() *SingleTweet {
 	// "__typename": "TweetWithVisibilityResults" wraps the actual tweet data into another tweet object
 	// unsure if this is the case for more types currently
-	if s.Tweet != nil {
-		return s.Tweet
-	} else {
+	if s == nil || s.Tweet == nil {
 		return s
+	} else {
+		return s.Tweet
 	}
+}
+
+// TwitterUserTimeline ToDo: refactor for use between API methods
+type TwitterUserTimeline struct {
+	Data struct {
+		User struct {
+			Result struct {
+				TimelineV2 struct {
+					Timeline *Timeline `json:"timeline"`
+				} `json:"timeline_v2"`
+			} `json:"result"`
+		} `json:"user"`
+	} `json:"data"`
+}
+
+// TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
+func (t *TwitterUserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
+	return t.Data.User.Result.TimelineV2.Timeline.TweetEntries(userIDs...)
+}
+
+// BottomCursor checks for the next cursor in the timeline response
+func (t *TwitterUserTimeline) BottomCursor() string {
+	return t.Data.User.Result.TimelineV2.Timeline.BottomCursor()
 }
 
 type SingleTweet struct {
@@ -53,10 +76,7 @@ type SingleTweet struct {
 
 type Tweet struct {
 	EntryID string `json:"entryId"`
-	Content struct {
-		EntryType   string `json:"entryType"`
-		Value       string `json:"value"`
-		CursorType  string `json:"cursorType"`
+	Item    struct {
 		ItemContent struct {
 			ItemType     string `json:"itemType"`
 			TweetResults struct {
@@ -64,47 +84,12 @@ type Tweet struct {
 			} `json:"tweet_results"`
 			TweetDisplayType string `json:"tweetDisplayType"`
 		} `json:"itemContent"`
-	} `json:"content"`
-}
-
-type StatusTweet struct {
-	Data struct {
-		ThreadedConversationWithInjectionsV2 struct {
-			Instructions []TimelineInstruction `json:"instructions"`
-		} `json:"threaded_conversation_with_injections_v2"`
-	} `json:"data"`
-}
-
-type TimelineInstruction struct {
-	Type    string   `json:"type"`
-	Entries []*Tweet `json:"entries"`
-}
-
-type UserTimeline struct {
-	Data struct {
-		User struct {
-			Result struct {
-				TimelineV2 struct {
-					Timeline *Timeline `json:"timeline"`
-				} `json:"timeline_v2"`
-			} `json:"result"`
-		} `json:"user"`
-	} `json:"data"`
-}
-
-// TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
-func (t *UserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
-	return t.Data.User.Result.TimelineV2.Timeline.TweetEntries(userIDs...)
-}
-
-// BottomCursor checks for the next cursor in the timeline response
-func (t *UserTimeline) BottomCursor() string {
-	return t.Data.User.Result.TimelineV2.Timeline.BottomCursor()
+	} `json:"item"`
 }
 
 // DownloadItems returns the normalized DownloadQueueItems from the tweet objects
 func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
-	for _, mediaEntry := range tw.Content.ItemContent.TweetResults.Result.TweetData().Legacy.ExtendedEntities.Media {
+	for _, mediaEntry := range tw.Item.ItemContent.TweetResults.Result.TweetData().Legacy.ExtendedEntities.Media {
 		if mediaEntry.Type == "video" || mediaEntry.Type == "animated_gif" {
 			highestBitRateIndex := 0
 			highestBitRate := 0
@@ -116,12 +101,12 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			}
 
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-				DownloadTag: tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+				ItemID:      tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
-					tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-					tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
+					tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+					tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
 					len(items)+1,
 					fp.GetFileName(mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL),
 				),
@@ -129,12 +114,12 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			})
 		} else {
 			items = append(items, &models.DownloadQueueItem{
-				ItemID:      tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-				DownloadTag: tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+				ItemID:      tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
-					tw.Content.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-					tw.Content.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
+					tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
+					tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String(),
 					len(items)+1,
 					fp.GetFileName(mediaEntry.MediaURL),
 				),
@@ -220,7 +205,7 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		return nil, err
 	}
 
-	var timeline *UserTimeline
+	var timeline *TwitterUserTimeline
 	err = a.mapAPIResponse(res, &timeline)
 
 	return timeline, err
