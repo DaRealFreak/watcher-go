@@ -9,7 +9,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/dghubble/oauth1 v0.7.2
-	github.com/getsentry/sentry-go v0.25.0
+	github.com/getsentry/sentry-go v0.27.0
 	github.com/google/uuid v1.4.0
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
 	github.com/mattn/go-colorable v0.1.13
