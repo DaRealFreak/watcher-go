@@ -208,16 +208,35 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return fmt.Errorf("could not retrieve CSRF token from login page")
 	}
 
+	if !(info.LuToken != "") {
+		return fmt.Errorf("could not retrieve LuToken token from login page")
+	}
+
 	a.csrfToken = info.CSRFToken
 
 	values := url.Values{
 		"referer":    {"https://www.deviantart.com"},
 		"csrf_token": {info.CSRFToken},
+		"lu_token":   {info.LuToken},
 		"challenge":  {"0"},
 		"username":   {account.Username},
 		"password":   {account.Password},
 		"remember":   {"on"},
 	}
+
+	res, err = a.UserSession.GetClient().PostForm("https://www.deviantart.com/_sisu/do/step2", values)
+	if err != nil {
+		return err
+	}
+
+	info, err = a.GetLoginCSRFToken(res)
+	if err != nil {
+		return err
+	}
+
+	values["csrf_token"] = []string{info.CSRFToken}
+	values["lu_token"] = []string{info.LuToken}
+	values["lu_token2"] = []string{info.LuToken2}
 
 	res, err = a.UserSession.GetClient().PostForm("https://www.deviantart.com/_sisu/do/signin", values)
 	if err != nil {
