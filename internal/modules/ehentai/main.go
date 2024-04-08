@@ -138,15 +138,28 @@ func (m *ehentai) Login(account *models.Account) bool {
 		"ipb_login_submit": {"Login!"},
 	}
 
-	res, err := m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+	res, err := m.Session.Get("https://e-hentai.org/home.php")
 	if err != nil {
 		m.TriedLogin = true
 		return false
 	}
 
+	// check if we have a current session based on the stored session cookies
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
-	m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
-	m.TriedLogin = true
+	m.LoggedIn = strings.Contains(htmlResponse, "You are currently at")
+
+	if !m.LoggedIn {
+		// else try to log-in (possibly broken due to them adding captchas sometimes)
+		res, err = m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+		if err != nil {
+			m.TriedLogin = true
+			return false
+		}
+
+		htmlResponse, _ = m.Session.GetDocument(res).Html()
+		m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
+		m.TriedLogin = true
+	}
 
 	// copy the cookies for e-hentai to exhentai
 	ehURL, _ := url.Parse("https://e-hentai.org")
