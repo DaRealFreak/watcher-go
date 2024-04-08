@@ -65,7 +65,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	if err != nil && item.FallbackFileURI != "" && item.FallbackFileURI != item.FileURI {
 		// fallback to resized image
 		log.WithField("module", m.Key).Warn(
-			fmt.Sprintf("error occured: %s, using fallback URI", err.Error()),
+			fmt.Sprintf("error occurred: %s, using fallback URI", err.Error()),
 		)
 
 		item.FileURI = item.FallbackFileURI
