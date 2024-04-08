@@ -48,7 +48,9 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 	case response.StatusCode == 429:
 		// we are being rate limited
 		// graphQL is not intended for public use so no rate limit is known, just sleep for an extended period of time
-		time.Sleep(time.Minute)
+		// from my personal testing the limits are spliced into 15 minute intervals similar to their default API
+		// https://developer.twitter.com/en/docs/twitter-api/rate-limits
+		time.Sleep(5 * time.Minute)
 		return RateLimitError{}, false
 	case response.StatusCode == 403:
 		if e.hasSetCookieHeader(response) {

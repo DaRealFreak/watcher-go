@@ -12,6 +12,7 @@ type Timeline struct {
 				Items      []*Tweet `json:"items"`
 			} `json:"content"`
 		} `json:"entries"`
+		ModuleItems []*Tweet `json:"moduleItems"`
 	} `json:"instructions"`
 }
 
@@ -22,7 +23,8 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	}
 
 	for _, instruction := range t.Instructions {
-		if instruction.Type != "TimelineAddEntries" {
+		if instruction.Type != "TimelineAddEntries" &&
+			instruction.Type != "TimelineAddToModule" {
 			continue
 		}
 
@@ -55,6 +57,33 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 
 				tweets = append(tweets, item)
 			}
+		}
+
+		// some Twitter user items starting with page 2 return tweets as module items
+		// absolutely no idea why exactly (example user ID: 2323917366)
+		for _, moduleItem := range instruction.ModuleItems {
+			// possibly blocked tweet in your region or you got blocked
+			if moduleItem.Item.ItemContent.TweetResults.Result.TweetData() == nil {
+				continue
+			}
+
+			if len(userIDs) != 0 {
+				inAllowedUsers := false
+				for _, userID := range userIDs {
+					if moduleItem.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result != nil &&
+						userID == moduleItem.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.RestID.String() {
+						inAllowedUsers = true
+						break
+					}
+				}
+
+				// not in allowed users, skip entry (most likely advertisement entries)
+				if !inAllowedUsers {
+					continue
+				}
+			}
+
+			tweets = append(tweets, moduleItem)
 		}
 	}
 
