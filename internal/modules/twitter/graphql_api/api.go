@@ -5,17 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
-
 	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
-
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/raven"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
@@ -23,13 +23,16 @@ const CookieAuth = "auth_token"
 
 // TwitterGraphQlAPI contains all required items to communicate with the GraphQL API
 type TwitterGraphQlAPI struct {
-	Session     watcherHttp.SessionInterface
-	rateLimiter *rate.Limiter
-	ctx         context.Context
+	settings               twitter_settings.TwitterSettings
+	authTokenFallbackIndex int
+	moduleKey              string
+	Session                watcherHttp.SessionInterface
+	rateLimiter            *rate.Limiter
+	ctx                    context.Context
 }
 
 // NewTwitterAPI returns the settings of the Twitter API
-func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
+func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings) *TwitterGraphQlAPI {
 	graphQLSession := session.NewSession(moduleKey, TwitterErrorHandler{})
 
 	client := graphQLSession.GetClient()
@@ -37,9 +40,12 @@ func NewTwitterAPI(moduleKey string) *TwitterGraphQlAPI {
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 
 	return &TwitterGraphQlAPI{
-		Session:     graphQLSession,
-		rateLimiter: rate.NewLimiter(rate.Every(3000*time.Millisecond), 1),
-		ctx:         context.Background(),
+		settings:               settings,
+		authTokenFallbackIndex: 0,
+		moduleKey:              moduleKey,
+		Session:                graphQLSession,
+		rateLimiter:            rate.NewLimiter(rate.Every(3000*time.Millisecond), 1),
+		ctx:                    context.Background(),
 	}
 }
 
@@ -94,5 +100,35 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 
 	requestURL.RawQuery = existingValues.Encode()
 
-	return a.Session.Get(requestURL.String())
+	res, err := a.Session.Get(requestURL.String())
+	if err != nil {
+		switch err.(type) {
+		case SessionTerminatedError:
+			// try to use a fallback auth token if available
+			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
+				// inform user about the session termination
+				log.WithField("module", a.moduleKey).Warnf(
+					fmt.Sprintf(
+						"received 401 status code for URI \"%s\", session got probably terminated",
+						requestURL.String(),
+					),
+				)
+
+				twitterURL, _ := url.Parse("https://twitter.com")
+				currentCookies := a.Session.GetClient().Jar.Cookies(twitterURL)
+				for _, cookie := range currentCookies {
+					if cookie.Name == "auth_token" {
+						cookie.Value = a.settings.FallbackAuthTokens[a.authTokenFallbackIndex]
+						a.authTokenFallbackIndex++
+					}
+					// update cookie with new value for the session
+					a.Session.GetClient().Jar.SetCookies(twitterURL, []*http.Cookie{cookie})
+					break
+				}
+				break
+			}
+		}
+	}
+
+	return res, err
 }

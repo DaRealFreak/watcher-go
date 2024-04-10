@@ -40,11 +40,22 @@ func (e CSRFError) Error() string {
 	return "invalid CSRF token"
 }
 
-type TwitterErrorHandler struct {
+type SessionTerminatedError struct {
+	error
 }
+
+func (e SessionTerminatedError) Error() string {
+	return "session got terminated"
+}
+
+type TwitterErrorHandler struct{}
 
 func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, fatal bool) {
 	switch {
+	case response.StatusCode == 401:
+		// our session got likely terminated due to search rate limits being exceeded
+		// so replace our auth token cookie with fallbacks if we have any
+		return SessionTerminatedError{}, false
 	case response.StatusCode == 429:
 		// we are being rate limited
 		// graphQL is not intended for public use so no rate limit is known, just sleep for an extended period of time
