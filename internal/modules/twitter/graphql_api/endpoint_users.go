@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -113,6 +114,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 				FileURI: mediaEntry.VideoInfo.Variants[highestBitRateIndex].URL,
 			})
 		} else {
+			fileType := strings.TrimLeft(fp.GetFileExtension(mediaEntry.MediaURL), ".")
 			items = append(items, &models.DownloadQueueItem{
 				ItemID:      tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
 				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
@@ -123,7 +125,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 					len(items)+1,
 					fp.GetFileName(mediaEntry.MediaURL),
 				),
-				FileURI: mediaEntry.MediaURL,
+				FileURI: mediaEntry.MediaURL + "?format=" + fileType + "&name=orig",
 			})
 		}
 	}
