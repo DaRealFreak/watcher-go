@@ -67,7 +67,7 @@ func (m *chounyuu) parseTag(item *models.TrackedItem) error {
 			downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 		}
 
-		return m.ProcessDownloadQueue(downloadQueue, item)
+		return m.processDownloadQueue(downloadQueue, item)
 	}
 
 	return nil

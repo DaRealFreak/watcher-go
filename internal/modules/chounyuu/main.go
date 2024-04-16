@@ -60,7 +60,7 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *chounyuu) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.Session = session.NewSession(m.Key)
+	m.Session = session.NewSession(m.Key, errorHandler{})
 	m.api.Session = m.Session
 
 	// set the proxy if requested
