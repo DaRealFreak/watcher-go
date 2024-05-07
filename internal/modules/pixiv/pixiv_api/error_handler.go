@@ -16,7 +16,7 @@ func (e PixivErrorHandler) CheckResponse(response *http.Response) (err error, fa
 
 		if content, readErr := io.ReadAll(response.Body); readErr == nil {
 			if err = json.Unmarshal(content, &mobileAPIError); err == nil {
-				if mobileAPIError.ErrorDetails.Message == `{"offset":["Offset must be no more than 5000"]}` {
+				if mobileAPIError.ErrorDetails.Message == `{"offset":["offset must be no more than 5000"]}` {
 					return OffsetError{
 						APIError: APIError{
 							ErrorMessage: mobileAPIError.ErrorDetails.Message,
