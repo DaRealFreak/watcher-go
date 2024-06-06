@@ -58,7 +58,7 @@ func (a *TwitterGraphQlAPI) StatusTweet(
 		"responsive_web_enhance_cards_enabled":                                    false,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/BbmLpxKh8rX8LNe2LhVujA/TweetDetail"
+	apiURI := "https://x.com/i/api/graphql/BbmLpxKh8rX8LNe2LhVujA/TweetDetail"
 	values := url.Values{
 		"variables": {string(variablesJson)},
 		"features":  {string(featuresJson)},

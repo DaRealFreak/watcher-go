@@ -85,7 +85,7 @@ func (m *twitter) processDownloadQueueDeveloperApi(downloadQueue []api.TweetV2, 
 
 				if tweetV1 == nil || tweetV1.ID == 0 {
 					log.WithField("module", m.ModuleKey()).Warnf(
-						"unable to retrieve %s of https://twitter.com/%s/status/%s from twitter API v1, skipping tweet",
+						"unable to retrieve %s of https://x.com/%s/status/%s from twitter API v1, skipping tweet",
 						media.Type,
 						tweet.AuthorName,
 						tweet.ID.String(),

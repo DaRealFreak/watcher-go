@@ -196,7 +196,7 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		"responsive_web_enhance_cards_enabled":                                    false,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/7_ZP_xN3Bcq1I2QkK5yc2w/UserMedia"
+	apiURI := "https://x.com/i/api/graphql/7_ZP_xN3Bcq1I2QkK5yc2w/UserMedia"
 	values := url.Values{
 		"variables": {string(variablesJson)},
 		"features":  {string(featuresJson)},
@@ -235,7 +235,7 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 		"responsive_web_graphql_timeline_navigation_enabled":                true,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName"
+	apiURI := "https://x.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName"
 	values := url.Values{
 		"variables": {string(variablesJson)},
 		"features":  {string(featuresJson)},

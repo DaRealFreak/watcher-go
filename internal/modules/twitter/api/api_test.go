@@ -38,7 +38,7 @@ func TestNewTwitterAPI(t *testing.T) {
 		"include_rts": {"1"},
 	}
 
-	apiURI := "https://api.twitter.com/1.1/statuses/user_timeline.json"
+	apiURI := "https://api.x.com/1.1/statuses/user_timeline.json"
 	if values.Encode() != "" {
 		apiURI += "?" + values.Encode()
 	}

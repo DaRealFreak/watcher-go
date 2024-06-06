@@ -11,7 +11,7 @@ func (a *TwitterAPI) SingleTweetV1(
 ) (*TweetV1, error) {
 	a.applyRateLimit()
 
-	apiURI := fmt.Sprintf("https://api.twitter.com/1.1/statuses/show.json?id=%s", tweetId)
+	apiURI := fmt.Sprintf("https://api.x.com/1.1/statuses/show.json?id=%s", tweetId)
 	values := url.Values{
 		"tweet_mode": {"extended"},
 	}

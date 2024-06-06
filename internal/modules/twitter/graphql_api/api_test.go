@@ -1,6 +1,7 @@
 package graphql_api
 
 import (
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,10 +17,10 @@ var twitterAPI *TwitterGraphQlAPI
 // to prevent multiple logins for every test
 func TestMain(m *testing.M) {
 	// initialize the shared API instance
-	twitterAPI = NewTwitterAPI("twitter API")
+	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{})
 	twitterAPI.AddRoundTrippers()
 
-	requestUrl, _ := url.Parse("https://twitter.com/")
+	requestUrl, _ := url.Parse("https://x.com/")
 	twitterAPI.Session.GetClient().Jar.SetCookies(
 		requestUrl,
 		[]*http.Cookie{

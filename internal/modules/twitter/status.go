@@ -53,7 +53,7 @@ func (m *twitter) parseStatusDeveloperApi(item *models.TrackedItem, statusID str
 }
 
 func (m *twitter) extractStatusID(uri string) (string, error) {
-	results := regexp.MustCompile(`.*twitter.com/[^/]+/status/(\d+)`).FindStringSubmatch(uri)
+	results := regexp.MustCompile(`.*(?:twitter|x).com/[^/]+/status/(\d+)`).FindStringSubmatch(uri)
 
 	if len(results) != 2 {
 		return "", fmt.Errorf("unexpected amount of results during status ID extraction of uri %s", uri)

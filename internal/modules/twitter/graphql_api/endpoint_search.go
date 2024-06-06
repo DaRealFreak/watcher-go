@@ -86,7 +86,7 @@ func (a *TwitterGraphQlAPI) Search(
 		"responsive_web_enhance_cards_enabled":                                    false,
 	})
 
-	apiURI := "https://twitter.com/i/api/graphql/lZ0GCEojmtQfiUQa5oJSEw/SearchTimeline"
+	apiURI := "https://x.com/i/api/graphql/lZ0GCEojmtQfiUQa5oJSEw/SearchTimeline"
 	values := url.Values{
 		"variables": {string(variablesJson)},
 		"features":  {string(featuresJson)},

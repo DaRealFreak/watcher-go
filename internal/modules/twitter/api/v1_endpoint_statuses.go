@@ -35,13 +35,13 @@ type TweetV1 struct {
 
 // UserTimeline retrieves the tweets of the passed user, sinceID and maxID will be omitted if an empty string is passed
 // API documentation can be found here:
-// https://developer.twitter.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline
+// https://developer.x.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline
 func (a *TwitterAPI) UserTimeline(
 	userId string, sinceID string, maxID string, count uint, includeRetweets bool,
 ) ([]*TweetV1, error) {
 	a.applyRateLimit()
 
-	apiURI := "https://api.twitter.com/1.1/statuses/user_timeline.json"
+	apiURI := "https://api.x.com/1.1/statuses/user_timeline.json"
 	values := url.Values{
 		"tweet_mode":  {"extended"},
 		"user_id":     {userId},

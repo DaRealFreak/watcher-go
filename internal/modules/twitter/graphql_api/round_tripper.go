@@ -28,7 +28,7 @@ func (rt *twitterGraphQLApiRoundTripper) RoundTrip(r *http.Request) (*http.Respo
 	r.Header.Set("x-twitter-auth-type", "OAuth2Session")
 	r.Header.Set("x-csrf-token", "")
 	r.Header.Set("x-twitter-client-language", "en")
-	r.Header.Set("Referer", "https://twitter.com/")
+	r.Header.Set("Referer", "https://x.com/")
 
 	requestUrl, _ := url.Parse(r.URL.String())
 	cookies := rt.client.Jar.Cookies(requestUrl)

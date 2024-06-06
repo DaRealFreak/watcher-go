@@ -294,7 +294,7 @@ func (m *twitter) extractScreenName(uri string) (string, error) {
 	if m.normalizedUriRegexp.MatchString(uri) {
 		results = regexp.MustCompile(`twitter:(?:graphQL|api)/\d+/(.*)`).FindStringSubmatch(uri)
 	} else {
-		results = regexp.MustCompile(`.*twitter.com/([^/]+)?(?:$|/)`).FindStringSubmatch(uri)
+		results = regexp.MustCompile(`.*x.com/([^/]+)?(?:$|/)`).FindStringSubmatch(uri)
 	}
 
 	if len(results) != 2 {

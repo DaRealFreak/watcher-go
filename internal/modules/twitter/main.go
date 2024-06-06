@@ -46,6 +46,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      true,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*twitter.com`),
+			regexp.MustCompile(`.*x.com`),
 			regexp.MustCompile(`twitter:(graphQL|api)/\d+/.*`),
 		},
 	}
@@ -92,7 +93,7 @@ func (m *twitter) InitializeModule() {
 		m.twitterGraphQlAPI.AddRoundTrippers()
 
 		if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
-			requestUrl, _ := url.Parse("https://twitter.com/")
+			requestUrl, _ := url.Parse("https://x.com/")
 			m.twitterGraphQlAPI.Session.GetClient().Jar.SetCookies(
 				requestUrl,
 				[]*http.Cookie{
@@ -140,7 +141,9 @@ func (m *twitter) Parse(item *models.TrackedItem) error {
 }
 
 func (m *twitter) AddItem(uri string) (string, error) {
-	uri = strings.ReplaceAll(uri, "mobile.twitter.com", "twitter.com")
+	uri = strings.ReplaceAll(uri, "mobile.x.com", "x.com")
+	uri = strings.ReplaceAll(uri, "mobile.twitter.com", "x.com")
+	uri = strings.ReplaceAll(uri, "twitter.com", "x.com")
 
 	// we require the API to extract the twitter ID, so initialize the module if it's not initialized yet
 	if m.Session == nil && (m.twitterGraphQlAPI == nil || m.twitterGraphQlAPI.Session == nil) {
@@ -148,7 +151,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 	}
 
 	if m.settings.ConvertNameToId && !strings.Contains(uri, "/status/") {
-		if match, err := regexp.MatchString(".*twitter.com", uri); err == nil && match {
+		if match, err := regexp.MatchString(".*x.com", uri); err == nil && match {
 			screenName, screenNameErr := m.extractScreenName(uri)
 			if screenNameErr != nil {
 				return uri, screenNameErr

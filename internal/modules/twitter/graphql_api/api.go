@@ -114,7 +114,7 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 					),
 				)
 
-				twitterURL, _ := url.Parse("https://twitter.com")
+				twitterURL, _ := url.Parse("https://x.com")
 				currentCookies := a.Session.GetClient().Jar.Cookies(twitterURL)
 				for _, cookie := range currentCookies {
 					if cookie.Name == "auth_token" {

@@ -60,7 +60,7 @@ func (a *TwitterAPI) UserTimelineV2(
 ) (*Tweets, error) {
 	a.applyRateLimit()
 
-	apiURI := fmt.Sprintf("https://api.twitter.com/2/users/%s/tweets", userId)
+	apiURI := fmt.Sprintf("https://api.x.com/2/users/%s/tweets", userId)
 	values := url.Values{
 		"max_results":  {"100"},
 		"expansions":   {"attachments.media_keys,author_id"},
@@ -95,7 +95,7 @@ func (a *TwitterAPI) UserTimelineV2(
 func (a *TwitterAPI) UserByUsername(username string) (*UserInformation, error) {
 	a.applyRateLimit()
 
-	apiURI := fmt.Sprintf("https://api.twitter.com/2/users/by/username/%s", username)
+	apiURI := fmt.Sprintf("https://api.x.com/2/users/by/username/%s", username)
 	values := url.Values{}
 
 	res, err := a.apiGET(apiURI, values)

@@ -18,7 +18,7 @@ func (a *TwitterAPI) SingleTweetV2(
 ) (*SingleTweetV2, error) {
 	a.applyRateLimit()
 
-	apiURI := fmt.Sprintf("https://api.twitter.com/2/tweets/%s", tweetId)
+	apiURI := fmt.Sprintf("https://api.x.com/2/tweets/%s", tweetId)
 	values := url.Values{
 		"expansions":   {"attachments.media_keys,author_id"},
 		"tweet.fields": {"attachments,author_id,conversation_id,created_at,entities,id,referenced_tweets,text"},
