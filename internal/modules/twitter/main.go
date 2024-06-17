@@ -46,7 +46,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      true,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*twitter.com`),
-			regexp.MustCompile(`.*x.com`),
+			regexp.MustCompile(`.*([./])x.com`),
 			regexp.MustCompile(`twitter:(graphQL|api)/\d+/.*`),
 		},
 	}

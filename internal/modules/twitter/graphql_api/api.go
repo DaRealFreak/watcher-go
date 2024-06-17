@@ -125,7 +125,8 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 					a.Session.GetClient().Jar.SetCookies(twitterURL, []*http.Cookie{cookie})
 					break
 				}
-				break
+
+				return a.apiGET(apiRequestURL, values)
 			}
 		}
 	}
