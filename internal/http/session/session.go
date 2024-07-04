@@ -175,15 +175,8 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string, errorHandlers
 	return err
 }
 
-// tryDownloadFile will try download an url to a local file.
-// It's efficient because it will write as it downloads and not load the whole file into memory.
-func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) error {
-	// retrieve the data
-	resp, err := s.Get(uri, errorHandlers...)
-	if err != nil {
-		return err
-	}
-
+// DownloadFileFromResponse tries to download the file from the response, returns the occurred error if something went wrong even after multiple tries
+func (s *DefaultSession) DownloadFileFromResponse(resp *http.Response, filepath string, errorHandlers ...watcherHttp.ErrorHandler) (err error) {
 	defer raven.CheckClosure(resp.Body)
 
 	// ensure the directory
@@ -226,6 +219,18 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandl
 	}
 
 	return nil
+}
+
+// tryDownloadFile will try download an url to a local file.
+// It's efficient because it will write as it downloads and not load the whole file into memory.
+func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) error {
+	// retrieve the data
+	resp, err := s.Get(uri, errorHandlers...)
+	if err != nil {
+		return err
+	}
+
+	return s.DownloadFileFromResponse(resp, filepath)
 }
 
 // GetClient returns the used *http.Client, required f.e. to manually set cookies

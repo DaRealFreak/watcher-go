@@ -67,7 +67,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 	html, _ := m.Session.GetDocument(response).Html()
 	foundCurrentItem := false
 
-	for !foundCurrentItem {
+	for {
 		for _, galleryItem := range m.getSearchGalleryUrls(html) {
 			var (
 				currentItemID int64

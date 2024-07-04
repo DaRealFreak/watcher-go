@@ -70,10 +70,16 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 			}
 		}
 
-		downloadQueue = m.filterDownloadQueue(downloadQueue)
-
-		if err = m.ProcessDownloadQueue(downloadQueue, item); err != nil {
-			return err
+		if m.settings.MultiProxy {
+			// reset usage and errors from previous galleries
+			m.resetProxies()
+			if err = m.processDownloadQueueMultiProxy(downloadQueue, item); err != nil {
+				return err
+			}
+		} else {
+			if err = m.ProcessDownloadQueue(downloadQueue, item); err != nil {
+				return err
+			}
 		}
 
 		// if no error occurred during the download and thread doesn't exist on 4chan anymore mark item as complete
@@ -83,44 +89,6 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 	}
 
 	return nil
-}
-
-func (m *fourChan) filterDownloadQueue(downloadQueue []models.DownloadQueueItem) []models.DownloadQueueItem {
-	log.WithField("module", m.Key).Infof(
-		"checking availability of %d found items",
-		len(downloadQueue),
-	)
-
-	// reset possible previous download queues
-	m.multiThreading.filteredDownloadQueue = []models.DownloadQueueItem{}
-
-	// limit to 4 routines at the same time
-	guard := make(chan struct{}, 4)
-	for _, downloadQueueItem := range downloadQueue {
-		guard <- struct{}{}
-		m.multiThreading.waitGroup.Add(1)
-		go func(downloadQueueItem models.DownloadQueueItem) {
-			m.checkDownloadQueueItem(downloadQueueItem)
-			<-guard
-			m.multiThreading.waitGroup.Done()
-		}(downloadQueueItem)
-	}
-
-	m.multiThreading.waitGroup.Wait()
-
-	return m.multiThreading.filteredDownloadQueue
-}
-
-func (m *fourChan) checkDownloadQueueItem(downloadQueueItem models.DownloadQueueItem) {
-	if res, _ := m.Session.GetClient().Get(downloadQueueItem.FileURI); res.StatusCode == 404 {
-		log.WithField("module", m.Key).Debugf(
-			"received 404 status code trying to reach url \"%s\", skipping item",
-			downloadQueueItem.FileURI,
-		)
-		return
-	}
-
-	m.multiThreading.filteredDownloadQueue = append(m.multiThreading.filteredDownloadQueue, downloadQueueItem)
 }
 
 func (m *fourChan) getThreadTitle(html string) (title string) {

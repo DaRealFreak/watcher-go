@@ -13,6 +13,11 @@ import (
 
 // parseSearch parses searches
 func (m *fourChan) parseSearch(item *models.TrackedItem) error {
+	// change to next proxy to reset the rate limiter
+	if err := m.setProxyMethod(); err != nil {
+		return err
+	}
+
 	res, err := m.Session.Get(item.URI)
 	if err != nil {
 		return err
@@ -31,7 +36,7 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 		itemQueue     []string
 	)
 
-	for !foundCurrentItem {
+	for {
 		threads := m.getThreads(html)
 		for _, thread := range threads {
 			threadID := m.threadPattern.FindStringSubmatch(thread)[2]
@@ -57,6 +62,12 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 		if !exists {
 			// we're on the last page already, break here
 			break
+		}
+
+		// change to next proxy to reset the rate limiter
+		err = m.setProxyMethod()
+		if err != nil {
+			return err
 		}
 
 		res, err = m.Session.Get(nextPageURL)

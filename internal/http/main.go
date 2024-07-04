@@ -22,6 +22,7 @@ type SessionInterface interface {
 	Get(uri string, errorHandlers ...ErrorHandler) (response *http.Response, err error)
 	Post(uri string, data url.Values, errorHandlers ...ErrorHandler) (response *http.Response, err error)
 	DownloadFile(filepath string, uri string, errorHandlers ...ErrorHandler) (err error)
+	DownloadFileFromResponse(response *http.Response, filepath string, errorHandlers ...ErrorHandler) (err error)
 	EnsureDownloadDirectory(fileName string)
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() *http.Client

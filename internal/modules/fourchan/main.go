@@ -3,9 +3,12 @@ package fourchan
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/http"
+	"golang.org/x/time/rate"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -19,16 +22,22 @@ import (
 // fourChan contains the implementation of the ModuleInterface
 type fourChan struct {
 	*models.Module
-	threadPattern  *regexp.Regexp
-	settings       *fourChanSettings
-	multiThreading struct {
-		filteredDownloadQueue []models.DownloadQueueItem
-		waitGroup             sync.WaitGroup
+	rateLimit     int
+	threadPattern *regexp.Regexp
+	settings      *fourChanSettings
+	proxies       []*proxySession
+	multiProxy    struct {
+		currentIndexes []int
+		waitGroup      sync.WaitGroup
 	}
 }
 
 type fourChanSettings struct {
-	Search struct {
+	Loop        bool                 `mapstructure:"loop"`
+	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
+	MultiProxy  bool                 `mapstructure:"multiproxy"`
+	RateLimit   *int                 `mapstructure:"rate_limit"`
+	Search      struct {
 		BlacklistedTags  []string `mapstructure:"blacklisted_tags"`
 		CategorizeSearch bool     `mapstructure:"categorize_search"`
 		InheritSubFolder bool     `mapstructure:"inherit_sub_folder"`
@@ -73,11 +82,22 @@ func (m *fourChan) InitializeModule() {
 		&m.settings,
 	))
 
+	if m.settings.RateLimit != nil {
+		m.rateLimit = *m.settings.RateLimit
+	} else {
+		// default rate limit of 1 request every 2.5 seconds
+		m.rateLimit = 2500
+	}
+
 	// set the module implementation for access to the session, database, etc
-	m.Session = session.NewSession(m.Key)
+	fourChanSession := session.NewSession(m.Key)
+	fourChanSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+	m.Session = fourChanSession
 
 	// set the proxy if requested
-	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+	raven.CheckError(m.setProxyMethod())
+
+	m.initializeProxySessions()
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -99,4 +119,26 @@ func (m *fourChan) Parse(item *models.TrackedItem) error {
 	}
 
 	return nil
+}
+
+// setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
+func (m *fourChan) setProxyMethod() error {
+	switch {
+	case m.settings == nil:
+		return nil
+	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
+		return fmt.Errorf("you need to at least register 2 proxies to loop")
+	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
+		return m.Session.SetProxy(m.GetProxySettings())
+	case m.settings.Loop:
+		// reset proxy loop index if we reach the limit with the next iteration
+		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+			m.ProxyLoopIndex = -1
+		}
+		m.ProxyLoopIndex++
+
+		return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
+	default:
+		return nil
+	}
 }
