@@ -10,8 +10,9 @@ import (
 )
 
 type postItem struct {
-	id  string
-	uri string
+	id    string
+	title string
+	uri   string
 }
 
 func (m *kemono) parseUser(item *models.TrackedItem) error {
@@ -74,6 +75,14 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 	return m.processDownloadQueue(item, downloadQueue)
 }
 
+func (m *kemono) parsePost(item *models.TrackedItem) error {
+	return m.processDownloadQueue(item, []*postItem{{
+		id:    item.CurrentItem,
+		title: "",
+		uri:   item.URI,
+	}})
+}
+
 func (m *kemono) getPostsUrls(html string) (postItems []*postItem) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	document.Find("article[data-user][data-id]").Each(func(index int, row *goquery.Selection) {
@@ -82,10 +91,13 @@ func (m *kemono) getPostsUrls(html string) (postItems []*postItem) {
 			uri, _ := uriTag.Attr("href")
 			parsedUri, _ := url.Parse(uri)
 			absUri := m.baseUrl.ResolveReference(parsedUri)
+			titleTag := row.Find("header.post-card__header")
+			title := strings.TrimSpace(strings.ReplaceAll(titleTag.Text(), "\n", ""))
 
 			postItems = append(postItems, &postItem{
-				id:  dataId,
-				uri: absUri.String(),
+				id:    dataId,
+				title: title,
+				uri:   absUri.String(),
 			})
 		}
 	})

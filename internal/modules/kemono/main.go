@@ -90,6 +90,10 @@ func (m *kemono) Parse(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
 
+	if regexp.MustCompile(`.*/post/.*`).MatchString(item.URI) {
+		return m.parsePost(item)
+	}
+
 	return m.parseUser(item)
 }
 

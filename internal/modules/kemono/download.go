@@ -64,12 +64,18 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 			continue
 		}
 
+		postFolderPath := fp.SanitizePath(data.id, false)
+		sanitizedPostTitle := fp.SanitizePath(data.title, false)
+		if strings.TrimSpace(sanitizedPostTitle) != "" {
+			postFolderPath += " - " + sanitizedPostTitle
+		}
+
 		if err = m.Session.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(),
 				m.Key,
 				fp.TruncateMaxLength(m.getSubFolder(item)),
-				fp.TruncateMaxLength(fp.SanitizePath(data.id, false)),
+				fp.TruncateMaxLength(postFolderPath),
 				fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", data.id, index+1, fileName))),
 			),
 			downloadItem.FileURI,
@@ -174,7 +180,7 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 		}
 	})
 
-	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
+	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=!]*)`)
 	urlMatches := pattern.FindAllStringSubmatch(document.Find("div.post__body").Text(), -1)
 	if len(urlMatches) > 0 {
 		for _, match := range urlMatches {
@@ -200,6 +206,16 @@ func (m *kemono) getExternalLinks(html string) (links []string) {
 			}
 		}
 	})
+
+	// remove archive links which got added for zip browsing while on the website
+	var nonArchiveLinks []string
+	for _, link := range links {
+		if strings.HasPrefix(link, "/posts/archives/") {
+			continue
+		}
+		nonArchiveLinks = append(nonArchiveLinks, link)
+	}
+	links = nonArchiveLinks
 
 	// remove potential duplicates
 	var uniqueLinks []string
