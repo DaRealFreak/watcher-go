@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"io"
+	"net/http"
 	"regexp"
 )
 
@@ -63,53 +64,42 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 		h = results[3]
 	}
 
-	apiUrl := m.getApiURL(videoID, h)
 	token, err := m.getJWT(item.URI)
 	if err != nil {
 		return nil, err
 	}
 
-	apiResponse, apiErr := m.getVideoApiInfo(apiUrl, token)
-	if apiErr != nil {
-		return nil, apiErr
-	}
-
 	var playerJson PlayerJson
-
-	// video can't get displayed on vimeo.com,
-	// but we can still get the player config using the referer header and reading the player config from the script tag
-	if apiResponse.EmbedPlayerConfigUrl == "" {
-		playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s", videoID)
-		if h != "" {
-			playerUrl += fmt.Sprintf("?h=%s", h)
-		}
-
-		res, requestErr := m.Session.Get(playerUrl)
-		if requestErr != nil {
-			return nil, requestErr
-		}
-
-		out, readErr := io.ReadAll(res.Body)
-		if readErr != nil {
-			return nil, readErr
-		}
-
-		playerConfig := regexp.MustCompile(`<script>window.playerConfig =(.*?)</script>`).FindSubmatch(out)[1]
-
-		err = json.Unmarshal(playerConfig, &playerJson)
-	} else {
-		res, requestErr := m.Session.Get(apiResponse.EmbedPlayerConfigUrl)
-		if requestErr != nil {
-			return nil, requestErr
-		}
-
-		out, readErr := io.ReadAll(res.Body)
-		if readErr != nil {
-			return nil, readErr
-		}
-
-		err = json.Unmarshal(out, &playerJson)
+	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s", videoID)
+	if h != "" {
+		playerUrl += fmt.Sprintf("?h=%s", h)
 	}
+
+	client := m.Session.GetClient()
+	req, _ := http.NewRequest("GET", playerUrl, nil)
+
+	req.Header.Set("Authorization", fmt.Sprintf("jwt %s", token.Token))
+
+	res, requestErr := client.Do(req)
+	if requestErr != nil {
+		return nil, requestErr
+	}
+
+	switch res.StatusCode {
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("video not found")
+	case http.StatusForbidden:
+		return nil, fmt.Errorf("no access to video")
+	}
+
+	out, readErr := io.ReadAll(res.Body)
+	if readErr != nil {
+		return nil, readErr
+	}
+
+	playerConfig := regexp.MustCompile(`<script>window.playerConfig =(.*?)</script>`).FindSubmatch(out)[1]
+
+	err = json.Unmarshal(playerConfig, &playerJson)
 
 	return &playerJson, err
 }
