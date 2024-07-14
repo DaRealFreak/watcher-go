@@ -1,6 +1,7 @@
 package vimeo
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -8,6 +9,16 @@ import (
 	"net/http"
 	"regexp"
 )
+
+type MicroDataJson []struct {
+	Name     string `json:"name"`
+	EmbedUrl string `json:"embedUrl"`
+}
+
+type UrlInfo struct {
+	VideoID string
+	H       string
+}
 
 type PlayerJson struct {
 	Request struct {
@@ -43,36 +54,93 @@ type CDN struct {
 	AvcUrl string `json:"avc_url"`
 }
 
-func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
-	results := m.defaultVideoURLPattern.FindStringSubmatch(item.URI)
-	if len(results) < 2 || len(results) > 4 {
-		return nil, fmt.Errorf("unsupported URL format")
+type PasswordRequest struct {
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
+func (m *vimeo) getPasswordProtectedPlayerJSON(
+	item *models.TrackedItem,
+	requiredPassword string,
+) (*PlayerJson, error) {
+	urlInfo, err := m.getUrlInfo(item.URI)
+	if err != nil {
+		return nil, err
 	}
 
-	var videoID string
-	var h string
-
-	videoID = results[1]
-
-	// handle https://player.vimeo.com/video/123456/abc123 URLs
-	if results[2] != "" {
-		h = results[2]
+	xsrf, xsrfErr := m.getXSRFToken(item.URI)
+	if xsrfErr != nil {
+		return nil, xsrfErr
 	}
 
-	// handle https://player.vimeo.com/video/123456?h=abc123 URLs
-	if len(results) == 4 && results[3] != "" {
-		h = results[3]
+	token, jwtErr := m.getJWT(item.URI)
+	if jwtErr != nil {
+		return nil, jwtErr
 	}
 
-	token, err := m.getJWT(item.URI)
+	passwordUrl := fmt.Sprintf("https://vimeo.com/%s/password", urlInfo.VideoID)
+	passwordRequest := &PasswordRequest{
+		Password: requiredPassword,
+		Token:    xsrf.XSRFToken,
+	}
+
+	body, jsonEncodeError := json.Marshal(passwordRequest)
+	if jsonEncodeError != nil {
+		return nil, jsonEncodeError
+	}
+
+	req, _ := http.NewRequest("POST", passwordUrl, bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("jwt %s", token.Token))
+
+	client := m.Session.GetClient()
+	res, requestErr := client.Do(req)
+
+	if requestErr != nil {
+		return nil, requestErr
+	}
+
+	switch res.StatusCode {
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("video not found")
+	case http.StatusForbidden:
+		return nil, fmt.Errorf("no access to video")
+	}
+
+	out, readErr := io.ReadAll(res.Body)
+	if readErr != nil {
+		return nil, readErr
+	}
+
+	var microDataJson MicroDataJson
+	microdata := regexp.MustCompile(`(?m)<script id="microdata" type="application/ld\+json">([^<]+)</script>`).FindSubmatch(out)[1]
+	err = json.Unmarshal(microdata, &microDataJson)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(microDataJson) == 0 || microDataJson[0].EmbedUrl == "" {
+		return nil, fmt.Errorf("unable to extract microdata from video page")
+	}
+
+	return m.getPlayerJSON(microDataJson[0].EmbedUrl)
+}
+
+func (m *vimeo) getPlayerJSON(itemUri string) (*PlayerJson, error) {
+	urlInfo, urlErr := m.getUrlInfo(itemUri)
+	if urlErr != nil {
+		return nil, urlErr
+	}
+
+	token, err := m.getJWT(itemUri)
 	if err != nil {
 		return nil, err
 	}
 
 	var playerJson PlayerJson
-	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s", videoID)
-	if h != "" {
-		playerUrl += fmt.Sprintf("?h=%s", h)
+	playerUrl := fmt.Sprintf("https://player.vimeo.com/video/%s", urlInfo.VideoID)
+	if urlInfo.H != "" {
+		playerUrl += fmt.Sprintf("?h=%s", urlInfo.H)
 	}
 
 	client := m.Session.GetClient()
@@ -81,6 +149,7 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("jwt %s", token.Token))
 
 	res, requestErr := client.Do(req)
+
 	if requestErr != nil {
 		return nil, requestErr
 	}
@@ -102,6 +171,33 @@ func (m *vimeo) getPlayerJSON(item *models.TrackedItem) (*PlayerJson, error) {
 	err = json.Unmarshal(playerConfig, &playerJson)
 
 	return &playerJson, err
+}
+
+func (m *vimeo) getUrlInfo(itemUri string) (*UrlInfo, error) {
+	results := m.defaultVideoURLPattern.FindStringSubmatch(itemUri)
+	if len(results) < 2 || len(results) > 4 {
+		return nil, fmt.Errorf("unsupported URL format")
+	}
+
+	var videoID string
+	var h string
+
+	videoID = results[1]
+
+	// handle https://player.vimeo.com/video/123456/abc123 URLs
+	if results[2] != "" {
+		h = results[2]
+	}
+
+	// handle https://player.vimeo.com/video/123456?h=abc123 URLs
+	if len(results) == 4 && results[3] != "" {
+		h = results[3]
+	}
+
+	return &UrlInfo{
+		VideoID: videoID,
+		H:       h,
+	}, nil
 }
 
 func (p *PlayerJson) GetMasterJSONUrl() string {

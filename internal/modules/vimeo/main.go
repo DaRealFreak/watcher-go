@@ -76,6 +76,7 @@ func (m *vimeo) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item
 func (m *vimeo) Parse(item *models.TrackedItem) error {
+	requiredPassword := ""
 	if tripper, ok := m.Session.GetClient().Transport.(*vimeoRoundTripper); ok {
 		tripper.referer = ""
 
@@ -92,6 +93,10 @@ func (m *vimeo) Parse(item *models.TrackedItem) error {
 			)
 			tripper.referer = parsedQueryString.Get("referer")
 		}
+
+		if parsedQueryString.Has("password") {
+			requiredPassword = parsedQueryString.Get("password")
+		}
 	} else {
 		m.addRoundTrippers()
 		return m.Parse(item)
@@ -100,7 +105,13 @@ func (m *vimeo) Parse(item *models.TrackedItem) error {
 	masterJsonURL := item.URI
 	videoTitle := fp.SanitizePath(strconv.Itoa(item.ID), false)
 	if !m.masterJsonPattern.MatchString(masterJsonURL) {
-		playerJson, err := m.getPlayerJSON(item)
+		var playerJson *PlayerJson
+		var err error
+		if requiredPassword != "" {
+			playerJson, err = m.getPasswordProtectedPlayerJSON(item, requiredPassword)
+		} else {
+			playerJson, err = m.getPlayerJSON(item.URI)
+		}
 		if err != nil {
 			return err
 		}
@@ -108,9 +119,12 @@ func (m *vimeo) Parse(item *models.TrackedItem) error {
 		masterJsonURL = playerJson.GetMasterJSONUrl()
 		if masterJsonURL == "" {
 			if playerJson.Message != "" {
-				return fmt.Errorf("unable to find master.json URL, error message: \"%s\"", playerJson.Message)
+				return fmt.Errorf("unable to parse video, error message: \"%s\"", playerJson.Message)
 			} else {
-				return fmt.Errorf("unable to find master.json URL, but no error message could be found")
+				return fmt.Errorf(
+					"unable to parse video, possibly password protected. " +
+						"Add the URL parameter \"password\" with the password to the URL",
+				)
 			}
 		}
 
