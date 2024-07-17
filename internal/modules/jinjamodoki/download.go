@@ -23,7 +23,7 @@ type downloadQueueItem struct {
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
 func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *models.TrackedItem) error {
 	// only the downloads have a rate limit, so we only set it here
-	m.defaultSession.RateLimiter = rate.NewLimiter(rate.Every(1*time.Second), 1)
+	m.defaultSession.RateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI),
@@ -52,7 +52,7 @@ func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *mode
 func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedItem) error {
 	// if download item has a restriction we retrieve the absolute path now
 	if data.restriction {
-		res, err := m.Session.Get(data.FileURI)
+		res, err := m.defaultSession.Get(data.FileURI)
 		if err != nil {
 			return err
 		}
@@ -79,8 +79,8 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 		return err
 	}
 
-	if err := m.checkDownloadedFileForErrors(filePath); err != nil {
-		if err := m.setProxyMethod(); err != nil {
+	if err = m.checkDownloadedFileForErrors(filePath); err != nil {
+		if err = m.setProxyMethod(); err != nil {
 			return err
 		}
 
@@ -116,9 +116,9 @@ func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
 		return nil
 	}
 
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(content))
-	if err != nil {
-		return err
+	doc, documentErr := goquery.NewDocumentFromReader(bytes.NewReader(content))
+	if documentErr != nil {
+		return documentErr
 	}
 
 	return fmt.Errorf(doc.Find("p > b").First().Text())
