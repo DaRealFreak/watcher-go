@@ -27,14 +27,11 @@ func SanitizePath(path string, allowSeparator bool) string {
 	// replace tabulators with spaces
 	path = strings.ReplaceAll(path, "\t", " ")
 
-	// replace multiple underscores with one
-	for strings.Contains(path, "__") {
-		path = strings.Replace(path, "__", "_", -1)
-	}
-
-	// replace multiple dots with one
-	for strings.Contains(path, "..") {
-		path = strings.Replace(path, "..", ".", -1)
+	// replace duplicate underscores, dots and spaces with one
+	for strings.Contains(path, "__") || strings.Contains(path, "..") || strings.Contains(path, "  ") {
+		path = strings.ReplaceAll(path, "__", "_")
+		path = strings.ReplaceAll(path, "..", ".")
+		path = strings.ReplaceAll(path, "  ", " ")
 	}
 
 	// trim leading and trailing underscores
