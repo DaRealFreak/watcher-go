@@ -17,16 +17,27 @@ func SanitizePath(path string, allowSeparator bool) string {
 		reservedCharacters = regexp.MustCompile("[\\\\/:\"*?<>|]+")
 	}
 
+	// Replace escape sequences aside from \t, since we want to replace it with a space
+	escapeSequences := []string{"\b", "\n", "\r", "\f", "\v"}
+	for _, seq := range escapeSequences {
+		path = strings.ReplaceAll(path, seq, "")
+	}
+
 	path = reservedCharacters.ReplaceAllString(path, "_")
+	// replace tabulators with spaces
 	path = strings.ReplaceAll(path, "\t", " ")
+
+	// replace multiple underscores with one
 	for strings.Contains(path, "__") {
 		path = strings.Replace(path, "__", "_", -1)
 	}
 
+	// replace multiple dots with one
 	for strings.Contains(path, "..") {
 		path = strings.Replace(path, "..", ".", -1)
 	}
 
+	// trim leading and trailing underscores
 	path = strings.Trim(path, "_")
 
 	return strings.Trim(path, " ")
