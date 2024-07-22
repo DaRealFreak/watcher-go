@@ -35,9 +35,7 @@ func SanitizePath(path string, allowSeparator bool) string {
 	}
 
 	// trim leading and trailing underscores
-	path = strings.Trim(path, "_")
-
-	return strings.Trim(path, " ")
+	return strings.Trim(path, "_. ")
 }
 
 // GetFileName retrieves the file name of a passed uri
