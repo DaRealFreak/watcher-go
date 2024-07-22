@@ -42,6 +42,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`kemono.su`),
+			regexp.MustCompile(`coomer.su`),
 		},
 	}
 	module.ModuleInterface = &kemono{
@@ -64,8 +65,6 @@ func (m *kemono) InitializeModule() {
 		fmt.Sprintf("Modules.%s", m.GetViperModuleKey()),
 		&m.settings,
 	))
-
-	m.baseUrl, _ = url.Parse("https://kemono.su")
 
 	// set the module implementation for access to the session, database, etc
 	m.Session = session.NewSession(m.Key)
@@ -102,7 +101,7 @@ func (m *kemono) getSubFolder(item *models.TrackedItem) string {
 		return item.SubFolder
 	}
 
-	search := regexp.MustCompile(`https://kemono.su/([^/?&]+)/user/(\d+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://(?:kemono|coomer).su/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
 	if len(search) == 3 {
 		return fp.SanitizePath(fmt.Sprintf("%s/%s", search[1], search[2]), true)
 	}

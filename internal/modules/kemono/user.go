@@ -16,6 +16,13 @@ type postItem struct {
 }
 
 func (m *kemono) parseUser(item *models.TrackedItem) error {
+	// update base URL
+	if strings.Contains(item.URI, "coomer.su") {
+		m.baseUrl, _ = url.Parse("https://coomer.su")
+	} else {
+		m.baseUrl, _ = url.Parse("https://kemono.su")
+	}
+
 	response, err := m.Session.Get(item.URI)
 	if err != nil {
 		return err
@@ -76,6 +83,13 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 }
 
 func (m *kemono) parsePost(item *models.TrackedItem) error {
+	// update base URL
+	if strings.Contains(item.URI, "coomer.su") {
+		m.baseUrl, _ = url.Parse("https://coomer.su")
+	} else {
+		m.baseUrl, _ = url.Parse("https://kemono.su")
+	}
+
 	return m.processDownloadQueue(item, []*postItem{{
 		id:    item.CurrentItem,
 		title: "",
