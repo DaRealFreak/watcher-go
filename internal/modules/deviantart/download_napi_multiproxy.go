@@ -89,10 +89,19 @@ func (m *deviantArt) resetProxies() {
 	}
 }
 
-func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem) error {
+func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range downloadQueue {
 		// sleep until we have a free proxy again

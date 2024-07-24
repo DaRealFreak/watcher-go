@@ -129,10 +129,19 @@ func (t *Module) SetCookies() {
 }
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
-func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem) error {
+func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem, notifications ...*Notification) error {
 	log.WithField("module", t.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", t.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range downloadQueue {
 		log.WithField("module", t.Key).Info(

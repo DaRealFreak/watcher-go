@@ -1,7 +1,9 @@
 package kemono
 
 import (
+	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -90,8 +92,14 @@ func (m *kemono) parsePost(item *models.TrackedItem) error {
 		m.baseUrl, _ = url.Parse("https://kemono.su")
 	}
 
+	// extract 2nd number from example URL: https://kemono.su/patreon/user/551274/post/24446001
+	postId := regexp.MustCompile(`.*/post/(\d+)`).FindStringSubmatch(item.URI)
+	if len(postId) != 2 {
+		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)
+	}
+
 	return m.processDownloadQueue(item, []*postItem{{
-		id:    item.CurrentItem,
+		id:    postId[1],
 		title: "",
 		uri:   item.URI,
 	}})

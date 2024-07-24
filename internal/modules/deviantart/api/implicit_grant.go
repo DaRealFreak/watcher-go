@@ -61,7 +61,7 @@ func (g *ImplicitGrantDeviantart) Login() error {
 
 	if !(info.CSRFToken != "") {
 		if g.loginTry < 3 {
-			// happens pretty regularly that we can't retrieve the CSRF token from the login page
+			// happens pretty regularly that we can't retrieve the CSRF token from the login page,
 			// so we try it up to 3 times before we return the error
 			g.loginTry++
 			time.Sleep(time.Duration(g.loginTry*5) * time.Second)

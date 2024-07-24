@@ -27,10 +27,19 @@ type downloadQueueItem struct {
 	DownloadItem interface{}
 }
 
-func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem) error {
+func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range downloadQueue {
 		log.WithField("module", m.Key).Info(

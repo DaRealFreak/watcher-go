@@ -48,7 +48,7 @@ func (i *downloadQueueItemNAPI) GetFileName(fileType int) (filename string) {
 	return filename
 }
 
-func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem) error {
+func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
 	if m.settings.MultiProxy {
 		// reset usage and errors from previous galleries
 		m.resetProxies()
@@ -58,6 +58,15 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, deviationItem := range downloadQueue {
 		log.WithField("module", m.Key).Info(

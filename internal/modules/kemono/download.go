@@ -16,10 +16,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []*postItem) error {
+func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []*postItem, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range downloadQueue {
 		log.WithField("module", m.Key).Info(
@@ -47,6 +56,17 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
 	}
 
 	content, _ := io.ReadAll(response.Body)
+
+	if data.title == "" {
+		document, _ := goquery.NewDocumentFromReader(strings.NewReader(string(content)))
+		data.title = strings.TrimSpace(
+			strings.ReplaceAll(
+				document.Find("h1.post__title").Text(),
+				"\n",
+				"",
+			),
+		)
+	}
 
 	for index, downloadItem := range m.getDownloadLinks(string(content)) {
 		parsedLink, parsedErr := url.Parse(downloadItem.FileURI)

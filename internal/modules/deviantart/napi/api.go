@@ -176,8 +176,9 @@ type DeviantartNAPI struct {
 	UserSession watcherHttp.SessionInterface
 	rateLimiter *rate.Limiter
 	ctx         context.Context
-	csrfToken   string
-	moduleKey   string
+	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
+	csrfToken string
+	moduleKey string
 }
 
 // NewDeviantartNAPI returns the settings of the DeviantArt API
@@ -241,6 +242,10 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	res, err = a.UserSession.GetClient().PostForm("https://www.deviantart.com/_sisu/do/signin", values)
 	if err != nil {
 		return err
+	}
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("login failed. status code: %d", res.StatusCode)
 	}
 
 	info, err = a.GetLoginCSRFToken(res)

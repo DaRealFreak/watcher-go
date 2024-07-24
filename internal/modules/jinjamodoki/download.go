@@ -21,13 +21,22 @@ type downloadQueueItem struct {
 }
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
-func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *models.TrackedItem) error {
+func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *models.TrackedItem, notifications ...*models.Notification) error {
 	// only the downloads have a rate limit, so we only set it here
 	m.defaultSession.RateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range queue {
 		log.WithField("module", m.Key).Info(

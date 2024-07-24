@@ -204,10 +204,19 @@ func (m *ehentai) Parse(item *models.TrackedItem) (err error) {
 }
 
 // processDownloadQueue processes the download queue consisting of gallery items
-func (m *ehentai) processDownloadQueue(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem) error {
+func (m *ehentai) processDownloadQueue(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
+
+	if notifications != nil {
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+	}
 
 	for index, data := range downloadQueue {
 		log.WithField("module", m.Key).Info(
