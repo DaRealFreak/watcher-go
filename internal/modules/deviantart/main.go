@@ -10,6 +10,8 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/PuerkitoBio/goquery"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
@@ -153,8 +155,47 @@ func (m *deviantArt) Login(account *models.Account) bool {
 	return m.LoggedIn
 }
 
+// extractCsrfToken extracts the CSRF token from the deviantArt website using the given item URI
+func (m *deviantArt) extractCsrfToken(item *models.TrackedItem) (csrfToken string, err error) {
+	res, requestErr := m.nAPI.UserSession.Get(item.URI)
+	if requestErr != nil {
+		return "", requestErr
+	}
+
+	jsonPattern := regexp.MustCompile(`.*\\"csrfToken\\":\\"(?P<Number>[^\\"]+)\\".*`)
+	document, documentErr := goquery.NewDocumentFromReader(res.Body)
+	if documentErr != nil {
+		return "", err
+	}
+
+	scriptTags := document.Find("script")
+	scriptTags.Each(func(row int, selection *goquery.Selection) {
+		// no need for further checks if we already have the csrf token
+		if csrfToken != "" {
+			return
+		}
+
+		scriptContent := selection.Text()
+		if jsonPattern.MatchString(scriptContent) {
+			csrfToken = jsonPattern.FindStringSubmatch(scriptContent)[1]
+		}
+	})
+
+	return csrfToken, nil
+}
+
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
+	if !m.settings.UseDevAPI {
+		csrfToken, tokenErr := m.extractCsrfToken(item)
+		if tokenErr != nil {
+			return tokenErr
+		}
+
+		m.nAPI.CSRFToken = csrfToken
+		log.WithField("module", m.Key).Debugf("extracted new CSRF token: %s", csrfToken)
+	}
+
 	switch {
 	case m.daPattern.artPattern.MatchString(item.URI):
 		if m.settings.UseDevAPI {

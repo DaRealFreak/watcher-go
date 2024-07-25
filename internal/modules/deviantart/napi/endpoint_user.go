@@ -25,7 +25,7 @@ const UserInfoExpandDefault = "user.stats,user.profile,user.watch"
 func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, error) {
 	values := url.Values{
 		"username":   {username},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if expand != "" {
@@ -48,7 +48,7 @@ func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit 
 	values := url.Values{
 		"username":         {username},
 		"deviations_limit": {strconv.Itoa(deviationsLimit)},
-		"csrf_token":       {a.csrfToken},
+		"csrf_token":       {a.CSRFToken},
 	}
 
 	if withSubFolders {
@@ -71,7 +71,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 	values := url.Values{
 		"username":         {username},
 		"deviations_limit": {strconv.Itoa(deviationsLimit)},
-		"csrf_token":       {a.csrfToken},
+		"csrf_token":       {a.CSRFToken},
 	}
 
 	if withSubFolders {
@@ -96,7 +96,7 @@ func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, 
 		"type":       {"collection"},
 		"offset":     {strconv.Itoa(offset)},
 		"limit":      {strconv.Itoa(limit)},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if folder > 0 {
@@ -127,7 +127,7 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 		"type":       {"gallery"},
 		"offset":     {strconv.Itoa(offset)},
 		"limit":      {strconv.Itoa(limit)},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if folder > 0 {
@@ -167,7 +167,7 @@ func (a *DeviantartNAPI) WatchUser(username string, session http.SessionInterfac
 
 	values := map[string]string{
 		"username":   username,
-		"csrf_token": a.csrfToken,
+		"csrf_token": a.CSRFToken,
 	}
 
 	jsonString, _ := json.Marshal(values)
@@ -195,7 +195,7 @@ func (a *DeviantartNAPI) UnwatchUser(username string, session http.SessionInterf
 
 	values := map[string]string{
 		"username":   username,
-		"csrf_token": a.csrfToken,
+		"csrf_token": a.CSRFToken,
 	}
 
 	jsonString, _ := json.Marshal(values)

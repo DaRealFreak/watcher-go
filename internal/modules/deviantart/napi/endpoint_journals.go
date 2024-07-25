@@ -9,7 +9,7 @@ func (a *DeviantartNAPI) JournalSearch(search string, cursor string, order strin
 		"q": {search},
 		// set order to most-recent by default, update if set later
 		"order":      {OrderMostRecent},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if cursor != "" {

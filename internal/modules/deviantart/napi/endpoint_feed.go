@@ -6,7 +6,7 @@ import (
 
 func (a *DeviantartNAPI) DeviationsFeed(cursor string) (*SearchResponse, error) {
 	values := url.Values{
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if cursor != "" {

@@ -177,7 +177,7 @@ type DeviantartNAPI struct {
 	rateLimiter *rate.Limiter
 	ctx         context.Context
 	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
-	csrfToken string
+	CSRFToken string
 	moduleKey string
 }
 
@@ -213,7 +213,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return fmt.Errorf("could not retrieve LuToken token from login page")
 	}
 
-	a.csrfToken = info.CSRFToken
+	a.CSRFToken = info.CSRFToken
 
 	values := url.Values{
 		"referer":    {"https://www.deviantart.com"},
@@ -264,7 +264,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return fmt.Errorf("login failed")
 	}
 
-	a.csrfToken = info.CSRFToken
+	a.CSRFToken = info.CSRFToken
 	a.account = account
 
 	return nil

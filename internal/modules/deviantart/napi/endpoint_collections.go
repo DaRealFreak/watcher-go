@@ -32,7 +32,7 @@ func (a *DeviantartNAPI) CollectionsUser(
 		"offset":     {strconv.Itoa(offset)},
 		"limit":      {strconv.Itoa(limit)},
 		"type":       {folderType},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if withSubFolders {
@@ -84,7 +84,7 @@ func (a *DeviantartNAPI) CollectionSearch(search string, cursor string, order st
 		"q": {search},
 		// set order to most-recent by default, update if set later
 		"order":      {OrderMostRecent},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if cursor != "" {

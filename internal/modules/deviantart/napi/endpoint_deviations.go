@@ -35,7 +35,7 @@ func (a *DeviantartNAPI) ExtendedDeviation(
 	values := url.Values{
 		"deviationid": {strconv.Itoa(deviationId)},
 		"type":        {deviationType},
-		"csrf_token":  {a.csrfToken},
+		"csrf_token":  {a.CSRFToken},
 	}
 
 	if username != "" {
@@ -71,7 +71,7 @@ func (a *DeviantartNAPI) DeviationSearch(search string, cursor string, order str
 		"q": {search},
 		// set order to most-recent by default, update if set later
 		"order":      {OrderMostRecent},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if cursor != "" {
@@ -99,7 +99,7 @@ func (a *DeviantartNAPI) DeviationTag(tag string, cursor string, order string) (
 		"tag": {tag},
 		// set order to most-recent by default, update if set later
 		"order":      {OrderMostRecent},
-		"csrf_token": {a.csrfToken},
+		"csrf_token": {a.CSRFToken},
 	}
 
 	if cursor != "" {
