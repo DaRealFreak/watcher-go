@@ -36,6 +36,15 @@ type CreatorInfo struct {
 	Message string `json:"message"`
 }
 
+type PostPagination struct {
+	URLs []string `json:"body"`
+}
+
+// PostInfoSinglePage contains all relevant pixiv fanbox post info
+type PostInfoSinglePage struct {
+	Body []FanboxPost `json:"body"`
+}
+
 // PostInfo contains all relevant pixiv fanbox post info
 type PostInfo struct {
 	Body struct {
@@ -65,8 +74,30 @@ func (a *FanboxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 	return &info, nil
 }
 
+// GetPostPagination returns the post pagination list of the passed user
+func (a *FanboxAPI) GetPostPagination(creatorId string) (*PostPagination, error) {
+	values := url.Values{
+		"creatorId": {creatorId},
+	}
+
+	apiURL := fmt.Sprintf("https://api.fanbox.cc/post.paginateCreator?%s", values.Encode())
+
+	var postPagination PostPagination
+
+	res, err := a.Session.Get(apiURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = a.mapAPIResponse(res, &postPagination); err != nil {
+		return nil, err
+	}
+
+	return &postPagination, nil
+}
+
 // GetPostList returns the initial post list of the passed user
-func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, maxId int, limit int) (*PostInfo, error) {
+func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, maxId int, limit int) (*PostInfoSinglePage, error) {
 	values := url.Values{
 		"creatorId": {creatorId},
 		"limit":     {strconv.Itoa(limit)},
@@ -86,17 +117,17 @@ func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, m
 }
 
 // GetPostListByURL returns the post info solely by the URL since the PostInfo objects contain a NextURL string
-func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfo, error) {
-	var postInfo PostInfo
+func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfoSinglePage, error) {
+	var postInfoSinglePage PostInfoSinglePage
 
 	res, err := a.Session.Get(url)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = a.mapAPIResponse(res, &postInfo); err != nil {
+	if err = a.mapAPIResponse(res, &postInfoSinglePage); err != nil {
 		return nil, err
 	}
 
-	return &postInfo, nil
+	return &postInfoSinglePage, nil
 }

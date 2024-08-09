@@ -24,13 +24,22 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 	foundCurrentItem := false
 
-	postList, err := m.fanboxAPI.GetPostList(creator, nil, 0, 200)
+	pagination, err := m.fanboxAPI.GetPostPagination(creator)
 	if err != nil {
 		return err
 	}
 
-	for !foundCurrentItem {
-		for _, fanboxPost := range postList.Body.Items {
+	for _, paginationUrl := range pagination.URLs {
+		if foundCurrentItem {
+			break
+		}
+
+		postList, postListErr := m.fanboxAPI.GetPostListByURL(paginationUrl)
+		if postListErr != nil {
+			return postListErr
+		}
+
+		for _, fanboxPost := range postList.Body {
 			postID, _ := fanboxPost.ID.Int64()
 
 			if item.CurrentItem == "" || postID != currentItemID {
@@ -43,15 +52,6 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 				foundCurrentItem = true
 				break
 			}
-		}
-
-		if postList.Body.NextURL == "" {
-			break
-		}
-
-		postList, err = m.fanboxAPI.GetPostListByURL(postList.Body.NextURL)
-		if err != nil {
-			return err
 		}
 	}
 
