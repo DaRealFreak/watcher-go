@@ -136,7 +136,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 			// will return 0 on error, so fine for us too
 			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
 			if item.CurrentItem == "" || itemID > currentItemID {
-				// direct link with ID is https://beta.sankakucomplex.com/post/show/{data.ID}
+				// direct link with ID is https://www.sankakucomplex.com/post/show/{data.ID}
 				// in recent updates they used slugs, so we couldn't directly retrieve the URL based on the ID
 				if data.FileURL != "" {
 					galleryItems = append(galleryItems, &downloadGalleryItem{

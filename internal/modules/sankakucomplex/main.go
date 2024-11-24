@@ -113,10 +113,10 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 			return err
 		}
 
-		bookUri := fmt.Sprintf("https://beta.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
+		bookUri := fmt.Sprintf("https://www.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
 		bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, "", m)
 
-		galleryUri := fmt.Sprintf("https://beta.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
+		galleryUri := fmt.Sprintf("https://www.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, "", m)
 
 		if err = m.Parse(bookItem); err != nil {
@@ -155,11 +155,19 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 func (m *sankakuComplex) AddItem(uri string) (string, error) {
 	if parsed, parsedErr := url.Parse(uri); parsedErr == nil {
 		queries := parsed.Query()
+		// Handle "tags" parameter
 		if queries.Has("tags") {
 			newTagQuery := strings.TrimSpace(strings.ReplaceAll(queries.Get("tags"), "order:popularity", ""))
 			queries.Set("tags", newTagQuery)
-			parsed.RawQuery = queries.Encode()
 		}
+
+		// Remove "tab" parameter
+		if queries.Has("tab") {
+			queries.Del("tab")
+		}
+
+		// Update the parsed URL with the modified query parameters
+		parsed.RawQuery = queries.Encode()
 
 		uri = parsed.String()
 	}

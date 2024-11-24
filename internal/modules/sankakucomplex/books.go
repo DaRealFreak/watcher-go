@@ -46,7 +46,7 @@ func (m *sankakuComplex) parseAPIResponse(response *http.Response, apiRes interf
 func (m *sankakuComplex) extractBookItems(data bookApiItem) (downloadQueue []*downloadGalleryItem, err error) {
 	tmpItem := &models.TrackedItem{
 		URI: fmt.Sprintf(
-			"https://beta.sankakucomplex.com/?tags=%s",
+			"https://www.sankakucomplex.com/?tags=%s",
 			url.QueryEscape(fmt.Sprintf("pool:%s", data.ID)),
 		),
 	}
