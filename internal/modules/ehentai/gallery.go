@@ -132,7 +132,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []*image
 	var imageUrls []*imageGalleryItem
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("div#gdt > div a[href]").Each(func(index int, row *goquery.Selection) {
+	document.Find("div#gdt > a[href]").Each(func(index int, row *goquery.Selection) {
 		uri, _ := row.Attr("href")
 		imageUrls = append(imageUrls, &imageGalleryItem{
 			id:           m.galleryImageIDPattern.FindString(uri),

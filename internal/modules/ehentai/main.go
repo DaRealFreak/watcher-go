@@ -111,7 +111,7 @@ func (m *ehentai) InitializeModule() {
 	client := ehSession.GetClient()
 	// apply CloudFlare bypass
 	options := cloudflarebp.GetDefaultOptions()
-	options.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0"
+	options.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0"
 
 	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 
