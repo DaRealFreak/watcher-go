@@ -2,8 +2,10 @@ package kemono
 
 import (
 	"fmt"
+	"golang.org/x/time/rate"
 	"net/url"
 	"regexp"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
@@ -67,7 +69,9 @@ func (m *kemono) InitializeModule() {
 	))
 
 	// set the module implementation for access to the session, database, etc
-	m.Session = session.NewSession(m.Key)
+	kemonoSession := session.NewSession(m.Key)
+	kemonoSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(2500)*time.Millisecond), 1)
+	m.Session = kemonoSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
