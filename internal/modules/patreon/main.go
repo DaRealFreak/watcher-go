@@ -102,7 +102,7 @@ func NewBareModule() *models.Module {
 	module.ModuleInterface = &patreon{
 		Module:              module,
 		loginCsrfPattern:    regexp.MustCompile(`"csrfSignature":"(.*?)","`),
-		creatorIdPattern:    regexp.MustCompile(`"creator_id":\s(?P<ID>\d+)?`),
+		creatorIdPattern:    regexp.MustCompile(`"creator":\{"data":\{"id":"(?P<ID>\d+)"`),
 		creatorUriPattern:   regexp.MustCompile(`patreon://creator/(\d+)`),
 		normalizedUriRegexp: regexp.MustCompile(`patreon://creator/(\d+)/.*`),
 	}
@@ -145,6 +145,10 @@ func (m *patreon) InitializeModule() {
 func (m *patreon) AddItem(uri string) (string, error) {
 	// we require the session to check for the creator ID
 	if m.Session == nil {
+		if err := m.Load(); err != nil {
+			return "", err
+		}
+
 		m.InitializeModule()
 
 		// we're not converting the uri
@@ -152,13 +156,15 @@ func (m *patreon) AddItem(uri string) (string, error) {
 			return uri, nil
 		}
 
-		// login if we have an account, we can't extract the creator ID without an account
-		account := m.DbIO.GetAccount(m)
-		if account == nil {
-			return uri, fmt.Errorf("an account is required for the extraction of the creator ID")
-		}
+		if !m.LoggedIn {
+			// login if we have an account, we can't extract the creator ID without an account
+			account := m.DbIO.GetAccount(m)
+			if account == nil {
+				return uri, fmt.Errorf("an account is required for the extraction of the creator ID")
+			}
 
-		m.Login(account)
+			m.Login(account)
+		}
 	}
 
 	if !m.normalizedUriRegexp.MatchString(uri) {
