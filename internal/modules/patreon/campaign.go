@@ -49,6 +49,9 @@ type campaignPost struct {
 		AttachmentSection struct {
 			Attachments []*attachmentData `json:"data"`
 		} `json:"attachments"`
+		AttachmentMediaSection struct {
+			Attachments []*attachmentData `json:"data"`
+		} `json:"attachments_media"`
 		ImageSection struct {
 			ImageAttachments []*attachmentData `json:"data"`
 		} `json:"images"`
@@ -217,7 +220,15 @@ func (m *patreon) extractPostDownload(
 		}
 	*/
 
+	// older posts have attachments still in the attachments section (newer posts in the attachments_media)
 	for _, attachment := range post.Relationships.AttachmentSection.Attachments {
+		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
+			download.Attachments = append(download.Attachments, include)
+		}
+	}
+
+	// patreon moved newer posts to the attachment media section
+	for _, attachment := range post.Relationships.AttachmentMediaSection.Attachments {
 		if include := m.findAttachmentInIncludes(attachment, postsData.Included); include != nil {
 			download.Attachments = append(download.Attachments, include)
 		}
@@ -252,24 +263,32 @@ func (m *patreon) getCampaignPostsURI(campaignID int) string {
 			"access_rule_type,amount_cents",
 		},
 		"fields[campaign]": {
-			"currency,show_audio_post_download_links,avatar_photo_url,earnings_visibility,is_nsfw,is_monthly,name,url",
+			"currency,show_audio_post_download_links,avatar_photo_url,avatar_photo_image_urls,earnings_visibility," +
+				"is_nsfw,is_monthly,name,url",
 		},
 		"fields[media]": {
-			"id,image_urls,download_url,metadata,file_name",
+			"id,image_urls,display,download_url,metadata,file_name",
 		},
 		"fields[post]": {
-			"change_visibility_at,comment_count,content,current_user_can_delete,current_user_can_view," +
-				"current_user_has_liked,embed,image,is_paid,like_count,min_cents_pledged_to_view,post_file," +
-				"post_metadata,published_at,edited_at,patron_count,patreon_url,post_type,pledge_url,thumbnail_url," +
-				"teaser_text,title,upgrade_url,url,was_posted_by_campaign_owner",
+			"change_visibility_at,comment_count,commenter_count,content,created_at,current_user_can_comment," +
+				"current_user_can_delete,current_user_can_report,current_user_can_view," +
+				"current_user_comment_disallowed_reason,current_user_has_liked,embed,image,insights_last_updated_at," +
+				"is_paid,like_count,meta_image_url,min_cents_pledged_to_view,monetization_ineligibility_reason," +
+				"post_file,post_metadata,published_at,patreon_url,post_type,pledge_url,preview_asset_type,thumbnail," +
+				"thumbnail_url,teaser_text,title,upgrade_url,url,was_posted_by_campaign_owner,has_ti_violation," +
+				"moderation_status,post_level_suspension_removal_date,pls_one_liners_by_category,video,video_preview," +
+				"view_count,content_unlock_options,is_new_to_current_user,watch_state," +
+				// custom field not used in the normal web request but documented in the API
+				"edited_at",
 		},
 		"fields[user]":                       {"image_url,full_name,url"},
 		"filter[campaign_id]":                {strconv.Itoa(campaignID)},
 		"filter[exclude_inaccessible_posts]": {"true"},
 		"include": {
-			"user,attachments,user_defined_tags,campaign,poll.choices,poll.current_user_responses.user," +
-				"poll.current_user_responses.choice,poll.current_user_responses.poll,access_rules.tier.null," +
-				"images.null,audio.null",
+			"campaign,access_rules,access_rules.tier.null,attachments_media,audio,audio_preview.null,drop,images," +
+				"media,native_video_insights,poll.choices,poll.current_user_responses.user," +
+				"poll.current_user_responses.choice,poll.current_user_responses.poll,user," +
+				"user_defined_tags,ti_checks,video.null,content_unlock_options.product_variant.null",
 		},
 		"json-api-use-default-includes": {"false"},
 		"json-api-version":              {"1.0"},

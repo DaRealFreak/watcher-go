@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -46,8 +47,12 @@ type patreonSettings struct {
 }
 
 type loginAttributes struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	AuthContext string `json:"auth_context"`
+	PatreonAuth struct {
+		AllowAccountCreation bool   `json:"allow_account_creation"`
+		Email                string `json:"email"`
+		Password             string `json:"password"`
+	} `json:"patreon_auth"`
 }
 
 type loginData struct {
@@ -133,7 +138,7 @@ func (m *patreon) InitializeModule() {
 	// add CloudFlare bypass
 	cloudflareOptions := cloudflarebp.GetDefaultOptions()
 	cloudflareOptions.Headers["Accept-Encoding"] = "gzip, deflate, br"
-	cloudflareOptions.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
+	cloudflareOptions.Headers["User-Agent"] = "Patreon/7.6.28 (Android; Android 11; Scale/2.10)"
 	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
 }
 
@@ -180,12 +185,37 @@ func (m *patreon) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *patreon) Login(account *models.Account) bool {
+	// check if we have a cookie of the name session_id for the domain patreon.com
+	jar := m.Session.GetClient().Jar
+	mainUrl, _ := url.Parse("https://www.patreon.com")
+	foundCookie := false
+	for _, cookie := range jar.Cookies(mainUrl) {
+		if cookie.Name == "session_id" {
+			foundCookie = true
+			break
+		}
+	}
+
+	if foundCookie {
+		log.WithField("module", m.Key).Info("using existing session cookie")
+		m.LoggedIn = true
+		return m.LoggedIn
+	}
+
 	formData := loginFormData{
 		Data: loginData{
-			Type: "user",
+			Type: "genericPatreonApi",
 			Attributes: loginAttributes{
-				Email:    account.Username,
-				Password: account.Password,
+				AuthContext: "auth",
+				PatreonAuth: struct {
+					AllowAccountCreation bool   `json:"allow_account_creation"`
+					Email                string `json:"email"`
+					Password             string `json:"password"`
+				}{
+					AllowAccountCreation: false,
+					Email:                account.Username,
+					Password:             account.Password,
+				},
 			},
 			Relationships: struct{}{},
 		},
@@ -205,8 +235,11 @@ func (m *patreon) Login(account *models.Account) bool {
 		return false
 	}
 
-	req, _ := http.NewRequest("POST", "https://www.patreon.com/api/login?include=campaign%2Cuser_location&json-api-version=1.0", bytes.NewReader(data))
-	req.Header.Set("Content-Type", "application/vnd.api+json")
+	req, _ := http.NewRequest(
+		"POST",
+		"https://www.patreon.com/api/auth?include=user.null&fields[user]=[]&json-api-version=1.0&json-api-use-default-includes=false",
+		bytes.NewReader(data),
+	)
 	req.Header.Set("X-CSRF-Signature", loginCsrfMatches[1])
 
 	res, err = m.Session.GetClient().Do(req)
