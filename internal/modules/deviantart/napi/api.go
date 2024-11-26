@@ -141,6 +141,7 @@ type MediaType struct {
 	Quality  *string     `json:"q"`
 	FileSize json.Number `json:"f"`
 	URL      *string     `json:"b"`
+	Source   *string     `json:"s"`
 }
 
 type Folder struct {
@@ -359,6 +360,16 @@ func (m *Media) GetHighestQualityVideoType() (bestMediaType *MediaType) {
 	}
 
 	return bestMediaType
+}
+
+func (m *Media) GetPdfMedia() (bestMediaType *MediaType) {
+	for _, mediaType := range m.Types {
+		if mediaType.Types == "pdf" {
+			return mediaType
+		}
+	}
+
+	return nil
 }
 
 func (d *Draft) GetText() (text string) {

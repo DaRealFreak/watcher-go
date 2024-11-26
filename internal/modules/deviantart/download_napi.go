@@ -272,6 +272,26 @@ func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI, do
 		}
 	}
 
+	// PDF files if not downloadable are now stored in the media object, so check if we have any and download them
+	if !deviationItem.deviation.IsDownloadable {
+		if pdfMedia := deviationItem.deviation.Media.GetPdfMedia(); pdfMedia != nil && pdfMedia.Source != nil {
+			if err := downloadSession.DownloadFile(
+				path.Join(
+					m.GetDownloadDirectory(),
+					m.Key,
+					deviationItem.downloadTag,
+					fmt.Sprintf(
+						"%s_%s_p_%s.pdf",
+						deviationItem.deviation.GetPublishedTimestamp(),
+						deviationItem.deviation.DeviationId.String(),
+						fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+					),
+				), *pdfMedia.Source); err != nil {
+				return err
+			}
+		}
+	}
+
 	// image comparison if we downloaded the content file and the deviation is downloadable
 	if downloadedContentFile &&
 		deviationItem.deviation.IsDownloadable &&
