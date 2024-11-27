@@ -20,8 +20,8 @@ type Content struct {
 type Element struct {
 	Type  string `json:"type"`
 	Attrs struct {
-		Indentation string `json:"indentation"`
-		TextAlign   string `json:"textAlign"`
+		Indentation FlexibleString `json:"indentation"`
+		TextAlign   string         `json:"textAlign"`
 	} `json:"attrs"`
 	Content []Text `json:"content"`
 }
@@ -36,6 +36,24 @@ type Mark struct {
 	Type string `json:"type"`
 }
 
+type FlexibleString string
+
+func (fs *FlexibleString) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*fs = FlexibleString(s)
+		return nil
+	}
+
+	var n float64
+	if err := json.Unmarshal(data, &n); err == nil {
+		*fs = FlexibleString(fmt.Sprintf("%g", n))
+		return nil
+	}
+
+	return fmt.Errorf("unable to unmarshal FlexibleString: %s", string(data))
+}
+
 // ParseTipTapFormat parses a JSON string in TipTap format and returns the HTML representation
 func ParseTipTapFormat(jsonStr string) (string, error) {
 	var doc Document
@@ -48,7 +66,7 @@ func ParseTipTapFormat(jsonStr string) (string, error) {
 
 	for _, element := range doc.Document.Content {
 		if element.Type == "paragraph" {
-			indentation := strings.Repeat("&nbsp;", 4*toInt(element.Attrs.Indentation))
+			indentation := strings.Repeat("&nbsp;", 4*toInt(string(element.Attrs.Indentation)))
 			textAlign := element.Attrs.TextAlign
 			if textAlign == "" {
 				textAlign = "left"
