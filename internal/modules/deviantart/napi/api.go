@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/parser"
 	"io"
 	"net/http"
 	"net/url"
@@ -380,15 +381,21 @@ func (d *Draft) GetText() (text string) {
 	return text
 }
 
-func (d *Deviation) GetLiteratureContent() (string, error) {
-	if d.TextContent.Html.Type == "draft" {
+func (d *TextContent) GetTextContent() (string, error) {
+	if d.Html.Type == "draft" {
 		var draft Draft
-		if err := json.Unmarshal([]byte(d.TextContent.Html.Markup), &draft); err != nil {
+		if err := json.Unmarshal([]byte(d.Html.Markup), &draft); err != nil {
 			return "", err
 		}
 		return draft.GetText(), nil
+	} else if d.Html.Type == "tiptap" {
+		html, err := parser.ParseTipTapFormat(d.Html.Markup)
+		if err != nil {
+			return "", err
+		}
+		return html2text.FromString(html)
 	} else {
-		return html2text.FromString(d.TextContent.Html.Markup)
+		return html2text.FromString(d.Html.Markup)
 	}
 }
 

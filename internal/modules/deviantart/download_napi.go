@@ -7,7 +7,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
-	"github.com/jaytaylor/html2text"
 	log "github.com/sirupsen/logrus"
 	"net/url"
 	"os"
@@ -327,8 +326,9 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 		return nil
 	}
 
-	text, err := html2text.FromString(deviationItem.deviation.Extended.DescriptionText.Html.Markup)
+	text, err := deviationItem.deviation.Extended.DescriptionText.GetTextContent()
 	if err != nil {
+
 		return err
 	}
 
@@ -355,7 +355,7 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 }
 
 func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI) error {
-	text, err := deviationItem.deviation.GetLiteratureContent()
+	text, err := deviationItem.deviation.TextContent.GetTextContent()
 	if err != nil {
 		return err
 	}
