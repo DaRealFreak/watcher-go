@@ -2,9 +2,11 @@ package kemono
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
 	"golang.org/x/time/rate"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
@@ -20,6 +22,7 @@ import (
 type kemono struct {
 	*models.Module
 	baseUrl  *url.URL
+	api      *api.Client
 	settings kemonoSettings
 }
 
@@ -92,6 +95,13 @@ func (m *kemono) Parse(item *models.TrackedItem) error {
 	if item.SubFolder == "" {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
+
+	if strings.Contains(item.URI, "coomer.su") {
+		m.baseUrl, _ = url.Parse("https://coomer.su")
+	} else {
+		m.baseUrl, _ = url.Parse("https://kemono.su")
+	}
+	m.api = api.NewClient(m.baseUrl.String(), m.Session)
 
 	if regexp.MustCompile(`.*/post/.*`).MatchString(item.URI) {
 		return m.parsePost(item)
