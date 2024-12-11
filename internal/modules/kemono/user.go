@@ -1,15 +1,119 @@
 package kemono
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
 )
+
+// CustomTime for parsing timestamps with fractional seconds
+type CustomTime struct {
+	time.Time
+}
+
+// UnmarshalJSON handles the parsing of time strings with or without fractional seconds
+func (ct *CustomTime) UnmarshalJSON(b []byte) error {
+	s := string(b)
+	s = s[1 : len(s)-1] // Remove quotes
+
+	// Define possible layouts
+	layouts := []string{
+		"2006-01-02T15:04:05.000000", // With fractional seconds
+		"2006-01-02T15:04:05",        // Without fractional seconds
+	}
+
+	var err error
+	for _, layout := range layouts {
+		ct.Time, err = time.Parse(layout, s)
+		if err == nil {
+			return nil
+		}
+	}
+
+	// Return the last error if no layout matched
+	return fmt.Errorf("could not parse time: %s, error: %w", s, err)
+}
+
+type Root struct {
+	Props               Props          `json:"props"`
+	Base                Base           `json:"base"`
+	Results             []Result       `json:"results"`
+	ResultPreviews      [][]Thumbnail  `json:"result_previews"`
+	ResultAttachments   [][]Attachment `json:"result_attachments"`
+	ResultIsImage       []bool         `json:"result_is_image"`
+	DisableServiceIcons bool           `json:"disable_service_icons"`
+}
+
+type Props struct {
+	CurrentPage string      `json:"currentPage"`
+	ID          string      `json:"id"`
+	Service     string      `json:"service"`
+	Name        string      `json:"name"`
+	Count       int         `json:"count"`
+	Limit       int         `json:"limit"`
+	Artist      Artist      `json:"artist"`
+	DisplayData DisplayData `json:"display_data"`
+	DmCount     int         `json:"dm_count"`
+	ShareCount  int         `json:"share_count"`
+	HasLinks    string      `json:"has_links"`
+}
+
+type Artist struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	Service    string     `json:"service"`
+	Indexed    CustomTime `json:"indexed"`
+	Updated    CustomTime `json:"updated"`
+	PublicID   string     `json:"public_id"`
+	RelationID *string    `json:"relation_id"`
+}
+
+type DisplayData struct {
+	Service string `json:"service"`
+	Href    string `json:"href"`
+}
+
+type Base struct {
+	Service  string `json:"service"`
+	ArtistID string `json:"artist_id"`
+}
+
+type Result struct {
+	ID          string       `json:"id"`
+	User        string       `json:"user"`
+	Service     string       `json:"service"`
+	Title       string       `json:"title"`
+	Substring   string       `json:"substring"`
+	Published   CustomTime   `json:"published"`
+	File        File         `json:"file"`
+	Attachments []Attachment `json:"attachments"`
+}
+
+type File struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+type Attachment struct {
+	Name   string  `json:"name"`
+	Path   string  `json:"path"`
+	Server *string `json:"server"`
+}
+
+type Thumbnail struct {
+	Type   string `json:"type"`
+	Server string `json:"server"`
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+}
 
 type postItem struct {
 	id    string
@@ -25,30 +129,50 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		m.baseUrl, _ = url.Parse("https://kemono.su")
 	}
 
-	response, err := m.Session.Get(item.URI)
+	search := regexp.MustCompile(`https://(?:kemono|coomer).su/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
+	userId := ""
+	service := ""
+	if len(search) == 3 {
+		service = search[1]
+		userId = search[2]
+	}
+
+	if userId == "" || service == "" {
+		return fmt.Errorf("could not extract user ID and service from URL: %s", item.URI)
+	}
+
+	apiUrl := fmt.Sprintf("%s/api/v1/%s/user/%s/posts-legacy", m.baseUrl.String(), service, userId)
+	response, err := m.Session.Get(apiUrl)
 	if err != nil {
 		return err
 	}
 
-	html, _ := m.Session.GetDocument(response).Html()
+	out, readErr := io.ReadAll(response.Body)
+	if readErr != nil {
+		return err
+	}
+
+	var root Root
+	err = json.Unmarshal(out, &root)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
 
 	var (
-		downloadQueue    []*postItem
+		downloadQueue    []Result
 		foundCurrentItem bool
 		offset           int
 	)
 
 	for {
-		posts := m.getPostsUrls(html)
-
 		// we are beyond the last page, break here
-		if len(posts) == 0 {
+		if len(root.Results) == 0 {
 			break
 		}
 
-		for _, post := range posts {
+		for _, post := range root.Results {
 			// check if we reached the current item already
-			if post.id == item.CurrentItem {
+			if post.ID == item.CurrentItem {
 				foundCurrentItem = true
 				break
 			}
@@ -62,7 +186,7 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 
 		// increase offset for the next page
 		offset += 50
-		pageUrl, _ := url.Parse(item.URI)
+		pageUrl, _ := url.Parse(apiUrl)
 		queries := pageUrl.Query()
 		queries.Set("o", strconv.Itoa(offset))
 		pageUrl.RawQuery = queries.Encode()
@@ -73,7 +197,15 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 			break
 		}
 
-		html, _ = m.Session.GetDocument(response).Html()
+		out, readErr = io.ReadAll(response.Body)
+		if readErr != nil {
+			return readErr
+		}
+
+		err = json.Unmarshal(out, &root)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal JSON: %w", err)
+		}
 	}
 
 	// reverse download queue to download old items first
@@ -93,15 +225,15 @@ func (m *kemono) parsePost(item *models.TrackedItem) error {
 	}
 
 	// extract 2nd number from example URL: https://kemono.su/patreon/user/551274/post/24446001
-	postId := regexp.MustCompile(`.*/post/(\d+)`).FindStringSubmatch(item.URI)
-	if len(postId) != 2 {
+	postId := regexp.MustCompile(`.*([^/?&]+)/user/([^/?&]+)/post/(\d+)`).FindStringSubmatch(item.URI)
+	if len(postId) != 3 {
 		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)
 	}
 
-	return m.processDownloadQueue(item, []*postItem{{
-		id:    postId[1],
-		title: "",
-		uri:   item.URI,
+	return m.processDownloadQueue(item, []Result{{
+		Service: postId[1],
+		User:    postId[2],
+		ID:      postId[3],
 	}})
 }
 

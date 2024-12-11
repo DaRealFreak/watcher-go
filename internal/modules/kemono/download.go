@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []*postItem, notifications ...*models.Notification) error {
+func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []Result, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
 	)
@@ -43,13 +43,13 @@ func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []
 			return err
 		}
 
-		m.DbIO.UpdateTrackedItem(item, data.id)
+		m.DbIO.UpdateTrackedItem(item, data.ID)
 	}
 
 	return nil
 }
 
-func (m *kemono) downloadPost(item *models.TrackedItem, data *postItem) error {
+func (m *kemono) downloadPost(item *models.TrackedItem, data *Result) error {
 	response, err := m.Session.Get(data.uri)
 	if err != nil {
 		return err
