@@ -5,6 +5,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
 	html2 "golang.org/x/net/html"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -62,7 +63,15 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 		return fmt.Errorf("failed to fetch post comments: %w", commentErr)
 	}
 
-	for index, downloadItem := range m.getDownloadLinks(post) {
+	// set the download folder to the given post
+	postFolderPath := fp.SanitizePath(data.ID, false)
+	sanitizedPostTitle := fp.SanitizePath(data.Title, false)
+	if strings.TrimSpace(sanitizedPostTitle) != "" {
+		postFolderPath += " - " + sanitizedPostTitle
+	}
+
+	downloadLinks := m.getDownloadLinks(post)
+	for index, downloadItem := range downloadLinks {
 		parsedLink, parsedErr := url.Parse(downloadItem.FileURI)
 		if parsedErr != nil {
 			return parsedErr
@@ -80,12 +89,6 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 		// ignore mega folder icons
 		if strings.Contains(fileName, "mega.nz_rich-folder") {
 			continue
-		}
-
-		postFolderPath := fp.SanitizePath(data.ID, false)
-		sanitizedPostTitle := fp.SanitizePath(data.Title, false)
-		if strings.TrimSpace(sanitizedPostTitle) != "" {
-			postFolderPath += " - " + sanitizedPostTitle
 		}
 
 		if err = m.Session.DownloadFile(
@@ -123,8 +126,9 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 		}
 	}
 
+	externalLinks := m.getExternalLinks(post, postComments)
 	factory := modules.GetModuleFactory()
-	for _, externalURL := range m.getExternalLinks(post, postComments) {
+	for _, externalURL := range externalLinks {
 		if m.settings.ExternalURLs.PrintExternalItems {
 			log.WithField("module", m.Key).Infof(
 				"found external URL: \"%s\" in post \"%s\"",
@@ -177,6 +181,20 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 					webUrl,
 				)
 			}
+		}
+	}
+
+	// try to create the download folder if we have external links but no direct download links
+	if len(downloadLinks) == 0 && len(externalLinks) > 0 {
+		downloadFolder := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(m.getSubFolder(item)),
+			fp.TruncateMaxLength(postFolderPath),
+		)
+		err = os.MkdirAll(downloadFolder, os.ModePerm)
+		if err != nil {
+			return err
 		}
 	}
 
