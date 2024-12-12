@@ -87,12 +87,18 @@ func (api *Client) GetPostDetails(service, userID, postID string) (*PostRoot, er
 	return &postRoot, nil
 }
 
-func (api *Client) GetPostComments(service, userID, postID string) (*[]Comment, error) {
+func (api *Client) GetPostComments(service, userID, postID string) (comments []Comment, err error) {
 	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/post/%s/comments", api.BaseURL, service, userID, postID)
 	resp, err := api.Client.Get(apiURL)
+	// normal behavior if no comments are available is a 404 response
+	if resp != nil && resp.StatusCode == 404 {
+		return comments, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -100,10 +106,9 @@ func (api *Client) GetPostComments(service, userID, postID string) (*[]Comment, 
 		return nil, err
 	}
 
-	var comments []Comment
 	err = json.Unmarshal(body, &comments)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-	return &comments, nil
+	return comments, nil
 }

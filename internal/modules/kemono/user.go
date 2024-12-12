@@ -53,6 +53,11 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 
 		// increase offset for the next page
 		offset += 50
+		maxCount, _ := root.Properties.Count.Int64()
+		if offset >= int(maxCount) {
+			break
+		}
+
 		root, err = m.api.GetUserPosts(service, userId, offset)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal JSON: %w", err)

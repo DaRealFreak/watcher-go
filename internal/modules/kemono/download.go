@@ -3,8 +3,8 @@ package kemono
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
+	html2 "golang.org/x/net/html"
 	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -73,6 +73,10 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 			fileName = fp.SanitizePath(parsedLink.Query().Get("f"), false)
 		}
 
+		if downloadItem.FileName != "" {
+			fileName = fp.SanitizePath(downloadItem.FileName, false)
+		}
+
 		// ignore mega folder icons
 		if strings.Contains(fileName, "mega.nz_rich-folder") {
 			continue
@@ -120,7 +124,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 	}
 
 	factory := modules.GetModuleFactory()
-	for _, externalURL := range m.getExternalLinks(post.Post.Content, postComments) {
+	for _, externalURL := range m.getExternalLinks(post, postComments) {
 		if m.settings.ExternalURLs.PrintExternalItems {
 			log.WithField("module", m.Key).Infof(
 				"found external URL: \"%s\" in post \"%s\"",
@@ -179,38 +183,53 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 	return nil
 }
 
-func (m *kemono) getExternalLinks(html string, comments *[]api.Comment) (links []string) {
+func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (links []string) {
 	if !m.settings.ExternalURLs.DownloadExternalItems && !m.settings.ExternalURLs.PrintExternalItems {
 		return links
 	}
 
+	html := post.Post.Content
+
+	if post.Post.Embed.Url != "" {
+		links = append(links, post.Post.Embed.Url)
+	}
+
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("a").Each(func(index int, row *goquery.Selection) {
-		uri, _ := row.Attr("href")
-		if fileURL, parseErr := url.Parse(uri); parseErr == nil {
-			if !strings.Contains(fileURL.String(), ".fanbox.cc/") {
-				links = append(links, fileURL.String())
+	document.Find("a").Each(func(index int, item *goquery.Selection) {
+		href, exists := item.Attr("href")
+		if exists {
+			// Find text nodes immediately after the <a> tag
+			var afterAnchor string
+			for sibling := item.Nodes[0].NextSibling; sibling != nil; sibling = sibling.NextSibling {
+				if sibling.Type == html2.TextNode {
+					afterAnchor = strings.TrimSpace(sibling.Data)
+					break // Only take the immediate next text node
+				}
+			}
+
+			// Combine href with the fragment
+			fullURL := href
+			if afterAnchor != "" && strings.HasPrefix(afterAnchor, "#") {
+				fullURL += afterAnchor
+			}
+
+			if !strings.Contains(fullURL, ".fanbox.cc/") && !strings.Contains(fullURL, "discord.gg/") {
+				links = append(links, fullURL)
 			}
 		}
 	})
 
+	// If you want to handle any remaining non-anchor URLs, you can use a regex as a fallback
+	// Extract non-anchor URLs from the plain text
 	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=!]*)`)
-	urlMatches := pattern.FindAllStringSubmatch(html, -1)
-	if len(urlMatches) > 0 {
-		for _, match := range urlMatches {
-			q, _ := url.Parse(match[0])
-			q.Scheme = "https"
-
-			if !strings.Contains(q.String(), ".fanbox.cc/") {
-				links = append(links, q.String())
-			}
-		}
-	}
-
 	if comments != nil {
-		for _, comment := range *comments {
+		for _, comment := range comments {
+			if comment.Commenter != post.Post.User {
+				continue
+			}
+
 			if comment.Content != "" {
-				urlMatches = pattern.FindAllStringSubmatch(comment.Content, -1)
+				urlMatches := pattern.FindAllStringSubmatch(comment.Content, -1)
 				if len(urlMatches) > 0 {
 					for _, match := range urlMatches {
 						q, _ := url.Parse(match[0])
@@ -254,7 +273,7 @@ func (m *kemono) getExternalLinks(html string, comments *[]api.Comment) (links [
 	return uniqueLinks
 }
 
-func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []models.DownloadQueueItem) {
+func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQueueItem) {
 	if root.Post.File.Path != "" {
 		fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), root.Post.File.Path)
 		downloadItem := models.DownloadQueueItem{
@@ -262,7 +281,7 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []models.DownloadQu
 			FileURI: fileUri,
 		}
 
-		links = append(links, downloadItem)
+		links = append(links, &downloadItem)
 	}
 
 	for _, attachment := range root.Attachments {
@@ -277,13 +296,18 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []models.DownloadQu
 				FileURI: fileUri,
 			}
 
-			links = append(links, downloadItem)
+			links = append(links, &downloadItem)
 		}
 	}
 
 	// add thumbnails as fallback if we can't download the original file
 	// or as additional download if we can't associate the thumbnail with an attachment/download
 	for _, preview := range root.Previews {
+		// ignore mega folder icons
+		if preview.Name == "https://mega.nz/rich-file.png" {
+			continue
+		}
+
 		if preview.Path != "" {
 			fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), preview.Path)
 			if preview.Server != nil && *preview.Server != "" {
@@ -293,7 +317,7 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []models.DownloadQu
 			// search for initial file name in attachments
 			found := false
 			for _, link := range links {
-				if link.ItemID == fileUri {
+				if strings.HasSuffix(link.FileURI, preview.Path) {
 					link.FallbackFileURI = fileUri
 					found = true
 					break
@@ -305,16 +329,56 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []models.DownloadQu
 					ItemID:  fileUri,
 					FileURI: fileUri,
 				}
-				links = append(links, downloadItem)
+				links = append(links, &downloadItem)
 			}
 		}
 	}
 
-	if len(root.Videos) > 0 {
-		log.WithField("module", m.Key).Warn("found video download links, please implement video download handling")
-		// exit early for now to see an actual use case of the video attribute instantly
-		os.Exit(1)
+	for _, video := range root.Videos {
+		fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), video.Path)
+		if video.Server != nil && *video.Server != "" {
+			fileUri = fmt.Sprintf("%s/data/%s", *video.Server, video.Path)
+		}
+
+		downloadItem := models.DownloadQueueItem{
+			ItemID:   fileUri,
+			FileURI:  fileUri,
+			FileName: video.Name,
+		}
+
+		// update file name if we already have the file in the download queue
+		found := false
+		for _, link := range links {
+			if link.FileURI == fileUri {
+				link.FileName = video.Name
+				found = true
+				break
+			}
+		}
+
+		// add download item if we didn't find it in the download queue
+		if !found {
+			links = append(links, &downloadItem)
+		}
 	}
+
+	document, _ := goquery.NewDocumentFromReader(strings.NewReader(root.Post.Content))
+	document.Find("img").Each(func(index int, item *goquery.Selection) {
+		src, exists := item.Attr("src")
+		if exists {
+			fileUri := src
+			if !strings.HasPrefix(fileUri, "https") {
+				fileUri = fmt.Sprintf("%s/%s", m.baseUrl.String(), src)
+			}
+
+			downloadItem := models.DownloadQueueItem{
+				ItemID:  fileUri,
+				FileURI: fileUri,
+			}
+
+			links = append(links, &downloadItem)
+		}
+	})
 
 	return links
 }
