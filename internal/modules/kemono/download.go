@@ -213,7 +213,7 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 	}
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("a").Each(func(index int, item *goquery.Selection) {
+	document.Find("a[href]:not([href^='/'])").Each(func(index int, item *goquery.Selection) {
 		href, exists := item.Attr("href")
 		if exists {
 			// Find text nodes immediately after the <a> tag
@@ -395,6 +395,42 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQ
 			}
 
 			links = append(links, &downloadItem)
+		}
+	})
+
+	document.Find("a[href^='/']").Each(func(index int, item *goquery.Selection) {
+		if href, exists := item.Attr("href"); exists {
+			fileUri := fmt.Sprintf("%s%s", m.baseUrl.String(), href)
+			parsedLink, _ := url.Parse(href) // Ignore error; fileName defaults to empty if parsing fails
+			fileName := ""
+
+			if f := parsedLink.Query().Get("f"); f != "" {
+				fileName = fp.SanitizePath(f, false)
+				queryVals := parsedLink.Query()
+				queryVals.Del("f")
+				parsedLink.RawQuery = queryVals.Encode()
+			}
+
+			checkUrl := parsedLink.String()
+
+			downloadItem := models.DownloadQueueItem{
+				ItemID:   fileUri,
+				FileURI:  fileUri,
+				FileName: fileName,
+			}
+
+			added := false
+			for _, link := range links {
+				if strings.Contains(link.FileURI, checkUrl) {
+					link.FallbackFileURI = fileUri
+					added = true
+					break
+				}
+			}
+
+			if !added {
+				links = append(links, &downloadItem)
+			}
 		}
 	})
 

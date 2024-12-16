@@ -74,8 +74,8 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 
 func (m *kemono) parsePost(item *models.TrackedItem) error {
 	// extract 2nd number from example URL: https://kemono.su/patreon/user/551274/post/24446001
-	postId := regexp.MustCompile(`.*([^/?&]+)/user/([^/?&]+)/post/(\d+)`).FindStringSubmatch(item.URI)
-	if len(postId) != 3 {
+	postId := regexp.MustCompile(`.*/([^/?&]+)/user/([^/?&]+)/post/(\w+)`).FindStringSubmatch(item.URI)
+	if len(postId) != 4 {
 		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)
 	}
 
