@@ -51,6 +51,8 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 				if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
 					return followErr
 				}
+
+				log.WithField("module", m.ModuleKey()).Infof("followed user %s", screenName)
 			}
 		}
 	}
