@@ -20,18 +20,39 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 	}
 
 	var userId string
+	var userInformation *graphql_api.UserInformation
+
 	if m.normalizedUriRegexp.MatchString(item.URI) {
 		userId, err = m.extractId(item.URI)
 		if err != nil {
 			return err
 		}
+
+		if m.settings.FollowUser {
+			userInformation, err = m.twitterGraphQlAPI.UserByUsername(screenName)
+			if err != nil {
+				return err
+			}
+		}
 	} else {
-		userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+		var userErr error
+		userInformation, userErr = m.twitterGraphQlAPI.UserByUsername(screenName)
 		if userErr != nil {
 			return userErr
 		}
 
 		userId = userInformation.Data.User.Result.RestID.String()
+	}
+
+	if userInformation != nil {
+		user := userInformation.Data.User.Result
+		if !user.Legacy.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
+			if m.settings.FollowUser {
+				if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
+					return followErr
+				}
+			}
+		}
 	}
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)

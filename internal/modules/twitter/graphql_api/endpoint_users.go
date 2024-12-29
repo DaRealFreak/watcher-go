@@ -137,8 +137,11 @@ type User struct {
 	ID     string      `json:"id"`
 	RestID json.Number `json:"rest_id"`
 	Legacy struct {
-		Name       string `json:"name"`
-		ScreenName string `json:"screen_name"`
+		Name              string `json:"name"`
+		ScreenName        string `json:"screen_name"`
+		Following         bool   `json:"following"`
+		FollowRequestSent *bool  `json:"follow_request_sent"`
+		Protected         *bool  `json:"protected"`
 	} `json:"legacy"`
 }
 
@@ -250,4 +253,32 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	err = a.mapAPIResponse(res, &userInformation)
 
 	return userInformation, err
+}
+
+func (a *TwitterGraphQlAPI) FollowUser(userId string) error {
+	a.applyRateLimit()
+
+	values := url.Values{
+		"include_profile_interstitial_type": {"1"},
+		"include_blocking":                  {"1"},
+		"include_blocked_by":                {"1"},
+		"include_followed_by":               {"1"},
+		"include_want_retweets":             {"1"},
+		"include_mute_edge":                 {"1"},
+		"include_can_dm":                    {"1"},
+		"include_can_media_tag":             {"1"},
+		"include_ext_is_blue_verified":      {"1"},
+		"include_ext_verified_type":         {"1"},
+		"include_ext_profile_image_shape":   {"1"},
+		"skip_status":                       {"1"},
+		"user_id":                           {userId},
+	}
+
+	apiURI := "https://x.com/i/api/1.1/friendships/create.json"
+	_, err := a.apiPOST(apiURI, values)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

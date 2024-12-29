@@ -133,3 +133,40 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 
 	return res, err
 }
+
+func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*http.Response, error) {
+	requestURL, _ := url.Parse(apiRequestURL)
+
+	res, err := a.Session.GetClient().PostForm(requestURL.String(), values)
+	if err != nil {
+		switch err.(type) {
+		case SessionTerminatedError:
+			// try to use a fallback auth token if available
+			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
+				// inform user about the session termination
+				log.WithField("module", a.moduleKey).Warnf(
+					fmt.Sprintf(
+						"received 401 status code for URI \"%s\", session got probably terminated",
+						requestURL.String(),
+					),
+				)
+
+				twitterURL, _ := url.Parse("https://x.com")
+				currentCookies := a.Session.GetClient().Jar.Cookies(twitterURL)
+				for _, cookie := range currentCookies {
+					if cookie.Name == "auth_token" {
+						cookie.Value = a.settings.FallbackAuthTokens[a.authTokenFallbackIndex]
+						a.authTokenFallbackIndex++
+					}
+					// update cookie with new value for the session
+					a.Session.GetClient().Jar.SetCookies(twitterURL, []*http.Cookie{cookie})
+					break
+				}
+
+				return a.apiPOST(apiRequestURL, values)
+			}
+		}
+	}
+
+	return res, err
+}
