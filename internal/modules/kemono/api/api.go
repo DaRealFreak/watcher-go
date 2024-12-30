@@ -14,6 +14,10 @@ type CustomTime struct {
 }
 
 func (ct *CustomTime) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
 	s := string(b[1 : len(b)-1]) // Remove quotes
 	layouts := []string{
 		"2006-01-02T15:04:05.000000",
