@@ -39,6 +39,9 @@ type pixivSettings struct {
 		Format                string `mapstructure:"format"`
 		LowQualityGifFallback bool   `mapstructure:"fallback_gif"`
 	} `mapstructure:"animation"`
+	Fanbox struct {
+		UserAgent string `mapstructure:"user_agent"`
+	} `mapstructure:"fanbox"`
 }
 
 type pixivPattern struct {
@@ -136,6 +139,10 @@ func (m *pixiv) Parse(item *models.TrackedItem) (err error) {
 			m.fanboxAPI = fanboxapi.NewFanboxAPI(m.Key)
 			m.fanboxAPI.SessionCookie = m.DbIO.GetCookie(fanboxapi.CookieSession, m)
 
+			if m.settings.Fanbox.UserAgent != "" {
+				m.fanboxAPI.UserAgent = m.settings.Fanbox.UserAgent
+			}
+
 			if err = m.preparePixivFanboxSession(); err != nil {
 				return err
 			}
@@ -182,6 +189,10 @@ func (m *pixiv) preparePixivFanboxSession() error {
 		if err := m.fanboxAPI.Session.SetProxy(usedProxy); err != nil {
 			return err
 		}
+	}
+
+	if cookie := m.DbIO.GetCookie(fanboxapi.CookieCfClearance, m); cookie != nil {
+		m.fanboxAPI.CfClearanceCookie = m.DbIO.GetCookie(fanboxapi.CookieCfClearance, m)
 	}
 
 	m.fanboxAPI.AddRoundTrippers()

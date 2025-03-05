@@ -17,13 +17,16 @@ import (
 
 // CookieSession is the session cookie which is set after a successful login
 const CookieSession = "FANBOXSESSID"
+const CookieCfClearance = "cf_clearance"
 
 // FanboxAPI is the implementation of the not reachable but required endpoints not in the public or mobile API
 type FanboxAPI struct {
-	StorageURL    *url.URL
-	Session       watcherHttp.SessionInterface
-	Key           string
-	SessionCookie *models.Cookie
+	StorageURL        *url.URL
+	Session           watcherHttp.SessionInterface
+	Key               string
+	SessionCookie     *models.Cookie
+	CfClearanceCookie *models.Cookie
+	UserAgent         string
 }
 
 // NewFanboxAPI initializes the Fanbox API and handles the whole auth and round tripper procedures
@@ -53,6 +56,14 @@ func (a *FanboxAPI) AddRoundTrippers() {
 		},
 	)
 
+	if a.CfClearanceCookie != nil {
+		a.Session.GetClient().Jar.SetCookies(a.StorageURL,
+			[]*http.Cookie{
+				{Name: CookieCfClearance, Value: a.CfClearanceCookie.Value},
+			},
+		)
+	}
+
 	// also apply sessionCookie for our cookie header in the round trip
 	a.setPixivRoundTripper()
 }
@@ -60,7 +71,7 @@ func (a *FanboxAPI) AddRoundTrippers() {
 // setPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
 func (a *FanboxAPI) setPixivRoundTripper() {
 	client := a.Session.GetClient()
-	client.Transport = a.setPixivWebHeaders(client.Transport, a.SessionCookie)
+	client.Transport = a.setPixivWebHeaders(client.Transport)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type
