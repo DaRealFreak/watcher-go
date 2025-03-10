@@ -24,7 +24,7 @@ type apiMeta struct {
 
 // apiItem is the JSON struct of item objects returned by the API
 type apiItem struct {
-	ID               json.Number `json:"id"`
+	ID               string      `json:"id"`
 	Rating           string      `json:"rating"`
 	Status           string      `json:"status"`
 	Author           apiAuthor   `json:"author"`
@@ -47,7 +47,7 @@ type apiItem struct {
 	IsPremium        bool        `json:"is_premium"`
 	UserVote         json.Number `json:"user_vote"`
 	Md5              string      `json:"md5"`
-	ParentID         json.Number `json:"parent_id"`
+	ParentID         string      `json:"parent_id"`
 	Change           int         `json:"change"`
 	FavCount         json.Number `json:"fav_count"`
 	RecommendedPosts json.Number `json:"recommended_posts"`
@@ -62,7 +62,7 @@ type apiItem struct {
 
 // apiAuthor is the JSON struct of author objects returned by the API
 type apiAuthor struct {
-	ID           int    `json:"id"`
+	ID           string `json:"id"`
 	Name         string `json:"name"`
 	Avatar       string `json:"avatar"`
 	AvatarRating string `json:"avatar_rating"`
@@ -77,7 +77,7 @@ type apiCreated struct {
 
 // apiTag is the JSON struct of tag objects returned by the API
 type apiTag struct {
-	ID        int    `json:"id"`
+	ID        string `json:"id"`
 	NameEn    string `json:"name_en"`
 	NameJa    string `json:"name_ja"`
 	Type      int    `json:"type"`
@@ -109,9 +109,9 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 			apiURI = fmt.Sprintf("%s&next=%s", apiURI, nextItem)
 		}
 
-		response, err := m.Session.Get(apiURI)
-		if err != nil {
-			return nil, err
+		response, responseErr := m.Session.Get(apiURI)
+		if responseErr != nil {
+			return nil, responseErr
 		}
 
 		var apiGalleryResponse apiResponse
@@ -128,25 +128,21 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 		nextItem = apiGalleryResponse.Meta.Next
 
 		for _, data := range apiGalleryResponse.Data {
-			itemID, err := data.ID.Int64()
-			if err != nil {
-				return nil, err
-			}
+			itemTimestamp := data.CreatedAt.S
 
-			// will return 0 on error, so fine for us too
-			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-			if item.CurrentItem == "" || itemID > currentItemID {
+			currentItemTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+			if item.CurrentItem == "" || itemTimestamp > currentItemTimestamp {
 				// direct link with ID is https://www.sankakucomplex.com/post/show/{data.ID}
 				// in recent updates they used slugs, so we couldn't directly retrieve the URL based on the ID
 				if data.FileURL != "" {
 					galleryItems = append(galleryItems, &downloadGalleryItem{
 						item: &models.DownloadQueueItem{
-							ItemID: string(data.ID),
+							ItemID: strconv.FormatInt(data.CreatedAt.S, 10),
 							DownloadTag: path.Join(
 								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(item), false)),
 								m.getTagSubDirectory(data),
 							),
-							FileName:        string(data.ID) + "_" + fp.GetFileName(data.FileURL),
+							FileName:        strconv.FormatInt(data.CreatedAt.S, 10) + "_" + fp.GetFileName(data.FileURL),
 							FileURI:         data.FileURL,
 							FallbackFileURI: data.SampleURL,
 						},

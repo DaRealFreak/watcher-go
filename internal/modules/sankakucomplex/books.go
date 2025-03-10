@@ -23,12 +23,13 @@ type bookApiResponse struct {
 
 // apiItem is the JSON struct of item objects returned by the API
 type bookApiItem struct {
-	ID     json.Number `json:"id"`
-	NameEn *string     `json:"name_en"`
-	NameJa *string     `json:"name_ja"`
-	Author apiAuthor   `json:"author"`
-	Tags   []*apiTag   `json:"tags"`
-	Posts  []*apiItem  `json:"posts"`
+	ID        string     `json:"id"`
+	CreatedAt apiCreated `json:"created_at"`
+	NameEn    *string    `json:"name_en"`
+	NameJa    *string    `json:"name_ja"`
+	Author    apiAuthor  `json:"author"`
+	Tags      []*apiTag  `json:"tags"`
+	Posts     []*apiItem `json:"posts"`
 }
 
 // parseAPIBookResponse parses the book response from the API
@@ -117,14 +118,10 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 		nextItem = apiGalleryResponse.Meta.Next
 
 		for _, data := range apiGalleryResponse.Data {
-			itemID, err := data.ID.Int64()
-			if err != nil {
-				return nil, err
-			}
+			itemTimestamp := data.CreatedAt.S
 
-			// will return 0 on error, so fine for us too
-			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-			if item.CurrentItem == "" || itemID > currentItemID {
+			currentItemTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+			if item.CurrentItem == "" || itemTimestamp > currentItemTimestamp {
 				tmpDownloadQueue, err := m.extractBookItems(data)
 				if err != nil {
 					return downloadBookItems, err
@@ -136,7 +133,7 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 				}
 
 				downloadBookItems = append(downloadBookItems, &downloadBookItem{
-					bookId:       data.ID.String(),
+					bookId:       strconv.FormatInt(data.CreatedAt.S, 10),
 					bookName:     bookTag,
 					bookLanguage: m.extractLanguage(data),
 					items:        tmpDownloadQueue,
@@ -189,18 +186,14 @@ func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string
 	}
 
 	for i, galleryItem := range apiBookResponse.Posts {
-		itemID, err := galleryItem.ID.Int64()
-		if err != nil {
-			return nil, err
-		}
+		itemTimestamp := galleryItem.CreatedAt.S
 
-		// will return 0 on error, so fine for us too
-		currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-		if item.CurrentItem == "" || itemID > currentItemID {
+		currentItemTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+		if item.CurrentItem == "" || itemTimestamp > currentItemTimestamp {
 			if galleryItem.FileURL != "" {
 				galleryItems = append(galleryItems, &downloadGalleryItem{
 					item: &models.DownloadQueueItem{
-						ItemID:          string(galleryItem.ID),
+						ItemID:          strconv.FormatInt(galleryItem.CreatedAt.S, 10),
 						DownloadTag:     fmt.Sprintf("%s/%s%s (%s)", "books", fp.SanitizePath(bookTag, false), bookLanguage, bookId),
 						FileName:        fmt.Sprintf("%d_%s", i+1, fp.GetFileName(galleryItem.FileURL)),
 						FileURI:         galleryItem.FileURL,
