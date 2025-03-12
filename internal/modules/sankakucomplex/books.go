@@ -98,7 +98,7 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 
 	for !foundCurrentItem {
 		apiURI := fmt.Sprintf(
-			"https://capi-v2.sankakucomplex.com/pools/keyset?lang=en&limit=100&includes[]=series&tags=%s&pool_type=0",
+			"https://sankakuapi.com/pools/keyset?lang=en&limit=100&includes[]=series&tags=%s&pool_type=0",
 			url.QueryEscape(tag),
 		)
 		if nextItem != "" {

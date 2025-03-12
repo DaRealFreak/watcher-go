@@ -102,7 +102,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 
 	for !foundCurrentItem {
 		apiURI := fmt.Sprintf(
-			"https://capi-v2.sankakucomplex.com/posts/keyset?lang=en&limit=100&tags=%s",
+			"https://sankakuapi.com/v2/posts/keyset?lang=en&limit=100&tags=%s",
 			url.QueryEscape(tag),
 		)
 		if nextItem != "" {

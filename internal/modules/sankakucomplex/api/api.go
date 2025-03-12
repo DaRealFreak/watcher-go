@@ -52,7 +52,7 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface
 		data, _ := json.Marshal(loginData)
 		req, _ := http.NewRequest(
 			"POST",
-			"https://capi-v2.sankakucomplex.com/auth/token",
+			"https://login.sankakucomplex.com/auth/token",
 			bytes.NewReader(data),
 		)
 
@@ -71,7 +71,7 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface
 
 	oauthConfig := oauth2.Config{
 		Endpoint: oauth2.Endpoint{
-			AuthURL: "https://capi-v2.sankakucomplex.com/auth/token",
+			AuthURL: "https://login.sankakucomplex.com/auth/token",
 		},
 	}
 
