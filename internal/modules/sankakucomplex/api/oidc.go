@@ -25,9 +25,9 @@ type Config struct {
 	HTTPClient     *http.Client // The HTTP client to use (with proxy, cookies, etc.).
 }
 
-// oidcClient encapsulates the OIDC flow implementation.
+// OidcClient encapsulates the OIDC flow implementation.
 // This type is unexported so that only its methods (that we choose to export) are visible.
-type oidcClient struct {
+type OidcClient struct {
 	cfg *Config
 }
 
@@ -51,7 +51,7 @@ type finalizeResponse struct {
 }
 
 // NewOIDCClient creates and returns a new OIDC client using the provided configuration.
-func NewOIDCClient(cfg Config) (*oidcClient, error) {
+func NewOIDCClient(cfg Config) (*OidcClient, error) {
 	if cfg.HTTPClient == nil {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
@@ -59,12 +59,12 @@ func NewOIDCClient(cfg Config) (*oidcClient, error) {
 		}
 		cfg.HTTPClient = &http.Client{Jar: jar}
 	}
-	return &oidcClient{cfg: &cfg}, nil
+	return &OidcClient{cfg: &cfg}, nil
 }
 
 // GetOAuthToken performs the entire OIDC flow using the supplied username and password,
 // and returns an oauth2.Token that can be used to access the API.
-func (o *oidcClient) GetOAuthToken(ctx context.Context, username, password string) (*oauth2.Token, error) {
+func (o *OidcClient) GetOAuthToken(ctx context.Context, username, password string) (*oauth2.Token, error) {
 	interactionURL, err := o.startFlow(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error starting OIDC flow: %w", err)
@@ -95,7 +95,7 @@ func (o *oidcClient) GetOAuthToken(ctx context.Context, username, password strin
 }
 
 // startFlow performs the initial GET request and extracts the interaction URL.
-func (o *oidcClient) startFlow(ctx context.Context) (string, error) {
+func (o *OidcClient) startFlow(ctx context.Context) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", o.cfg.InitialAuthURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating initial GET request: %w", err)
@@ -130,7 +130,7 @@ func (o *oidcClient) startFlow(ctx context.Context) (string, error) {
 }
 
 // login sends the login POST request to /auth/token and returns an authResponse.
-func (o *oidcClient) login(ctx context.Context, username, password string) (*authResponse, error) {
+func (o *OidcClient) login(ctx context.Context, username, password string) (*authResponse, error) {
 	payload := fmt.Sprintf(`{"login": "%s", "password": "%s", "mfaParams": {"login": "%s"}}`, username, password, username)
 	req, err := http.NewRequestWithContext(ctx, "POST", o.cfg.TokenURL, bytes.NewBuffer([]byte(payload)))
 	if err != nil {
@@ -169,7 +169,7 @@ func (o *oidcClient) login(ctx context.Context, username, password string) (*aut
 }
 
 // finalizeInteraction posts the access token to the interaction URL and extracts the authorization code.
-func (o *oidcClient) finalizeInteraction(ctx context.Context, interactionURL, accessToken string) (string, error) {
+func (o *OidcClient) finalizeInteraction(ctx context.Context, interactionURL, accessToken string) (string, error) {
 	formData := url.Values{}
 	formData.Set("access_token", accessToken)
 	formData.Set("state", "lang%3Den%26theme%3Dblack%26return_uri%3Dhttps%3A%2F%2Fwww.sankakucomplex.com%2F")
@@ -210,7 +210,7 @@ func (o *oidcClient) finalizeInteraction(ctx context.Context, interactionURL, ac
 }
 
 // retrieveFinalToken exchanges the authorization code for the final token.
-func (o *oidcClient) retrieveFinalToken(ctx context.Context, code string) (*finalizeResponse, error) {
+func (o *OidcClient) retrieveFinalToken(ctx context.Context, code string) (*finalizeResponse, error) {
 	finalPayload := map[string]string{
 		"code":         code,
 		"client_id":    o.cfg.ClientID,
