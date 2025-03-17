@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -24,7 +23,7 @@ func (a *SankakuComplexApi) addRoundTripper(inner http.RoundTripper) http.RoundT
 func (rt *sankakuComplexAuthorizationRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	token, err := rt.tokenSrc.Token()
 	if err == nil {
-		r.Header.Set("Authorization", fmt.Sprintf("%s %s", token.TokenType, token.AccessToken))
+		r.Header.Set("Authorization", token.TokenType+" "+token.AccessToken)
 	}
 
 	if r.Header.Get("Accept") == "" {

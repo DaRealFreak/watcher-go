@@ -1,11 +1,7 @@
 package api
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
@@ -25,72 +21,48 @@ type SankakuComplexApi struct {
 	moduleKey   string
 }
 
-// loginData is the json struct for the JSON login form
-type loginFormData struct {
-	Username string `json:"login"`
-	Password string `json:"password"`
-}
-
-// loginResponse is the login response during the authentication process
-type loginResponse struct {
-	Success      bool   `json:"success"`
-	TokenType    string `json:"token_type"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-// NewSankakuComplexApi returns the settings of the SankakuComplex API
+// NewSankakuComplexApi returns the settings of the SankakuComplex API.
+// It now uses the new OIDC flow (implemented in the iodc package) to retrieve an OAuth token.
 func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface, account *models.Account) *SankakuComplexApi {
-	var response loginResponse
-
-	if account != nil {
-		// initial request to check for success of login and to retrieve the access/refresh token
-		loginData := loginFormData{}
-		loginData.Username = account.Username
-		loginData.Password = account.Password
-
-		data, _ := json.Marshal(loginData)
-		req, _ := http.NewRequest(
-			"POST",
-			"https://login.sankakucomplex.com/auth/token",
-			bytes.NewReader(data),
-		)
-
-		req.Header.Set("Accept", "application/vnd.sankaku.api+json;v=2")
-		req.Header.Set("Content-Type", "application/json;charset=utf-8")
-
-		res, err := session.GetClient().Do(req)
-		if err != nil {
-			log.WithField("module", moduleKey).Fatalf("login failed with error: %s", err.Error())
-			return nil
-		}
-
-		body, _ := io.ReadAll(res.Body)
-		_ = json.Unmarshal(body, &response)
-	}
-
-	oauthConfig := oauth2.Config{
-		Endpoint: oauth2.Endpoint{
-			AuthURL: "https://login.sankakucomplex.com/auth/token",
-		},
-	}
-
 	ctx := context.Background()
+
+	// OIDC configuration.
+	oidcCfg := Config{
+		InitialAuthURL: "https://login.sankakucomplex.com/oidc/auth?client_id=sankaku-web-app&scope=openid&response_type=code&route=login&theme=black&lang=en&redirect_uri=https%3A%2F%2Fwww.sankakucomplex.com%2Fsso%2Fcallback&state=return_uri%3Dhttps%3A%2F%2Fwww.sankakucomplex.com%2F&is_iframe=true&is_mobile=false",
+		TokenURL:       "https://login.sankakucomplex.com/auth/token",
+		FinalizeURL:    "https://sankakuapi.com/sso/finalize?lang=en",
+		ClientID:       "sankaku-web-app",
+		RedirectURI:    "https://www.sankakucomplex.com/sso/callback",
+	}
+
+	// Create an OIDC client.
+	oidc, err := NewOIDCClient(oidcCfg)
+	if err != nil {
+		log.WithField("module", moduleKey).Warnf("failed to create OIDC client: %s", err.Error())
+		return nil
+	}
+
+	// Use the OIDC flow to get an OAuth token.
+	token, err := oidc.GetOAuthToken(ctx, account.Username, account.Password)
+	if err != nil {
+		log.WithField("module", moduleKey).Warnf("OIDC authentication failed: %s", err.Error())
+		return nil
+	}
+
+	// Create an oauth2.TokenSource using the retrieved token.
+	tokenSrc := oauth2.StaticTokenSource(token)
+
 	api := &SankakuComplexApi{
-		Session: session,
-		tokenSrc: oauthConfig.TokenSource(ctx, &oauth2.Token{
-			AccessToken:  response.AccessToken,
-			TokenType:    response.TokenType,
-			RefreshToken: response.RefreshToken,
-		}),
+		Session:     session,
+		tokenSrc:    tokenSrc,
 		account:     account,
 		rateLimiter: rate.NewLimiter(rate.Every(1*time.Millisecond), 1),
 		ctx:         ctx,
 		moduleKey:   moduleKey,
 	}
 
-	// if the login was successful add our round tripper to add the authorization header on requests
-	if response.Success {
+	// If the token is valid, add a round tripper that injects the Authorization header.
+	if token.AccessToken != "" && token.Valid() {
 		client := session.GetClient()
 		client.Transport = api.addRoundTripper(client.Transport)
 	}
@@ -98,11 +70,11 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface
 	return api
 }
 
+// LoginSuccessful checks if a valid access token exists.
 func (a *SankakuComplexApi) LoginSuccessful() bool {
 	tk, err := a.tokenSrc.Token()
 	if err != nil {
 		return false
 	}
-
 	return tk.AccessToken != "" && tk.Valid()
 }
