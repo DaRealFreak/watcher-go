@@ -28,13 +28,27 @@ type downloadBookItem struct {
 }
 
 type downloadGalleryItem struct {
-	item *models.DownloadQueueItem
+	item    *models.DownloadQueueItem
+	apiData *apiItem
 }
 
-func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, item *models.DownloadQueueItem) (bool, error) {
-	u, err := url.Parse(item.FileURI)
+func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, galleryItem *downloadGalleryItem) (bool, error) {
+	u, err := url.Parse(galleryItem.item.FileURI)
 	if err != nil {
 		return false, err
+	}
+
+	bookResponse, bookErr := m.getBookResponse(galleryItem.apiData.ID)
+	if bookErr != nil {
+		return false, bookErr
+	}
+
+	if bookResponse != nil && bookResponse.Name != "" {
+		galleryItem.item.DownloadTag = path.Join(
+			galleryItem.item.DownloadTag,
+			"books",
+			fp.SanitizePath(fmt.Sprintf("%s (%s)", bookResponse.Name, bookResponse.ID), false),
+		)
 	}
 
 	parsedQuery, _ := url.ParseQuery(u.RawQuery)
@@ -58,22 +72,22 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	err = m.Session.DownloadFile(
-		path.Join(m.GetDownloadDirectory(), m.Key, item.DownloadTag, item.FileName),
-		item.FileURI,
+		path.Join(m.GetDownloadDirectory(), m.Key, galleryItem.item.DownloadTag, galleryItem.item.FileName),
+		galleryItem.item.FileURI,
 	)
 
-	if err != nil && item.FallbackFileURI != "" && item.FallbackFileURI != item.FileURI {
+	if err != nil && galleryItem.item.FallbackFileURI != "" && galleryItem.item.FallbackFileURI != galleryItem.item.FileURI {
 		// fallback to resized image
 		log.WithField("module", m.Key).Warn(
 			fmt.Sprintf("error occurred: %s, using fallback URI", err.Error()),
 		)
 
-		item.FileURI = item.FallbackFileURI
-		ext := fp.GetFileExtension(item.FileName)
-		fileName := strings.TrimRight(item.FileName, ext)
-		item.FileName = fmt.Sprintf("%s_fallback%s", fileName, ext)
+		galleryItem.item.FileURI = galleryItem.item.FallbackFileURI
+		ext := fp.GetFileExtension(galleryItem.item.FileName)
+		fileName := strings.TrimRight(galleryItem.item.FileName, ext)
+		galleryItem.item.FileName = fmt.Sprintf("%s_fallback%s", fileName, ext)
 
-		return m.downloadDownloadQueueItem(trackedItem, item)
+		return m.downloadDownloadQueueItem(trackedItem, galleryItem)
 	}
 
 	if expiration > 0 && time.Now().Unix() >= expiration {
@@ -88,9 +102,9 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 &&
-		item.FallbackFileURI == item.FileURI &&
+		galleryItem.item.FallbackFileURI == galleryItem.item.FileURI &&
 		regexp.MustCompile(`/books\?`).MatchString(trackedItem.URI) {
-		log.WithField("module", m.Key).Warnf("skipping book item: %s, status code was 404", item.ItemID)
+		log.WithField("module", m.Key).Warnf("skipping book galleryItem: %s, status code was 404", galleryItem.item.ItemID)
 		return false, nil
 	}
 
@@ -120,7 +134,7 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 			),
 		)
 
-		if expired, err := m.downloadDownloadQueueItem(trackedItem, data.item); expired || err != nil {
+		if expired, err := m.downloadDownloadQueueItem(trackedItem, data); expired || err != nil {
 			if err != nil {
 				if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 {
 					// continue on 404 errors, since they most likely won't get fixed
@@ -170,7 +184,7 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 				fmt.Sprintf("%s%s (%s)", fp.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
 			)
 
-			if expired, downloadErr := m.downloadDownloadQueueItem(trackedItem, singleItem.item); expired || downloadErr != nil {
+			if expired, downloadErr := m.downloadDownloadQueueItem(trackedItem, singleItem); expired || downloadErr != nil {
 				if downloadErr != nil {
 					return downloadErr
 				}

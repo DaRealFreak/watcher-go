@@ -13,8 +13,8 @@ import (
 )
 
 type apiResponse struct {
-	Meta apiMeta   `json:"meta"`
-	Data []apiItem `json:"data"`
+	Meta apiMeta    `json:"meta"`
+	Data []*apiItem `json:"data"`
 }
 
 type apiMeta struct {
@@ -58,6 +58,16 @@ type apiItem struct {
 	Source           string      `json:"source"`
 	Sequence         json.Number `json:"sequence"`
 	Tags             []apiTag    `json:"tags"`
+	TagNames         []string    `json:"tag_names"`
+}
+
+type apiBookResponse struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	NameEn     string      `json:"name_en"`
+	NameJa     string      `json:"name_ja"`
+	PostCount  json.Number `json:"post_count"`
+	PagesCount json.Number `json:"pages_count"`
 }
 
 // apiAuthor is the JSON struct of author objects returned by the API
@@ -140,12 +150,18 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 							ItemID: strconv.FormatInt(data.CreatedAt.S, 10),
 							DownloadTag: path.Join(
 								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(item), false)),
-								m.getTagSubDirectory(data),
+								// m.getTagSubDirectory(data),
 							),
-							FileName:        strconv.FormatInt(data.CreatedAt.S, 10) + "_" + fp.GetFileName(data.FileURL),
+							FileName: fmt.Sprintf(
+								"%d_%s_%s",
+								data.CreatedAt.S,
+								fp.GetFileName(data.ID),
+								fp.GetFileName(data.FileURL),
+							),
 							FileURI:         data.FileURL,
 							FallbackFileURI: data.SampleURL,
 						},
+						apiData: data,
 					})
 				}
 			} else {
@@ -180,10 +196,33 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) (string, error
 	return q["tags"][0], nil
 }
 
+func (m *sankakuComplex) getBookResponse(postId string) (*apiBookResponse, error) {
+	apiURI := fmt.Sprintf(
+		"https://sankakuapi.com/post/%s/pools?lang=en",
+		url.QueryEscape(postId),
+	)
+
+	response, responseErr := m.Session.Get(apiURI)
+	if responseErr != nil {
+		return nil, responseErr
+	}
+
+	var booksResponse []apiBookResponse
+	if err := m.parseAPIResponse(response, &booksResponse); err != nil {
+		return nil, err
+	}
+
+	if len(booksResponse) == 0 {
+		return nil, nil
+	}
+
+	return &booksResponse[0], nil
+}
+
 // getTagSubDirectory returns possible subdirectories since the books got kinda overhand
-func (m *sankakuComplex) getTagSubDirectory(item apiItem) string {
+func (m *sankakuComplex) getTagSubDirectory(item *apiItem) string {
 	for _, tag := range item.Tags {
-		if tag.NameEn == "doujinshi" {
+		if tag.NameEn == "doujinshi" || tag.NameEn == "comic" {
 			return "book"
 		}
 	}
