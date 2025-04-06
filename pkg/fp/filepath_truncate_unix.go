@@ -7,10 +7,22 @@ import (
 	"strings"
 )
 
-// TruncateMaxLength checks for length of the passed path part to ensure the max path length
-func TruncateMaxLength(s string) string {
-	if 4096 > len(s) {
+// TruncateMaxLength ensures the string does not exceed the maximum path length (4096)
+// minus any reserved characters. The reserved parameter is optional and defaults to 0.
+func TruncateMaxLength(s string, reserved ...int) string {
+	reserve := 0
+	if len(reserved) > 0 {
+		reserve = reserved[0]
+	}
+	allowed := 4096 - reserve
+
+	if len(s) < allowed {
 		return s
 	}
-	return s[:strings.LastIndex(s[:4096], " ")]
+
+	if idx := strings.LastIndex(s[:allowed], " "); idx != -1 {
+		return s[:idx]
+	}
+
+	return s[:allowed]
 }
