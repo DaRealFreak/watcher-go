@@ -24,7 +24,7 @@ type downloadBookItem struct {
 	bookId       string
 	bookName     string
 	bookLanguage []string
-	items        []*downloadGalleryItem
+	bookApiItem  bookApiItem
 }
 
 type downloadGalleryItem struct {
@@ -44,11 +44,20 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	if bookResponse != nil && bookResponse.Name != "" {
-		galleryItem.item.DownloadTag = path.Join(
-			galleryItem.item.DownloadTag,
-			"books",
-			fp.SanitizePath(fmt.Sprintf("%s (%s)", bookResponse.Name, bookResponse.ID), false),
-		)
+		if !strings.Contains(galleryItem.item.DownloadTag, "/books/") {
+			idString := fmt.Sprintf(" (%v)", bookResponse.ID)
+			galleryItem.item.DownloadTag = path.Join(
+				galleryItem.item.DownloadTag,
+				"books",
+				fmt.Sprintf("%s%s",
+					fp.TruncateMaxLength(
+						fp.SanitizePath(fmt.Sprintf("%s", bookResponse.Name), false),
+						len(idString),
+					),
+					idString,
+				),
+			)
+		}
 	}
 
 	parsedQuery, _ := url.ParseQuery(u.RawQuery)
@@ -176,12 +185,26 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 			bookLanguage = fmt.Sprintf(" [%s]", strings.Join(data.bookLanguage, ", "))
 		}
 
-		for i, singleItem := range data.items {
+		tmpDownloadQueue, err := m.extractBookItems(data.bookApiItem)
+		if err != nil {
+			return err
+		}
+
+		for i, singleItem := range tmpDownloadQueue {
+			idString := fmt.Sprintf("%s (%s)", bookLanguage, data.bookId)
+			bookFolder := fmt.Sprintf("%s%s",
+				fp.TruncateMaxLength(
+					fp.SanitizePath(data.bookName, false),
+					len(idString),
+				),
+				idString,
+			)
+
 			singleItem.item.FileName = fmt.Sprintf("%d_%s", i+1, singleItem.item.FileName)
 			singleItem.item.DownloadTag = fmt.Sprintf("%s/%s/%s",
 				fp.SanitizePath(tagName, false),
 				"books",
-				fmt.Sprintf("%s%s (%s)", fp.SanitizePath(data.bookName, false), bookLanguage, data.bookId),
+				bookFolder,
 			)
 
 			if expired, downloadErr := m.downloadDownloadQueueItem(trackedItem, singleItem); expired || downloadErr != nil {
@@ -189,9 +212,7 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 					return downloadErr
 				}
 				// on no error we still break the download queue after we ran into expired links
-				if expired {
-					return m.Parse(trackedItem)
-				}
+				return m.Parse(trackedItem)
 			}
 		}
 

@@ -74,6 +74,8 @@ type apiBookResponse struct {
 type apiAuthor struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
+	DisplayName  string `json:"display_name"`
+	Level        int    `json:"level"`
 	Avatar       string `json:"avatar"`
 	AvatarRating string `json:"avatar_rating"`
 }
@@ -87,16 +89,24 @@ type apiCreated struct {
 
 // apiTag is the JSON struct of tag objects returned by the API
 type apiTag struct {
-	ID        string `json:"id"`
-	NameEn    string `json:"name_en"`
-	NameJa    string `json:"name_ja"`
-	Type      int    `json:"type"`
-	Count     int    `json:"count"`
-	PostCount int    `json:"post_count"`
-	PoolCount int    `json:"pool_count"`
-	Locale    string `json:"locale"`
-	Rating    string `json:"rating"`
-	Name      string `json:"name"`
+	ID                  string `json:"id"`
+	NameEn              string `json:"name_en"`
+	NameJa              string `json:"name_ja"`
+	Type                int    `json:"type"`
+	Count               int    `json:"count"`
+	PostCount           int    `json:"post_count"`
+	PoolCount           int    `json:"pool_count"`
+	CompanionCount      int    `json:"companion_count"`
+	SeriesCount         int    `json:"series_count"`
+	Locale              string `json:"locale"`
+	Rating              string `json:"rating"`
+	Version             *int   `json:"version"`
+	TagName             string `json:"tagName"`
+	TotalPostCount      int    `json:"total_post_count"`
+	TotalPoolCount      int    `json:"total_pool_count"`
+	IsFollowing         bool   `json:"is_following"`
+	NotificationEnabled bool   `json:"notification_enabled"`
+	Name                string `json:"name"`
 }
 
 // parseGallery parses galleries based on the tags in the tracked item

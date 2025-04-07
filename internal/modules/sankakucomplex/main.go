@@ -100,7 +100,7 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 	}
 
 	bookPattern := regexp.MustCompile(`/books\?`)
-	singleBookPattern := regexp.MustCompile(`/books/(\d+)`)
+	singleBookPattern := regexp.MustCompile(`/books/(\w+)`)
 	wikiPattern := regexp.MustCompile(`/wiki`)
 
 	itemDownloadQueue := &downloadQueue{}

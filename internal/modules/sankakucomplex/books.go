@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -17,19 +18,60 @@ import (
 const LanguageMetaType = 8
 
 type bookApiResponse struct {
+	Pools  poolsResponse  `json:"pools"`
+	Series seriesResponse `json:"series"`
+	Page   int            `json:"page"`
+}
+
+type poolsResponse struct {
 	Meta apiMeta       `json:"meta"`
 	Data []bookApiItem `json:"data"`
 }
 
 // apiItem is the JSON struct of item objects returned by the API
 type bookApiItem struct {
-	ID        string     `json:"id"`
-	CreatedAt apiCreated `json:"created_at"`
-	NameEn    *string    `json:"name_en"`
-	NameJa    *string    `json:"name_ja"`
-	Author    apiAuthor  `json:"author"`
-	Tags      []*apiTag  `json:"tags"`
-	Posts     []*apiItem `json:"posts"`
+	ID               string     `json:"id"`
+	NameEn           *string    `json:"name_en"`
+	NameJa           *string    `json:"name_ja"`
+	Description      string     `json:"description"`
+	DescriptionEn    *string    `json:"description_en"`
+	DescriptionJa    *string    `json:"description_ja"`
+	CreatedAt        string     `json:"created_at"`
+	UpdatedAt        string     `json:"updated_at"`
+	Author           apiAuthor  `json:"author"`
+	Status           string     `json:"status"`
+	PostCount        int        `json:"post_count"`
+	PagesCount       int        `json:"pages_count"`
+	VisiblePostCount int        `json:"visible_post_count"`
+	Tags             []*apiTag  `json:"tags"`
+	PostTags         []*apiTag  `json:"post_tags"`
+	ArtistTags       []*apiTag  `json:"artist_tags"`
+	GenreTags        []*apiTag  `json:"genre_tags"`
+	Posts            []*apiItem `json:"posts"`
+	FileURL          *string    `json:"file_url"`
+	SampleURL        *string    `json:"sample_url"`
+	PreviewURL       *string    `json:"preview_url"`
+	IsPremium        bool       `json:"is_premium"`
+	IsAnonymous      bool       `json:"is_anonymous"`
+	RedirectToSignup bool       `json:"redirect_to_signup"`
+	Locale           string     `json:"locale"`
+	IsPublic         bool       `json:"is_public"`
+	IsIntact         bool       `json:"is_intact"`
+	IsRaw            bool       `json:"is_raw"`
+	IsTrial          bool       `json:"is_trial"`
+	IsPending        bool       `json:"is_pending"`
+	IsActive         bool       `json:"is_active"`
+	IsFlagged        bool       `json:"is_flagged"`
+	IsDeleted        bool       `json:"is_deleted"`
+	Name             string     `json:"name"`
+}
+
+type seriesResponse struct {
+	Data       []series `json:"data"`
+	TotalCount int      `json:"totalCount"`
+}
+
+type series struct {
 }
 
 // parseAPIBookResponse parses the book response from the API
@@ -92,18 +134,18 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 		return nil, err
 	}
 
+	bookCreatedAtLayout := "2006-01-02 15:04"
+
 	tag := originalTag
-	nextItem := ""
+	page := 1
 	foundCurrentItem := false
 
 	for !foundCurrentItem {
 		apiURI := fmt.Sprintf(
-			"https://sankakuapi.com/pools/keyset?lang=en&limit=100&includes[]=series&tags=%s&pool_type=0",
+			"https://sankakuapi.com/poolseriesv2?lang=en&filledPools=true&offset=0&limit=100&tags=order:date+%s&page=%d&includes[]=pools&exceptStatuses[]=deleted",
 			url.QueryEscape(tag),
+			page,
 		)
-		if nextItem != "" {
-			apiURI = fmt.Sprintf("%s&next=%s", apiURI, nextItem)
-		}
 
 		response, err := m.Session.Get(apiURI)
 		if err != nil {
@@ -115,28 +157,27 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 			return nil, err
 		}
 
-		nextItem = apiGalleryResponse.Meta.Next
-
-		for _, data := range apiGalleryResponse.Data {
-			itemTimestamp := data.CreatedAt.S
+		for _, data := range apiGalleryResponse.Pools.Data {
+			itemTime, timeErr := time.Parse(bookCreatedAtLayout, data.CreatedAt)
+			if timeErr != nil {
+				return nil, fmt.Errorf("error parsing book created at time: %w (%s)",
+					timeErr,
+					data.CreatedAt,
+				)
+			}
 
 			currentItemTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
-			if item.CurrentItem == "" || itemTimestamp > currentItemTimestamp {
-				tmpDownloadQueue, err := m.extractBookItems(data)
-				if err != nil {
-					return downloadBookItems, err
-				}
-
+			if item.CurrentItem == "" || itemTime.Unix() > currentItemTimestamp {
 				bookTag := m.extractBookName(data)
 				if bookTag == "" {
 					return nil, fmt.Errorf("no book tag could be extracted for book with id: %s", data.ID)
 				}
 
 				downloadBookItems = append(downloadBookItems, &downloadBookItem{
-					bookId:       strconv.FormatInt(data.CreatedAt.S, 10),
+					bookId:       strconv.FormatInt(itemTime.Unix(), 10),
 					bookName:     bookTag,
 					bookLanguage: m.extractLanguage(data),
-					items:        tmpDownloadQueue,
+					bookApiItem:  data,
 				})
 			} else {
 				foundCurrentItem = true
@@ -145,9 +186,11 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 		}
 
 		// we reached the last possible page, break here
-		if len(apiGalleryResponse.Data) == 0 || nextItem == "" {
+		if apiGalleryResponse.Pools.Meta.Next == "" {
 			break
 		}
+
+		page++
 	}
 
 	// reverse download queue to download old items first
@@ -160,7 +203,7 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 
 func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string) (galleryItems []*downloadGalleryItem, err error) {
 	apiURI := fmt.Sprintf(
-		"https://capi-v2.sankakucomplex.com/pools/%s?lang=en&includes[]=series",
+		"https://sankakuapi.com/pools/%s?lang=en&includes[]=series",
 		url.QueryEscape(bookId),
 	)
 
@@ -169,23 +212,23 @@ func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string
 		return nil, err
 	}
 
-	var apiBookResponse bookApiItem
-	if err = m.parseAPIResponse(response, &apiBookResponse); err != nil {
+	var bookResponse bookApiItem
+	if err = m.parseAPIResponse(response, &bookResponse); err != nil {
 		return nil, err
 	}
 
-	bookTag := m.extractBookName(apiBookResponse)
+	bookTag := m.extractBookName(bookResponse)
 	if bookTag == "" {
-		return nil, fmt.Errorf("no book tag could be extracted for book with id: %s", apiBookResponse.ID)
+		return nil, fmt.Errorf("no book tag could be extracted for book with id: %s", bookResponse.ID)
 	}
 
-	bookLanguages := m.extractLanguage(apiBookResponse)
+	bookLanguages := m.extractLanguage(bookResponse)
 	bookLanguage := ""
 	if len(bookLanguages) > 0 {
 		bookLanguage = fmt.Sprintf(" [%s]", strings.Join(bookLanguages, ", "))
 	}
 
-	for i, galleryItem := range apiBookResponse.Posts {
+	for i, galleryItem := range bookResponse.Posts {
 		itemTimestamp := galleryItem.CreatedAt.S
 
 		currentItemTimestamp, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
