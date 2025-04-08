@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,8 +13,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
-
-const LanguageMetaType = 8
 
 type bookApiResponse struct {
 	Pools  poolsResponse  `json:"pools"`
@@ -98,6 +95,11 @@ func (m *sankakuComplex) extractBookItems(data bookApiItem) (downloadQueue []*do
 		return downloadQueue, err
 	}
 
+	// reverse download queue to download old items first
+	for i, j := 0, len(tmpDownloadQueue)-1; i < j; i, j = i+1, j-1 {
+		tmpDownloadQueue[i], tmpDownloadQueue[j] = tmpDownloadQueue[j], tmpDownloadQueue[i]
+	}
+
 	return tmpDownloadQueue, nil
 }
 
@@ -114,12 +116,91 @@ func (m *sankakuComplex) extractBookName(bookResponse bookApiItem) (bookTag stri
 }
 
 func (m *sankakuComplex) extractLanguage(apiResponse bookApiItem) (languageTags []string) {
-	languageTagPattern := regexp.MustCompile("(.*)_language")
+	// Mapping from the server key to the original display text.
+	originalLanguages := map[string]string{
+		"arabic_language":                        "Arabic",
+		"english_language":                       "English",
+		"japanese_language":                      "日本語",
+		"bulgarian_language":                     "Български",
+		"danish_language":                        "Dansk",
+		"german_language":                        "Deutsch",
+		"greek_language":                         "Ελληνικά",
+		"spanish_language":                       "Español",
+		"finnish_language":                       "Suomi",
+		"french_language":                        "Français",
+		"hindi_language":                         "हिन्दी",
+		"hungarian_language":                     "Magyar",
+		"indonesian_language":                    "Bahasa Indonesia",
+		"italian_language":                       "Italiano",
+		"malay_language":                         "Bahasa Melayu",
+		"dutch_language":                         "Nederlands",
+		"norwegian_language":                     "Norsk",
+		"polish_language":                        "Polski",
+		"portuguese_language":                    "Português",
+		"korean_language":                        "한국어",
+		"romanian_language":                      "Română",
+		"russian_language":                       "Русский",
+		"vatican_language":                       "Vatican",
+		"swedish_language":                       "Svenska",
+		"thai_language":                          "ไทย",
+		"turkish_language":                       "Türkçe",
+		"chinese_language":                       "中文",
+		"traditional_chinese_hong_kong_language": "正體字（香港）",
+		"traditional_chinese_taiwan_language":    "正體字（台湾）",
+		"vietnamese_language":                    "Tiếng Việt",
+	}
+
+	// Mapping from the same server keys to their plain English names.
+	englishNames := map[string]string{
+		"arabic_language":                        "Arabic",
+		"english_language":                       "English",
+		"japanese_language":                      "Japanese",
+		"bulgarian_language":                     "Bulgarian",
+		"danish_language":                        "Danish",
+		"german_language":                        "German",
+		"greek_language":                         "Greek",
+		"spanish_language":                       "Spanish",
+		"finnish_language":                       "Finnish",
+		"french_language":                        "French",
+		"hindi_language":                         "Hindi",
+		"hungarian_language":                     "Hungarian",
+		"indonesian_language":                    "Indonesian",
+		"italian_language":                       "Italian",
+		"malay_language":                         "Malay",
+		"dutch_language":                         "Dutch",
+		"norwegian_language":                     "Norwegian",
+		"polish_language":                        "Polish",
+		"portuguese_language":                    "Portuguese",
+		"korean_language":                        "Korean",
+		"romanian_language":                      "Romanian",
+		"russian_language":                       "Russian",
+		"vatican_language":                       "Vatican",
+		"swedish_language":                       "Swedish",
+		"thai_language":                          "Thai",
+		"turkish_language":                       "Turkish",
+		"chinese_language":                       "Chinese",
+		"traditional_chinese_hong_kong_language": "Traditional Chinese (Hong Kong)",
+		"traditional_chinese_taiwan_language":    "Traditional Chinese (Taiwan)",
+		"vietnamese_language":                    "Vietnamese",
+	}
+
+	// Create a combined lookup map that stores keys in all lower-case.
+	lookup := make(map[string]string)
+	for serverKey, original := range originalLanguages {
+		lookup[strings.ToLower(serverKey)] = original
+		if eng, ok := englishNames[serverKey]; ok {
+			lookup[strings.ToLower(eng)] = original
+		}
+	}
+
+	// Helper function that does case-insensitive lookup.
+	getOriginalDisplay := func(key string) string {
+		return lookup[strings.ToLower(key)]
+	}
+
 	for _, tag := range apiResponse.Tags {
-		if tag.Type == LanguageMetaType {
-			if languageTagPattern.MatchString(tag.Name) {
-				languageTags = append(languageTags, languageTagPattern.FindStringSubmatch(tag.Name)[1])
-			}
+		if getOriginalDisplay(tag.TagName) != "" {
+			languageTags = append(languageTags, getOriginalDisplay(tag.TagName))
 		}
 	}
 

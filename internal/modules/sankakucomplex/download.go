@@ -182,7 +182,17 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 
 		bookLanguage := ""
 		if len(data.bookLanguage) > 0 {
-			bookLanguage = fmt.Sprintf(" [%s]", strings.Join(data.bookLanguage, ", "))
+			// remove book languages already in the book name
+			var cleanedLanguages []string
+			for _, lang := range data.bookLanguage {
+				if !strings.Contains(strings.ToLower(data.bookName), strings.ToLower(lang)) {
+					cleanedLanguages = append(cleanedLanguages, lang)
+				}
+			}
+			// only add the book language if we have any left
+			if len(cleanedLanguages) > 0 {
+				bookLanguage = fmt.Sprintf(" [%s]", strings.Join(cleanedLanguages, ", "))
+			}
 		}
 
 		tmpDownloadQueue, err := m.extractBookItems(data.bookApiItem)
@@ -191,7 +201,7 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		}
 
 		for i, singleItem := range tmpDownloadQueue {
-			idString := fmt.Sprintf("%s (%s)", bookLanguage, data.bookId)
+			idString := fmt.Sprintf("%s (%s)", bookLanguage, data.bookApiItem.ID)
 			bookFolder := fmt.Sprintf("%s%s",
 				fp.TruncateMaxLength(
 					fp.SanitizePath(data.bookName, false),
