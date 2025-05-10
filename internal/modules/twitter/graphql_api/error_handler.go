@@ -65,7 +65,7 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 		return RateLimitError{}, false
 	case response.StatusCode == 403:
 		if e.hasSetCookieHeader(response) {
-			// simply retry if we first had to refresh/set cookies
+			// retry if we first had to refresh/set cookies
 			return CSRFError{}, false
 		} else {
 			return DMCAError{}, true

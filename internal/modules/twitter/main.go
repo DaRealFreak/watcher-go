@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -93,9 +92,7 @@ func (m *twitter) InitializeModule() {
 		m.twitterGraphQlAPI.AddRoundTrippers()
 
 		if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
-			requestUrl, _ := url.Parse("https://x.com/")
-			m.twitterGraphQlAPI.Session.GetClient().Jar.SetCookies(
-				requestUrl,
+			m.twitterGraphQlAPI.SetCookies(
 				[]*http.Cookie{
 					{
 						Name:   "auth_token",
@@ -106,6 +103,14 @@ func (m *twitter) InitializeModule() {
 			)
 		} else {
 			// ToDo: guest cookie
+		}
+
+		if err := m.twitterGraphQlAPI.InitializeSession(); err != nil {
+			log.WithField("module", m.Key).Fatalf(
+				"unable to initialize graphQL session: %s", err.Error(),
+			)
+			// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
+			os.Exit(1)
 		}
 	}
 }

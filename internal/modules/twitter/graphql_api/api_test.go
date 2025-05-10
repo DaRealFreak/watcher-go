@@ -3,7 +3,6 @@ package graphql_api
 import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"net/http"
-	"net/url"
 	"os"
 	"testing"
 
@@ -19,18 +18,17 @@ func TestMain(m *testing.M) {
 	// initialize the shared API instance
 	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{})
 	twitterAPI.AddRoundTrippers()
-
-	requestUrl, _ := url.Parse("https://x.com/")
-	twitterAPI.Session.GetClient().Jar.SetCookies(
-		requestUrl,
-		[]*http.Cookie{
-			{
-				Name:   "auth_token",
-				Value:  os.Getenv("TWITTER_AUTH_COOKIE"),
-				MaxAge: 0,
-			},
+	twitterAPI.SetCookies([]*http.Cookie{
+		{
+			Name:   "auth_token",
+			Value:  os.Getenv("TWITTER_AUTH_COOKIE"),
+			MaxAge: 0,
 		},
-	)
+	})
+	err := twitterAPI.InitializeSession()
+	if err != nil {
+		panic(err)
+	}
 
 	// run the unit tests
 	os.Exit(m.Run())
