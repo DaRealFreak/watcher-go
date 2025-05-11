@@ -167,6 +167,16 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 
 				return a.apiGET(apiRequestURL, values)
 			}
+		case SessionRefreshError:
+			log.WithField("module", a.moduleKey).Warnf(
+				fmt.Sprintf(
+					"received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
+					requestURL.String(),
+				),
+			)
+			if err = a.InitializeSession(); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -214,6 +224,16 @@ func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*h
 				}
 
 				return a.apiPOST(apiRequestURL, values)
+			}
+		case SessionRefreshError:
+			log.WithField("module", a.moduleKey).Warnf(
+				fmt.Sprintf(
+					"received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
+					requestURL.String(),
+				),
+			)
+			if err = a.InitializeSession(); err != nil {
+				return nil, err
 			}
 		}
 	}

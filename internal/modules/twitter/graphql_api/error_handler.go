@@ -48,6 +48,14 @@ func (e SessionTerminatedError) Error() string {
 	return "session got terminated"
 }
 
+type SessionRefreshError struct {
+	error
+}
+
+func (e SessionRefreshError) Error() string {
+	return "session requires a refresh for x-transaction-id to be valid again"
+}
+
 type TwitterErrorHandler struct{}
 
 func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, fatal bool) {
@@ -73,6 +81,8 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 	case response.StatusCode == 404:
 		if strings.Contains(response.Request.URL.Hostname(), ".twimg.com") {
 			return DeletedMediaError{}, true
+		} else if strings.Contains(response.Request.URL.String(), "/i/api/graphql/") {
+			return SessionRefreshError{}, false
 		}
 	}
 
