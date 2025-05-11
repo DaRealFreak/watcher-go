@@ -82,7 +82,7 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 		if strings.Contains(response.Request.URL.Hostname(), ".twimg.com") {
 			return DeletedMediaError{}, true
 		} else if strings.Contains(response.Request.URL.String(), "/i/api/graphql/") {
-			return SessionRefreshError{}, false
+			return SessionRefreshError{}, true
 		}
 	}
 
