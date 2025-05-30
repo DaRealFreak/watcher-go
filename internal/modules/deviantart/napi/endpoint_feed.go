@@ -14,7 +14,7 @@ func (a *DeviantartNAPI) DeviationsFeed(cursor string) (*SearchResponse, error) 
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/networkbar/rfy/deviations?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

@@ -28,9 +28,9 @@ func (m *deviantArt) initializeProxySessions() {
 	for _, proxy := range m.settings.LoopProxies {
 		singleSession := session.NewSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-		// copy login cookies for session
-		singleSession.Client.Jar.SetCookies(daWwwURL, m.nAPI.UserSession.GetClient().Jar.Cookies(daWwwURL))
-		singleSession.Client.Jar.SetCookies(daURL, m.nAPI.UserSession.GetClient().Jar.Cookies(daURL))
+		// copy login cookies for the session
+		singleSession.Client.SetCookies(daWwwURL, m.nAPI.UserSession.GetClient().GetCookies(daWwwURL))
+		singleSession.Client.SetCookies(daURL, m.nAPI.UserSession.GetClient().GetCookies(daURL))
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
 			inUse:         false,

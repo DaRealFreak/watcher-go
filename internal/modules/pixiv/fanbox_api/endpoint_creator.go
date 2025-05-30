@@ -62,7 +62,7 @@ func (u *FanboxUser) GetUserTag() string {
 func (a *FanboxAPI) GetCreator(creatorId string) (*CreatorInfo, error) {
 	var info CreatorInfo
 
-	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/creator.get?creatorId=%s", creatorId))
+	res, err := a.get(fmt.Sprintf("https://api.fanbox.cc/creator.get?creatorId=%s", creatorId))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (a *FanboxAPI) GetPostPagination(creatorId string) (*PostPagination, error)
 
 	var postPagination PostPagination
 
-	res, err := a.Session.Get(apiURL)
+	res, err := a.get(apiURL)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, m
 func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfoSinglePage, error) {
 	var postInfoSinglePage PostInfoSinglePage
 
-	res, err := a.Session.Get(url)
+	res, err := a.get(url)
 	if err != nil {
 		return nil, err
 	}

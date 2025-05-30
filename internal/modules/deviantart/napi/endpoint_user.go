@@ -33,7 +33,7 @@ func (a *DeviantartNAPI) UserInfo(username string, expand string) (*UserInfo, er
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dashared/user/info?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (a *DeviantartNAPI) GalleriesOverviewUser(username string, deviationsLimit 
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dauserprofile/init/gallery?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (a *DeviantartNAPI) FavoritesOverviewUser(username string, deviationsLimit 
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dauserprofile/init/favourites?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (a *DeviantartNAPI) FavoritesUser(username string, folder int, offset int, 
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/contents?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (a *DeviantartNAPI) DeviationsUser(username string, folder int, offset int,
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/contents?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

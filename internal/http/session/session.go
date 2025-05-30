@@ -4,9 +4,10 @@ package session
 import (
 	"context"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"io"
-	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
@@ -15,14 +16,13 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 )
 
 // DefaultSession is an extension to the implemented SessionInterface for HTTP sessions
 type DefaultSession struct {
 	watcherHttp.Session
-	Client             *http.Client
+	Client             tls_client.HttpClient
 	RateLimiter        *rate.Limiter
 	ErrorHandlers      []watcherHttp.ErrorHandler
 	MaxRetries         int
@@ -32,16 +32,21 @@ type DefaultSession struct {
 
 // NewSession initializes a new session and sets all the required headers etc
 func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *DefaultSession {
-	jar, _ := cookiejar.New(nil)
+	jar := tls_client.NewCookieJar()
 	if len(errorHandlers) == 0 {
 		errorHandlers = []watcherHttp.ErrorHandler{DefaultErrorHandler{}}
 	}
 
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithClientProfile(profiles.Firefox_135),
+		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
+	}
+
+	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+
 	app := DefaultSession{
-		Client: &http.Client{
-			Jar:       jar,
-			Transport: http.DefaultTransport,
-		},
+		Client:             client,
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
 		MaxDownloadRetries: 3,
@@ -103,15 +108,19 @@ func (s *DefaultSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandl
 
 // Post sends a POST request, returns the occurred error if something went wrong even after multiple tries
 func (s *DefaultSession) Post(uri string, data url.Values, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
-	// post the request with the retries option
+	formBody := data.Encode() // "k=v&x=y"
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
 		log.WithField("module", s.ModuleKey).Debug(
-			fmt.Sprintf("opening POST uri \"%s\" (try: %d)", uri, try),
+			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
 		)
 
-		response, err = s.Client.PostForm(uri, data)
+		// use the generic Post method on the TLS-Client interface:
+		response, err = s.Client.Post(uri,
+			"application/x-www-form-urlencoded",
+			strings.NewReader(formBody),
+		)
 		fatal := false
 		// check session registered error handlers
 		if err == nil {
@@ -140,11 +149,52 @@ func (s *DefaultSession) Post(uri string, data url.Values, errorHandlers ...watc
 		if err == nil {
 			break
 		}
-
-		// any other error falls into the retry clause
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
+	return response, err
+}
 
+// Do function handles the passed request, returns the occurred error if something went wrong even after multiple tries
+func (s *DefaultSession) Do(req *http.Request, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
+	for try := 1; try <= s.MaxRetries; try++ {
+		s.ApplyRateLimit()
+
+		log.WithField("module", s.ModuleKey).Debug(
+			fmt.Sprintf("opening %s uri \"%s\" (try: %d)", req.Method, req.URL.String(), try),
+		)
+
+		// use the generic Post method on the TLS-Client interface:
+		response, err = s.Client.Do(req)
+		fatal := false
+		// check session registered error handlers
+		if err == nil {
+			for _, errorHandler := range s.ErrorHandlers {
+				if err, fatal = errorHandler.CheckResponse(response); err != nil {
+					break
+				}
+			}
+		}
+
+		// check request registered error handlers
+		if err == nil {
+			for _, errorHandler := range errorHandlers {
+				if err, fatal = errorHandler.CheckResponse(response); err != nil {
+					break
+				}
+			}
+		}
+
+		// fatal error we can instantly return without retry
+		if err != nil && fatal {
+			return response, err
+		}
+
+		// no more errors, we can break out of the loop here
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(try+1) * time.Second)
+	}
 	return response, err
 }
 
@@ -234,87 +284,57 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandl
 }
 
 // GetClient returns the used *http.Client, required f.e. to manually set cookies
-func (s *DefaultSession) GetClient() *http.Client {
+func (s *DefaultSession) GetClient() tls_client.HttpClient {
 	return s.Client
 }
 
 // SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
-func (s *DefaultSession) SetClient(client *http.Client) {
+func (s *DefaultSession) SetClient(client tls_client.HttpClient) {
 	s.Client = client
+}
+
+func (s *DefaultSession) GetCookies(u *url.URL) []*http.Cookie {
+	return s.Client.GetCookies(u)
+}
+
+func (s *DefaultSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
+	// set the cookies for the given URL
+	s.Client.SetCookies(u, cookies)
 }
 
 // ApplyRateLimit waits for the leaky bucket to fill again
 func (s *DefaultSession) ApplyRateLimit() {
-	// if no rate limiter is defined we don't have to wait
+	// if no rate limiter is defined, we don't have to wait
 	if s.RateLimiter != nil {
-		// wait for request to stay within the rate limit
+		// wait for the request to stay within the rate limit
 		err := s.RateLimiter.Wait(s.ctx)
 		raven.CheckError(err)
 	}
 }
 
 // SetProxy sets the current proxy for the client
-func (s *DefaultSession) SetProxy(proxySettings *watcherHttp.ProxySettings) (err error) {
-	if proxySettings != nil && proxySettings.Enable {
-		log.WithField("module", s.ModuleKey).Infof(
-			"setting proxy: [%s:%d]", proxySettings.Host, proxySettings.Port,
-		)
-
-		var proxyType string
-
-		switch strings.ToUpper(proxySettings.Type) {
-		case "SOCKS5":
-			proxyType = "socks5"
-		case "HTTP":
-			proxyType = "http"
-		case "HTTPS", "":
-			proxyType = "https"
-		default:
-			return fmt.Errorf("unknown proxy type: %s", proxySettings.Type)
-		}
-
-		switch proxyType {
-		case "socks5":
-			auth := proxy.Auth{
-				User:     proxySettings.Username,
-				Password: proxySettings.Password,
-			}
-
-			dialer, err := proxy.SOCKS5(
-				"tcp",
-				fmt.Sprintf("%s:%d", proxySettings.Host, proxySettings.Port),
-				&auth,
-				proxy.Direct,
-			)
-			if err != nil {
-				return err
-			}
-
-			s.GetClient().Transport = &http.Transport{Dial: dialer.Dial}
-		default:
-			var proxyURL *url.URL
-
-			if proxySettings.Username != "" && proxySettings.Password != "" {
-				proxyURL, _ = url.Parse(
-					fmt.Sprintf(
-						"%s://%s:%s@%s:%d",
-						proxyType,
-						url.QueryEscape(proxySettings.Username), url.QueryEscape(proxySettings.Password),
-						url.QueryEscape(proxySettings.Host), proxySettings.Port,
-					),
-				)
-			} else {
-				proxyURL, _ = url.Parse(
-					fmt.Sprintf(
-						"%s://%s:%d",
-						proxyType, url.QueryEscape(proxySettings.Host), proxySettings.Port,
-					),
-				)
-			}
-
-			s.GetClient().Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
-		}
+func (s *DefaultSession) SetProxy(ps *watcherHttp.ProxySettings) error {
+	if ps == nil || !ps.Enable {
+		return s.Client.SetProxy("")
 	}
 
-	return nil
+	proxyType := strings.ToLower(ps.Type)
+	if proxyType == "" {
+		proxyType = "https"
+	}
+
+	auth := ""
+	if ps.Username != "" && ps.Password != "" {
+		auth = url.QueryEscape(ps.Username) + ":" +
+			url.QueryEscape(ps.Password) + "@"
+	}
+	proxyURL := fmt.Sprintf(
+		"%s://%s%s:%d",
+		proxyType,
+		auth,
+		url.QueryEscape(ps.Host),
+		ps.Port,
+	)
+
+	return s.Client.SetProxy(proxyURL)
 }

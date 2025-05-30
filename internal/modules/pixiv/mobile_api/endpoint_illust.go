@@ -40,7 +40,7 @@ func (a *MobileAPI) GetIllustDetail(illustID int) (*IllustDetail, error) {
 	}
 	apiURL.RawQuery = data.Encode()
 
-	res, err := a.Session.Get(apiURL.String())
+	res, err := a.Get(apiURL.String())
 	if err != nil {
 		return nil, err
 	}

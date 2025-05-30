@@ -4,8 +4,9 @@ package http
 import (
 	"compress/gzip"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,14 +22,17 @@ import (
 type SessionInterface interface {
 	Get(uri string, errorHandlers ...ErrorHandler) (response *http.Response, err error)
 	Post(uri string, data url.Values, errorHandlers ...ErrorHandler) (response *http.Response, err error)
+	Do(req *http.Request, errorHandlers ...ErrorHandler) (response *http.Response, err error)
 	DownloadFile(filepath string, uri string, errorHandlers ...ErrorHandler) (err error)
 	DownloadFileFromResponse(response *http.Response, filepath string, errorHandlers ...ErrorHandler) (err error)
 	EnsureDownloadDirectory(fileName string)
 	GetDocument(response *http.Response) *goquery.Document
-	GetClient() *http.Client
+	GetClient() tls_client.HttpClient
 	UpdateTreeFolderChangeTimes(filePath string)
 	SetProxy(proxySettings *ProxySettings) (err error)
-	SetClient(client *http.Client)
+	SetClient(client tls_client.HttpClient)
+	GetCookies(u *url.URL) []*http.Cookie
+	SetCookies(u *url.URL, cookies []*http.Cookie)
 }
 
 type ErrorHandler interface {

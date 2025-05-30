@@ -7,7 +7,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 )
 
 func (m *twitter) parseStatus(item *models.TrackedItem) (err error) {
@@ -16,12 +15,7 @@ func (m *twitter) parseStatus(item *models.TrackedItem) (err error) {
 		return screenNameErr
 	}
 
-	if m.settings.Api.UseGraphQlApi {
-		err = m.parseStatusGraphQLApi(item, screenName)
-	} else {
-		err = m.parseStatusDeveloperApi(item, screenName)
-	}
-
+	err = m.parseStatusGraphQLApi(item, screenName)
 	if err == nil {
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 	}
@@ -41,15 +35,6 @@ func (m *twitter) parseStatusGraphQLApi(item *models.TrackedItem, statusID strin
 	}
 
 	return m.processDownloadQueueGraphQL(newMediaTweets, item)
-}
-
-func (m *twitter) parseStatusDeveloperApi(item *models.TrackedItem, statusID string) error {
-	tweet, err := m.twitterAPI.SingleTweetV2(statusID)
-	if err != nil {
-		return err
-	}
-
-	return m.processDownloadQueueDeveloperApi([]api.TweetV2{*tweet.Data}, item)
 }
 
 func (m *twitter) extractStatusID(uri string) (string, error) {

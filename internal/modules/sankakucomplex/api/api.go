@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	http "github.com/bogdanfinn/fhttp"
+	"io"
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
@@ -61,13 +64,18 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface
 		moduleKey:   moduleKey,
 	}
 
-	// If the token is valid, add a round tripper that injects the Authorization header.
-	if token.AccessToken != "" && token.Valid() {
-		client := session.GetClient()
-		client.Transport = api.addRoundTripper(client.Transport)
+	return api
+}
+
+func (a *SankakuComplexApi) parseAPIResponse(response *http.Response, apiRes interface{}) error {
+	body, _ := io.ReadAll(response.Body)
+
+	err := json.Unmarshal(body, &apiRes)
+	if err != nil {
+		return err
 	}
 
-	return api
+	return err
 }
 
 // LoginSuccessful checks if a valid access token exists.

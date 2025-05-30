@@ -20,7 +20,7 @@ type searchGalleryItem struct {
 
 // parseSearch parses the tracked item if we detected a search/tag
 func (m *nhentai) parseSearch(item *models.TrackedItem) error {
-	response, err := m.Session.Get(item.URI)
+	response, err := m.get(item.URI)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 			break
 		}
 
-		response, err = m.Session.Get(nextPageURL)
+		response, err = m.get(nextPageURL)
 		if err != nil {
 			return err
 		}

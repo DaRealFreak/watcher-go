@@ -5,11 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"time"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -21,6 +20,7 @@ import (
 
 // PixivAPI is the struct offering shared functionality for the public API and the mobile API
 type PixivAPI struct {
+	moduleKey     string
 	Session       watcherHttp.SessionInterface
 	rateLimiter   *rate.Limiter
 	ctx           context.Context
@@ -28,12 +28,14 @@ type PixivAPI struct {
 	oAuth2Account *models.OAuthClient
 	referer       string
 	token         *oauth2.Token
+	tokenSource   oauth2.TokenSource
 }
 
 // NewPixivAPI returned a pixiv API struct with already configured round trips
 func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer string) *PixivAPI {
 	return &PixivAPI{
-		Session: session.NewSession(moduleKey, PixivErrorHandler{}, session.DefaultErrorHandler{}),
+		moduleKey: moduleKey,
+		Session:   session.NewSession(moduleKey, PixivErrorHandler{}, session.DefaultErrorHandler{}),
 		OAuth2Config: &oauth2.Config{
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
@@ -48,13 +50,8 @@ func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer stri
 	}
 }
 
-// AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
-func (a *PixivAPI) AddRoundTrippers() (err error) {
-	client := a.Session.GetClient()
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
-	a.Session.GetClient().Transport = a.setPixivMobileAPIHeaders(client.Transport, a.referer)
-	// apply CloudFlare bypass
-
+// ConfigureTokenSource adds the required round trippers for the OAuth2 pixiv APIs
+func (a *PixivAPI) ConfigureTokenSource() (err error) {
 	if a.token == nil {
 		a.token, err = internal.PasswordCredentialsToken(
 			a.oAuth2Account, a.OAuth2Config, a.Session.GetClient(),
@@ -64,16 +61,16 @@ func (a *PixivAPI) AddRoundTrippers() (err error) {
 		}
 	}
 
-	httpClientContext := context.WithValue(context.Background(), oauth2.HTTPClient, a.Session.GetClient())
+	a.tokenSource = &pixivTokenRefresher{token: a.token, client: a.Session, config: a.OAuth2Config}
 
-	// set context with own http client for OAuth2 library to use
-	// retrieve new client with applied OAuth2 round tripper
-	a.Session.SetClient(
-		oauth2.NewClient(
-			httpClientContext,
-			&pixivTokenRefresher{token: a.token, client: a.Session.GetClient(), config: a.OAuth2Config},
-		),
-	)
+	//// set context with own http client for OAuth2 library to use
+	//// retrieve new client with applied OAuth2 round tripper
+	//a.Session.SetClient(
+	//	oauth2.NewClient(
+	//		httpClientContext,
+	//		&pixivTokenRefresher{token: a.token, client: a.Session.GetClient(), config: a.OAuth2Config},
+	//	),
+	//)
 
 	return nil
 }

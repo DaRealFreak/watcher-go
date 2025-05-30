@@ -1,7 +1,7 @@
 package napi
 
 import (
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 )
 
 type deviantArtConsoleAPIRoundTripper struct {

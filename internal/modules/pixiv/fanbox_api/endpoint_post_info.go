@@ -88,7 +88,7 @@ func (i *FanboxPostInfo) ImagesFromBlocks() []string {
 func (a *FanboxAPI) GetPostInfo(postID int) (*FanboxPostInfo, error) {
 	var postInfo FanboxPostInfo
 
-	res, err := a.Session.Get(fmt.Sprintf("https://api.fanbox.cc/post.info?postId=%d", postID))
+	res, err := a.get(fmt.Sprintf("https://api.fanbox.cc/post.info?postId=%d", postID))
 	if err != nil {
 		return nil, err
 	}

@@ -51,7 +51,7 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 		raven.CheckError(m.setProxyMethod())
 	}
 
-	for !foundCurrentItem {
+	for {
 		for _, result := range response.Deviations {
 			if item.CurrentItem == "" || result.GetPublishedTime().Unix() > currentItemID {
 				downloadQueue = append(downloadQueue, downloadQueueItemNAPI{

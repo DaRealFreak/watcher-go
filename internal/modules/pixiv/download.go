@@ -123,7 +123,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	if postInfo.Body.ImageForShare != "" {
 		fileName := fmt.Sprintf("0_%s", fp.GetFileName(postInfo.Body.ImageForShare))
 
-		if err = m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -136,7 +136,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, image := range postInfo.Body.PostBody.Images {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(image.OriginalURL))
 
-		if err = m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -150,7 +150,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, file := range postInfo.Body.PostBody.Files {
 		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
 
-		if err = m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -166,7 +166,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		i += 1
 		fileName := fmt.Sprintf("%d_%s.%s", i, file.Name, file.Extension)
 
-		if err = m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -180,7 +180,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	for i, file := range postInfo.ImagesFromBlocks() {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(file))
 
-		if err = m.fanboxAPI.Session.DownloadFile(
+		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
 				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
 			),
@@ -198,7 +198,7 @@ func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.I
 	for _, metaPage := range illust.MetaPages {
 		fileName := fp.GetFileName(metaPage.ImageURLs.Original)
 
-		if err := m.mobileAPI.Session.DownloadFile(
+		if err := m.mobileAPI.DownloadFile(
 			path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName),
 			metaPage.ImageURLs.Original,
 		); err != nil {
@@ -210,7 +210,7 @@ func (m *pixiv) downloadIllustration(data *downloadQueueItem, illust mobileapi.I
 	if illust.MetaSinglePage.OriginalImageURL != nil {
 		fileName := fp.GetFileName(*illust.MetaSinglePage.OriginalImageURL)
 
-		return m.mobileAPI.Session.DownloadFile(
+		return m.mobileAPI.DownloadFile(
 			path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName),
 			*illust.MetaSinglePage.OriginalImageURL,
 		)
@@ -232,7 +232,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 		m.settings.Animation.Format,
 	)
 
-	resp, err := m.mobileAPI.Session.Get(apiRes.Metadata.ZipURLs.Medium)
+	resp, err := m.mobileAPI.Get(apiRes.Metadata.ZipURLs.Medium)
 	if err != nil {
 		return err
 	}

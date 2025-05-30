@@ -1,8 +1,8 @@
 package login
 
 import (
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"regexp"
 	"strings"
 

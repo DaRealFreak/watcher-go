@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	}
 
 	mobileAPI = NewMobileAPI("pixiv Mobile API", testAccount)
-	if err := mobileAPI.AddRoundTrippers(); err != nil {
+	if err := mobileAPI.ConfigureTokenSource(); err != nil {
 		os.Exit(1)
 	}
 
@@ -40,5 +40,5 @@ func TestLogin(t *testing.T) {
 
 	mobileAPI := NewMobileAPI("pixiv Mobile API", testAccount)
 	assert.New(t).NotNil(mobileAPI)
-	assert.New(t).NoError(mobileAPI.AddRoundTrippers())
+	assert.New(t).NoError(mobileAPI.ConfigureTokenSource())
 }

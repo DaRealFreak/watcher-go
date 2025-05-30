@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"io"
-	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
@@ -17,12 +18,12 @@ import (
 
 // Config holds the configuration for the OIDC flow.
 type Config struct {
-	InitialAuthURL string       // URL to initiate the OIDC flow.
-	TokenURL       string       // Endpoint to log in and retrieve initial tokens.
-	FinalizeURL    string       // Endpoint to exchange the auth code for the final token.
-	ClientID       string       // Your client ID.
-	RedirectURI    string       // Your redirect URI.
-	HTTPClient     *http.Client // The HTTP client to use (with proxy, cookies, etc.).
+	InitialAuthURL string                // URL to initiate the OIDC flow.
+	TokenURL       string                // Endpoint to log in and retrieve initial tokens.
+	FinalizeURL    string                // Endpoint to exchange the auth code for the final token.
+	ClientID       string                // Your client ID.
+	RedirectURI    string                // Your redirect URI.
+	HTTPClient     tls_client.HttpClient // The HTTP client to use (with proxy, cookies, etc.).
 }
 
 // OidcClient encapsulates the OIDC flow implementation.
@@ -53,11 +54,14 @@ type finalizeResponse struct {
 // NewOIDCClient creates and returns a new OIDC client using the provided configuration.
 func NewOIDCClient(cfg Config) (*OidcClient, error) {
 	if cfg.HTTPClient == nil {
-		jar, err := cookiejar.New(nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create cookie jar: %w", err)
+		jar := tls_client.NewCookieJar()
+		options := []tls_client.HttpClientOption{
+			tls_client.WithTimeoutSeconds(30),
+			tls_client.WithClientProfile(profiles.Firefox_135),
+			tls_client.WithCookieJar(jar),
 		}
-		cfg.HTTPClient = &http.Client{Jar: jar}
+
+		cfg.HTTPClient, _ = tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 	}
 	return &OidcClient{cfg: &cfg}, nil
 }
@@ -240,7 +244,7 @@ func (o *OidcClient) retrieveFinalToken(ctx context.Context, code string) (*fina
 	req.Header.Set("Referer", "https://www.sankakucomplex.com/")
 
 	// The final token request omits cookies.
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := o.cfg.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error during final token request: %w", err)
 	}

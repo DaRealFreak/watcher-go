@@ -110,7 +110,7 @@ func (a *TwitterGraphQlAPI) Search(
 		"features":  {string(featuresJson)},
 	}
 
-	res, err := a.apiGET(apiURI, values)
+	res, err := a.handleGetRequest(apiURI, values)
 	if err != nil {
 		return nil, err
 	}

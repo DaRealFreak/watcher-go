@@ -11,7 +11,7 @@ import (
 func TestPixivAPI_tokenRenewal(t *testing.T) {
 	pixivAPI := getTestPixivAPI()
 
-	err := pixivAPI.AddRoundTrippers()
+	err := pixivAPI.ConfigureTokenSource()
 	assert.New(t).NoError(err)
 
 	apiURL, _ := url.Parse("https://app-api.pixiv.net/v1/illust/detail")

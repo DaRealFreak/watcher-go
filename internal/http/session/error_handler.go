@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"strconv"
 	"time"
 )

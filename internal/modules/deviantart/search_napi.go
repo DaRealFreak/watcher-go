@@ -37,7 +37,7 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemSubFolder(item, searchTag)
 	}
 
-	for !foundCurrentItem {
+	for {
 		for _, deviation := range response.Deviations {
 			if deviation.Type == "tier" {
 				// tier entries do not respect the "most-recent" order and have no content most of the time

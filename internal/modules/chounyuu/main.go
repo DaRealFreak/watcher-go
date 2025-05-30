@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"regexp"
 	"strings"
@@ -65,10 +65,6 @@ func (m *chounyuu) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-
-	// set referer to new transport method
-	client := m.Session.GetClient()
-	client.Transport = m.SetReferer(client.Transport)
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -87,8 +83,8 @@ type loginFormData struct {
 // Login logs us in for the current session if possible/account available
 func (m *chounyuu) Login(account *models.Account) bool {
 	for _, domain := range []string{api.ChounyuuDomain, api.SuperFutaDomain} {
-		// access login page for CSRF token
-		_, err := m.Session.Get(fmt.Sprintf("https://g.%s/account", domain))
+		// access the login page for CSRF token
+		_, err := m.api.Get(fmt.Sprintf("https://g.%s/account", domain))
 		if err != nil {
 			m.TriedLogin = true
 			return false
@@ -109,16 +105,15 @@ func (m *chounyuu) Login(account *models.Account) bool {
 		req.Header.Set("Accept", "application/json, text/plain, */*")
 		req.Header.Set("Content-Type", "application/json;charset=utf-8")
 
-		client := m.Session.GetClient()
 		loginUrl, _ := url.Parse(fmt.Sprintf("https://g.%s/api/post/login", domain))
-		cookies := client.Jar.Cookies(loginUrl)
+		cookies := m.Session.GetCookies(loginUrl)
 		for _, cookie := range cookies {
 			if cookie.Name == "XSRF-TOKEN" {
 				req.Header.Set("X-XSRF-TOKEN", cookie.Value)
 			}
 		}
 
-		res, err := client.Do(req)
+		res, err := m.api.Do(req)
 		if err != nil {
 			m.TriedLogin = true
 			return false

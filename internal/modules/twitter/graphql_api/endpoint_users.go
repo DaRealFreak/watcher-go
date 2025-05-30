@@ -205,7 +205,7 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		"features":  {string(featuresJson)},
 	}
 
-	res, err := a.apiGET(apiURI, values)
+	res, err := a.handleGetRequest(apiURI, values)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 		"features":  {string(featuresJson)},
 	}
 
-	res, err := a.apiGET(apiURI, values)
+	res, err := a.handleGetRequest(apiURI, values)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func (a *TwitterGraphQlAPI) FollowUser(userId string) error {
 	}
 
 	apiURI := "https://x.com/i/api/1.1/friendships/create.json"
-	_, err := a.apiPOST(apiURI, values)
+	_, err := a.handlePostRequest(apiURI, values)
 	if err != nil {
 		return err
 	}

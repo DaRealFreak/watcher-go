@@ -24,7 +24,7 @@ func (m *jinjaModoki) parsePage(item *models.TrackedItem) error {
 	}
 
 	for !foundCurrent {
-		res, err := m.Session.Get(currentPageURI)
+		res, err := m.get(currentPageURI)
 		if err != nil {
 			return err
 		}

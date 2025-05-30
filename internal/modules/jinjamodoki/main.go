@@ -74,7 +74,7 @@ func (m *jinjaModoki) InitializeModule() {
 	raven.CheckError(m.setProxyMethod())
 
 	// disable browsing access restrictions
-	res, err := m.Session.Post("https://gs-uploader.jinja-modoki.com/upld-index.php?", url.Values{
+	res, err := m.post("https://gs-uploader.jinja-modoki.com/upld-index.php?", url.Values{
 		"mode":          {"complete"},
 		"prev_mode":     {"top"},
 		"item":          {"restriction"},
@@ -130,10 +130,6 @@ func (m *jinjaModoki) setProxyMethod() error {
 		}
 	default:
 	}
-
-	// set referer to new transport method
-	client := m.Session.GetClient()
-	client.Transport = m.SetReferer(client.Transport)
 
 	return nil
 }

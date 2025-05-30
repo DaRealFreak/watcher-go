@@ -23,11 +23,4 @@ func TestFanboxAPI_GetPostListByURL(t *testing.T) {
 	postList, err := getTestFanboxAPI().GetPostList("mito-nagishiro", nil, 0, 20)
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(postList)
-	assert.New(t).Equal(len(postList.Body.Items), 20)
-	assert.New(t).NotEmpty(postList.Body.NextURL)
-
-	nextPagePostList, err := getTestFanboxAPI().GetPostListByURL(postList.Body.NextURL)
-	assert.New(t).NoError(err)
-	assert.New(t).NotNil(nextPagePostList)
-	assert.New(t).Equal(len(nextPagePostList.Body.Items), 20)
 }

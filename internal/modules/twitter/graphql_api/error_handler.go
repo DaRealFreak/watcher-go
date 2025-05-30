@@ -1,7 +1,7 @@
 package graphql_api
 
 import (
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"strings"
 	"time"
 

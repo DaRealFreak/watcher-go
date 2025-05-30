@@ -25,8 +25,7 @@ const (
 )
 
 type XTransactionIdHandler struct {
-	TransactionSession     http.SessionInterface
-	graphqlSession         http.SessionInterface
+	transactionSession     http.SessionInterface
 	settings               twitter_settings.TwitterSettings
 	onDemandFileRegex      *regexp.Regexp
 	indicesRegex           *regexp.Regexp
@@ -37,17 +36,15 @@ type XTransactionIdHandler struct {
 	animationKey           string
 }
 
-func NewXTransactionIdHandler(transactionSession http.SessionInterface, graphqlSession http.SessionInterface, settings twitter_settings.TwitterSettings) *XTransactionIdHandler {
+func NewXTransactionIdHandler(transactionSession http.SessionInterface, settings twitter_settings.TwitterSettings) *XTransactionIdHandler {
 	handler := &XTransactionIdHandler{
-		TransactionSession: transactionSession,
-		graphqlSession:     graphqlSession,
+		transactionSession: transactionSession,
 		settings:           settings,
 		// Matches "'ondemand.s':'<token>'" in the HTML
 		onDemandFileRegex: regexp.MustCompile(`['"]ondemand\.s['"]:\s*['"]([\w]+)['"]`),
 		// Matches "(x[NN], 16)" in the JS file
 		indicesRegex: regexp.MustCompile(`\(\w\[(\d{1,2})\],\s*16\)`),
 	}
-	handler.setTwitterAPIHeaders(transactionSession.GetClient())
 	return handler
 }
 
@@ -385,12 +382,12 @@ func (h *XTransactionIdHandler) getKeyBytes(key string) ([]byte, error) {
 // handleMigration fetches the home page and looks for a migration URL.
 // If found, it submits the form and returns the resulting document, else the document of the home page is returned.
 func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
-	resp, err := h.TransactionSession.Get("https://x.com/")
+	resp, err := h.get("https://x.com/")
 	if err != nil {
 		return nil, err
 	}
 
-	doc := h.TransactionSession.GetDocument(resp)
+	doc := h.transactionSession.GetDocument(resp)
 
 	// look for a meta-refresh migration URL or any migrate?tok=… link in the HTML
 	migRe := regexp.MustCompile(`(https?://(?:www\.)?(?:twitter|x)\.com(?:/x)?/migrate(?:[/?]\S*?tok=[A-Za-z0-9%\-_]+))`)
@@ -412,7 +409,7 @@ func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
 
 	// if we found a migration redirect, follow it
 	if migrationUrl != "" {
-		resp, err = h.TransactionSession.Get(migrationUrl)
+		resp, err = h.get(migrationUrl)
 		if err != nil {
 			return nil, err
 		}
@@ -454,9 +451,9 @@ func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
 
 		// choose GET vs POST
 		if method == "POST" {
-			resp, err = h.TransactionSession.Post(action, data)
+			resp, err = h.post(action, data)
 		} else {
-			resp, err = h.TransactionSession.Get(action + "?" + data.Encode())
+			resp, err = h.get(action + "?" + data.Encode())
 		}
 
 		if err != nil {
@@ -491,7 +488,7 @@ func (h *XTransactionIdHandler) getIndices(homeDoc *goquery.Document) (int, []in
 
 	// fetch the JS
 	jsURL := fmt.Sprintf("https://abs.twimg.com/responsive-web/client-web/ondemand.s.%sa.js", token)
-	resp, err := h.TransactionSession.Get(jsURL)
+	resp, err := h.get(jsURL)
 	if err != nil {
 		return 0, nil, fmt.Errorf("error fetching ondemand file: %w", err)
 	}

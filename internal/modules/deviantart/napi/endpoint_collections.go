@@ -42,7 +42,7 @@ func (a *DeviantartNAPI) CollectionsUser(
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dashared/gallection/folders?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (a *DeviantartNAPI) CollectionSearch(search string, cursor string, order st
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/search/collections?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

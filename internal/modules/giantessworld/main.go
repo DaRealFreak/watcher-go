@@ -3,8 +3,8 @@ package giantessworld
 
 import (
 	"bytes"
+	http "github.com/bogdanfinn/fhttp"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"

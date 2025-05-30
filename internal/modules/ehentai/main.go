@@ -3,7 +3,6 @@ package ehentai
 
 import (
 	"fmt"
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	"net/url"
 	"path"
 	"regexp"
@@ -108,13 +107,6 @@ func (m *ehentai) InitializeModule() {
 	ehSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 
-	client := ehSession.GetClient()
-	// apply CloudFlare bypass
-	options := cloudflarebp.GetDefaultOptions()
-	options.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0"
-
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
-
 	m.Session = ehSession
 
 	// set the proxy if requested
@@ -138,7 +130,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 		"ipb_login_submit": {"Login!"},
 	}
 
-	res, err := m.Session.Get("https://e-hentai.org/home.php")
+	res, err := m.get("https://e-hentai.org/home.php")
 	if err != nil {
 		m.TriedLogin = true
 		return false
@@ -150,7 +142,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 
 	if !m.LoggedIn {
 		// else try to log-in (possibly broken due to them adding captchas sometimes)
-		res, err = m.Session.Post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
+		res, err = m.post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
 		if err != nil {
 			m.TriedLogin = true
 			return false
@@ -164,7 +156,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	// copy the cookies for e-hentai to exhentai
 	ehURL, _ := url.Parse("https://e-hentai.org")
 	exURL, _ := url.Parse("https://exhentai.org")
-	m.Session.GetClient().Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
+	m.Session.GetClient().SetCookies(exURL, m.Session.GetClient().GetCookies(ehURL))
 
 	// initialize proxy sessions after login
 	if m.LoggedIn && m.settings.MultiProxy {

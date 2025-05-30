@@ -14,7 +14,7 @@ import (
 
 // parseGallery parses the tracked item if we detected a tracked gallery
 func (m *nhentai) parseGallery(item *models.TrackedItem) error {
-	response, err := m.Session.Get(item.URI)
+	response, err := m.get(item.URI)
 	if err != nil {
 		return err
 	}

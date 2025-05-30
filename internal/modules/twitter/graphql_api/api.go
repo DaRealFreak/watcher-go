@@ -9,13 +9,11 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/x_transaction_id"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -32,24 +30,15 @@ type TwitterGraphQlAPI struct {
 	Session                watcherHttp.SessionInterface
 	rateLimiter            *rate.Limiter
 	ctx                    context.Context
-	graphQlRoundTripper    *twitterGraphQLApiRoundTripper
 }
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings) *TwitterGraphQlAPI {
 	graphQLSession := session.NewSession(moduleKey, TwitterErrorHandler{})
 
-	client := graphQLSession.GetClient()
-	options := cloudflarebp.GetDefaultOptions()
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
-
-	transactionSession := session.NewSession(moduleKey)
-	// xTransactionClient := transactionSession.GetClient()
-	// client.Transport = cloudflarebp.AddCloudFlareByPass(xTransactionClient.Transport, options)
-
 	return &TwitterGraphQlAPI{
 		settings:               settings,
-		xTransactionIdHandler:  x_transaction_id.NewXTransactionIdHandler(transactionSession, graphQLSession, settings),
+		xTransactionIdHandler:  x_transaction_id.NewXTransactionIdHandler(graphQLSession, settings),
 		authTokenFallbackIndex: 0,
 		moduleKey:              moduleKey,
 		Session:                graphQLSession,
@@ -58,27 +47,10 @@ func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings) 
 	}
 }
 
-// AddRoundTrippers adds the required round trippers for the OAuth2 pixiv APIs
-func (a *TwitterGraphQlAPI) AddRoundTrippers() {
-	client := a.Session.GetClient()
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport)
-	a.graphQlRoundTripper = a.setTwitterAPIHeaders(client)
-}
-
 // SetCookies adds the passed cookies to both sessions, the graphql and the x-transaction id session
 func (a *TwitterGraphQlAPI) SetCookies(cookies []*http.Cookie) {
 	requestUrl, _ := url.Parse("https://x.com/")
-	a.Session.GetClient().Jar.SetCookies(
-		requestUrl,
-		cookies,
-	)
-
-	a.graphQlRoundTripper.client.Jar.SetCookies(
-		requestUrl,
-		cookies,
-	)
-
-	a.xTransactionIdHandler.TransactionSession.GetClient().Jar.SetCookies(
+	a.Session.GetClient().SetCookies(
 		requestUrl,
 		cookies,
 	)
@@ -116,18 +88,7 @@ func (a *TwitterGraphQlAPI) applyRateLimit() {
 	raven.CheckError(a.rateLimiter.Wait(a.ctx))
 }
 
-func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*http.Response, error) {
-	xTransactionId, err := a.xTransactionIdHandler.GenerateTransactionId(
-		"GET",
-		strings.TrimPrefix(apiRequestURL, "https://x.com"),
-		nil, "", "", 0, 0,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	a.graphQlRoundTripper.nextTransactionId = xTransactionId
-
+func (a *TwitterGraphQlAPI) handleGetRequest(apiRequestURL string, values url.Values) (*http.Response, error) {
 	requestURL, _ := url.Parse(apiRequestURL)
 	existingValues := requestURL.Query()
 
@@ -138,8 +99,7 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 	}
 
 	requestURL.RawQuery = existingValues.Encode()
-
-	res, err := a.Session.Get(requestURL.String())
+	res, err := a.apiGet(requestURL.String())
 	if err != nil {
 		switch err.(type) {
 		case SessionTerminatedError:
@@ -154,18 +114,18 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 				)
 
 				twitterURL, _ := url.Parse("https://x.com")
-				currentCookies := a.Session.GetClient().Jar.Cookies(twitterURL)
+				currentCookies := a.Session.GetCookies(twitterURL)
 				for _, cookie := range currentCookies {
 					if cookie.Name == "auth_token" {
 						cookie.Value = a.settings.FallbackAuthTokens[a.authTokenFallbackIndex]
 						a.authTokenFallbackIndex++
 					}
 					// update cookie with new value for the session
-					a.Session.GetClient().Jar.SetCookies(twitterURL, []*http.Cookie{cookie})
+					a.Session.SetCookies(twitterURL, []*http.Cookie{cookie})
 					break
 				}
 
-				return a.apiGET(apiRequestURL, values)
+				return a.handleGetRequest(apiRequestURL, values)
 			}
 		case SessionRefreshError:
 			log.WithField("module", a.moduleKey).Warnf(
@@ -177,27 +137,17 @@ func (a *TwitterGraphQlAPI) apiGET(apiRequestURL string, values url.Values) (*ht
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}
+
+			return a.handleGetRequest(apiRequestURL, values)
 		}
 	}
 
 	return res, err
 }
 
-func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*http.Response, error) {
-	xTransactionId, err := a.xTransactionIdHandler.GenerateTransactionId(
-		"POST",
-		apiRequestURL,
-		nil, "", "", 0, 0,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	a.graphQlRoundTripper.nextTransactionId = xTransactionId
-
+func (a *TwitterGraphQlAPI) handlePostRequest(apiRequestURL string, values url.Values) (*http.Response, error) {
 	requestURL, _ := url.Parse(apiRequestURL)
-
-	res, err := a.Session.GetClient().PostForm(requestURL.String(), values)
+	res, err := a.apiPost(requestURL.String(), values)
 	if err != nil {
 		switch err.(type) {
 		case SessionTerminatedError:
@@ -212,7 +162,7 @@ func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*h
 				)
 
 				twitterURL, _ := url.Parse("https://x.com")
-				currentCookies := a.Session.GetClient().Jar.Cookies(twitterURL)
+				currentCookies := a.Session.GetCookies(twitterURL)
 				for _, cookie := range currentCookies {
 					if cookie.Name == "auth_token" {
 						cookie.Value = a.settings.FallbackAuthTokens[a.authTokenFallbackIndex]
@@ -223,7 +173,7 @@ func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*h
 					break
 				}
 
-				return a.apiPOST(apiRequestURL, values)
+				return a.handlePostRequest(apiRequestURL, values)
 			}
 		case SessionRefreshError:
 			log.WithField("module", a.moduleKey).Warnf(
@@ -235,6 +185,8 @@ func (a *TwitterGraphQlAPI) apiPOST(apiRequestURL string, values url.Values) (*h
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}
+
+			return a.handlePostRequest(apiRequestURL, values)
 		}
 	}
 
@@ -247,7 +199,5 @@ func (a *TwitterGraphQlAPI) InitializeSession() error {
 		return err
 	}
 
-	// copy session cookies to the graphQL session to match the x-transaction id session
-	a.graphQlRoundTripper.client.Jar = a.xTransactionIdHandler.TransactionSession.GetClient().Jar
 	return nil
 }

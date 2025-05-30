@@ -49,7 +49,7 @@ func (a *DeviantartNAPI) ExtendedDeviation(
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dadeviation/init?" + values.Encode()
-	response, err := session.Get(apiUrl)
+	response, err := a.get(apiUrl, session)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (a *DeviantartNAPI) DeviationSearch(search string, cursor string, order str
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/search/deviations?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (a *DeviantartNAPI) DeviationTag(tag string, cursor string, order string) (
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/networkbar/tag/deviations?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

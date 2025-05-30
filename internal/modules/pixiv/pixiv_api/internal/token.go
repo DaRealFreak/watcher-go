@@ -3,13 +3,15 @@ package internal
 
 import (
 	"encoding/json"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 
+	tls_client "github.com/bogdanfinn/tls-client"
 	"golang.org/x/oauth2"
 )
 
@@ -28,7 +30,7 @@ type tokenResponse struct {
 // PasswordCredentialsToken is a custom implementation of the oauth2 PasswordCredentialsToken since additional
 // post values are required and checked server side from pixiv
 func PasswordCredentialsToken(
-	account *models.OAuthClient, cfg *oauth2.Config, client *http.Client,
+	account *models.OAuthClient, cfg *oauth2.Config, client tls_client.HttpClient,
 ) (*oauth2.Token, error) {
 	v := url.Values{
 		"get_secure_url": {"1"},
@@ -39,7 +41,11 @@ func PasswordCredentialsToken(
 		"refresh_token": {account.RefreshToken},
 	}
 
-	res, err := client.PostForm(cfg.Endpoint.TokenURL, v)
+	formBody := v.Encode()
+	res, err := client.Post(cfg.Endpoint.TokenURL,
+		"application/x-www-form-urlencoded",
+		strings.NewReader(formBody),
+	)
 	if err != nil {
 		return nil, err
 	}

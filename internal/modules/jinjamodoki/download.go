@@ -61,7 +61,7 @@ func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *mode
 func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedItem) error {
 	// if download item has a restriction we retrieve the absolute path now
 	if data.restriction {
-		res, err := m.defaultSession.Get(data.FileURI)
+		res, err := m.get(data.FileURI)
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 
 	filePath := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, data.FileName)
 
-	err := m.defaultSession.DownloadFile(
+	err := m.Session.DownloadFile(
 		filePath,
 		data.FileURI,
 	)

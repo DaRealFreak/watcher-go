@@ -4,7 +4,7 @@ package twitter
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"os"
 	"regexp"
 	"strings"
@@ -17,7 +17,6 @@ import (
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
-	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +24,6 @@ import (
 // twitter contains the implementation of the ModuleInterface
 type twitter struct {
 	*models.Module
-	twitterAPI          *api.TwitterAPI
 	twitterGraphQlAPI   *graphql_api.TwitterGraphQlAPI
 	normalizedUriRegexp *regexp.Regexp
 	settings            twitter_settings.TwitterSettings
@@ -76,42 +74,27 @@ func (m *twitter) InitializeModule() {
 		return
 	}
 
-	if !m.settings.Api.UseGraphQlApi {
-		oauthClient := m.DbIO.GetOAuthClient(m)
-		if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
-			log.WithField("module", m.Key).Fatalf(
-				"module requires an OAuth2 consumer ID and token",
-			)
-			// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
-			os.Exit(1)
-		}
-
-		m.twitterAPI = api.NewTwitterAPI(m.Key, oauthClient)
-	} else {
-		m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey(), m.settings)
-		m.twitterGraphQlAPI.AddRoundTrippers()
-
-		if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
-			m.twitterGraphQlAPI.SetCookies(
-				[]*http.Cookie{
-					{
-						Name:   "auth_token",
-						Value:  cookie.Value,
-						MaxAge: 0,
-					},
+	m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey(), m.settings)
+	if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
+		m.twitterGraphQlAPI.SetCookies(
+			[]*http.Cookie{
+				{
+					Name:   "auth_token",
+					Value:  cookie.Value,
+					MaxAge: 0,
 				},
-			)
-		} else {
-			// ToDo: guest cookie
-		}
+			},
+		)
+	} else {
+		// ToDo: guest cookie
+	}
 
-		if err := m.twitterGraphQlAPI.InitializeSession(); err != nil {
-			log.WithField("module", m.Key).Fatalf(
-				"unable to initialize graphQL session: %s", err.Error(),
-			)
-			// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
-			os.Exit(1)
-		}
+	if err := m.twitterGraphQlAPI.InitializeSession(); err != nil {
+		log.WithField("module", m.Key).Fatalf(
+			"unable to initialize graphQL session: %s", err.Error(),
+		)
+		// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
+		os.Exit(1)
 	}
 }
 
@@ -166,29 +149,16 @@ func (m *twitter) AddItem(uri string) (string, error) {
 				"converting twitter username \"%s\"", screenName,
 			)
 
-			if m.settings.Api.UseGraphQlApi {
-				userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
-				if userErr != nil || userInformation == nil || len(userInformation.Data.User.Result.RestID.String()) == 0 {
-					return uri, userErr
-				}
-
-				uri = fmt.Sprintf(
-					"twitter:graphQL/%s/%s",
-					userInformation.Data.User.Result.RestID.String(),
-					userInformation.Data.User.Result.Legacy.ScreenName,
-				)
-			} else {
-				userInformation, userErr := m.twitterAPI.UserByUsername(screenName)
-				if userErr != nil || userInformation == nil || len(userInformation.Data.ID.String()) == 0 {
-					return uri, userErr
-				}
-
-				uri = fmt.Sprintf(
-					"twitter:api/%s/%s",
-					userInformation.Data.ID.String(),
-					userInformation.Data.Username,
-				)
+			userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+			if userErr != nil || userInformation == nil || len(userInformation.Data.User.Result.RestID.String()) == 0 {
+				return uri, userErr
 			}
+
+			uri = fmt.Sprintf(
+				"twitter:graphQL/%s/%s",
+				userInformation.Data.User.Result.RestID.String(),
+				userInformation.Data.User.Result.Legacy.ScreenName,
+			)
 		}
 	}
 

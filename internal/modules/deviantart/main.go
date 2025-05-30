@@ -7,7 +7,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
-	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/api"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/PuerkitoBio/goquery"
@@ -24,7 +23,6 @@ import (
 type deviantArt struct {
 	*models.Module
 	rateLimit  int
-	daAPI      *api.DeviantartAPI
 	nAPI       *napi.DeviantartNAPI
 	daPattern  deviantArtPattern
 	settings   deviantArtSettings
@@ -48,7 +46,6 @@ type deviantArtSettings struct {
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`
-	UseDevAPI bool `mapstructure:"use_dev_api"`
 }
 
 type deviantArtPattern struct {
@@ -117,39 +114,19 @@ func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	if m.settings.UseDevAPI {
-		m.daAPI = api.NewDeviantartAPI(m.Key, account)
 
-		usedProxy := m.GetProxySettings()
-		if usedProxy.Enable {
-			if err := m.daAPI.UserSession.SetProxy(usedProxy); err != nil {
-				return false
-			}
+	rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+	m.nAPI = napi.NewDeviantartNAPI(m.Key, rateLimiter, m.settings.Cloudflare.UserAgent)
+	// set the proxy if requested
+	raven.CheckError(m.setProxyMethod())
 
-			if err := m.daAPI.Session.SetProxy(usedProxy); err != nil {
-				return false
-			}
-		}
+	err := m.nAPI.Login(account)
+	m.LoggedIn = err == nil
 
-		m.daAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
-
-		res, err := m.daAPI.Placebo()
-		m.LoggedIn = err == nil && res.Status == "success"
-	} else {
-		rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-		m.nAPI = napi.NewDeviantartNAPI(m.Key, rateLimiter)
-		// set the proxy if requested
-		raven.CheckError(m.setProxyMethod())
-
-		m.nAPI.AddRoundTrippers(m.settings.Cloudflare.UserAgent)
-		err := m.nAPI.Login(account)
-		m.LoggedIn = err == nil
-
-		// initialize proxy sessions after login
-		if m.LoggedIn && m.settings.MultiProxy {
-			m.initializeProxySessions()
-			rateLimiter.SetLimit(rate.Every(time.Duration(m.rateLimit/len(m.proxies)) * time.Millisecond))
-		}
+	// initialize proxy sessions after login
+	if m.LoggedIn && m.settings.MultiProxy {
+		m.initializeProxySessions()
+		rateLimiter.SetLimit(rate.Every(time.Duration(m.rateLimit/len(m.proxies)) * time.Millisecond))
 	}
 
 	return m.LoggedIn
@@ -186,71 +163,33 @@ func (m *deviantArt) extractCsrfToken(item *models.TrackedItem) (csrfToken strin
 
 // Parse parses the tracked item
 func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
-	if !m.settings.UseDevAPI {
-		csrfToken, tokenErr := m.extractCsrfToken(item)
-		if tokenErr != nil {
-			return tokenErr
-		}
-
-		m.nAPI.CSRFToken = csrfToken
-		log.WithField("module", m.Key).Debugf("extracted new CSRF token: %s", csrfToken)
+	csrfToken, tokenErr := m.extractCsrfToken(item)
+	if tokenErr != nil {
+		return tokenErr
 	}
+
+	m.nAPI.CSRFToken = csrfToken
+	log.WithField("module", m.Key).Debugf("extracted new CSRF token: %s", csrfToken)
 
 	switch {
 	case m.daPattern.artPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return nil
-		} else {
-			return m.parseArtNapi(item)
-		}
+		return m.parseArtNapi(item)
 	case m.daPattern.feedPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseFeedDevApi(item)
-		} else {
-			return m.parseFeedNapi(item)
-		}
+		return m.parseFeedNapi(item)
 	case m.daPattern.userPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseUserDevAPI(item)
-		} else {
-			return m.parseUserNapi(item)
-		}
+		return m.parseUserNapi(item)
 	case m.daPattern.galleryPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseGalleryDevAPI(item)
-		} else {
-			return m.parseGalleryNapi(item)
-		}
+		return m.parseGalleryNapi(item)
 	case m.daPattern.scrapPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return fmt.Errorf("unable to parse scraps with dev API")
-		} else {
-			return m.parseGalleryNapi(item)
-		}
+		return m.parseGalleryNapi(item)
 	case m.daPattern.collectionPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseCollectionDevAPI(item)
-		} else {
-			return m.parseCollectionNapi(item)
-		}
+		return m.parseCollectionNapi(item)
 	case m.daPattern.collectionUUIDPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseCollectionUUIDDevAPI(item)
-		} else {
-			return m.parseCollectionUUIDNapi(item)
-		}
+		return m.parseCollectionUUIDNapi(item)
 	case m.daPattern.tagPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseTagDevAPI(item)
-		} else {
-			return m.parseTagNapi(item)
-		}
+		return m.parseTagNapi(item)
 	case m.daPattern.searchPattern.MatchString(item.URI):
-		if m.settings.UseDevAPI {
-			return m.parseSearchDevAPI(item)
-		} else {
-			return m.parseSearchNapi(item)
-		}
+		return m.parseSearchNapi(item)
 	default:
 		return fmt.Errorf("URL could not be associated with any of the implemented methods")
 	}
@@ -277,15 +216,9 @@ func (m *deviantArt) setProxyMethod() error {
 	switch {
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
-	case m.settings.UseDevAPI && m.settings.Loop:
-		return fmt.Errorf("can't loop over proxies on dev API since it's API key based")
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
-		if m.settings.UseDevAPI {
-			return m.daAPI.UserSession.SetProxy(m.GetProxySettings())
-		} else {
-			return m.nAPI.UserSession.SetProxy(m.GetProxySettings())
-		}
-	case !m.settings.UseDevAPI && m.settings.Loop:
+		return m.nAPI.UserSession.SetProxy(m.GetProxySettings())
+	case m.settings.Loop:
 		// reset proxy loop index if we reach the limit with the next iteration
 		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
 			m.ProxyLoopIndex = -1

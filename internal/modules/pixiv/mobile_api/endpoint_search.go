@@ -13,7 +13,7 @@ type SearchIllust struct {
 	NextURL       string         `json:"next_url"`
 }
 
-//noinspection GoUnusedConst
+// noinspection GoUnusedConst
 const (
 	// order of the search results
 
@@ -73,7 +73,7 @@ func (a *MobileAPI) GetSearchIllust(
 func (a *MobileAPI) GetSearchIllustByURL(url string) (*SearchIllust, error) {
 	a.ApplyRateLimit()
 
-	res, err := a.Session.Get(url)
+	res, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}

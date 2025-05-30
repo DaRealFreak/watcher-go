@@ -2,8 +2,8 @@ package pixivapi
 
 import (
 	"encoding/json"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 )
 
 type PixivErrorHandler struct {

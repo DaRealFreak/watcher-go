@@ -2,7 +2,7 @@ package graphql_api
 
 import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"os"
 	"testing"
 
@@ -17,7 +17,6 @@ var twitterAPI *TwitterGraphQlAPI
 func TestMain(m *testing.M) {
 	// initialize the shared API instance
 	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{})
-	twitterAPI.AddRoundTrippers()
 	twitterAPI.SetCookies([]*http.Cookie{
 		{
 			Name:   "auth_token",

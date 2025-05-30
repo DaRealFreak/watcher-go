@@ -4,8 +4,8 @@ package fanboxapi
 import (
 	"encoding/json"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 
@@ -50,28 +50,19 @@ func (a *FanboxAPI) AddRoundTrippers() {
 		os.Exit(1)
 	}
 
-	a.Session.GetClient().Jar.SetCookies(a.StorageURL,
+	a.Session.GetClient().SetCookies(a.StorageURL,
 		[]*http.Cookie{
 			{Name: CookieSession, Value: a.SessionCookie.Value},
 		},
 	)
 
 	if a.CfClearanceCookie != nil {
-		a.Session.GetClient().Jar.SetCookies(a.StorageURL,
+		a.Session.GetClient().SetCookies(a.StorageURL,
 			[]*http.Cookie{
 				{Name: CookieCfClearance, Value: a.CfClearanceCookie.Value},
 			},
 		)
 	}
-
-	// also apply sessionCookie for our cookie header in the round trip
-	a.setPixivRoundTripper()
-}
-
-// setPixivRoundTripper adds a round tripper to add the required and checked request headers on every sent request
-func (a *FanboxAPI) setPixivRoundTripper() {
-	client := a.Session.GetClient()
-	client.Transport = a.setPixivWebHeaders(client.Transport)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

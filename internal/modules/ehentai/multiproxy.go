@@ -32,8 +32,8 @@ func (m *ehentai) initializeProxySessions() {
 		singleSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for session
-		singleSession.Client.Jar.SetCookies(ehURL, m.Session.GetClient().Jar.Cookies(ehURL))
-		singleSession.Client.Jar.SetCookies(exURL, m.Session.GetClient().Jar.Cookies(ehURL))
+		singleSession.Client.SetCookies(ehURL, m.Session.GetClient().GetCookies(ehURL))
+		singleSession.Client.SetCookies(exURL, m.Session.GetClient().GetCookies(ehURL))
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
 			inUse:         false,

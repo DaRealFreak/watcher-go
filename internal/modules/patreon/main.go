@@ -6,14 +6,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"unicode"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -134,12 +133,6 @@ func (m *patreon) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-
-	// add CloudFlare bypass
-	cloudflareOptions := cloudflarebp.GetDefaultOptions()
-	cloudflareOptions.Headers["Accept-Encoding"] = "gzip, deflate, br"
-	cloudflareOptions.Headers["User-Agent"] = "Patreon/7.6.28 (Android; Android 11; Scale/2.10)"
-	m.Session.GetClient().Transport = cloudflarebp.AddCloudFlareByPass(m.Session.GetClient().Transport, cloudflareOptions)
 }
 
 func (m *patreon) AddItem(uri string) (string, error) {
@@ -192,10 +185,9 @@ func (m *patreon) AddModuleCommand(command *cobra.Command) {
 // Login logs us in for the current session if possible/account available
 func (m *patreon) Login(account *models.Account) bool {
 	// check if we have a cookie of the name session_id for the domain patreon.com
-	jar := m.Session.GetClient().Jar
 	mainUrl, _ := url.Parse("https://www.patreon.com")
 	foundCookie := false
-	for _, cookie := range jar.Cookies(mainUrl) {
+	for _, cookie := range m.Session.GetCookies(mainUrl) {
 		if cookie.Name == "session_id" {
 			foundCookie = true
 			break
@@ -232,7 +224,7 @@ func (m *patreon) Login(account *models.Account) bool {
 		log.WithField("module", m.Key).Error(err)
 	}
 
-	res, err := m.Session.Get("https://www.patreon.com/login")
+	res, err := m.get("https://www.patreon.com/login")
 	loginCsrfMatches := m.loginCsrfPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
 	if len(loginCsrfMatches) != 2 {
 		log.WithField("module", m.Key).Fatal(
@@ -277,7 +269,7 @@ func (m *patreon) Login(account *models.Account) bool {
 				text = strings.TrimFunc(text, func(r rune) bool {
 					return !unicode.IsGraphic(r)
 				})
-				verificationRes, verificationError := m.Session.Get(strings.TrimSuffix(text, "\n"))
+				verificationRes, verificationError := m.get(strings.TrimSuffix(text, "\n"))
 				if verificationError != nil {
 					log.WithField("module", m.Key).Fatal(
 						fmt.Errorf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail),

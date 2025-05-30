@@ -1,7 +1,6 @@
 package patreon
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -52,7 +51,7 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 		return int(userId), nil
 	}
 
-	res, err := m.Session.Get(campaignURI)
+	res, err := m.get(campaignURI)
 	if err != nil {
 		return 0, err
 	}
@@ -69,17 +68,12 @@ func (m *patreon) getCreatorID(campaignURI string) (int, error) {
 
 // getCreatorCampaign returns the campaign data of the creator ID
 func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
-	res, err := m.Session.Get(fmt.Sprintf("https://www.patreon.com/api/user/%d", creatorID))
+	res, err := m.get(fmt.Sprintf("https://www.patreon.com/api/user/%d", creatorID))
 	if err != nil {
 		return nil, err
 	}
 
-	reader, err := gzip.NewReader(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	readerRes, readerErr := io.ReadAll(reader)
+	readerRes, readerErr := io.ReadAll(res.Body)
 	raven.CheckError(readerErr)
 
 	var apiUserResponse userResponse

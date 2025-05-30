@@ -174,8 +174,9 @@ func (m *pixiv) preparePixivAPISessions() error {
 			return err
 		}
 	}
+
 	// prepare mobile API session again
-	if err := m.mobileAPI.AddRoundTrippers(); err != nil {
+	if err := m.mobileAPI.ConfigureTokenSource(); err != nil {
 		return err
 	}
 

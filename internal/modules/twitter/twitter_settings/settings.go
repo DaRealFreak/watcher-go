@@ -1,9 +1,6 @@
 package twitter_settings
 
 type TwitterSettings struct {
-	Api struct {
-		UseGraphQlApi bool `mapstructure:"use_graph_ql_api"`
-	} `mapstructure:"api"`
 	// extracts the twitter ID on the first request instead of just tracking the URL
 	// since following URLs will fail whenever the user renames
 	ConvertNameToId bool `mapstructure:"convert_name_to_id"`

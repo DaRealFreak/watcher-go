@@ -2,7 +2,7 @@ package chounyuu
 
 import (
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 )
 
 type DeletedMediaError struct {

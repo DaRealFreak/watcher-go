@@ -2,7 +2,7 @@ package pixivapi
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/DaRealFreak/watcher-go/internal/http"
 	"net/url"
 	"sync"
 
@@ -16,7 +16,7 @@ type pixivTokenRefresher struct {
 	config *oauth2.Config
 	mu     sync.Mutex // guards t
 	token  *oauth2.Token
-	client *http.Client
+	client http.SessionInterface
 }
 
 // Token is the implementation of the TokenSource interface to return a valid token or the error occurred
@@ -59,7 +59,7 @@ func (s *pixivTokenRefresher) refreshToken() (*oauth2.Token, error) {
 		"refresh_token": {s.token.RefreshToken},
 	}
 
-	res, err := s.client.PostForm(s.config.Endpoint.TokenURL, v)
+	res, err := s.client.Post(s.config.Endpoint.TokenURL, v)
 	raven.CheckError(err)
 	if err != nil {
 		return nil, err

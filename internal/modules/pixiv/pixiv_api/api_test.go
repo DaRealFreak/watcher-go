@@ -17,7 +17,7 @@ func getTestPixivAPI() *PixivAPI {
 	}
 
 	pixivAPI := NewPixivAPI("pixiv API", testAccount, "https://app-api.pixiv.net/")
-	if err := pixivAPI.AddRoundTrippers(); err != nil {
+	if err := pixivAPI.ConfigureTokenSource(); err != nil {
 		return nil
 	}
 
@@ -33,7 +33,7 @@ func TestNewPixivAPI(t *testing.T) {
 	}
 
 	pixivAPI := NewPixivAPI("pixiv API", testAccount, "https://app-api.pixiv.net/")
-	err := pixivAPI.AddRoundTrippers()
+	err := pixivAPI.ConfigureTokenSource()
 	assert.New(t).NoError(err)
 	assert.New(t).NotNil(pixivAPI)
 }

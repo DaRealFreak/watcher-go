@@ -21,7 +21,7 @@ func (a *DeviantartNAPI) JournalSearch(search string, cursor string, order strin
 	}
 
 	apiUrl := "https://www.deviantart.com/_puppy/dabrowse/search/journals?" + values.Encode()
-	response, err := a.UserSession.Get(apiUrl)
+	response, err := a.get(apiUrl)
 	if err != nil {
 		return nil, err
 	}

@@ -6,14 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/parser"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -180,11 +179,12 @@ type DeviantartNAPI struct {
 	ctx         context.Context
 	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
 	CSRFToken string
+	UserAgent string
 	moduleKey string
 }
 
 // NewDeviantartNAPI returns the settings of the DeviantArt API
-func NewDeviantartNAPI(moduleKey string, rateLimiter *rate.Limiter) *DeviantartNAPI {
+func NewDeviantartNAPI(moduleKey string, rateLimiter *rate.Limiter, userAgent string) *DeviantartNAPI {
 	userSession := session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey})
 	userSession.RateLimiter = rateLimiter
 
@@ -193,11 +193,12 @@ func NewDeviantartNAPI(moduleKey string, rateLimiter *rate.Limiter) *DeviantartN
 		rateLimiter: rate.NewLimiter(rate.Every(4*time.Second), 1),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
+		UserAgent:   userAgent,
 	}
 }
 
 func (a *DeviantartNAPI) Login(account *models.Account) error {
-	res, err := a.UserSession.Get("https://www.deviantart.com/users/login")
+	res, err := a.get("https://www.deviantart.com/users/login")
 	if err != nil {
 		return err
 	}
@@ -227,7 +228,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		"remember":   {"on"},
 	}
 
-	res, err = a.UserSession.GetClient().PostForm("https://www.deviantart.com/_sisu/do/step2", values)
+	res, err = a.post("https://www.deviantart.com/_sisu/do/step2", values)
 	if err != nil {
 		return err
 	}
@@ -241,7 +242,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	values["lu_token"] = []string{info.LuToken}
 	values["lu_token2"] = []string{info.LuToken2}
 
-	res, err = a.UserSession.GetClient().PostForm("https://www.deviantart.com/_sisu/do/signin", values)
+	res, err = a.post("https://www.deviantart.com/_sisu/do/signin", values)
 	if err != nil {
 		return err
 	}
@@ -270,20 +271,6 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	a.account = account
 
 	return nil
-}
-
-// AddRoundTrippers adds the round trippers for CloudFlare, adds a custom user agent
-// and implements the implicit OAuth2 authentication and sets the Token round tripper
-func (a *DeviantartNAPI) AddRoundTrippers(userAgent string) {
-	client := a.UserSession.GetClient()
-	// apply CloudFlare bypass
-	options := cloudflarebp.GetDefaultOptions()
-	if userAgent != "" {
-		options.Headers["User-Agent"] = userAgent
-	}
-
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
-	client.Transport = a.setDeviantArtHeaders(client.Transport)
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

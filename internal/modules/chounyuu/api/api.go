@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"strings"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"

@@ -1,59 +1,83 @@
 package graphql_api
 
 import (
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"net/url"
+	"strings"
 )
 
-type twitterGraphQLApiRoundTripper struct {
-	inner             http.RoundTripper
-	client            *http.Client
-	nextTransactionId string
-}
-
-func (a *TwitterGraphQlAPI) setTwitterAPIHeaders(client *http.Client) *twitterGraphQLApiRoundTripper {
-	rt := &twitterGraphQLApiRoundTripper{
-		inner:  client.Transport,
-		client: client,
+func (a *TwitterGraphQlAPI) apiGet(requestUrl string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", requestUrl, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	client.Transport = rt
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Referer", "https://x.com/")
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("x-twitter-auth-type", "OAuth2Session")
+	req.Header.Set("x-twitter-active-user", "yes")
+	req.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
+	req.Header.Set("x-twitter-client-language", "en")
 
-	return rt
-}
-
-// RoundTrip adds the required request headers to pass server side checks of pixiv
-func (rt *twitterGraphQLApiRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0")
-	r.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	r.Header.Set("Referer", "https://x.com/")
-	r.Header.Set("content-type", "application/json")
-	r.Header.Set("x-twitter-auth-type", "OAuth2Session")
-	r.Header.Set("x-twitter-active-user", "yes")
-	r.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
-	r.Header.Set("x-twitter-client-language", "en")
-
-	requestUrl, _ := url.Parse(r.URL.String())
-	cookies := rt.client.Jar.Cookies(requestUrl)
+	parsedUrl, _ := url.Parse(requestUrl)
+	cookies := a.Session.GetClient().GetCookies(parsedUrl)
 	for _, cookie := range cookies {
 		if cookie.Name == "ct0" {
-			r.Header.Set("x-csrf-token", cookie.Value)
+			req.Header.Set("x-csrf-token", cookie.Value)
+			break
 		}
 	}
 
-	if rt.nextTransactionId != "" {
-		r.Header.Set("x-client-transaction-id", rt.nextTransactionId)
-		rt.nextTransactionId = ""
+	xTransactionId, err := a.xTransactionIdHandler.GenerateTransactionId(
+		"GET",
+		strings.TrimPrefix(requestUrl, "https://x.com"),
+		nil, "", "", 0, 0,
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	//println("current request")
-	//println("URL: ", r.URL.String())
-	//println("X-CSRF-TOKEN: ", r.Header.Get("x-csrf-token"))
-	//println("X-CLIENT-TRANSACTION-ID: ", r.Header.Get("x-client-transaction-id"))
+	req.Header.Set("x-twitter-client-transaction-id", xTransactionId)
 
-	if rt.inner == nil {
-		return http.DefaultTransport.RoundTrip(r)
+	return a.Session.GetClient().Do(req)
+}
+
+func (a *TwitterGraphQlAPI) apiPost(requestUrl string, values url.Values) (*http.Response, error) {
+	req, err := http.NewRequest("POST", requestUrl, strings.NewReader(values.Encode()))
+	if err != nil {
+		return nil, err
 	}
 
-	return rt.inner.RoundTrip(r)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Referer", "https://x.com/")
+	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+	req.Header.Set("x-twitter-auth-type", "OAuth2Session")
+	req.Header.Set("x-twitter-active-user", "yes")
+	req.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
+	req.Header.Set("x-twitter-client-language", "en")
+
+	parsedUrl, _ := url.Parse(requestUrl)
+	cookies := a.Session.GetClient().GetCookies(parsedUrl)
+	for _, cookie := range cookies {
+		if cookie.Name == "ct0" {
+			req.Header.Set("x-csrf-token", cookie.Value)
+			break
+		}
+	}
+
+	xTransactionId, err := a.xTransactionIdHandler.GenerateTransactionId(
+		"POST",
+		strings.TrimPrefix(requestUrl, "https://x.com"),
+		nil, "", "", 0, 0,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("x-twitter-client-transaction-id", xTransactionId)
+
+	return a.Session.Do(req)
 }

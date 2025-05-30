@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -83,11 +82,6 @@ func (m *nhentai) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
-
-	client := m.Session.GetClient()
-	options := cloudflarebp.GetDefaultOptions()
-	options.Headers["User-Agent"] = m.settings.Cloudflare.UserAgent
-	client.Transport = cloudflarebp.AddCloudFlareByPass(client.Transport, options)
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application

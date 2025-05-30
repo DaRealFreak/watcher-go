@@ -29,7 +29,7 @@ func (a *ChounyuuAPI) RetrieveThreadResponse(domain string, threadId string, pag
 		domain, a.getApiVersion(domain), threadId, page,
 	)
 
-	res, err := a.Session.Get(url)
+	res, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}

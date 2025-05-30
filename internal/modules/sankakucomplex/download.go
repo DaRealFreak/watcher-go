@@ -2,6 +2,7 @@ package sankakucomplex
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
 	"net/url"
 	"path"
 	"regexp"
@@ -24,12 +25,12 @@ type downloadBookItem struct {
 	bookId       string
 	bookName     string
 	bookLanguage []string
-	bookApiItem  bookApiItem
+	bookApiItem  *api.BookApiItem
 }
 
 type downloadGalleryItem struct {
 	item    *models.DownloadQueueItem
-	apiData *apiItem
+	apiData *api.ApiItem
 }
 
 func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, galleryItem *downloadGalleryItem) (bool, error) {
@@ -38,7 +39,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		return false, err
 	}
 
-	bookResponse, bookErr := m.getBookResponse(galleryItem.apiData.ID)
+	bookResponse, bookErr := m.api.GetPoolResponse(galleryItem.apiData.ID)
 	if bookErr != nil {
 		return false, bookErr
 	}

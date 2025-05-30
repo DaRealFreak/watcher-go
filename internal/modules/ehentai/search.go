@@ -2,7 +2,7 @@ package ehentai
 
 import (
 	"fmt"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -23,7 +23,7 @@ type searchGalleryItem struct {
 // the cookie only gets set in a response of a gallery
 func (m *ehentai) getSkCookie(item *models.TrackedItem) (exists bool, value *http.Cookie) {
 	requestUrl, _ := url.Parse(item.URI)
-	cookies := m.Session.GetClient().Jar.Cookies(requestUrl)
+	cookies := m.Session.GetClient().GetCookies(requestUrl)
 	for _, cookie := range cookies {
 		if cookie.Name == "sk" {
 			return true, cookie
@@ -42,7 +42,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	if exists, _ := m.getSkCookie(item); !exists {
 		// call an example gallery, which will return a "Set-Cookie" header containing the required sk cookie
-		_, err := m.Session.Get("https://exhentai.org/g/1717239/a8f9b0c99c/")
+		_, err := m.get("https://exhentai.org/g/1717239/a8f9b0c99c/")
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		}
 	}
 
-	response, err := m.Session.Get(searchUrl)
+	response, err := m.get(searchUrl)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 			return err
 		}
 
-		response, err = m.Session.Get(nextPageURL)
+		response, err = m.get(nextPageURL)
 		if err != nil {
 			return err
 		}

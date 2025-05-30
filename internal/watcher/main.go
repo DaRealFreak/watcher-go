@@ -25,7 +25,6 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/twitter"
-	_ "github.com/DaRealFreak/watcher-go/internal/modules/vimeo"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/youtube"
 )
 

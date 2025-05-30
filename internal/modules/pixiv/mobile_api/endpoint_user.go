@@ -48,7 +48,7 @@ func (a *MobileAPI) GetUserDetail(userID int) (*UserDetail, error) {
 	}
 	apiURL.RawQuery = data.Encode()
 
-	res, err := a.Session.Get(apiURL.String())
+	res, err := a.Get(apiURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (a *MobileAPI) GetUserIllusts(userID int, filter string, offset int) (*User
 func (a *MobileAPI) GetUserIllustsByURL(url string) (*UserIllusts, error) {
 	a.ApplyRateLimit()
 
-	res, err := a.Session.Get(url)
+	res, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}

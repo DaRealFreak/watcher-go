@@ -1,11 +1,10 @@
 package patreon
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -312,23 +311,11 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 	req.Header.Set("Sec-Fetch-Site", "none")
 	req.Header.Set("Sec-Fetch-User", "?1")
 	res, err := client.Do(req)
-
-	//res, err := m.Session.Get(campaignPostsURI)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	var reader io.ReadCloser
-	if res.Header.Get("Content-Encoding") == "gzip" {
-		reader, err = gzip.NewReader(res.Body)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		reader = res.Body
+	if err != nil {
+		return nil, err
 	}
+	readerRes, readerErr := io.ReadAll(res.Body)
 
-	readerRes, readerErr := io.ReadAll(reader)
 	raven.CheckError(readerErr)
 
 	var postsData campaignResponse

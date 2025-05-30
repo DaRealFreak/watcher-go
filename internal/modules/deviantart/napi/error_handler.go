@@ -2,8 +2,8 @@ package napi
 
 import (
 	"bytes"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"strings"
 	"time"
 

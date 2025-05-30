@@ -21,7 +21,7 @@ type imageGalleryItem struct {
 
 // parseGallery parses the tracked item if we detected a tracked gallery
 func (m *ehentai) parseGallery(item *models.TrackedItem) error {
-	response, err := m.Session.Get(item.URI)
+	response, err := m.get(item.URI)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 			return err
 		}
 
-		response, _ = m.Session.Get(nextPageURL)
+		response, _ = m.get(nextPageURL)
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 
@@ -177,7 +177,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 func (m *ehentai) getDownloadQueueItem(
 	downloadSession http.SessionInterface, trackedItem *models.TrackedItem, item *imageGalleryItem,
 ) (*models.DownloadQueueItem, error) {
-	response, err := downloadSession.Get(item.uri)
+	response, err := m.get(item.uri, downloadSession)
 	if err != nil {
 		return nil, err
 	}

@@ -3,8 +3,9 @@ package sankakucomplex
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -13,63 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
-
-type bookApiResponse struct {
-	Pools  poolsResponse  `json:"pools"`
-	Series seriesResponse `json:"series"`
-	Page   int            `json:"page"`
-}
-
-type poolsResponse struct {
-	Meta apiMeta       `json:"meta"`
-	Data []bookApiItem `json:"data"`
-}
-
-// apiItem is the JSON struct of item objects returned by the API
-type bookApiItem struct {
-	ID               string     `json:"id"`
-	NameEn           *string    `json:"name_en"`
-	NameJa           *string    `json:"name_ja"`
-	Description      string     `json:"description"`
-	DescriptionEn    *string    `json:"description_en"`
-	DescriptionJa    *string    `json:"description_ja"`
-	CreatedAt        string     `json:"created_at"`
-	UpdatedAt        string     `json:"updated_at"`
-	Author           apiAuthor  `json:"author"`
-	Status           string     `json:"status"`
-	PostCount        int        `json:"post_count"`
-	PagesCount       int        `json:"pages_count"`
-	VisiblePostCount int        `json:"visible_post_count"`
-	Tags             []*apiTag  `json:"tags"`
-	PostTags         []*apiTag  `json:"post_tags"`
-	ArtistTags       []*apiTag  `json:"artist_tags"`
-	GenreTags        []*apiTag  `json:"genre_tags"`
-	Posts            []*apiItem `json:"posts"`
-	FileURL          *string    `json:"file_url"`
-	SampleURL        *string    `json:"sample_url"`
-	PreviewURL       *string    `json:"preview_url"`
-	IsPremium        bool       `json:"is_premium"`
-	IsAnonymous      bool       `json:"is_anonymous"`
-	RedirectToSignup bool       `json:"redirect_to_signup"`
-	Locale           string     `json:"locale"`
-	IsPublic         bool       `json:"is_public"`
-	IsIntact         bool       `json:"is_intact"`
-	IsRaw            bool       `json:"is_raw"`
-	IsTrial          bool       `json:"is_trial"`
-	IsPending        bool       `json:"is_pending"`
-	IsActive         bool       `json:"is_active"`
-	IsFlagged        bool       `json:"is_flagged"`
-	IsDeleted        bool       `json:"is_deleted"`
-	Name             string     `json:"name"`
-}
-
-type seriesResponse struct {
-	Data       []series `json:"data"`
-	TotalCount int      `json:"totalCount"`
-}
-
-type series struct {
-}
 
 // parseAPIBookResponse parses the book response from the API
 func (m *sankakuComplex) parseAPIResponse(response *http.Response, apiRes interface{}) error {
@@ -83,7 +27,7 @@ func (m *sankakuComplex) parseAPIResponse(response *http.Response, apiRes interf
 	return err
 }
 
-func (m *sankakuComplex) extractBookItems(data bookApiItem) (downloadQueue []*downloadGalleryItem, err error) {
+func (m *sankakuComplex) extractBookItems(data *api.BookApiItem) (downloadQueue []*downloadGalleryItem, err error) {
 	tmpItem := &models.TrackedItem{
 		URI: fmt.Sprintf(
 			"https://www.sankakucomplex.com/?tags=%s",
@@ -103,7 +47,7 @@ func (m *sankakuComplex) extractBookItems(data bookApiItem) (downloadQueue []*do
 	return tmpDownloadQueue, nil
 }
 
-func (m *sankakuComplex) extractBookName(bookResponse bookApiItem) (bookTag string) {
+func (m *sankakuComplex) extractBookName(bookResponse *api.BookApiItem) (bookTag string) {
 	if bookResponse.NameEn != nil {
 		bookTag = *bookResponse.NameEn
 	} else {
@@ -115,7 +59,7 @@ func (m *sankakuComplex) extractBookName(bookResponse bookApiItem) (bookTag stri
 	return bookTag
 }
 
-func (m *sankakuComplex) extractLanguage(apiResponse bookApiItem) (languageTags []string) {
+func (m *sankakuComplex) extractLanguage(apiResponse *api.BookApiItem) (languageTags []string) {
 	// Mapping from the server key to the original display text.
 	originalLanguages := map[string]string{
 		"arabic_language":                        "Arabic",
@@ -222,20 +166,9 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 	foundCurrentItem := false
 
 	for !foundCurrentItem {
-		apiURI := fmt.Sprintf(
-			"https://sankakuapi.com/poolseriesv2?lang=en&filledPools=true&offset=0&limit=100&tags=order:date+%s&page=%d&includes[]=pools&exceptStatuses[]=deleted",
-			url.QueryEscape(tag),
-			page,
-		)
-
-		response, err := m.Session.Get(apiURI)
-		if err != nil {
-			return nil, err
-		}
-
-		var apiGalleryResponse bookApiResponse
-		if err = m.parseAPIResponse(response, &apiGalleryResponse); err != nil {
-			return nil, err
+		apiGalleryResponse, apiErr := m.api.GetFilledBookResponse(tag, page)
+		if apiErr != nil {
+			return nil, apiErr
 		}
 
 		for _, data := range apiGalleryResponse.Pools.Data {
@@ -283,18 +216,8 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 }
 
 func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string) (galleryItems []*downloadGalleryItem, err error) {
-	apiURI := fmt.Sprintf(
-		"https://sankakuapi.com/pools/%s?lang=en&includes[]=series",
-		url.QueryEscape(bookId),
-	)
-
-	response, err := m.Session.Get(apiURI)
-	if err != nil {
-		return nil, err
-	}
-
-	var bookResponse bookApiItem
-	if err = m.parseAPIResponse(response, &bookResponse); err != nil {
+	bookResponse, apiErr := m.api.GetBookResponse(bookId)
+	if apiErr != nil {
 		return nil, err
 	}
 

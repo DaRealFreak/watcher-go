@@ -3,7 +3,7 @@ package models
 
 import (
 	"fmt"
-	"net/http"
+	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"path"
 	"regexp"
@@ -124,7 +124,7 @@ func (t *Module) SetCookies() {
 	}
 
 	if len(sessionCookies) > 0 && t.Session != nil && t.Session.GetClient() != nil {
-		t.Session.GetClient().Jar.SetCookies(sessionUrl, sessionCookies)
+		t.Session.GetClient().SetCookies(sessionUrl, sessionCookies)
 	}
 }
 

@@ -27,7 +27,7 @@ func (a *ChounyuuAPI) RetrieveTagResponse(domain string, tagId string, page int)
 		domain, a.getApiVersion(domain), tagId, page,
 	)
 
-	res, err := a.Session.Get(url)
+	res, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}
