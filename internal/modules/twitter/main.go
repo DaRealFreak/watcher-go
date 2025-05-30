@@ -3,22 +3,19 @@ package twitter
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
-	http "github.com/bogdanfinn/fhttp"
-	"os"
-	"regexp"
-	"strings"
-
-	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
-
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-	"github.com/spf13/viper"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	http "github.com/bogdanfinn/fhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"os"
+	"regexp"
+	"strings"
 )
 
 // twitter contains the implementation of the ModuleInterface
@@ -74,7 +71,7 @@ func (m *twitter) InitializeModule() {
 		return
 	}
 
-	m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey(), m.settings)
+	m.twitterGraphQlAPI = graphql_api.NewTwitterAPI(m.ModuleKey(), m.settings, m.GetProxySettings())
 	if cookie := m.DbIO.GetCookie(graphql_api.CookieAuth, m); cookie != nil {
 		m.twitterGraphQlAPI.SetCookies(
 			[]*http.Cookie{

@@ -33,8 +33,9 @@ type TwitterGraphQlAPI struct {
 }
 
 // NewTwitterAPI returns the settings of the Twitter API
-func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings) *TwitterGraphQlAPI {
+func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings, proxySettings *watcherHttp.ProxySettings) *TwitterGraphQlAPI {
 	graphQLSession := session.NewSession(moduleKey, TwitterErrorHandler{})
+	raven.CheckError(graphQLSession.SetProxy(proxySettings))
 
 	return &TwitterGraphQlAPI{
 		settings:               settings,

@@ -40,7 +40,7 @@ func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *De
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(30),
 		tls_client.WithClientProfile(profiles.Firefox_135),
-		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
+		tls_client.WithCookieJar(jar),
 	}
 
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)

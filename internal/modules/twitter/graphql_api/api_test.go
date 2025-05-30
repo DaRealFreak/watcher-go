@@ -16,7 +16,7 @@ var twitterAPI *TwitterGraphQlAPI
 // to prevent multiple logins for every test
 func TestMain(m *testing.M) {
 	// initialize the shared API instance
-	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{})
+	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{}, nil)
 	twitterAPI.SetCookies([]*http.Cookie{
 		{
 			Name:   "auth_token",
