@@ -58,10 +58,10 @@ func (a *DeviantartNAPI) ExtendedDeviation(
 	err = a.mapAPIResponse(response, &searchResponse)
 
 	// we most likely ran into an expired form submission which indicates that our session got terminated from the server
-	if err == nil && searchResponse.Deviation == nil {
-		// ToDo: investigate why the form submission is expired and how to refresh it
-		// return a.ExtendedDeviation(deviationId, username, deviationType, includeSession, session)
-	}
+	//if err == nil && searchResponse.Deviation == nil {
+	//	// ToDo: investigate why the form submission is expired and how to refresh it
+	//	// return a.ExtendedDeviation(deviationId, username, deviationType, includeSession, session)
+	//}
 
 	return &searchResponse, err
 }

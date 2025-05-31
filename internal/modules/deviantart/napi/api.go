@@ -17,7 +17,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
-	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/jaytaylor/html2text"
 	"golang.org/x/time/rate"
@@ -175,7 +174,6 @@ type DeviantartNAPI struct {
 	login.DeviantArtLogin
 	account     *models.Account
 	UserSession watcherHttp.SessionInterface
-	rateLimiter *rate.Limiter
 	ctx         context.Context
 	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
 	CSRFToken string
@@ -190,7 +188,6 @@ func NewDeviantartNAPI(moduleKey string, rateLimiter *rate.Limiter, userAgent st
 
 	return &DeviantartNAPI{
 		UserSession: userSession,
-		rateLimiter: rate.NewLimiter(rate.Every(4*time.Second), 1),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 		UserAgent:   userAgent,
@@ -208,11 +205,11 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return err
 	}
 
-	if !(info.CSRFToken != "") {
+	if info.CSRFToken == "" {
 		return fmt.Errorf("could not retrieve CSRF token from login page")
 	}
 
-	if !(info.LuToken != "") {
+	if info.LuToken == "" {
 		return fmt.Errorf("could not retrieve LuToken token from login page")
 	}
 
@@ -300,11 +297,6 @@ func (a *DeviantartNAPI) mapAPIResponse(res *http.Response, apiRes interface{}) 
 	return nil
 }
 
-// applyRateLimit waits until the leaky bucket can pass another request again
-func (a *DeviantartNAPI) applyRateLimit() {
-	raven.CheckError(a.rateLimiter.Wait(a.ctx))
-}
-
 func (a *Author) GetUsernameUrl() string {
 	return strings.ToLower(url.PathEscape(a.Username))
 }
@@ -369,19 +361,20 @@ func (d *Draft) GetText() (text string) {
 }
 
 func (d *TextContent) GetTextContent() (string, error) {
-	if d.Html.Type == "draft" {
+	switch d.Html.Type {
+	case "draft":
 		var draft Draft
 		if err := json.Unmarshal([]byte(d.Html.Markup), &draft); err != nil {
 			return "", err
 		}
 		return draft.GetText(), nil
-	} else if d.Html.Type == "tiptap" {
+	case "tiptap":
 		html, err := parser.ParseTipTapFormat(d.Html.Markup)
 		if err != nil {
 			return "", err
 		}
 		return html2text.FromString(html)
-	} else {
+	default:
 		return html2text.FromString(d.Html.Markup)
 	}
 }

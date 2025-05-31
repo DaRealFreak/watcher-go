@@ -2,22 +2,10 @@ package patreon
 
 import (
 	http "github.com/bogdanfinn/fhttp"
-	"net/url"
-	"strings"
 )
 
 func (m *patreon) get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return m.do(req)
-}
-
-func (m *patreon) post(url string, data url.Values) (*http.Response, error) {
-	formBody := data.Encode()
-	req, err := http.NewRequest("POST", url, strings.NewReader(formBody))
 	if err != nil {
 		return nil, err
 	}
