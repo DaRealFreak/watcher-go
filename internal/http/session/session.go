@@ -337,7 +337,7 @@ func (s *DefaultSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 	)
 
 	log.WithField("module", s.ModuleKey).Debug(
-		fmt.Sprintf("setting proxy: %s", proxyURL),
+		fmt.Sprintf("setting proxy: %s", strings.Replace(proxyURL, auth, "****:****@", 1)),
 	)
 
 	return s.Client.SetProxy(proxyURL)

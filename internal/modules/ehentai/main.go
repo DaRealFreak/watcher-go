@@ -149,7 +149,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 		}
 
 		htmlResponse, _ = m.Session.GetDocument(res).Html()
-		m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in")
+		m.LoggedIn = strings.Contains(htmlResponse, "You are now logged in") || strings.Contains(htmlResponse, "Logged in as:")
 		m.TriedLogin = true
 	}
 
