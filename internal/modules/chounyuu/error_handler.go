@@ -6,7 +6,6 @@ import (
 )
 
 type DeletedMediaError struct {
-	error
 }
 
 func (e DeletedMediaError) Error() string {
@@ -16,8 +15,8 @@ func (e DeletedMediaError) Error() string {
 type errorHandler struct{}
 
 func (e errorHandler) CheckResponse(response *http.Response) (err error, fatal bool) {
-	switch {
-	case response.StatusCode == 404:
+	switch response.StatusCode {
+	case 404:
 		return DeletedMediaError{}, true
 	}
 

@@ -2,6 +2,7 @@ package jinjamodoki
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -29,13 +30,11 @@ func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *mode
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range queue {
@@ -130,5 +129,6 @@ func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
 		return documentErr
 	}
 
-	return fmt.Errorf(doc.Find("p > b").First().Text())
+	msg := doc.Find("p > b").First().Text()
+	return errors.New(msg)
 }

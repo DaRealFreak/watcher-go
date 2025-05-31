@@ -3,7 +3,6 @@ package watcher
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,7 +107,7 @@ func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byt
 	}
 
 	filePath := filepath.ToSlash(filepath.Join(dir, ".watcher", "completion", fName))
-	if err := ioutil.WriteFile(filePath, fContent, os.ModePerm); err != nil {
+	if err = os.WriteFile(filePath, fContent, os.ModePerm); err != nil {
 		return err
 	}
 
@@ -128,11 +127,10 @@ func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byt
 func (cli *CliApplication) updateBashCompletionCommandToCurrentExecutable(fileContent []byte) []byte {
 	if executable, err := os.Executable(); err == nil {
 		executable = filepath.Base(executable)
-		newContents := strings.Replace(
+		newContents := strings.ReplaceAll(
 			string(fileContent),
 			fmt.Sprintf(" -F __start_%s %s", cli.rootCmd.Use, cli.rootCmd.Use),
 			fmt.Sprintf(" -F __start_%s %s", cli.rootCmd.Use, executable),
-			-1,
 		)
 
 		return []byte(newContents)

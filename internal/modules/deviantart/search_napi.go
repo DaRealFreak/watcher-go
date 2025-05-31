@@ -18,7 +18,7 @@ func (m *deviantArt) parseSearchNapi(item *models.TrackedItem) error {
 	}
 
 	parsedQueryString, _ := url.ParseQuery(u.RawQuery)
-	searchQuery, _ := parsedQueryString["q"]
+	searchQuery := parsedQueryString["q"]
 	searchTag := searchQuery[0]
 
 	currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)

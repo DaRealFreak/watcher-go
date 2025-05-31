@@ -1,7 +1,7 @@
 package archivetest
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
@@ -34,7 +34,7 @@ func AddFileByPath(archive archive.Writer, t *testing.T) {
 	)
 
 	// generate a temporary .test file
-	tmpFile, err := ioutil.TempFile("", "*.test")
+	tmpFile, err := os.CreateTemp("", "*.test")
 	assertion.NoError(err)
 
 	// write the test content into the temp file

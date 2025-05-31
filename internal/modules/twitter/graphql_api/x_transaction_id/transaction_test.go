@@ -3,7 +3,6 @@ package x_transaction_id
 import (
 	"encoding/base64"
 	"github.com/PuerkitoBio/goquery"
-	"math/rand"
 	"strings"
 	"testing"
 )
@@ -373,9 +372,9 @@ input::-webkit-search-cancel-button,input::-webkit-search-decoration,input::-web
 	)
 
 	response, err := goquery.NewDocumentFromReader(strings.NewReader(exampleResponse))
-
-	// deterministic random for test reproducibility
-	rand.Seed(0)
+	if err != nil {
+		t.Fatalf("error parsing example response: %v", err)
+	}
 
 	// call with overrides (handler fields not set)
 	h := &XTransactionIdHandler{

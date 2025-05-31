@@ -28,13 +28,11 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue {

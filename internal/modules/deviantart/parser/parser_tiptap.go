@@ -75,7 +75,8 @@ func ParseTipTapFormat(jsonStr string) (string, error) {
 			buffer.WriteString(fmt.Sprintf(`<p style="text-align: %s;">%s`, textAlign, indentation))
 
 			for _, content := range element.Content {
-				if content.Type == "text" {
+				switch content.Type {
+				case "text":
 					text := content.Text
 					for _, mark := range content.Marks {
 						if mark.Type == "bold" {
@@ -86,7 +87,7 @@ func ParseTipTapFormat(jsonStr string) (string, error) {
 						}
 					}
 					buffer.WriteString(text)
-				} else if content.Type == "hardBreak" {
+				case "hardBreak":
 					buffer.WriteString("<br />")
 				}
 			}

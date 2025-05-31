@@ -2,7 +2,6 @@
 package zip
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 func TestGetFiles(t *testing.T) {
 	var assertion = assert.New(t)
 	// create the archive
-	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
+	tmpArchiveFile, err := os.CreateTemp("", "*"+FileExt)
 	assertion.NoError(err)
 
 	writer := NewWriter(tmpArchiveFile)
@@ -33,7 +32,7 @@ func TestGetFiles(t *testing.T) {
 func TestGetFile(t *testing.T) {
 	var assertion = assert.New(t)
 	// create the archive
-	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
+	tmpArchiveFile, err := os.CreateTemp("", "*"+FileExt)
 	assertion.NoError(err)
 
 	writer := NewWriter(tmpArchiveFile)

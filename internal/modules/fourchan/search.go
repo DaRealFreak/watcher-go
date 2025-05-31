@@ -43,9 +43,9 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 
 			// will return 0 on error, so fine for us too for the current item
 			currentItemID, _ = strconv.ParseInt(item.CurrentItem, 10, 64)
-			galleryItemID, err = strconv.ParseInt(threadID, 10, 64)
+			galleryItemID, _ = strconv.ParseInt(threadID, 10, 64)
 
-			if !(item.CurrentItem == "" || galleryItemID > currentItemID) {
+			if item.CurrentItem != "" && galleryItemID <= currentItemID {
 				foundCurrentItem = true
 				break
 			}

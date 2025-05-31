@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -157,7 +156,7 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 			return err
 		}
 
-		err = ioutil.WriteFile(fPath, frame, os.ModePerm)
+		err = os.WriteFile(fPath, frame, os.ModePerm)
 		if err != nil {
 			return err
 		}

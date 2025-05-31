@@ -3,9 +3,9 @@ package duplication
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -84,7 +84,8 @@ func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 		return 1 - res, nil
 	}
 
-	return 0, fmt.Errorf(fmt.Sprint(err) + ": " + stderr.String())
+	combinedMsg := fmt.Sprint(err) + ": " + stderr.String()
+	return 0, errors.New(combinedMsg)
 }
 
 // resizeImage uses ImageMagick to resize the passed file to the requested width x height ignoring the aspect ratio
@@ -111,7 +112,7 @@ func getFileResourceReader(source string) (r *os.File, err error) {
 
 	if u.Scheme == "http" || u.Scheme == "https" {
 		var f *os.File
-		f, err = ioutil.TempFile("", ".*")
+		f, err = os.CreateTemp("", ".*")
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +135,7 @@ func getFileResourceReader(source string) (r *os.File, err error) {
 
 // copyToTempFile copies content of the read closer to a temporary file
 func copyToTempFile(r io.Reader) (f *os.File, err error) {
-	f, err = ioutil.TempFile("", ".*")
+	f, err = os.CreateTemp("", ".*")
 	if err != nil {
 		return nil, err
 	}

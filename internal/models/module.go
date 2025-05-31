@@ -60,7 +60,6 @@ type Module struct {
 }
 
 type ModuleNotImplementedError struct {
-	error
 }
 
 func (e ModuleNotImplementedError) Error() string {
@@ -134,13 +133,11 @@ func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, tracked
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", t.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", t.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue {

@@ -22,8 +22,8 @@ func (tt *TwitterTime) UnmarshalJSON(b []byte) (err error) {
 }
 
 func (tt *TwitterTime) MarshalJSON() ([]byte, error) {
-	if tt.Time.UnixNano() == (time.Time{}).UnixNano() {
+	if tt.UnixNano() == (time.Time{}).UnixNano() {
 		return []byte("null"), nil
 	}
-	return []byte(fmt.Sprintf("\"%s\"", tt.Time.Format(time.RubyDate))), nil
+	return []byte(fmt.Sprintf("\"%s\"", tt.Format(time.RubyDate))), nil
 }

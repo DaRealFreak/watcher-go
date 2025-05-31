@@ -23,13 +23,11 @@ func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue {
@@ -240,22 +238,20 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 	// If you want to handle any remaining non-anchor URLs, you can use a regex as a fallback
 	// Extract non-anchor URLs from the plain text
 	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=!]*)`)
-	if comments != nil {
-		for _, comment := range comments {
-			if comment.Commenter != post.Post.User {
-				continue
-			}
+	for _, comment := range comments {
+		if comment.Commenter != post.Post.User {
+			continue
+		}
 
-			if comment.Content != "" {
-				urlMatches := pattern.FindAllStringSubmatch(comment.Content, -1)
-				if len(urlMatches) > 0 {
-					for _, match := range urlMatches {
-						q, _ := url.Parse(match[0])
-						q.Scheme = "https"
+		if comment.Content != "" {
+			urlMatches := pattern.FindAllStringSubmatch(comment.Content, -1)
+			if len(urlMatches) > 0 {
+				for _, match := range urlMatches {
+					q, _ := url.Parse(match[0])
+					q.Scheme = "https"
 
-						if !strings.Contains(q.String(), ".fanbox.cc/") {
-							links = append(links, q.String())
-						}
+					if !strings.Contains(q.String(), ".fanbox.cc/") {
+						links = append(links, q.String())
 					}
 				}
 			}

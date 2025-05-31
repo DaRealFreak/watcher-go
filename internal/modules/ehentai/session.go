@@ -14,17 +14,7 @@ func (m *ehentai) get(requestUrl string, session ...http2.SessionInterface) (*ht
 		return nil, err
 	}
 
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Origin", requestUrl)
-	req.Header.Set("Referer", requestUrl)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0")
-
-	usedSession := m.Session
-	if len(session) > 0 {
-		usedSession = session[0]
-	}
-
-	return usedSession.Do(req)
+	return m.do(req, session...)
 }
 
 func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.SessionInterface) (*http.Response, error) {
@@ -34,17 +24,7 @@ func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.Sess
 		return nil, err
 	}
 
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Origin", requestUrl)
-	req.Header.Set("Referer", requestUrl)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0")
-
-	usedSession := m.Session
-	if len(session) > 0 {
-		usedSession = session[0]
-	}
-
-	return usedSession.GetClient().Do(req)
+	return m.do(req, session...)
 }
 
 func (m *ehentai) do(req *http.Request, session ...http2.SessionInterface) (*http.Response, error) {

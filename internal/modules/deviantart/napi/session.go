@@ -13,21 +13,7 @@ func (a *DeviantartNAPI) get(url string, session ...http2.SessionInterface) (*ht
 		return nil, err
 	}
 
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("User-Agent", a.UserAgent)
-
-	if req.URL.Host == "www.deviantart.com" {
-		req.Header.Set("Host", "https://www.deviantart.com")
-		req.Header.Set("Referer", "https://www.deviantart.com")
-		req.Header.Set("Origin", "https://www.deviantart.com")
-	}
-
-	usedSession := a.UserSession
-	if len(session) > 0 {
-		usedSession = session[0]
-	}
-
-	return usedSession.Do(req)
+	return a.do(req, session...)
 }
 
 func (a *DeviantartNAPI) post(url string, data url.Values, session ...http2.SessionInterface) (*http.Response, error) {
@@ -37,6 +23,10 @@ func (a *DeviantartNAPI) post(url string, data url.Values, session ...http2.Sess
 		return nil, err
 	}
 
+	return a.do(req, session...)
+}
+
+func (a *DeviantartNAPI) do(req *http.Request, session ...http2.SessionInterface) (*http.Response, error) {
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("User-Agent", a.UserAgent)
 

@@ -1,7 +1,7 @@
 package zip
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/DaRealFreak/watcher-go/pkg/archive/archivetest"
@@ -13,7 +13,7 @@ import (
 func TestAddFile(t *testing.T) {
 	var assertion = assert.New(t)
 	// create a new archive
-	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
+	tmpArchiveFile, err := os.CreateTemp("", "*"+FileExt)
 	assertion.NoError(err)
 
 	archive := NewWriter(tmpArchiveFile)
@@ -26,7 +26,7 @@ func TestAddFile(t *testing.T) {
 func TestAddFileByPath(t *testing.T) {
 	var assertion = assert.New(t)
 	// create a new archive
-	tmpArchiveFile, err := ioutil.TempFile("", "*"+FileExt)
+	tmpArchiveFile, err := os.CreateTemp("", "*"+FileExt)
 	assertion.NoError(err)
 
 	archive := NewWriter(tmpArchiveFile)

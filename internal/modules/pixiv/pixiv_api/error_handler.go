@@ -10,8 +10,8 @@ type PixivErrorHandler struct {
 }
 
 func (e PixivErrorHandler) CheckResponse(response *http.Response) (err error, fatal bool) {
-	switch {
-	case response.StatusCode == 400:
+	switch response.StatusCode {
+	case 400:
 		var mobileAPIError MobileAPIError
 
 		if content, readErr := io.ReadAll(response.Body); readErr == nil {

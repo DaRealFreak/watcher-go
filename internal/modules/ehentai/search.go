@@ -81,7 +81,7 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 				return err
 			}
 
-			if !(item.CurrentItem == "" || galleryItemID > currentItemID) {
+			if item.CurrentItem != "" && galleryItemID <= currentItemID {
 				foundCurrentItem = true
 				break
 			}

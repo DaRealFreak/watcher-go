@@ -11,7 +11,6 @@ import (
 	"golang.org/x/image/draw"
 
 	// imports for registering formats to image decoder
-	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 

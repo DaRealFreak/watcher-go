@@ -97,13 +97,11 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue {

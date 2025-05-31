@@ -58,13 +58,11 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, deviationItem := range downloadQueue {
@@ -140,11 +138,9 @@ func (m *deviantArt) downloadDeviationNapi(
 		}
 
 		log.WithField("module", m.Key).Warnf(
-			fmt.Sprintf(
-				"no access to deviation \"%s\", deviation is only available to %s, skipping",
-				deviationItem.deviation.URL,
-				res.Deviation.PremiumFolderData.Type,
-			),
+			"no access to deviation \"%s\", deviation is only available to %s, skipping",
+			deviationItem.deviation.URL,
+			res.Deviation.PremiumFolderData.Type,
 		)
 		return nil
 	}
@@ -202,12 +198,10 @@ func (m *deviantArt) downloadDeviationNapi(
 		if err = m.downloadLiteratureNapi(deviationItem); err != nil {
 			return err
 		}
-		break
 	case "image", "pdf", "film", "status":
 		if err = m.downloadContentNapi(deviationItem, downloadSession); err != nil {
 			return err
 		}
-		break
 	default:
 		return fmt.Errorf("unknown deviation type: \"%s\"", deviationItem.deviation.Type)
 	}

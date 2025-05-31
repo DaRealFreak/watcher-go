@@ -1,0 +1,28 @@
+# golangci.com configuration
+# https://github.com/golangci/golangci/wiki/Configuration
+service:
+  golangci-lint-version: latest
+
+run:
+  skip-files:
+    - ".*_test\\.go$"
+    - ".*_mock\\.go$"
+    - ".*\\.pb\\.go$"
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0
+  misspell:
+    locale: US
+
+linters: # List of available linters: https://github.com/golangci/golangci-lint#enabled-by-default-linters
+  enable-all: false
+  disable: []
+
+issues:
+  exclude-rules:
+    - text: "weak cryptographic primitive"
+      linters:
+        - gosec

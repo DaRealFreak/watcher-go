@@ -16,20 +16,7 @@ func (a *FanboxAPI) get(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Referer", "https://www.fanbox.cc")
-	req.Header.Set("Origin", "https://www.fanbox.cc")
-	req.Header.Set("User-Agent", a.UserAgent)
-
-	// set the required cookies for the request
-	cookieString := fmt.Sprintf("FANBOXSESSID=%s", a.SessionCookie.Value)
-	if a.CfClearanceCookie != nil {
-		cookieString += fmt.Sprintf("; %s=%s", a.CfClearanceCookie.Name, a.CfClearanceCookie.Value)
-	}
-	req.Header.Set("Cookie", cookieString)
-
-	return a.Session.Do(req)
+	return a.do(req)
 }
 
 func (a *FanboxAPI) post(url string, data url.Values) (*http.Response, error) {
@@ -39,6 +26,10 @@ func (a *FanboxAPI) post(url string, data url.Values) (*http.Response, error) {
 		return nil, err
 	}
 
+	return a.do(req)
+}
+
+func (a *FanboxAPI) do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Referer", "https://www.fanbox.cc")

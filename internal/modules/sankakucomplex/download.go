@@ -52,7 +52,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 				"books",
 				fmt.Sprintf("%s%s",
 					fp.TruncateMaxLength(
-						fp.SanitizePath(fmt.Sprintf("%s", bookResponse.Name), false),
+						fp.SanitizePath(bookResponse.Name, false),
 						len(idString),
 					),
 					idString,
@@ -126,13 +126,11 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue.items)+len(downloadQueue.books), trackedItem.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue.items {

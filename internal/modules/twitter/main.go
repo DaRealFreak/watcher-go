@@ -82,9 +82,8 @@ func (m *twitter) InitializeModule() {
 				},
 			},
 		)
-	} else {
-		// ToDo: guest cookie
 	}
+	// ToDo: guest cookie
 
 	if err := m.twitterGraphQlAPI.InitializeSession(); err != nil {
 		log.WithField("module", m.Key).Fatalf(

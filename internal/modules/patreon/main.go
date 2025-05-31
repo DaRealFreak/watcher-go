@@ -225,6 +225,11 @@ func (m *patreon) Login(account *models.Account) bool {
 	}
 
 	res, err := m.get("https://www.patreon.com/login")
+	if err != nil {
+		log.WithField("module", m.Key).Error(err)
+		return false
+	}
+
 	loginCsrfMatches := m.loginCsrfPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
 	if len(loginCsrfMatches) != 2 {
 		log.WithField("module", m.Key).Fatal(

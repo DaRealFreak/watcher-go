@@ -8,11 +8,9 @@ import (
 )
 
 type IpBanSearchError struct {
-	error
 }
 
 type IpBanError struct {
-	error
 }
 
 func (e IpBanSearchError) Error() string {

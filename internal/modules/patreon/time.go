@@ -22,8 +22,8 @@ func (pt *Time) UnmarshalJSON(b []byte) (err error) {
 }
 
 func (pt *Time) MarshalJSON() ([]byte, error) {
-	if pt.Time.UnixNano() == (time.Time{}).UnixNano() {
+	if pt.UnixNano() == (time.Time{}).UnixNano() {
 		return []byte("null"), nil
 	}
-	return []byte(fmt.Sprintf("\"%s\"", pt.Time.Format(time.RFC3339))), nil
+	return []byte(fmt.Sprintf("\"%s\"", pt.Format(time.RFC3339))), nil
 }

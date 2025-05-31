@@ -64,8 +64,8 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 				downloadQueue = append(downloadQueue, models.DownloadQueueItem{
 					ItemID:      strconv.Itoa(itemID),
 					DownloadTag: fmt.Sprintf("%s (%s)", threadTitle, threadID),
-					FileURI:     fmt.Sprintf(contentUrls[itemID]),
-					FileName:    fmt.Sprintf(fmt.Sprintf("%d_%s", itemID, fp.GetFileName(contentUrls[itemID]))),
+					FileURI:     contentUrls[itemID],
+					FileName:    fmt.Sprintf("%d_%s", itemID, fp.GetFileName(contentUrls[itemID])),
 				})
 			}
 		}

@@ -2,7 +2,6 @@ package sankakucomplex
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
 	"net/url"
 	"path"
 	"strconv"
@@ -50,7 +49,6 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 							ItemID: strconv.FormatInt(data.CreatedAt.S, 10),
 							DownloadTag: path.Join(
 								fp.TruncateMaxLength(fp.SanitizePath(m.getDownloadTag(item), false)),
-								// m.getTagSubDirectory(data),
 							),
 							FileName: fmt.Sprintf(
 								"%d_%s_%s",
@@ -94,17 +92,6 @@ func (m *sankakuComplex) extractItemTag(item *models.TrackedItem) (string, error
 	}
 
 	return q["tags"][0], nil
-}
-
-// getTagSubDirectory returns possible subdirectories since the books got kinda overhand
-func (m *sankakuComplex) getTagSubDirectory(item *api.ApiItem) string {
-	for _, tag := range item.Tags {
-		if tag.NameEn == "doujinshi" || tag.NameEn == "comic" {
-			return "book"
-		}
-	}
-
-	return ""
 }
 
 func (m *sankakuComplex) getDownloadTag(item *models.TrackedItem) string {

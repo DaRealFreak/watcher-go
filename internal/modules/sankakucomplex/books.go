@@ -1,11 +1,8 @@
 package sankakucomplex
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex/api"
-	http "github.com/bogdanfinn/fhttp"
-	"io"
 	"net/url"
 	"strconv"
 	"strings"
@@ -14,18 +11,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 )
-
-// parseAPIBookResponse parses the book response from the API
-func (m *sankakuComplex) parseAPIResponse(response *http.Response, apiRes interface{}) error {
-	body, _ := io.ReadAll(response.Body)
-
-	err := json.Unmarshal(body, &apiRes)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
 
 func (m *sankakuComplex) extractBookItems(data *api.BookApiItem) (downloadQueue []*downloadGalleryItem, err error) {
 	tmpItem := &models.TrackedItem{

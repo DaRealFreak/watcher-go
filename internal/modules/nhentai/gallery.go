@@ -2,6 +2,8 @@ package nhentai
 
 import (
 	"fmt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"net/url"
 	"strconv"
 	"strings"
@@ -123,14 +125,24 @@ func (m *nhentai) extractGalleryTitle(html string) (galleryTitle string) {
 func (m *nhentai) getGalleryLanguages(html string, title string) (string, bool) {
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 
+	// Create a Unicode‐aware title‐casing transformer.
+	// Using language.Und applies neutral casing rules for most scripts.
+	titleCaser := cases.Title(language.Und)
+
 	var languages []string
+	lowerTitle := strings.ToLower(title)
 
-	document.Find("section#tags a[href*=\"/language/\"] > span.name").Each(func(i int, languageTag *goquery.Selection) {
-		if languageTag.Text() != "translated" && !strings.Contains(strings.ToLower(title), strings.ToLower(languageTag.Text())) {
-			languages = append(languages, strings.Title(languageTag.Text()))
-		}
+	document.Find(`section#tags a[href*="/language/"] > span.name`).Each(
+		func(i int, languageTag *goquery.Selection) {
+			tagText := languageTag.Text()
+			lowerTag := strings.ToLower(tagText)
 
-	})
+			// Skip the "translated" tag and skip if the tag already appears in the title.
+			if tagText != "translated" && !strings.Contains(lowerTitle, lowerTag) {
+				languages = append(languages, titleCaser.String(tagText))
+			}
+		},
+	)
 
 	return strings.Join(languages, ", "), len(languages) > 0
 }

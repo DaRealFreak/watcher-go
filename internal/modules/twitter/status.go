@@ -30,9 +30,7 @@ func (m *twitter) parseStatusGraphQLApi(item *models.TrackedItem, statusID strin
 	}
 
 	var newMediaTweets []*graphql_api.Tweet
-	for _, singleTweet := range tweet.TweetEntries() {
-		newMediaTweets = append(newMediaTweets, singleTweet)
-	}
+	newMediaTweets = append(newMediaTweets, tweet.TweetEntries()...)
 
 	return m.processDownloadQueueGraphQL(newMediaTweets, item)
 }

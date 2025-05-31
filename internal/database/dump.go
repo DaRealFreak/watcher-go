@@ -65,7 +65,7 @@ func (db *DbIO) getTableRows(tableName string) (inserts []string, err error) {
 	// sqlite_master table contains the SQL CREATE statements for the database.
 	columnSelects := make([]string, len(columnNames))
 	for i, c := range columnNames {
-		columnSelects[i] = fmt.Sprintf(`'||quote("%s")||'`, strings.Replace(c, `"`, `""`, -1))
+		columnSelects[i] = fmt.Sprintf(`'||quote("%s")||'`, strings.ReplaceAll(c, `"`, `""`))
 	}
 
 	// create insert queries with the pragma table info, so we can't use static queries here

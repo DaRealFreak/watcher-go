@@ -13,13 +13,11 @@ func (m *chounyuu) processDownloadQueue(downloadQueue []models.DownloadQueueItem
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
 	)
 
-	if notifications != nil {
-		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
-		}
+	for _, notification := range notifications {
+		log.WithField("module", m.Key).Log(
+			notification.Level,
+			notification.Message,
+		)
 	}
 
 	for index, data := range downloadQueue {
@@ -45,7 +43,8 @@ func (m *chounyuu) processDownloadQueue(downloadQueue []models.DownloadQueueItem
 			switch err.(type) {
 			case DeletedMediaError:
 				log.WithField("module", m.ModuleKey()).Warnf(
-					fmt.Sprintf("received 404 status code for URI \"%s\", content got most likely deleted, skipping", data.FileURI),
+					"received 404 status code for URI \"%s\", content got most likely deleted, skipping",
+					data.FileURI,
 				)
 			default:
 				return err

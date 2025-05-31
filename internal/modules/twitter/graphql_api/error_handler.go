@@ -9,7 +9,6 @@ import (
 )
 
 type DMCAError struct {
-	error
 }
 
 func (e DMCAError) Error() string {
@@ -17,7 +16,6 @@ func (e DMCAError) Error() string {
 }
 
 type DeletedMediaError struct {
-	error
 }
 
 func (e DeletedMediaError) Error() string {
@@ -25,7 +23,6 @@ func (e DeletedMediaError) Error() string {
 }
 
 type RateLimitError struct {
-	error
 }
 
 func (e RateLimitError) Error() string {
@@ -33,7 +30,6 @@ func (e RateLimitError) Error() string {
 }
 
 type CSRFError struct {
-	error
 }
 
 func (e CSRFError) Error() string {
@@ -41,7 +37,6 @@ func (e CSRFError) Error() string {
 }
 
 type SessionTerminatedError struct {
-	error
 }
 
 func (e SessionTerminatedError) Error() string {
@@ -49,7 +44,6 @@ func (e SessionTerminatedError) Error() string {
 }
 
 type SessionRefreshError struct {
-	error
 }
 
 func (e SessionRefreshError) Error() string {
@@ -59,26 +53,26 @@ func (e SessionRefreshError) Error() string {
 type TwitterErrorHandler struct{}
 
 func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, fatal bool) {
-	switch {
-	case response.StatusCode == 401:
+	switch response.StatusCode {
+	case 401:
 		// our session got likely terminated due to search rate limits being exceeded
 		// so replace our auth token cookie with fallbacks if we have any
 		return SessionTerminatedError{}, false
-	case response.StatusCode == 429:
+	case 429:
 		// we are being rate limited
 		// graphQL is not intended for public use so no rate limit is known, just sleep for an extended period of time
 		// from my personal testing the limits are spliced into 15 minute intervals similar to their default API
 		// https://developer.x.com/en/docs/twitter-api/rate-limits
 		time.Sleep(5 * time.Minute)
 		return RateLimitError{}, false
-	case response.StatusCode == 403:
+	case 403:
 		if e.hasSetCookieHeader(response) {
 			// retry if we first had to refresh/set cookies
 			return CSRFError{}, false
 		} else {
 			return DMCAError{}, true
 		}
-	case response.StatusCode == 404:
+	case 404:
 		if strings.Contains(response.Request.URL.Hostname(), ".twimg.com") {
 			return DeletedMediaError{}, true
 		} else if strings.Contains(response.Request.URL.String(), "/i/api/graphql/") {

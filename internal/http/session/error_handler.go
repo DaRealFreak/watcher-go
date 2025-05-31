@@ -8,7 +8,6 @@ import (
 )
 
 type StatusError struct {
-	error
 	StatusCode int
 }
 
@@ -17,7 +16,6 @@ func (e StatusError) Error() string {
 }
 
 type WrittenSizeError struct {
-	error
 	Message string
 }
 

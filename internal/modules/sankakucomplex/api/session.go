@@ -12,13 +12,7 @@ func (a *SankakuComplexApi) get(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/vnd.sankaku.api+json;v=2")
-	token, err := a.tokenSrc.Token()
-	if err == nil {
-		req.Header.Set("Authorization", token.TokenType+" "+token.AccessToken)
-	}
-
-	return a.Session.Do(req)
+	return a.do(req)
 }
 
 func (a *SankakuComplexApi) post(url string, data url.Values) (*http.Response, error) {
@@ -28,6 +22,10 @@ func (a *SankakuComplexApi) post(url string, data url.Values) (*http.Response, e
 		return nil, err
 	}
 
+	return a.do(req)
+}
+
+func (a *SankakuComplexApi) do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/vnd.sankaku.api+json;v=2")
 	token, err := a.tokenSrc.Token()
 	if err == nil {

@@ -31,12 +31,7 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		offset           int
 	)
 
-	for {
-		// we are beyond the last page, break here
-		if len(root.Results) == 0 {
-			break
-		}
-
+	for len(root.Results) != 0 {
 		for _, post := range root.Results {
 			// check if we reached the current item already
 			if post.ID == item.CurrentItem {
