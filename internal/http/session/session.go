@@ -38,7 +38,7 @@ func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *De
 	}
 
 	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithTimeoutSeconds(60 * 60),
 		tls_client.WithClientProfile(profiles.Firefox_135),
 		tls_client.WithCookieJar(jar),
 	}
@@ -314,7 +314,7 @@ func (s *DefaultSession) ApplyRateLimit() {
 
 // SetProxy sets the current proxy for the client
 func (s *DefaultSession) SetProxy(ps *watcherHttp.ProxySettings) error {
-	if ps == nil || !ps.Enable {
+	if ps == nil || !ps.Enable || ps.Host == "" {
 		return s.Client.SetProxy("")
 	}
 
@@ -334,6 +334,10 @@ func (s *DefaultSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		auth,
 		url.QueryEscape(ps.Host),
 		ps.Port,
+	)
+
+	log.WithField("module", s.ModuleKey).Debug(
+		fmt.Sprintf("setting proxy: %s", proxyURL),
 	)
 
 	return s.Client.SetProxy(proxyURL)

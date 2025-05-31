@@ -56,7 +56,7 @@ func NewOIDCClient(cfg Config) (*OidcClient, error) {
 	if cfg.HTTPClient == nil {
 		jar := tls_client.NewCookieJar()
 		options := []tls_client.HttpClientOption{
-			tls_client.WithTimeoutSeconds(30),
+			tls_client.WithTimeoutSeconds(60 * 60),
 			tls_client.WithClientProfile(profiles.Firefox_135),
 			tls_client.WithCookieJar(jar),
 		}
