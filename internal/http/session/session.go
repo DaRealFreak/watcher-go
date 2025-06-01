@@ -302,6 +302,10 @@ func (s *DefaultSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	s.Client.SetCookies(u, cookies)
 }
 
+func (s *DefaultSession) SetRateLimiter(rateLimiter *rate.Limiter) {
+	s.RateLimiter = rateLimiter
+}
+
 // ApplyRateLimit waits for the leaky bucket to fill again
 func (s *DefaultSession) ApplyRateLimit() {
 	// if no rate limiter is defined, we don't have to wait

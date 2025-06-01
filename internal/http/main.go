@@ -6,6 +6,7 @@ import (
 	"fmt"
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
+	"golang.org/x/time/rate"
 	"io"
 	"net/url"
 	"os"
@@ -33,6 +34,7 @@ type SessionInterface interface {
 	SetClient(client tls_client.HttpClient)
 	GetCookies(u *url.URL) []*http.Cookie
 	SetCookies(u *url.URL, cookies []*http.Cookie)
+	SetRateLimiter(rateLimiter *rate.Limiter)
 }
 
 type ErrorHandler interface {
