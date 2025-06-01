@@ -188,6 +188,42 @@ func (m *deviantArt) downloadDeviationNapi(
 		deviationItem.deviation.Media.BaseUri = fileUri.String()
 	}
 
+	// download additional content if available
+	for _, additionalMedia := range deviationItem.deviation.Extended.AdditionalMedia {
+		if additionalMedia.Media.BaseUri != "" {
+			log.WithField("module", m.Key).Debugf(
+				"downloading additional media: %s (%s bytes)",
+				additionalMedia.Media.BaseUri,
+				additionalMedia.FileSize.String(),
+			)
+
+			if additionalMedia.Media.Token != nil && additionalMedia.Media.Token.GetToken() != "" {
+				fileUri, _ := url.Parse(additionalMedia.Media.BaseUri)
+				fragments := fileUri.Query()
+				fragments.Set("token", additionalMedia.Media.Token.GetToken())
+				fileUri.RawQuery = fragments.Encode()
+				additionalMedia.Media.BaseUri = fileUri.String()
+			}
+
+			if err = downloadSession.DownloadFile(
+				path.Join(
+					m.GetDownloadDirectory(),
+					m.Key,
+					deviationItem.downloadTag,
+					fmt.Sprintf(
+						"%s_%s_a_%s_%s%s",
+						deviationItem.deviation.GetPublishedTimestamp(),
+						deviationItem.deviation.DeviationId.String(),
+						additionalMedia.Position.String(),
+						fp.SanitizePath(additionalMedia.Media.PrettyName, false),
+						fp.GetFileExtension(additionalMedia.Media.BaseUri),
+					),
+				), additionalMedia.Media.BaseUri); err != nil {
+				return err
+			}
+		}
+	}
+
 	// download description if above the min length
 	if err = m.downloadDescriptionNapi(deviationItem); err != nil {
 		return err

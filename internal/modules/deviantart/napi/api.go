@@ -120,6 +120,15 @@ type Extended struct {
 		Height   json.Number `json:"height"`
 		FileSize json.Number `json:"filesize"`
 	} `json:"download"`
+	AdditionalMedia []struct {
+		FileId   json.Number `json:"fileId"`
+		Type     string      `json:"type"`
+		Width    json.Number `json:"width"`
+		Height   json.Number `json:"height"`
+		FileSize json.Number `json:"filesize"`
+		Position json.Number `json:"position"`
+		Media    *Media      `json:"media"`
+	} `json:"additionalMedia"`
 	DescriptionText *TextContent `json:"descriptionText"`
 }
 
@@ -255,7 +264,20 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	)
 
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
+	req.Header.Set("Referer", "https://www.deviantart.com/_sisu/do/step2")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://www.deviantart.com")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Priority", "u=0, i")
 
 	res, err = a.do(req)
 	if err != nil {
