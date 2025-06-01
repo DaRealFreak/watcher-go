@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 type downloadQueueItemNAPI struct {
@@ -89,6 +90,12 @@ func (m *deviantArt) downloadDeviationNapi(
 		downloadSession = m.nAPI.UserSession
 	}
 
+	// record a single “reference” timestamp:
+	started := time.Now()
+
+	// collect paths of every file we download / write:
+	var downloadedFiles []string
+
 	deviationId, _ := strconv.ParseInt(deviationItem.deviation.DeviationId.String(), 10, 64)
 	deviationType := napi.DeviationTypeArt
 	if deviationItem.deviation.IsJournal {
@@ -160,16 +167,22 @@ func (m *deviantArt) downloadDeviationNapi(
 		),
 	)
 
+	// ──────────────────────────────────────────────────────────────
+	// download the “downloadable” version (if it exists)
+	// ──────────────────────────────────────────────────────────────
 	if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
-		if err = downloadSession.DownloadFile(
-			path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				deviationItem.downloadTag,
-				deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
-			), deviationItem.deviation.Extended.Download.URL); err != nil {
+		dst := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			deviationItem.downloadTag,
+			deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
+		)
+		if err = downloadSession.DownloadFile(dst, deviationItem.deviation.Extended.Download.URL); err != nil {
 			return err
 		}
+
+		// record that path
+		downloadedFiles = append(downloadedFiles, dst)
 	}
 
 	// handle token if set
@@ -188,7 +201,9 @@ func (m *deviantArt) downloadDeviationNapi(
 		deviationItem.deviation.Media.BaseUri = fileUri.String()
 	}
 
-	// download additional content if available
+	// ──────────────────────────────────────────────────────────────
+	// download any “AdditionalMedia”, which are mostly slides/galleries
+	// ──────────────────────────────────────────────────────────────
 	for _, additionalMedia := range deviationItem.deviation.Extended.AdditionalMedia {
 		if additionalMedia.Media.BaseUri != "" {
 			log.WithField("module", m.Key).Debugf(
@@ -205,37 +220,60 @@ func (m *deviantArt) downloadDeviationNapi(
 				additionalMedia.Media.BaseUri = fileUri.String()
 			}
 
-			if err = downloadSession.DownloadFile(
-				path.Join(
-					m.GetDownloadDirectory(),
-					m.Key,
-					deviationItem.downloadTag,
-					fmt.Sprintf(
-						"%s_%s_a_%s_%s%s",
-						deviationItem.deviation.GetPublishedTimestamp(),
-						deviationItem.deviation.DeviationId.String(),
-						additionalMedia.Position.String(),
-						fp.SanitizePath(additionalMedia.Media.PrettyName, false),
-						fp.GetFileExtension(additionalMedia.Media.BaseUri),
-					),
-				), additionalMedia.Media.BaseUri); err != nil {
-				return err
+			dst := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				deviationItem.downloadTag,
+				fmt.Sprintf(
+					"%s_%s_a_%s_%s%s",
+					deviationItem.deviation.GetPublishedTimestamp(),
+					deviationItem.deviation.DeviationId.String(),
+					additionalMedia.Position.String(),
+					fp.SanitizePath(additionalMedia.Media.PrettyName, false),
+					fp.GetFileExtension(additionalMedia.Media.BaseUri),
+				),
+			)
+			if err = downloadSession.DownloadFile(dst, additionalMedia.Media.BaseUri); err != nil {
+				// fallback to full view if the additional media download failed (got 403 multiple times)
+				fullViewType = additionalMedia.Media.GetType(napi.MediaTypeFullView)
+				if fullViewType != nil {
+					fileUri, _ := url.Parse(additionalMedia.Media.BaseUri)
+					fileUri.Path += fullViewType.GetCrop(additionalMedia.Media.PrettyName)
+					additionalMedia.Media.BaseUri = fileUri.String()
+
+					if err = downloadSession.DownloadFile(dst, additionalMedia.Media.BaseUri); err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
 			}
+
+			// record that path
+			downloadedFiles = append(downloadedFiles, dst)
 		}
 	}
 
-	// download description if above the min length
-	if err = m.downloadDescriptionNapi(deviationItem); err != nil {
+	// ──────────────────────────────────────────────────────────────
+	// download the description (text) if long enough
+	// ──────────────────────────────────────────────────────────────
+	if err = m.downloadDescriptionNapi(deviationItem, &downloadedFiles); err != nil {
 		return err
 	}
 
+	// ──────────────────────────────────────────────────────────────
+	// download the “literature” (for journal/literature types)
+	// ──────────────────────────────────────────────────────────────
 	switch deviationItem.deviation.Type {
 	case "journal", "literature":
-		if err = m.downloadLiteratureNapi(deviationItem); err != nil {
+		if err = m.downloadLiteratureNapi(deviationItem, &downloadedFiles); err != nil {
 			return err
 		}
 	case "image", "pdf", "film", "status":
-		if err = m.downloadContentNapi(deviationItem, downloadSession); err != nil {
+		// ──────────────────────────────────────────────────────────────
+		// download the “content” (full-view image/video/etc.)
+		// ──────────────────────────────────────────────────────────────
+		if err = m.downloadContentNapi(deviationItem, downloadSession, &downloadedFiles); err != nil {
 			return err
 		}
 	default:
@@ -246,119 +284,39 @@ func (m *deviantArt) downloadDeviationNapi(
 		m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
 	}
 
-	return nil
-}
+	// ──────────────────────────────────────────────────────────────
+	// now that all files are downloaded, reset their timestamps
+	// ──────────────────────────────────────────────────────────────
+	for idx, f := range downloadedFiles {
+		// Compute a slightly bumped‐up timestamp for each file to still enable sorting by timestamp
+		// (f.e. if we downloaded 10 files, we want them to be able to sort them by timestamp)
+		// the smallest unit we can use surprisingly differs on the file system:
+		// - ext4: 1 nanosecond
+		// - APFS: 1 nanosecond
+		// - NTFS: 100 nanoseconds
+		// base + idx * 1 millisecond
+		t := started.Add(time.Duration(idx) * time.Millisecond)
 
-func (m *deviantArt) downloadContentNapi(deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface) error {
-	if downloadSession == nil {
-		downloadSession = m.nAPI.UserSession
-	}
-
-	if highestQualityVideoType := deviationItem.deviation.Media.GetHighestQualityVideoType(); highestQualityVideoType != nil {
-		if err := downloadSession.DownloadFile(
-			path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				deviationItem.downloadTag,
-				fmt.Sprintf(
-					"%s_%s_v_%s%s",
-					deviationItem.deviation.GetPublishedTimestamp(),
-					deviationItem.deviation.DeviationId.String(),
-					fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
-					fp.GetFileExtension(*highestQualityVideoType.URL),
-				),
-			), *highestQualityVideoType.URL); err != nil {
-			return err
-		}
-	}
-
-	contentFilePath, _ := filepath.Abs(
-		path.Join(
-			m.GetDownloadDirectory(),
-			m.Key,
-			deviationItem.downloadTag,
-			deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
-		),
-	)
-
-	fullViewType := deviationItem.deviation.Media.GetType(napi.MediaTypeFullView)
-	if fullViewType == nil {
-		return nil
-	}
-
-	downloadedContentFile := false
-
-	// either the item is not downloadable or it has a different file size to download the full view (or no file size response)
-	if !deviationItem.deviation.IsDownloadable ||
-		deviationItem.deviation.Extended == nil ||
-		(deviationItem.deviation.IsDownloadable &&
-			deviationItem.deviation.Extended.Download.FileSize.String() != fullViewType.FileSize.String() &&
-			fullViewType.FileSize.String() != "" &&
-			fullViewType.FileSize.String() != "0") {
-		downloadedContentFile = true
-		if err := downloadSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
-			return err
-		}
-	}
-
-	// PDF files if not downloadable are now stored in the media object, so check if we have any and download them
-	if !deviationItem.deviation.IsDownloadable {
-		if pdfMedia := deviationItem.deviation.Media.GetPdfMedia(); pdfMedia != nil && pdfMedia.Source != nil {
-			if err := downloadSession.DownloadFile(
-				path.Join(
-					m.GetDownloadDirectory(),
-					m.Key,
-					deviationItem.downloadTag,
-					fmt.Sprintf(
-						"%s_%s_p_%s.pdf",
-						deviationItem.deviation.GetPublishedTimestamp(),
-						deviationItem.deviation.DeviationId.String(),
-						fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
-					),
-				), *pdfMedia.Source); err != nil {
-				return err
+		if info, infoErr := os.Stat(f); infoErr == nil && !info.IsDir() {
+			if err = os.Chtimes(f, t, t); err != nil {
+				log.WithField("module", m.Key).Warnf(
+					"failed to reset timestamp for %s: %v", f, err,
+				)
 			}
 		}
 	}
 
-	// image comparison if we downloaded the content file and the deviation is downloadable
-	if downloadedContentFile &&
-		deviationItem.deviation.IsDownloadable &&
-		deviationItem.deviation.Extended != nil &&
-		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" &&
-		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".zip" &&
-		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".pdf" {
-		downloadFilePath, _ := filepath.Abs(
-			path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				deviationItem.downloadTag,
-				deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
-			),
-		)
-
-		sim, err := duplication.CheckForSimilarity(downloadFilePath, contentFilePath)
-		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
-		if err == nil && sim >= 0.95 {
-			log.WithField("module", m.Key).Debug(
-				fmt.Sprintf(`content has higher match between download and content than configured, removing file %f`, sim),
-			)
-			return os.Remove(contentFilePath)
-		}
-	}
-
 	return nil
 }
 
-func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI) error {
-	// if we couldn't retrieve the extended response we can't access the markup anyway
+func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI, downloadedFiles *[]string) error {
+	// if we couldn't retrieve the extended response, we can't access the markup anyway
 	if deviationItem.deviation.Extended == nil {
 		return nil
 	}
 
 	text, err := deviationItem.deviation.Extended.DescriptionText.GetTextContent()
 	if err != nil {
-
 		return err
 	}
 
@@ -379,12 +337,15 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 		if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 			return err
 		}
+
+		// record that path
+		*downloadedFiles = append(*downloadedFiles, filePath)
 	}
 
 	return nil
 }
 
-func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI) error {
+func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI, downloadedFiles *[]string) error {
 	text, err := deviationItem.deviation.TextContent.GetTextContent()
 	if err != nil {
 		return err
@@ -405,6 +366,122 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI)
 
 	if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err
+	}
+
+	// record that path
+	*downloadedFiles = append(*downloadedFiles, filePath)
+	return nil
+}
+
+func (m *deviantArt) downloadContentNapi(
+	deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface, downloadedFiles *[]string,
+) error {
+	if downloadSession == nil {
+		downloadSession = m.nAPI.UserSession
+	}
+
+	// 1) possibly download a video
+	if highestQualityVideoType := deviationItem.deviation.Media.GetHighestQualityVideoType(); highestQualityVideoType != nil {
+		dst := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			deviationItem.downloadTag,
+			fmt.Sprintf(
+				"%s_%s_v_%s%s",
+				deviationItem.deviation.GetPublishedTimestamp(),
+				deviationItem.deviation.DeviationId.String(),
+				fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+				fp.GetFileExtension(*highestQualityVideoType.URL),
+			),
+		)
+		if err := downloadSession.DownloadFile(dst, *highestQualityVideoType.URL); err != nil {
+			return err
+		}
+
+		// record that path
+		*downloadedFiles = append(*downloadedFiles, dst)
+	}
+
+	// 2) set up contentFilePath
+	contentFilePath, _ := filepath.Abs(
+		path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			deviationItem.downloadTag,
+			deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
+		),
+	)
+
+	fullViewType := deviationItem.deviation.Media.GetType(napi.MediaTypeFullView)
+	if fullViewType == nil {
+		return nil
+	}
+
+	downloadedContentFile := false
+
+	// 3) either the item is not downloadable, or sizes differ
+	if !deviationItem.deviation.IsDownloadable ||
+		deviationItem.deviation.Extended == nil ||
+		(deviationItem.deviation.IsDownloadable &&
+			deviationItem.deviation.Extended.Download.FileSize.String() != fullViewType.FileSize.String() &&
+			fullViewType.FileSize.String() != "" &&
+			fullViewType.FileSize.String() != "0") {
+		downloadedContentFile = true
+		if err := downloadSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
+			return err
+		}
+		// record that path
+		*downloadedFiles = append(*downloadedFiles, contentFilePath)
+	}
+
+	// 4) check if we have a PDF media type
+	// if the deviation is downloadable, it's always the same PDF file, so skip on IsDownloadable
+	if !deviationItem.deviation.IsDownloadable {
+		if pdfMedia := deviationItem.deviation.Media.GetPdfMedia(); pdfMedia != nil && pdfMedia.Source != nil {
+			dst := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				deviationItem.downloadTag,
+				fmt.Sprintf(
+					"%s_%s_p_%s.pdf",
+					deviationItem.deviation.GetPublishedTimestamp(),
+					deviationItem.deviation.DeviationId.String(),
+					fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
+				),
+			)
+			if err := downloadSession.DownloadFile(dst, *pdfMedia.Source); err != nil {
+				return err
+			}
+			// record that path
+			*downloadedFiles = append(*downloadedFiles, dst)
+		}
+	}
+
+	// 5) If we downloaded “contentFilePath” and it's an image that needs similarity checking:
+	if downloadedContentFile &&
+		deviationItem.deviation.IsDownloadable &&
+		deviationItem.deviation.Extended != nil &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".mp4" &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".zip" &&
+		fp.GetFileExtension(deviationItem.deviation.Extended.Download.URL) != ".pdf" {
+
+		downloadFilePath, _ := filepath.Abs(
+			path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				deviationItem.downloadTag,
+				deviationItem.GetFileName(downloadQueueItemNAPIContentFile),
+			),
+		)
+
+		sim, err := duplication.CheckForSimilarity(downloadFilePath, contentFilePath)
+		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
+		if err == nil && sim >= 0.95 {
+			log.WithField("module", m.Key).Debug(
+				fmt.Sprintf(`content has higher match between download and content than configured, removing file %f`, sim),
+			)
+			return os.Remove(contentFilePath)
+		}
 	}
 
 	return nil
