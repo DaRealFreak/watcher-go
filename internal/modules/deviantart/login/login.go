@@ -1,12 +1,10 @@
 package login
 
 import (
-	http "github.com/bogdanfinn/fhttp"
-	"io"
-	"regexp"
-	"strings"
-
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	http "github.com/bogdanfinn/fhttp"
+	"regexp"
 )
 
 type DeviantArtLogin struct {
@@ -21,45 +19,42 @@ type Info struct {
 
 // GetLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
 func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
-	var currentLoginInfo Info
-
-	jsonPattern := regexp.MustCompile(`.*\\"csrfToken\\":\\"(?P<Number>[^\\"]+)\\".*`)
-	luTokenPattern := regexp.MustCompile(`.*\\"luToken\\":\\"(?P<Number>[^\\"]+)\\".*`)
-	luToken2Pattern := regexp.MustCompile(`.*\\"luToken2\\":\\"(?P<Number>[^\\"]+)\\".*`)
-
 	document, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	scriptTags := document.Find("script")
-	scriptTags.Each(func(row int, selection *goquery.Selection) {
-		// no need for further checks if we already have our login info
-		if currentLoginInfo.CSRFToken != "" && currentLoginInfo.LuToken != "" {
-			return
-		}
+	luToken, _ := document.Find(
+		"form[action='/_sisu/do/step2'] input[name='lu_token'], " +
+			"form[action='/_sisu/do/signin'] input[name='lu_token']",
+	).First().Attr("value")
 
-		scriptContent := selection.Text()
-		if jsonPattern.MatchString(scriptContent) {
-			currentLoginInfo.CSRFToken = jsonPattern.FindStringSubmatch(scriptContent)[1]
-		}
+	// luToken2 is not only present and required for the signin form
+	luToken2, _ := document.Find(
+		"form[action='/_sisu/do/step2'] input[name='lu_token2'], " +
+			"form[action='/_sisu/do/signin'] input[name='lu_token2']",
+	).First().Attr("value")
 
-		if luTokenPattern.MatchString(scriptContent) {
-			currentLoginInfo.LuToken = luTokenPattern.FindStringSubmatch(scriptContent)[1]
-		}
+	csrfToken, exists := document.Find(
+		"form[action='/_sisu/do/step2'] input[name='csrf_token'], " +
+			"form[action='/_sisu/do/signin'] input[name='csrf_token']",
+	).First().Attr("value")
 
-		if luToken2Pattern.MatchString(scriptContent) {
-			currentLoginInfo.LuToken2 = luToken2Pattern.FindStringSubmatch(scriptContent)[1]
+	if !exists {
+		// If the csrf_token is not found in the form, we try to extract it from the HTML
+		// (available everywhere, not just on the login page)
+		html, _ := document.Html()
+		re := regexp.MustCompile(`window\.__CSRF_TOKEN__\s*=\s*'([^']+)';`)
+		matches := re.FindStringSubmatch(html)
+		if len(matches) < 2 {
+			return nil, fmt.Errorf("CSRF token not found")
 		}
-	})
-
-	html, parseErr := document.Html()
-	if parseErr != nil {
-		return nil, parseErr
+		csrfToken = matches[1]
 	}
 
-	// set body again in case we have to read from the body again
-	res.Body = io.NopCloser(strings.NewReader(html))
-
-	return &currentLoginInfo, err
+	return &Info{
+		CSRFToken: csrfToken,
+		LuToken:   luToken,
+		LuToken2:  luToken2,
+	}, nil
 }

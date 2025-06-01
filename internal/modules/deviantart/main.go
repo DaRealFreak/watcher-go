@@ -44,7 +44,8 @@ type deviantArtSettings struct {
 		UnfollowAfterDownload bool `mapstructure:"unfollow_after_download"`
 	} `mapstructure:"download"`
 	Cloudflare struct {
-		UserAgent string `mapstructure:"user_agent"`
+		UserAgent         string `mapstructure:"user_agent"`
+		LoginWithoutProxy bool   `mapstructure:"login_without_proxy"`
 	} `mapstructure:"cloudflare"`
 }
 
@@ -116,11 +117,19 @@ func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 func (m *deviantArt) Login(account *models.Account) bool {
 	rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 	m.nAPI = napi.NewDeviantartNAPI(m.Key, rateLimiter, m.settings.Cloudflare.UserAgent)
+
 	// set the proxy if requested
-	raven.CheckError(m.setProxyMethod())
+	if m.settings.Cloudflare.LoginWithoutProxy {
+		log.WithField("module", m.Key).Debug("setting proxy to false for login without proxy")
+		raven.CheckError(m.nAPI.UserSession.SetProxy(&http.ProxySettings{Enable: false}))
+	}
 
 	err := m.nAPI.Login(account)
 	m.LoggedIn = err == nil
+
+	if m.settings.Cloudflare.LoginWithoutProxy {
+		raven.CheckError(m.setProxyMethod())
+	}
 
 	// initialize proxy sessions after login
 	if m.LoggedIn && m.settings.MultiProxy {

@@ -206,26 +206,28 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	}
 
 	if info.CSRFToken == "" {
-		return fmt.Errorf("could not retrieve CSRF token from login page")
+		return fmt.Errorf("could not retrieve csrf_token from login page")
 	}
 
 	if info.LuToken == "" {
-		return fmt.Errorf("could not retrieve LuToken token from login page")
+		return fmt.Errorf("could not retrieve lu_token token from login page")
 	}
 
 	a.CSRFToken = info.CSRFToken
 
 	values := url.Values{
-		"referer":    {"https://www.deviantart.com"},
-		"csrf_token": {info.CSRFToken},
-		"lu_token":   {info.LuToken},
-		"challenge":  {"0"},
-		"username":   {account.Username},
-		"password":   {account.Password},
-		"remember":   {"on"},
+		"referer":      {"https://www.deviantart.com"},
+		"referer_type": {""},
+		"csrf_token":   {info.CSRFToken},
+		"challenge":    {"0"},
+		"lu_token":     {info.LuToken},
+		"username":     {account.Username},
+		"remember":     {"on"},
 	}
 
-	res, err = a.post("https://www.deviantart.com/_sisu/do/step2", values)
+	req, _ := http.NewRequest("POST", "https://www.deviantart.com/_sisu/do/step2", strings.NewReader(values.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	res, err = a.do(req)
 	if err != nil {
 		return err
 	}
@@ -235,11 +237,27 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return err
 	}
 
+	if info.LuToken2 == "" {
+		return fmt.Errorf("could not retrieve lu_token2 token from login page")
+	}
+
+	// update tokens, reset username (taken from lu_token2 from DA serverside) and add password
 	values["csrf_token"] = []string{info.CSRFToken}
 	values["lu_token"] = []string{info.LuToken}
 	values["lu_token2"] = []string{info.LuToken2}
+	values["username"] = []string{""}
+	values["password"] = []string{account.Password}
 
-	res, err = a.post("https://www.deviantart.com/_sisu/do/signin", values)
+	req, _ = http.NewRequest(
+		"POST",
+		"https://www.deviantart.com/_sisu/do/signin",
+		strings.NewReader(values.Encode()),
+	)
+
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err = a.do(req)
 	if err != nil {
 		return err
 	}
@@ -253,14 +271,8 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return err
 	}
 
-	content, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	if info.CSRFToken != "" &&
-		!strings.Contains(string(content), "\"loggedIn\":true") &&
-		!strings.Contains(string(content), "\\\"isLoggedIn\\\":true") {
+	// CSRFToken is required, LuToken and LuToken2 should be empty after a successful login
+	if info.CSRFToken == "" || info.LuToken != "" || info.LuToken2 != "" {
 		return fmt.Errorf("login failed")
 	}
 
