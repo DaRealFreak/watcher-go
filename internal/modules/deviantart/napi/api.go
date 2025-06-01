@@ -19,7 +19,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/jaytaylor/html2text"
-	"golang.org/x/time/rate"
 )
 
 // DateLayout is the date layout for parsing json times from the API
@@ -191,12 +190,9 @@ type DeviantartNAPI struct {
 }
 
 // NewDeviantartNAPI returns the settings of the DeviantArt API
-func NewDeviantartNAPI(moduleKey string, rateLimiter *rate.Limiter, userAgent string) *DeviantartNAPI {
-	userSession := session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey})
-	userSession.RateLimiter = rateLimiter
-
+func NewDeviantartNAPI(moduleKey string, userAgent string) *DeviantartNAPI {
 	return &DeviantartNAPI{
-		UserSession: userSession,
+		UserSession: session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 		UserAgent:   userAgent,

@@ -1,13 +1,12 @@
 package napi
 
 import (
+	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/stretchr/testify/assert"
 )
 
 // nolint: gochecknoglobals
@@ -24,7 +23,6 @@ func TestMain(m *testing.M) {
 	// initialize the shared API instance
 	daNAPI = NewDeviantartNAPI(
 		"deviantart API",
-		rate.NewLimiter(rate.Every(time.Duration(4000)*time.Millisecond), 1),
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
 	)
 	err := daNAPI.Login(testAccount)
@@ -33,6 +31,8 @@ func TestMain(m *testing.M) {
 		println("unable to login")
 		os.Exit(-1)
 	}
+
+	daNAPI.UserSession.SetRateLimiter(rate.NewLimiter(rate.Every(time.Duration(10)*time.Second), 1))
 
 	// run the unit tests
 	os.Exit(m.Run())

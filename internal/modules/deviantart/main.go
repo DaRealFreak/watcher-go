@@ -115,8 +115,7 @@ func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-	m.nAPI = napi.NewDeviantartNAPI(m.Key, rateLimiter, m.settings.Cloudflare.UserAgent)
+	m.nAPI = napi.NewDeviantartNAPI(m.Key, m.settings.Cloudflare.UserAgent)
 
 	// set the proxy if requested
 	if m.settings.Cloudflare.LoginWithoutProxy {
@@ -130,6 +129,10 @@ func (m *deviantArt) Login(account *models.Account) bool {
 	if m.settings.Cloudflare.LoginWithoutProxy {
 		raven.CheckError(m.setProxyMethod())
 	}
+
+	// apply rate limiter to the session after login
+	rateLimiter := rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+	m.nAPI.UserSession.SetRateLimiter(rateLimiter)
 
 	// initialize proxy sessions after login
 	if m.LoggedIn && m.settings.MultiProxy {

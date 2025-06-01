@@ -148,7 +148,7 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 		return m.getProxyError().occurredError
 	}
 
-	// if no error occurred update the tracked item to the last item ID
+	// if no error occurred, update the tracked item to the last item ID
 	if len(downloadQueue) > 0 {
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].itemID)
 	}
@@ -163,11 +163,11 @@ func (m *deviantArt) downloadItemSessionNapi(
 
 	if downloadSession.occurredError == nil {
 		if m.isLowestIndex(index) {
-			// if we are the lowest index (to prevent skips on errors) update the downloaded item
+			// if we are the lowest index (to prevent skips on errors), update the downloaded item
 			m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
 		}
 
-		// remove current index from current list since we finished
+		// remove the current index from the current list since we finished
 		for i, v := range m.multiProxy.currentIndexes {
 			if v == index {
 				m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
