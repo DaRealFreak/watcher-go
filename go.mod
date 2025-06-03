@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.3
 
 require (
-	github.com/DaRealFreak/colored-nested-formatter v1.0.0
+	github.com/DaRealFreak/colored-nested-formatter v1.0.1
 	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/blang/semver v3.5.1+incompatible
