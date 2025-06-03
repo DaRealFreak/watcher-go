@@ -133,6 +133,9 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
 
 			go m.downloadItemSessionNapi(proxy, trackedItem, data, index)
+
+			// sleep 100 milliseconds to queue the next download after the current one
+			time.Sleep(time.Millisecond * 100)
 		}
 
 	}
