@@ -48,6 +48,15 @@ func (a *PixivAPI) Do(req *http.Request) (*http.Response, error) {
 		),
 	))
 
+	// add Authorization header with the token
+	if a.tokenSource != nil {
+		token, tokenErr := a.tokenSource.Token()
+		if tokenErr != nil {
+			return nil, tokenErr
+		}
+		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	}
+
 	return a.Session.Do(req)
 }
 
