@@ -180,7 +180,7 @@ type Overview struct {
 // DeviantartNAPI contains all required items to communicate with the API
 type DeviantartNAPI struct {
 	login.DeviantArtLogin
-	account     *models.Account
+	Account     *models.Account
 	UserSession watcherHttp.SessionInterface
 	ctx         context.Context
 	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
@@ -295,7 +295,7 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	}
 
 	a.CSRFToken = info.CSRFToken
-	a.account = account
+	a.Account = account
 
 	return nil
 }
