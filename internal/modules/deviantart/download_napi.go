@@ -1,8 +1,10 @@
 package deviantart
 
 import (
+	"errors"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http"
+	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -52,7 +54,22 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 	if m.settings.MultiProxy {
 		// reset usage and errors from previous galleries
 		m.resetProxies()
-		return m.processDownloadQueueMultiProxy(downloadQueue, trackedItem)
+		err := m.processDownloadQueueMultiProxy(downloadQueue, trackedItem)
+		if err != nil {
+			// Check if it's a session.StatusCode error
+			var scErr session.StatusError
+			if errors.As(err, &scErr) {
+				// 404 and 400 errors are mostly caused by expired CSRF tokens, not exactly sure where to refresh it
+				// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
+				if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
+					if successfulLogin := m.Login(m.nAPI.Account); successfulLogin {
+						return m.Parse(trackedItem)
+					}
+				}
+			}
+
+			return err
+		}
 	}
 
 	log.WithField("module", m.Key).Info(
