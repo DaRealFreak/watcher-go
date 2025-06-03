@@ -1,6 +1,9 @@
 # Watcher-go
 
-![build](https://github.com/DaRealFreak/watcher-go/workflows/build/badge.svg?branch=master) ![tests](https://github.com/DaRealFreak/watcher-go/workflows/tests/badge.svg?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/DaRealFreak/watcher-go)](https://goreportcard.com/report/github.com/DaRealFreak/watcher-go)  ![GitHub](https://img.shields.io/github/license/DaRealFreak/watcher-go)
+[![build](https://github.com/DaRealFreak/watcher-go/actions/workflows/build.yml/badge.svg)](https://github.com/DaRealFreak/watcher-go/actions/workflows/build.yml)
+[![tests](https://github.com/DaRealFreak/watcher-go/actions/workflows/tests.yml/badge.svg)](https://github.com/DaRealFreak/watcher-go/actions/workflows/tests.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/DaRealFreak/watcher-go)](https://goreportcard.com/report/github.com/DaRealFreak/watcher-go) 
+![GitHub](https://img.shields.io/github/license/DaRealFreak/watcher-go)
 
 Application to keep track of items from multiple sources with a local database.
 It will download any detected item and update the index in the database on completion of the download.
