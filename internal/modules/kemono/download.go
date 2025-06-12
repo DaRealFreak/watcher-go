@@ -144,7 +144,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 				newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
 				// don't delete previously already added items
 				deleteAfter := newItem.CurrentItem == ""
-				if m.Cfg.Run.ForceNew && newItem.CurrentItem != "" {
+				if m.Cfg.Run.Force && newItem.CurrentItem != "" {
 					log.WithField("module", m.Key).Info(
 						fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
 					)

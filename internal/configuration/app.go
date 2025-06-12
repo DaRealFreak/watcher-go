@@ -31,7 +31,8 @@ type AppConfiguration struct {
 	DisableSentry bool
 	// run specific options
 	Run struct {
-		ForceNew          bool
+		Force             bool
+		ResetProgress     bool
 		RunParallel       bool
 		Items             []string
 		DownloadDirectory string

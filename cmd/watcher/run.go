@@ -40,8 +40,13 @@ func (cli *CliApplication) addRunCommand() {
 		"run modules parallel",
 	)
 	runCmd.Flags().BoolVarP(
-		&cli.config.Run.ForceNew,
+		&cli.config.Run.Force,
 		"force", "f", false,
+		"forces to ignore previous progress and blacklisted terms",
+	)
+	runCmd.Flags().BoolVarP(
+		&cli.config.Run.ResetProgress,
+		"reset-progress", "r", false,
 		"forces to ignore previous progress",
 	)
 

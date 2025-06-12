@@ -81,7 +81,7 @@ func (app *Watcher) Run() {
 			module := app.ModuleFactory.GetModule(item.Module)
 			raven.CheckError(module.Load())
 
-			if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
+			if (app.Cfg.Run.Force || app.Cfg.Run.ResetProgress) && item.CurrentItem != "" {
 				log.WithField("module", module.Key).Info(
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
 				)
@@ -127,7 +127,7 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 			items := app.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 			for _, trackedItem := range items {
 				// skip completed item if we aren't forcing new
-				if trackedItem.Complete && !app.Cfg.Run.ForceNew {
+				if trackedItem.Complete && !app.Cfg.Run.Force {
 					continue
 				}
 
@@ -179,7 +179,7 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 	raven.CheckError(module.Load())
 
 	for _, item := range trackedItems {
-		if app.Cfg.Run.ForceNew && item.CurrentItem != "" {
+		if (app.Cfg.Run.Force || app.Cfg.Run.ResetProgress) && item.CurrentItem != "" {
 			log.WithField("module", module.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
 			)
