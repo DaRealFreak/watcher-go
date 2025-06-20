@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -130,6 +131,9 @@ func (m *fourChan) processDownloadQueueMultiProxy(downloadQueue []models.Downloa
 			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
 
 			go m.downloadItemSession(proxy, trackedItem, data, index)
+
+			// sleep 100 milliseconds to queue the next download after the current one
+			time.Sleep(time.Millisecond * 100)
 		}
 
 	}
@@ -177,6 +181,8 @@ func (m *fourChan) downloadItemSession(
 func (m *fourChan) downloadImageSession(
 	downloadSession *proxySession, trackedItem *models.TrackedItem, downloadQueueItem models.DownloadQueueItem, index int,
 ) error {
+	startTime := time.Now()
+
 	// apply rate limit for the current session since we don't use the wrapper function
 	downloadSession.session.ApplyRateLimit()
 
@@ -197,26 +203,34 @@ func (m *fourChan) downloadImageSession(
 	}
 
 	if res.StatusCode != 404 {
-		downloadErr := downloadSession.session.DownloadFileFromResponse(
-			res,
-			path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				fp.TruncateMaxLength(fp.SanitizePath(strings.TrimSpace(trackedItem.SubFolder), false)),
-				fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
-				fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
-			),
+		dst := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(fp.SanitizePath(strings.TrimSpace(trackedItem.SubFolder), false)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.DownloadTag)),
+			fp.TruncateMaxLength(strings.TrimSpace(downloadQueueItem.FileName)),
 		)
-
+		downloadErr := downloadSession.session.DownloadFileFromResponse(res, dst)
 		if downloadErr == nil {
+			// bump the file’s mtime so that ordering by time == ordering by index
+			if info, statErr := os.Stat(dst); statErr == nil && !info.IsDir() {
+				if chtErr := os.Chtimes(dst, startTime, startTime); chtErr != nil {
+					log.WithField("module", m.Key).Warnf(
+						"failed to reset timestamp for %s: %v",
+						dst, chtErr,
+					)
+				}
+			}
+
+			// back to original logic
 			downloadSession.inUse = false
 
 			if m.isLowestIndex(index) {
-				// if we are the lowest index (to prevent skips on errors) update the downloaded item
+				// if we are the lowest index (to prevent skips on errors), update the downloaded item
 				m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 			}
 
-			// remove current index from current list since we finished
+			// remove the current index from the current list since we finished
 			for i, v := range m.multiProxy.currentIndexes {
 				if v == index {
 					m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
@@ -232,7 +246,7 @@ func (m *fourChan) downloadImageSession(
 			downloadQueueItem.FileURI,
 		)
 
-		// it's completely normal for 404 errors to occur on that website, the image just doesn't exist anymore
+		// it's completely normal for 404 errors to occur on that website. the image just doesn't exist anymore,
 		// so log a warning and return nil
 		return nil
 	}
