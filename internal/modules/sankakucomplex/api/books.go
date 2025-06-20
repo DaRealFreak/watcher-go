@@ -54,6 +54,16 @@ type BookApiItem struct {
 	Name             string     `json:"name"`
 }
 
+func (b BookApiItem) GetPostIndex(id string) int {
+	for i, post := range b.Posts {
+		if post.ID == id {
+			return i
+		}
+	}
+
+	return -1
+}
+
 type seriesResponse struct {
 	Data       []series `json:"data"`
 	TotalCount int      `json:"totalCount"`

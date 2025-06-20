@@ -29,8 +29,9 @@ type downloadBookItem struct {
 }
 
 type downloadGalleryItem struct {
-	item    *models.DownloadQueueItem
-	apiData *api.ApiItem
+	item               *models.DownloadQueueItem
+	apiData            *api.ApiItem
+	singleBookDownload bool
 }
 
 func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedItem, galleryItem *downloadGalleryItem) (bool, error) {
@@ -45,8 +46,20 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	if bookResponse != nil && bookResponse.Name != "" {
-		if !strings.Contains(galleryItem.item.DownloadTag, "/books/") {
+		if !strings.Contains(galleryItem.item.DownloadTag, "/books/") && !galleryItem.singleBookDownload {
+			bookData, bookDataErr := m.api.GetBookResponse(bookResponse.ID)
+			if bookDataErr != nil {
+				return false, bookDataErr
+			}
+
+			postBookIndex := bookData.GetPostIndex(galleryItem.apiData.ID)
+
 			idString := fmt.Sprintf(" (%v)", bookResponse.ID)
+			galleryItem.item.FileName = fmt.Sprintf(
+				"%d_%s",
+				postBookIndex+1,
+				galleryItem.item.FileName,
+			)
 			galleryItem.item.DownloadTag = path.Join(
 				galleryItem.item.DownloadTag,
 				"books",

@@ -231,7 +231,8 @@ func (m *sankakuComplex) parseSingleBook(item *models.TrackedItem, bookId string
 						FileURI:         galleryItem.FileURL,
 						FallbackFileURI: galleryItem.SampleURL,
 					},
-					apiData: galleryItem,
+					apiData:            galleryItem,
+					singleBookDownload: true,
 				})
 			}
 		}
