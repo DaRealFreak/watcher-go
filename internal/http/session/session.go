@@ -38,7 +38,7 @@ func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *De
 	}
 
 	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(5 * 60),
+		tls_client.WithTimeoutSeconds(10 * 60),
 		tls_client.WithClientProfile(profiles.Firefox_135),
 		tls_client.WithCookieJar(jar),
 	}
