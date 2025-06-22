@@ -127,7 +127,7 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 			items := app.DbCon.GetAllOrCreateTrackedItemIgnoreSubFolder(normalizedUri, module)
 			for _, trackedItem := range items {
 				// skip completed item if we aren't forcing new
-				if trackedItem.Complete && !app.Cfg.Run.Force {
+				if trackedItem.Complete && !app.Cfg.Run.Force && !app.Cfg.Run.ResetProgress {
 					continue
 				}
 
