@@ -44,7 +44,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 	if userInformation != nil {
 		user := userInformation.Data.User.Result
-		if !user.Legacy.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
+		if !user.RelationshipPerspectives.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
 			if m.settings.FollowUser {
 				if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
 					return followErr
@@ -90,19 +90,36 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 		tweetEntries := timeline.TweetEntries(userId)
 		if len(tweetEntries) == 0 && searchTime == nil && bottomCursor == "" {
-			// we only want to check entries if we are not in search mode, and we should have at least one entry
-			log.WithField("module", m.ModuleKey()).Warnf("no tweet entries found for user %s, possibly banned/deleted", screenName)
+			user, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+			if userErr != nil {
+				return userErr
+			}
+
+			if user.Data.User.Result.TypeName != nil && *user.Data.User.Result.TypeName == "UserUnavailable" {
+				// we only want to check entries if we are not in search mode, and we should have at least one entry
+				log.WithField("module", m.ModuleKey()).Warnf(
+					"user %s is unavailable anymore, reason from twitter: %s",
+					screenName,
+					*user.Data.User.Result.Reason,
+				)
+			} else {
+				// we only want to check entries if we are not in search mode, and we should have at least one entry
+				log.WithField("module", m.ModuleKey()).Warnf(
+					"no tweet entries found for user %s, possibly deleted",
+					screenName,
+				)
+			}
 		}
 
 		for _, tweet := range tweetEntries {
 			if m.settings.ConvertNameToId &&
-				tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName != screenName {
-				screenName = tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName
+				tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName != screenName {
+				screenName = tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName
 				if screenName != "" {
 					uri := fmt.Sprintf(
 						"twitter:graphQL/%s/%s",
 						userId,
-						tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+						tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName,
 					)
 
 					log.WithField("module", m.ModuleKey()).Warnf(

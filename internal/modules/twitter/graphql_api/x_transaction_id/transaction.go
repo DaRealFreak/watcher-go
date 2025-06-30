@@ -201,6 +201,9 @@ func (h *XTransactionIdHandler) getAnimationKey(doc *goquery.Document) (string, 
 		frameTime *= int(h.keyBytes[idx]) % 16
 	}
 
+	// 3) round frameTime to the nearest 10 (just like Python’s round(.../10)*10)
+	frameTime = int(math.Round(float64(frameTime)/10.0) * 10)
+
 	// 3) grab the 2D array of ints from the SVG path data
 	arr, err := h.get2DArray(doc)
 	if err != nil {
@@ -380,7 +383,7 @@ func (h *XTransactionIdHandler) getKeyBytes(key string) ([]byte, error) {
 }
 
 // handleMigration fetches the home page and looks for a migration URL.
-// If found, it submits the form and returns the resulting document, else the document of the home page is returned.
+// If found, it submits the form and returns the resulting document; else the document of the home page is returned.
 func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
 	resp, err := h.get("https://x.com/")
 	if err != nil {

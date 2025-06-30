@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http/session"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/x_transaction_id"
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/xpff"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	http "github.com/bogdanfinn/fhttp"
@@ -25,6 +26,7 @@ const CookieAuth = "auth_token"
 type TwitterGraphQlAPI struct {
 	settings               twitter_settings.TwitterSettings
 	xTransactionIdHandler  *x_transaction_id.XTransactionIdHandler
+	xpffHandler            *xpff.Handler
 	authTokenFallbackIndex int
 	moduleKey              string
 	Session                watcherHttp.SessionInterface
@@ -43,7 +45,7 @@ func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings, 
 		authTokenFallbackIndex: 0,
 		moduleKey:              moduleKey,
 		Session:                graphQLSession,
-		rateLimiter:            rate.NewLimiter(rate.Every(3000*time.Millisecond), 1),
+		rateLimiter:            rate.NewLimiter(rate.Every(5000*time.Millisecond), 1),
 		ctx:                    context.Background(),
 	}
 }

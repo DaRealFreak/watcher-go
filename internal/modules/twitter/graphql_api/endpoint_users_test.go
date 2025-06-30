@@ -8,7 +8,7 @@ import (
 func TestTwitterGraphQlAPI_UserTimelineV2(t *testing.T) {
 	res, err := twitterAPI.UserTimelineV2("2923538614", "")
 	assert.New(t).NoError(err)
-	assert.New(t).GreaterOrEqual(1, len(res.TweetEntries("2923538614")))
+	assert.New(t).GreaterOrEqual(len(res.TweetEntries("2923538614")), 1)
 }
 
 func TestTwitterGraphQlAPI_UserByUsername(t *testing.T) {

@@ -26,14 +26,13 @@ func (s *SingleTweet) TweetData() *SingleTweet {
 	}
 }
 
-// TwitterUserTimeline ToDo: refactor for use between API methods
 type TwitterUserTimeline struct {
 	Data struct {
 		User struct {
 			Result struct {
-				TimelineV2 struct {
+				Timeline struct {
 					Timeline *Timeline `json:"timeline"`
-				} `json:"timeline_v2"`
+				} `json:"timeline"`
 			} `json:"result"`
 		} `json:"user"`
 	} `json:"data"`
@@ -41,51 +40,12 @@ type TwitterUserTimeline struct {
 
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
 func (t *TwitterUserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
-	return t.Data.User.Result.TimelineV2.Timeline.TweetEntries(userIDs...)
+	return t.Data.User.Result.Timeline.Timeline.TweetEntries(userIDs...)
 }
 
 // BottomCursor checks for the next cursor in the timeline response
 func (t *TwitterUserTimeline) BottomCursor() string {
-	return t.Data.User.Result.TimelineV2.Timeline.BottomCursor()
-}
-
-type SingleTweet struct {
-	Tweet  *SingleTweet `json:"tweet"`
-	RestID json.Number  `json:"rest_id"`
-	Core   struct {
-		UserResults struct {
-			Result *User `json:"result"`
-		} `json:"user_results"`
-	} `json:"core"`
-	Legacy struct {
-		CreatedAt        *TwitterTime `json:"created_at"`
-		ExtendedEntities struct {
-			Media []struct {
-				ID        json.Number `json:"id_str"`
-				Type      string      `json:"type"`
-				MediaURL  string      `json:"media_url_https"`
-				VideoInfo *struct {
-					Variants []struct {
-						Bitrate int    `json:"bitrate"`
-						URL     string `json:"URL"`
-					} `json:"variants"`
-				} `json:"video_info"`
-			} `json:"media"`
-		} `json:"extended_entities"`
-	} `json:"legacy"`
-}
-
-type Tweet struct {
-	EntryID string `json:"entryId"`
-	Item    struct {
-		ItemContent struct {
-			ItemType     string `json:"itemType"`
-			TweetResults struct {
-				Result *SingleTweet `json:"result"`
-			} `json:"tweet_results"`
-			TweetDisplayType string `json:"tweetDisplayType"`
-		} `json:"itemContent"`
-	} `json:"item"`
+	return t.Data.User.Result.Timeline.Timeline.BottomCursor()
 }
 
 // DownloadItems returns the normalized DownloadQueueItems from the tweet objects
@@ -103,7 +63,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 
 			items = append(items, &models.DownloadQueueItem{
 				ItemID:      tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
 					tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
@@ -117,7 +77,7 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 			fileType := strings.TrimLeft(fp.GetFileExtension(mediaEntry.MediaURL), ".")
 			items = append(items, &models.DownloadQueueItem{
 				ItemID:      tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
-				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Legacy.ScreenName,
+				DownloadTag: tw.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName,
 				FileName: fmt.Sprintf(
 					"%s_%s_%d_%s",
 					tw.Item.ItemContent.TweetResults.Result.TweetData().RestID.String(),
@@ -133,26 +93,6 @@ func (tw *Tweet) DownloadItems() (items []*models.DownloadQueueItem) {
 	return items
 }
 
-type User struct {
-	ID     string      `json:"id"`
-	RestID json.Number `json:"rest_id"`
-	Legacy struct {
-		Name              string `json:"name"`
-		ScreenName        string `json:"screen_name"`
-		Following         bool   `json:"following"`
-		FollowRequestSent *bool  `json:"follow_request_sent"`
-		Protected         *bool  `json:"protected"`
-	} `json:"legacy"`
-}
-
-type UserInformation struct {
-	Data struct {
-		User struct {
-			Result User `json:"result"`
-		} `json:"user"`
-	} `json:"data"`
-}
-
 func (a *TwitterGraphQlAPI) UserTimelineV2(
 	userId string,
 	cursor string,
@@ -161,48 +101,77 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 
 	variables := map[string]interface{}{
 		"userId":                 userId,
-		"count":                  40,
+		"count":                  25,
 		"includePromotedContent": false,
 		"withClientEventToken":   false,
 		"withBirdwatchNotes":     false,
 		"withVoice":              true,
-		"withV2Timeline":         true,
 	}
 
 	if cursor != "" {
 		variables["cursor"] = cursor
 	}
 
-	variablesJson, _ := json.Marshal(variables)
+	varsJSON, err := json.Marshal(variables)
+	if err != nil {
+		return nil, err
+	}
 
-	featuresJson, _ := json.Marshal(map[string]interface{}{
-		"responsive_web_graphql_exclude_directive_enabled":                        true,
+	// Features have changed: match the console-observed set
+	features := map[string]interface{}{
+		"rweb_video_screen_enabled":                                               false,
+		"payments_enabled":                                                        false,
+		"profile_label_improvements_pcf_label_in_post_enabled":                    true,
+		"rweb_tipjar_consumption_enabled":                                         true,
 		"verified_phone_label_enabled":                                            false,
-		"responsive_web_home_pinned_timelines_enabled":                            true,
 		"creator_subscriptions_tweet_preview_api_enabled":                         true,
 		"responsive_web_graphql_timeline_navigation_enabled":                      true,
 		"responsive_web_graphql_skip_user_profile_image_extensions_enabled":       false,
+		"premium_content_api_read_enabled":                                        false,
+		"communities_web_enable_tweet_community_results_fetch":                    true,
 		"c9s_tweet_anatomy_moderator_badge_enabled":                               true,
-		"tweetypie_unmention_optimization_enabled":                                true,
+		"responsive_web_grok_analyze_button_fetch_trends_enabled":                 false,
+		"responsive_web_grok_analyze_post_followups_enabled":                      true,
+		"responsive_web_jetfuel_frame":                                            false,
+		"responsive_web_grok_share_attachment_enabled":                            true,
+		"articles_preview_enabled":                                                true,
 		"responsive_web_edit_tweet_api_enabled":                                   true,
 		"graphql_is_translatable_rweb_tweet_is_translatable_enabled":              true,
 		"view_counts_everywhere_api_enabled":                                      true,
 		"longform_notetweets_consumption_enabled":                                 true,
-		"responsive_web_twitter_article_tweet_consumption_enabled":                false,
+		"responsive_web_twitter_article_tweet_consumption_enabled":                true,
 		"tweet_awards_web_tipping_enabled":                                        false,
+		"responsive_web_grok_show_grok_translated_post":                           false,
+		"responsive_web_grok_analysis_button_from_backend":                        true,
+		"creator_subscriptions_quote_tweet_preview_enabled":                       false,
 		"freedom_of_speech_not_reach_fetch_enabled":                               true,
 		"standardized_nudges_misinfo":                                             true,
 		"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
 		"longform_notetweets_rich_text_read_enabled":                              true,
 		"longform_notetweets_inline_media_enabled":                                true,
-		"responsive_web_media_download_video_enabled":                             false,
+		"responsive_web_grok_image_annotation_enabled":                            true,
 		"responsive_web_enhance_cards_enabled":                                    false,
-	})
+	}
 
-	apiURI := "https://x.com/i/api/graphql/7_ZP_xN3Bcq1I2QkK5yc2w/UserMedia"
+	featsJSON, err := json.Marshal(features)
+	if err != nil {
+		return nil, err
+	}
+
+	fieldToggles := map[string]bool{
+		"withArticlePlainText": false,
+	}
+	togglesJSON, err := json.Marshal(fieldToggles)
+	if err != nil {
+		return nil, err
+	}
+
+	// Swap in the new query-hash and path
+	apiURI := "https://x.com/i/api/graphql/KDdlIFeZgikR2366ZRn0sw/UserMedia"
 	values := url.Values{
-		"variables": {string(variablesJson)},
-		"features":  {string(featuresJson)},
+		"variables":    {string(varsJSON)},
+		"features":     {string(featsJSON)},
+		"fieldToggles": {string(togglesJSON)},
 	}
 
 	res, err := a.handleGetRequest(apiURI, values)
@@ -211,37 +180,58 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 	}
 
 	var timeline *TwitterUserTimeline
-	err = a.mapAPIResponse(res, &timeline)
+	if err = a.mapAPIResponse(res, &timeline); err != nil {
+		return nil, err
+	}
 
-	return timeline, err
+	return timeline, nil
 }
 
 func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, error) {
 	a.applyRateLimit()
 
-	variablesJson, _ := json.Marshal(map[string]interface{}{
-		"screen_name":              username,
-		"withSafetyModeUserFields": true,
-	})
+	variables := map[string]interface{}{
+		"screen_name": username,
+	}
+	varsJSON, err := json.Marshal(variables)
+	if err != nil {
+		return nil, err
+	}
 
-	// {"hidden_profile_likes_enabled":true,"hidden_profile_subscriptions_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":true,"subscriptions_verification_info_verified_since_enabled":true,"highlights_tweets_tab_ui_enabled":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true}
-	featuresJson, _ := json.Marshal(map[string]interface{}{
-		"hidden_profile_likes_enabled":                                      true,
+	features := map[string]interface{}{
+		"responsive_web_grok_bio_auto_translation_is_enabled":               false,
 		"hidden_profile_subscriptions_enabled":                              true,
-		"responsive_web_graphql_exclude_directive_enabled":                  true,
+		"payments_enabled":                                                  false,
+		"profile_label_improvements_pcf_label_in_post_enabled":              true,
+		"rweb_tipjar_consumption_enabled":                                   true,
 		"verified_phone_label_enabled":                                      false,
 		"subscriptions_verification_info_is_identity_verified_enabled":      true,
 		"subscriptions_verification_info_verified_since_enabled":            true,
 		"highlights_tweets_tab_ui_enabled":                                  true,
+		"responsive_web_twitter_article_notes_tab_enabled":                  true,
+		"subscriptions_feature_can_gift_premium":                            true,
 		"creator_subscriptions_tweet_preview_api_enabled":                   true,
 		"responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
 		"responsive_web_graphql_timeline_navigation_enabled":                true,
-	})
+	}
+	featsJSON, err := json.Marshal(features)
+	if err != nil {
+		return nil, err
+	}
 
-	apiURI := "https://x.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName"
+	fieldToggles := map[string]bool{
+		"withAuxiliaryUserLabels": true,
+	}
+	togglesJSON, err := json.Marshal(fieldToggles)
+	if err != nil {
+		return nil, err
+	}
+
+	apiURI := "https://x.com/i/api/graphql/jUKA--0QkqGIFhmfRZdWrQ/UserByScreenName"
 	values := url.Values{
-		"variables": {string(variablesJson)},
-		"features":  {string(featuresJson)},
+		"variables":    {string(varsJSON)},
+		"features":     {string(featsJSON)},
+		"fieldToggles": {string(togglesJSON)},
 	}
 
 	res, err := a.handleGetRequest(apiURI, values)
@@ -250,15 +240,17 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	}
 
 	var userInformation *UserInformation
-	err = a.mapAPIResponse(res, &userInformation)
+	if err = a.mapAPIResponse(res, &userInformation); err != nil {
+		return nil, err
+	}
 
-	return userInformation, err
+	return userInformation, nil
 }
 
 func (a *TwitterGraphQlAPI) FollowUser(userId string) error {
 	a.applyRateLimit()
 
-	values := url.Values{
+	form := url.Values{
 		"include_profile_interstitial_type": {"1"},
 		"include_blocking":                  {"1"},
 		"include_blocked_by":                {"1"},
@@ -275,7 +267,7 @@ func (a *TwitterGraphQlAPI) FollowUser(userId string) error {
 	}
 
 	apiURI := "https://x.com/i/api/1.1/friendships/create.json"
-	_, err := a.handlePostRequest(apiURI, values)
+	_, err := a.handlePostRequest(apiURI, form)
 	if err != nil {
 		return err
 	}

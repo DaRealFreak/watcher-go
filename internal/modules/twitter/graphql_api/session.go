@@ -1,6 +1,7 @@
 package graphql_api
 
 import (
+	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/xpff"
 	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"strings"
@@ -21,37 +22,60 @@ func (a *TwitterGraphQlAPI) apiPost(requestUrl string, values url.Values) (*http
 		return nil, err
 	}
 
+	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+
 	return a.apiDo(req)
 }
 
 func (a *TwitterGraphQlAPI) apiDo(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0")
+	// set static headers (User-Agent, Referer, etc.)
+	req.Header.Set("User-Agent", a.settings.UserAgent)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("content-type", "application/json")
 	req.Header.Set("Referer", "https://x.com/")
-	req.Header.Set("content-type", "application/x-www-form-urlencoded")
-	req.Header.Set("x-twitter-auth-type", "OAuth2Session")
-	req.Header.Set("x-twitter-active-user", "yes")
-	req.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
-	req.Header.Set("x-twitter-client-language", "en")
 
-	cookies := a.Session.GetClient().GetCookies(req.URL)
-	for _, cookie := range cookies {
-		if cookie.Name == "ct0" {
-			req.Header.Set("x-csrf-token", cookie.Value)
-			break
+	req.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
+	req.Header.Set("x-twitter-auth-type", "OAuth2Session")
+	req.Header.Set("x-twitter-client-language", "en")
+	req.Header.Set("x-twitter-active-user", "yes")
+
+	// 2) Extract cookies, build the Cookie header and x-csrf-token
+	var csrfToken string
+	for _, c := range a.Session.GetClient().GetCookies(req.URL) {
+		switch c.Name {
+		case "ct0":
+			csrfToken = c.Value
+		case "guest_id":
+			if a.xpffHandler == nil {
+				a.xpffHandler = xpff.NewHandler(c.Value, a.settings.UserAgent)
+			}
 		}
 	}
 
-	xTransactionId, err := a.xTransactionIdHandler.GenerateTransactionId(
-		"POST",
-		strings.TrimPrefix(req.URL.String(), "https://x.com"),
-		nil, "", "", 0, 0,
+	// set the csrf token header if available
+	if csrfToken != "" {
+		req.Header.Set("x-csrf-token", csrfToken)
+	}
+
+	// generate and set x-client-transaction-id header
+	txID, err := a.xTransactionIdHandler.GenerateTransactionId(
+		req.Method, req.URL.Path, nil, "", "", 0, 0,
 	)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("x-client-transaction-id", txID)
 
-	req.Header.Set("x-twitter-client-transaction-id", xTransactionId)
+	// add XPFF header if available
+	if a.xpffHandler != nil {
+		xpffHdr, err := a.xpffHandler.GetXPFFHeader()
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("x-xp-forwarded-for", xpffHdr)
+	}
 
 	return a.Session.Do(req)
 }

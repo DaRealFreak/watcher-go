@@ -16,7 +16,9 @@ var twitterAPI *TwitterGraphQlAPI
 // to prevent multiple logins for every test
 func TestMain(m *testing.M) {
 	// initialize the shared API instance
-	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{}, nil)
+	twitterAPI = NewTwitterAPI("twitter API", twitter_settings.TwitterSettings{
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0",
+	}, nil)
 	twitterAPI.SetCookies([]*http.Cookie{
 		{
 			Name:   "auth_token",
@@ -24,6 +26,17 @@ func TestMain(m *testing.M) {
 			MaxAge: 0,
 		},
 	})
+
+	if os.Getenv("TWITTER_SESSION_COOKIE") != "" {
+		twitterAPI.SetCookies([]*http.Cookie{
+			{
+				Name:   "ct0",
+				Value:  os.Getenv("TWITTER_SESSION_COOKIE"),
+				MaxAge: 0,
+			},
+		})
+	}
+
 	err := twitterAPI.InitializeSession()
 	if err != nil {
 		panic(err)

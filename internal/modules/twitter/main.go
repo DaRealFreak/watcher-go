@@ -153,7 +153,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 			uri = fmt.Sprintf(
 				"twitter:graphQL/%s/%s",
 				userInformation.Data.User.Result.RestID.String(),
-				userInformation.Data.User.Result.Legacy.ScreenName,
+				userInformation.Data.User.Result.Core.ScreenName,
 			)
 		}
 	}

@@ -7,26 +7,6 @@ import (
 	"time"
 )
 
-type SearchEntry struct {
-	EntryID string `json:"entryId"`
-	Content struct {
-		Item *struct {
-			Content struct {
-				Tweet struct {
-					ID          json.Number `json:"id"`
-					DisplayType string      `json:"displayType"`
-				} `json:"tweet"`
-			} `json:"content"`
-		} `json:"item"`
-		Operation *struct {
-			Cursor struct {
-				Value      string `json:"value"`
-				CursorType string `json:"cursorType"`
-			} `json:"cursor"`
-		} `json:"operation"`
-	} `json:"content"`
-}
-
 type SearchTimelineData struct {
 	Data struct {
 		SearchByRawQuery struct {
@@ -50,8 +30,10 @@ func (a *TwitterGraphQlAPI) Search(
 ) (TimelineInterface, error) {
 	a.applyRateLimit()
 
-	rawQuery := fmt.Sprintf("(from:%s) until:%s filter:links",
-		authorName, untilDate.Format("2006-01-02"),
+	rawQuery := fmt.Sprintf(
+		"(from:%s) until:%s filter:links",
+		authorName,
+		untilDate.Format("2006-01-02"),
 	)
 
 	variables := map[string]interface{}{
@@ -65,9 +47,14 @@ func (a *TwitterGraphQlAPI) Search(
 		variables["cursor"] = cursor
 	}
 
-	variablesJson, _ := json.Marshal(variables)
+	varsJSON, err := json.Marshal(variables)
+	if err != nil {
+		return nil, err
+	}
+
 	features := map[string]interface{}{
 		"rweb_video_screen_enabled":                                               false,
+		"payments_enabled":                                                        false,
 		"profile_label_improvements_pcf_label_in_post_enabled":                    true,
 		"rweb_tipjar_consumption_enabled":                                         true,
 		"verified_phone_label_enabled":                                            false,
@@ -100,14 +87,15 @@ func (a *TwitterGraphQlAPI) Search(
 		"responsive_web_enhance_cards_enabled":                                    false,
 	}
 
-	featuresJson, _ := json.Marshal(features)
+	featsJSON, err := json.Marshal(features)
+	if err != nil {
+		return nil, err
+	}
 
-	apiURI := "https://x.com/i/api/graphql/VhUd6vHVmLBcw0uX-6jMLA/SearchTimeline"
-
-	// attach as query-params
+	apiURI := "https://x.com/i/api/graphql/cInpW5S3fsZfTCRNZMdkzA/SearchTimeline"
 	values := url.Values{
-		"variables": {string(variablesJson)},
-		"features":  {string(featuresJson)},
+		"variables": {string(varsJSON)},
+		"features":  {string(featsJSON)},
 	}
 
 	res, err := a.handleGetRequest(apiURI, values)
