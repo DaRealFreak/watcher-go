@@ -26,7 +26,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			return err
 		}
 
-		if m.settings.FollowUser {
+		if m.settings.FollowUser || (m.settings.FollowFavorites && item.Favorite) {
 			userInformation, err = m.twitterGraphQlAPI.UserByUsername(screenName)
 			if err != nil {
 				return err
@@ -45,7 +45,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 	if userInformation != nil {
 		user := userInformation.Data.User.Result
 		if !user.RelationshipPerspectives.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
-			if m.settings.FollowUser {
+			if m.settings.FollowUser || (m.settings.FollowFavorites && item.Favorite) {
 				if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
 					return followErr
 				}

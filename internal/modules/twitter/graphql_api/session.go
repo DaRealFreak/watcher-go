@@ -33,7 +33,11 @@ func (a *TwitterGraphQlAPI) apiDo(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("content-type", "application/json")
+
+	if req.Header.Get("content-type") == "" {
+		req.Header.Set("content-type", "application/json")
+	}
+
 	req.Header.Set("Referer", "https://x.com/")
 
 	req.Header.Set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
