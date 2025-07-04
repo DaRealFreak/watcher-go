@@ -95,7 +95,20 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 				return userErr
 			}
 
-			if user.Data.User.Result.TypeName != nil && *user.Data.User.Result.TypeName == "UserUnavailable" {
+			if user.Data.User.Result.Privacy.Protected == true {
+				followRequestSent := user.Data.User.Result.Legacy.FollowRequestSent
+				if followRequestSent == nil || !*followRequestSent {
+					log.WithField("module", m.ModuleKey()).Warnf(
+						"user %s is protected, but no follow request sent, skipping",
+						screenName,
+					)
+				} else {
+					log.WithField("module", m.ModuleKey()).Infof(
+						"user %s is protected, but follow request sent, waiting for approval",
+						screenName,
+					)
+				}
+			} else if user.Data.User.Result.TypeName != nil && *user.Data.User.Result.TypeName == "UserUnavailable" {
 				// we only want to check entries if we are not in search mode, and we should have at least one entry
 				log.WithField("module", m.ModuleKey()).Warnf(
 					"user %s is unavailable anymore, reason from twitter: %s",
@@ -109,6 +122,8 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 					screenName,
 				)
 			}
+
+			return nil
 		}
 
 		for _, tweet := range tweetEntries {
