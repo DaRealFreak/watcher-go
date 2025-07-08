@@ -23,7 +23,7 @@ const SuperFutaApiVersion = 2
 
 // ChounyuuAPI contains all required items to communicate with the API
 type ChounyuuAPI struct {
-	Session watcherHttp.SessionInterface
+	Session watcherHttp.TlsClientSessionInterface
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type

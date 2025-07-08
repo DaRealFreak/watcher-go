@@ -25,7 +25,7 @@ const (
 )
 
 type XTransactionIdHandler struct {
-	transactionSession     http.SessionInterface
+	transactionSession     http.TlsClientSessionInterface
 	settings               twitter_settings.TwitterSettings
 	onDemandFileRegex      *regexp.Regexp
 	indicesRegex           *regexp.Regexp
@@ -36,7 +36,7 @@ type XTransactionIdHandler struct {
 	animationKey           string
 }
 
-func NewXTransactionIdHandler(transactionSession http.SessionInterface, settings twitter_settings.TwitterSettings) *XTransactionIdHandler {
+func NewXTransactionIdHandler(transactionSession http.TlsClientSessionInterface, settings twitter_settings.TwitterSettings) *XTransactionIdHandler {
 	handler := &XTransactionIdHandler{
 		transactionSession: transactionSession,
 		settings:           settings,

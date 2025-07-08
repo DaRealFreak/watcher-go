@@ -181,7 +181,7 @@ type Overview struct {
 type DeviantartNAPI struct {
 	login.DeviantArtLogin
 	Account     *models.Account
-	UserSession watcherHttp.SessionInterface
+	UserSession watcherHttp.TlsClientSessionInterface
 	ctx         context.Context
 	// FixMe: CSRF token is only valid for 30 minutes, we need to re-extract it after again
 	CSRFToken string
@@ -192,7 +192,7 @@ type DeviantartNAPI struct {
 // NewDeviantartNAPI returns the settings of the DeviantArt API
 func NewDeviantartNAPI(moduleKey string, userAgent string) *DeviantartNAPI {
 	return &DeviantartNAPI{
-		UserSession: tls_session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
+		UserSession: tls_session.NewTlsClientSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 		UserAgent:   userAgent,

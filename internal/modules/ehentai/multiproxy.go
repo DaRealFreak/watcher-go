@@ -2,24 +2,23 @@ package ehentai
 
 import (
 	"fmt"
-	"net/url"
-	"path"
-	"strings"
-	"time"
-
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
+	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
+	"net/url"
+	"path"
+	"strings"
+	"time"
 )
 
 type proxySession struct {
 	inUse         bool
 	proxy         http.ProxySettings
-	session       *tls_session.TlsClientSession
+	session       *std_session.StdClientSession
 	occurredError error
 }
 
@@ -29,11 +28,11 @@ func (m *ehentai) initializeProxySessions() {
 	exURL, _ := url.Parse("https://exhentai.org")
 
 	for _, proxy := range m.settings.LoopProxies {
-		singleSession := tls_session.NewSession(m.Key, ErrorHandler{}, tls_session.TlsClientErrorHandler{})
+		singleSession := std_session.NewStdClientSession(m.Key, ErrorHandler{}, std_session.StdClientErrorHandler{})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for session
-		singleSession.Client.SetCookies(ehURL, m.Session.GetClient().GetCookies(ehURL))
-		singleSession.Client.SetCookies(exURL, m.Session.GetClient().GetCookies(ehURL))
+		singleSession.SetCookies(ehURL, m.Session.GetCookies(ehURL))
+		singleSession.SetCookies(exURL, m.Session.GetCookies(ehURL))
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
 			inUse:         false,

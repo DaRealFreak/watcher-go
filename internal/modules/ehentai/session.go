@@ -3,12 +3,12 @@ package ehentai
 import (
 	http2 "github.com/DaRealFreak/watcher-go/internal/http"
 	browser "github.com/EDDYCJY/fake-useragent"
-	http "github.com/bogdanfinn/fhttp"
+	"net/http"
 	"net/url"
 	"strings"
 )
 
-func (m *ehentai) get(requestUrl string, session ...http2.SessionInterface) (*http.Response, error) {
+func (m *ehentai) get(requestUrl string, session ...http2.StdClientSessionInterface) (*http.Response, error) {
 	req, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
 		return nil, err
@@ -17,7 +17,7 @@ func (m *ehentai) get(requestUrl string, session ...http2.SessionInterface) (*ht
 	return m.do(req, session...)
 }
 
-func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.SessionInterface) (*http.Response, error) {
+func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.StdClientSessionInterface) (*http.Response, error) {
 	formBody := data.Encode()
 	req, err := http.NewRequest("POST", requestUrl, strings.NewReader(formBody))
 	if err != nil {
@@ -29,7 +29,7 @@ func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.Sess
 	return m.do(req, session...)
 }
 
-func (m *ehentai) do(req *http.Request, session ...http2.SessionInterface) (*http.Response, error) {
+func (m *ehentai) do(req *http.Request, session ...http2.StdClientSessionInterface) (*http.Response, error) {
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Origin", req.URL.String())
 	req.Header.Set("Referer", req.URL.String())

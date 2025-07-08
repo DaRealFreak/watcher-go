@@ -29,14 +29,14 @@ type TwitterGraphQlAPI struct {
 	xpffHandler            *xpff.Handler
 	authTokenFallbackIndex int
 	moduleKey              string
-	Session                watcherHttp.SessionInterface
+	Session                watcherHttp.TlsClientSessionInterface
 	rateLimiter            *rate.Limiter
 	ctx                    context.Context
 }
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings, proxySettings *watcherHttp.ProxySettings) *TwitterGraphQlAPI {
-	graphQLSession := tls_session.NewSession(moduleKey, TwitterErrorHandler{})
+	graphQLSession := tls_session.NewTlsClientSession(moduleKey, TwitterErrorHandler{})
 	raven.CheckError(graphQLSession.SetProxy(proxySettings))
 
 	return &TwitterGraphQlAPI{

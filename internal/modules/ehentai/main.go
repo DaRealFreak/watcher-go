@@ -3,16 +3,9 @@ package ehentai
 
 import (
 	"fmt"
-	"net/url"
-	"path"
-	"regexp"
-	"strings"
-	"sync"
-	"time"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
+	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -21,11 +14,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
+	"net/url"
+	"path"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
 )
 
-// ehentai contains the implementation of the ModuleInterface and extends it by custom required values
+// ehentai contains the implementation of the ModuleInterface and extends it by custom-required values
 type ehentai struct {
 	*models.Module
+	Session                  http.StdClientSessionInterface
 	rateLimit                int
 	downloadLimitReached     bool
 	ipBanned                 bool
@@ -104,7 +104,9 @@ func (m *ehentai) InitializeModule() {
 	}
 
 	// set rate limiter on 2.5 seconds with burst limit of 1
-	ehSession := tls_session.NewSession(m.Key, ErrorHandler{}, tls_session.TlsClientErrorHandler{})
+	// ehSession := tls_session.NewTlsClientSession(m.Key, ErrorHandler{}, tls_session.TlsClientErrorHandler{})
+	// ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+	ehSession := std_session.NewStdClientSession(m.Key, ErrorHandler{}, std_session.StdClientErrorHandler{})
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 
 	m.Session = ehSession
@@ -156,7 +158,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	// copy the cookies for e-hentai to exhentai
 	ehURL, _ := url.Parse("https://e-hentai.org")
 	exURL, _ := url.Parse("https://exhentai.org")
-	m.Session.GetClient().SetCookies(exURL, m.Session.GetClient().GetCookies(ehURL))
+	m.Session.SetCookies(exURL, m.Session.GetCookies(ehURL))
 
 	// initialize proxy sessions after login
 	if m.LoggedIn && m.settings.MultiProxy {

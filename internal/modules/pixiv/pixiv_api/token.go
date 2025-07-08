@@ -16,7 +16,7 @@ type pixivTokenRefresher struct {
 	config *oauth2.Config
 	mu     sync.Mutex // guards t
 	token  *oauth2.Token
-	client http.SessionInterface
+	client http.TlsClientSessionInterface
 }
 
 // Token is the implementation of the TokenSource interface to return a valid token or the error occurred

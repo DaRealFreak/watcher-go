@@ -59,7 +59,7 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *chounyuu) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.Session = tls_session.NewSession(m.Key, errorHandler{})
+	m.Session = tls_session.NewTlsClientSession(m.Key, errorHandler{})
 	m.api.Session = m.Session
 
 	// set the proxy if requested

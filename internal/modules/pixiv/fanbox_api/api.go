@@ -22,7 +22,7 @@ const CookieCfClearance = "cf_clearance"
 // FanboxAPI is the implementation of the not reachable but required endpoints not in the public or mobile API
 type FanboxAPI struct {
 	StorageURL        *url.URL
-	Session           watcherHttp.SessionInterface
+	Session           watcherHttp.TlsClientSessionInterface
 	Key               string
 	SessionCookie     *models.Cookie
 	CfClearanceCookie *models.Cookie
@@ -33,7 +33,7 @@ type FanboxAPI struct {
 func NewFanboxAPI(moduleKey string) *FanboxAPI {
 	fanboxAPI := &FanboxAPI{
 		Key:     moduleKey,
-		Session: tls_session.NewSession(moduleKey),
+		Session: tls_session.NewTlsClientSession(moduleKey),
 	}
 	fanboxAPI.StorageURL, _ = url.Parse("https://www.fanbox.cc")
 

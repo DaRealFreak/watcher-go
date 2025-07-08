@@ -2,7 +2,6 @@
 package http
 
 import (
-	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/PuerkitoBio/goquery"
 	http "github.com/bogdanfinn/fhttp"
@@ -12,17 +11,16 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
-// SessionInterface of used functions from the application to eventually change the underlying library
-type SessionInterface interface {
-	Get(uri string, errorHandlers ...ErrorHandler) (response *http.Response, err error)
-	Post(uri string, data url.Values, errorHandlers ...ErrorHandler) (response *http.Response, err error)
-	Do(req *http.Request, errorHandlers ...ErrorHandler) (response *http.Response, err error)
-	DownloadFile(filepath string, uri string, errorHandlers ...ErrorHandler) (err error)
-	DownloadFileFromResponse(response *http.Response, filepath string, errorHandlers ...ErrorHandler) (err error)
+// TlsClientSessionInterface of used functions from the application to eventually change the underlying library
+type TlsClientSessionInterface interface {
+	Get(uri string, errorHandlers ...TlsClientErrorHandler) (response *http.Response, err error)
+	Post(uri string, data url.Values, errorHandlers ...TlsClientErrorHandler) (response *http.Response, err error)
+	Do(req *http.Request, errorHandlers ...TlsClientErrorHandler) (response *http.Response, err error)
+	DownloadFile(filepath string, uri string, errorHandlers ...TlsClientErrorHandler) (err error)
+	DownloadFileFromResponse(response *http.Response, filepath string, errorHandlers ...TlsClientErrorHandler) (err error)
 	EnsureDownloadDirectory(fileName string)
 	GetDocument(response *http.Response) *goquery.Document
 	GetClient() tls_client.HttpClient
@@ -34,58 +32,24 @@ type SessionInterface interface {
 	SetRateLimiter(rateLimiter *rate.Limiter)
 }
 
-type ErrorHandler interface {
+type TlsClientErrorHandler interface {
 	CheckResponse(response *http.Response) (error error, fatal bool)
 	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
 	IsFatalError(err error) bool
 }
 
-// Session is an implementation to the SessionInterface to provide basic functions
-type Session struct {
-	SessionInterface
+// TlsClientSession is an implementation to the TlsClientSessionInterface to provide basic functions
+type TlsClientSession struct {
+	TlsClientSessionInterface
 	ModuleKey string
 }
 
-// ProxySettings are the proxy server settings for the session
-type ProxySettings struct {
-	Enable   bool   `mapstructure:"enable"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Type     string `mapstructure:"type"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-}
-
-func (s ProxySettings) GetProxyType() string {
-	switch strings.ToUpper(s.Type) {
-	case "SOCKS5":
-		return "socks5"
-	case "HTTP":
-		return "http"
-	case "HTTPS", "":
-		return "https"
-	default:
-		return s.Type
-	}
-}
-
-func (s ProxySettings) GetProxyString() string {
-	var authString string
-	if s.Username != "" && s.Password != "" {
-		authString = fmt.Sprintf("%s:%s@", url.QueryEscape(s.Username), url.QueryEscape(s.Password))
-	}
-
-	return fmt.Sprintf(
-		"%s://%s%s:%d",
-		s.GetProxyType(),
-		authString,
-		url.QueryEscape(s.Host), s.Port,
-	)
-}
+// Interface guard
+var _ TlsClientSessionInterface = (*TlsClientSession)(nil)
 
 // EnsureDownloadDirectory ensures that the download path already exists or creates it if not
 // this function panics when path can't be created
-func (s *Session) EnsureDownloadDirectory(fileName string) {
+func (s *TlsClientSession) EnsureDownloadDirectory(fileName string) {
 	dirName := filepath.Dir(fileName)
 	if _, statError := os.Stat(dirName); statError != nil {
 		mkdirError := os.MkdirAll(dirName, os.ModePerm)
@@ -96,7 +60,7 @@ func (s *Session) EnsureDownloadDirectory(fileName string) {
 }
 
 // GetDocument converts the http response to a *goquery.Document
-func (s *Session) GetDocument(response *http.Response) *goquery.Document {
+func (s *TlsClientSession) GetDocument(response *http.Response) *goquery.Document {
 	defer raven.CheckClosure(response.Body)
 
 	document, documentErr := goquery.NewDocumentFromReader(response.Body)
@@ -107,7 +71,7 @@ func (s *Session) GetDocument(response *http.Response) *goquery.Document {
 
 // UpdateTreeFolderChangeTimes recursively updates the folder access and modification times
 // to indicate changes in the data for file explorers
-func (s *Session) UpdateTreeFolderChangeTimes(filePath string) {
+func (s *TlsClientSession) UpdateTreeFolderChangeTimes(filePath string) {
 	absFilePath, absErr := filepath.Abs(filePath)
 	if absErr != nil {
 		return

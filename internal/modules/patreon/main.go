@@ -129,7 +129,7 @@ func (m *patreon) InitializeModule() {
 	}
 
 	// initialize session
-	m.Session = tls_session.NewSession(m.Key)
+	m.Session = tls_session.NewTlsClientSession(m.Key)
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

@@ -28,7 +28,7 @@ func (m *deviantArt) initializeProxySessions() {
 	daWwwURL, _ := url.Parse("https://www.deviantart.com")
 
 	for _, proxy := range m.settings.LoopProxies {
-		singleSession := tls_session.NewSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
+		singleSession := tls_session.NewTlsClientSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for the session
 		singleSession.Client.SetCookies(daWwwURL, m.nAPI.UserSession.GetClient().GetCookies(daWwwURL))

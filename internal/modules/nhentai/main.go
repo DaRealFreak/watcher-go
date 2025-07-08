@@ -78,7 +78,7 @@ func (m *nhentai) InitializeModule() {
 	))
 
 	m.baseURL, _ = url.Parse("https://nhentai.net/")
-	m.Session = tls_session.NewSession(m.Key)
+	m.Session = tls_session.NewTlsClientSession(m.Key)
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

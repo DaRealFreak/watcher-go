@@ -21,7 +21,7 @@ import (
 // PixivAPI is the struct offering shared functionality for the public API and the mobile API
 type PixivAPI struct {
 	moduleKey     string
-	Session       watcherHttp.SessionInterface
+	Session       watcherHttp.TlsClientSessionInterface
 	rateLimiter   *rate.Limiter
 	ctx           context.Context
 	OAuth2Config  *oauth2.Config
@@ -35,7 +35,7 @@ type PixivAPI struct {
 func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer string) *PixivAPI {
 	return &PixivAPI{
 		moduleKey: moduleKey,
-		Session:   tls_session.NewSession(moduleKey, PixivErrorHandler{}, tls_session.TlsClientErrorHandler{}),
+		Session:   tls_session.NewTlsClientSession(moduleKey, PixivErrorHandler{}, tls_session.TlsClientErrorHandler{}),
 		OAuth2Config: &oauth2.Config{
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",

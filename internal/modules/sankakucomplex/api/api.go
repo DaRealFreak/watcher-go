@@ -16,7 +16,7 @@ import (
 
 // SankakuComplexApi contains all required items to communicate with the API
 type SankakuComplexApi struct {
-	Session     watcherHttp.SessionInterface
+	Session     watcherHttp.TlsClientSessionInterface
 	tokenSrc    oauth2.TokenSource
 	rateLimiter *rate.Limiter
 	ctx         context.Context
@@ -26,7 +26,7 @@ type SankakuComplexApi struct {
 
 // NewSankakuComplexApi returns the settings of the SankakuComplex API.
 // It now uses the new OIDC flow (implemented in the iodc package) to retrieve an OAuth token.
-func NewSankakuComplexApi(moduleKey string, session watcherHttp.SessionInterface, account *models.Account) *SankakuComplexApi {
+func NewSankakuComplexApi(moduleKey string, session watcherHttp.TlsClientSessionInterface, account *models.Account) *SankakuComplexApi {
 	ctx := context.Background()
 
 	// OIDC configuration.

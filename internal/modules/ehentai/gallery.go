@@ -175,7 +175,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 
 // getDownloadQueueItem extract the direct image URL from the passed gallery item
 func (m *ehentai) getDownloadQueueItem(
-	downloadSession http.SessionInterface, trackedItem *models.TrackedItem, item *imageGalleryItem,
+	downloadSession http.StdClientSessionInterface, trackedItem *models.TrackedItem, item *imageGalleryItem,
 ) (*models.DownloadQueueItem, error) {
 	response, err := m.get(item.uri, downloadSession)
 	if err != nil {

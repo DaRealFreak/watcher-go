@@ -160,7 +160,7 @@ type WatchResponse struct {
 	Success bool `json:"success"`
 }
 
-func (a *DeviantartNAPI) WatchUser(username string, session http.SessionInterface) (*WatchResponse, error) {
+func (a *DeviantartNAPI) WatchUser(username string, session http.TlsClientSessionInterface) (*WatchResponse, error) {
 	if session == nil {
 		session = a.UserSession
 	}
@@ -188,7 +188,7 @@ func (a *DeviantartNAPI) WatchUser(username string, session http.SessionInterfac
 	return &watchResponse, err
 }
 
-func (a *DeviantartNAPI) UnwatchUser(username string, session http.SessionInterface) (*WatchResponse, error) {
+func (a *DeviantartNAPI) UnwatchUser(username string, session http.TlsClientSessionInterface) (*WatchResponse, error) {
 	if session == nil {
 		session = a.UserSession
 	}

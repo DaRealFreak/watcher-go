@@ -3,7 +3,9 @@ package ehentai
 import (
 	"bytes"
 	"errors"
-	http "github.com/bogdanfinn/fhttp"
+	"net/http"
+
+	// http "github.com/bogdanfinn/fhttp"
 	"io"
 	"net/url"
 	"strings"

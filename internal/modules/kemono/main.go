@@ -72,7 +72,7 @@ func (m *kemono) InitializeModule() {
 	))
 
 	// set the module implementation for access to the session, database, etc
-	kemonoSession := tls_session.NewSession(m.Key)
+	kemonoSession := tls_session.NewTlsClientSession(m.Key)
 	kemonoSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(2500)*time.Millisecond), 1)
 	m.Session = kemonoSession
 

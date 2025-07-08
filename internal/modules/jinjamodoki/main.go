@@ -66,7 +66,7 @@ func (m *jinjaModoki) InitializeModule() {
 
 	m.baseURL, _ = url.Parse("https://gs-uploader.jinja-modoki.com/")
 
-	moduleSession := tls_session.NewSession(m.Key)
+	moduleSession := tls_session.NewTlsClientSession(m.Key)
 	m.defaultSession = moduleSession
 	m.Session = m.defaultSession
 

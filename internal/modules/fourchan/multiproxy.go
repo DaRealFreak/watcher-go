@@ -30,7 +30,7 @@ func (m *fourChan) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		if proxy.Enable {
-			singleSession := tls_session.NewSession(m.Key)
+			singleSession := tls_session.NewTlsClientSession(m.Key)
 			singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 			// copy login cookies for session
 			singleSession.Client.SetCookies(fourChanUrl, m.Session.GetClient().GetCookies(fourChanUrl))

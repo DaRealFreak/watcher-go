@@ -1,51 +1,46 @@
-package tls_session
+package std_session
 
 import (
 	"context"
 	"fmt"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	http "github.com/bogdanfinn/fhttp"
-	tls_client "github.com/bogdanfinn/tls-client"
-	"github.com/bogdanfinn/tls-client/profiles"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 	"io"
+	"net"
+	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 )
 
-// TlsClientSession is an extension to the implemented TlsClientSessionInterface for HTTP sessions
-type TlsClientSession struct {
-	watcherHttp.TlsClientSession
-	Client             tls_client.HttpClient
+// StdClientSession is an extension to the implemented StdClientSessionInterface for HTTP sessions
+type StdClientSession struct {
+	watcherHttp.StdClientSession
+	Client             *http.Client
 	RateLimiter        *rate.Limiter
-	ErrorHandlers      []watcherHttp.TlsClientErrorHandler
+	ErrorHandlers      []watcherHttp.StdClientErrorHandler
 	MaxRetries         int
 	MaxDownloadRetries int
 	ctx                context.Context
 }
 
-// NewTlsClientSession initializes a new session and sets all the required headers etc
-func NewTlsClientSession(moduleKey string, errorHandlers ...watcherHttp.TlsClientErrorHandler) *TlsClientSession {
-	jar := tls_client.NewCookieJar()
+// NewStdClientSession initializes a new session and sets all the required headers etc
+func NewStdClientSession(moduleKey string, errorHandlers ...watcherHttp.StdClientErrorHandler) *StdClientSession {
+	jar, _ := cookiejar.New(nil)
 	if len(errorHandlers) == 0 {
-		errorHandlers = []watcherHttp.TlsClientErrorHandler{TlsClientErrorHandler{}}
+		errorHandlers = []watcherHttp.StdClientErrorHandler{StdClientErrorHandler{}}
 	}
 
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(10 * 60),
-		tls_client.WithClientProfile(profiles.Firefox_135),
-		tls_client.WithRandomTLSExtensionOrder(),
-		tls_client.WithCookieJar(jar),
-	}
-
-	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
-
-	app := TlsClientSession{
-		Client:             client,
+	app := StdClientSession{
+		Client: &http.Client{
+			Jar:       jar,
+			Transport: http.DefaultTransport,
+		},
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
 		MaxDownloadRetries: 3,
@@ -58,7 +53,7 @@ func NewTlsClientSession(moduleKey string, errorHandlers ...watcherHttp.TlsClien
 }
 
 // Get sends a GET request, returns the occurred error if something went wrong even after multiple tries
-func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.TlsClientErrorHandler) (response *http.Response, err error) {
+func (s *StdClientSession) Get(uri string, errorHandlers ...watcherHttp.StdClientErrorHandler) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
@@ -121,7 +116,7 @@ func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.TlsClien
 }
 
 // Post sends a POST request, returns the occurred error if something went wrong even after multiple tries
-func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...watcherHttp.TlsClientErrorHandler) (response *http.Response, err error) {
+func (s *StdClientSession) Post(uri string, data url.Values, errorHandlers ...watcherHttp.StdClientErrorHandler) (response *http.Response, err error) {
 	formBody := data.Encode() // "k=v&x=y"
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
@@ -169,7 +164,7 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 }
 
 // Do function handles the passed request, returns the occurred error if something went wrong even after multiple tries
-func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.TlsClientErrorHandler) (response *http.Response, err error) {
+func (s *StdClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.StdClientErrorHandler) (response *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
@@ -213,7 +208,7 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 }
 
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
-func (s *TlsClientSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.TlsClientErrorHandler) (err error) {
+func (s *StdClientSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.StdClientErrorHandler) (err error) {
 	log.WithField("module", s.ModuleKey).Debug(
 		fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri),
 	)
@@ -230,7 +225,7 @@ func (s *TlsClientSession) DownloadFile(filepath string, uri string, errorHandle
 }
 
 // DownloadFileFromResponse tries to download the file from the response, returns the occurred error if something went wrong even after multiple tries
-func (s *TlsClientSession) DownloadFileFromResponse(resp *http.Response, filepath string, errorHandlers ...watcherHttp.TlsClientErrorHandler) (err error) {
+func (s *StdClientSession) DownloadFileFromResponse(resp *http.Response, filepath string, errorHandlers ...watcherHttp.StdClientErrorHandler) (err error) {
 	defer raven.CheckClosure(resp.Body)
 
 	// ensure the directory
@@ -277,7 +272,7 @@ func (s *TlsClientSession) DownloadFileFromResponse(resp *http.Response, filepat
 
 // tryDownloadFile will try download an url to a local file.
 // It's efficient because it will write as it downloads and not load the whole file into memory.
-func (s *TlsClientSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.TlsClientErrorHandler) error {
+func (s *StdClientSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.StdClientErrorHandler) error {
 	// retrieve the data
 	resp, err := s.Get(uri, errorHandlers...)
 	if err != nil {
@@ -288,30 +283,30 @@ func (s *TlsClientSession) tryDownloadFile(filepath string, uri string, errorHan
 }
 
 // GetClient returns the used *http.Client, required f.e. to manually set cookies
-func (s *TlsClientSession) GetClient() tls_client.HttpClient {
+func (s *StdClientSession) GetClient() *http.Client {
 	return s.Client
 }
 
 // SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
-func (s *TlsClientSession) SetClient(client tls_client.HttpClient) {
+func (s *StdClientSession) SetClient(client *http.Client) {
 	s.Client = client
 }
 
-func (s *TlsClientSession) GetCookies(u *url.URL) []*http.Cookie {
-	return s.Client.GetCookies(u)
+func (s *StdClientSession) GetCookies(u *url.URL) []*http.Cookie {
+	return s.Client.Jar.Cookies(u)
 }
 
-func (s *TlsClientSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
+func (s *StdClientSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	// set the cookies for the given URL
-	s.Client.SetCookies(u, cookies)
+	s.Client.Jar.SetCookies(u, cookies)
 }
 
-func (s *TlsClientSession) SetRateLimiter(rateLimiter *rate.Limiter) {
+func (s *StdClientSession) SetRateLimiter(rateLimiter *rate.Limiter) {
 	s.RateLimiter = rateLimiter
 }
 
 // ApplyRateLimit waits for the leaky bucket to fill again
-func (s *TlsClientSession) ApplyRateLimit() {
+func (s *StdClientSession) ApplyRateLimit() {
 	// if no rate limiter is defined, we don't have to wait
 	if s.RateLimiter != nil {
 		// wait for the request to stay within the rate limit
@@ -321,32 +316,98 @@ func (s *TlsClientSession) ApplyRateLimit() {
 }
 
 // SetProxy sets the current proxy for the client
-func (s *TlsClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
+func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
+	// reset to default transport (no Proxy, default DialContext)
 	if ps == nil || !ps.Enable || ps.Host == "" {
-		return s.Client.SetProxy("")
+		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+			tr := orig.Clone()
+			tr.Proxy = nil
+			tr.DialContext = (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext
+			s.Client.Transport = tr
+		} else {
+			s.Client.Transport = http.DefaultTransport
+		}
+		return nil
 	}
 
+	// pick proxy type
 	proxyType := strings.ToLower(ps.Type)
 	if proxyType == "" {
 		proxyType = "https"
 	}
 
-	auth := ""
-	if ps.Username != "" && ps.Password != "" {
-		auth = url.QueryEscape(ps.Username) + ":" +
-			url.QueryEscape(ps.Password) + "@"
+	log.WithField("module", s.ModuleKey).Infof(
+		"setting proxy: [%s %s:%d]", proxyType, ps.Host, ps.Port,
+	)
+
+	switch proxyType {
+	case "socks5":
+		addr := fmt.Sprintf("%s:%d", ps.Host, ps.Port)
+		var auth *proxy.Auth
+		if ps.Username != "" || ps.Password != "" {
+			auth = &proxy.Auth{
+				User:     ps.Username,
+				Password: ps.Password,
+			}
+		}
+		dialer, err := proxy.SOCKS5("tcp", addr, auth, proxy.Direct)
+		if err != nil {
+			return fmt.Errorf("failed to create SOCKS5 dialer: %w", err)
+		}
+
+		// wrap into a DialContext
+		dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network, addr)
+		}
+
+		// apply onto cloned transport
+		var tr *http.Transport
+		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+			tr = orig.Clone()
+		} else {
+			tr = http.DefaultTransport.(*http.Transport).Clone()
+		}
+		tr.DialContext = dialContext
+		// clear any HTTP Proxy setting
+		tr.Proxy = nil
+		s.Client.Transport = tr
+
+	case "http", "https":
+		// build URL with optional basic auth
+		var userInfo string
+		if ps.Username != "" {
+			if ps.Password != "" {
+				userInfo = url.UserPassword(ps.Username, ps.Password).String() + "@"
+			} else {
+				userInfo = url.User(ps.Username).String() + "@"
+			}
+		}
+		proxyStr := fmt.Sprintf("%s://%s%s:%d", proxyType, userInfo, ps.Host, ps.Port)
+		parsed, err := url.Parse(proxyStr)
+		if err != nil {
+			return fmt.Errorf("invalid proxy URL %q: %w", proxyStr, err)
+		}
+
+		var tr *http.Transport
+		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+			tr = orig.Clone()
+		} else {
+			tr = http.DefaultTransport.(*http.Transport).Clone()
+		}
+		tr.Proxy = http.ProxyURL(parsed)
+		// ensure default dialer
+		tr.DialContext = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext
+		s.Client.Transport = tr
+
+	default:
+		return fmt.Errorf("unknown proxy type: %s", ps.Type)
 	}
-	proxyURL := fmt.Sprintf(
-		"%s://%s%s:%d",
-		proxyType,
-		auth,
-		url.QueryEscape(ps.Host),
-		ps.Port,
-	)
 
-	log.WithField("module", s.ModuleKey).Debug(
-		fmt.Sprintf("setting proxy: %s", strings.Replace(proxyURL, auth, "****:****@", 1)),
-	)
-
-	return s.Client.SetProxy(proxyURL)
+	return nil
 }

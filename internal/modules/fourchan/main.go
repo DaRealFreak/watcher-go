@@ -90,7 +90,7 @@ func (m *fourChan) InitializeModule() {
 	}
 
 	// set the module implementation for access to the session, database, etc
-	fourChanSession := tls_session.NewSession(m.Key)
+	fourChanSession := tls_session.NewTlsClientSession(m.Key)
 	fourChanSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 	m.Session = fourChanSession
 

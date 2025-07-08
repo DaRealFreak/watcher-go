@@ -5,7 +5,7 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 )
 
-func (a *DeviantartNAPI) get(url string, session ...http2.SessionInterface) (*http.Response, error) {
+func (a *DeviantartNAPI) get(url string, session ...http2.TlsClientSessionInterface) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -14,7 +14,7 @@ func (a *DeviantartNAPI) get(url string, session ...http2.SessionInterface) (*ht
 	return a.do(req, session...)
 }
 
-func (a *DeviantartNAPI) do(req *http.Request, session ...http2.SessionInterface) (*http.Response, error) {
+func (a *DeviantartNAPI) do(req *http.Request, session ...http2.TlsClientSessionInterface) (*http.Response, error) {
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("User-Agent", a.UserAgent)
 

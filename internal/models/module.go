@@ -48,7 +48,7 @@ type DownloadQueueItem struct {
 type Module struct {
 	ModuleInterface
 	DbIO           DatabaseInterface
-	Session        internalHttp.SessionInterface
+	Session        internalHttp.TlsClientSessionInterface
 	Key            string
 	RequiresLogin  bool
 	Initialized    bool

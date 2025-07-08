@@ -58,7 +58,7 @@ func NewBareModule() *models.Module {
 func (m *giantessWorld) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
 	m.baseURL, _ = url.Parse("https://www.giantessworld.net")
-	m.Session = tls_session.NewSession(m.Key)
+	m.Session = tls_session.NewTlsClientSession(m.Key)
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

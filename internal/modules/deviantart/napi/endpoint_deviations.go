@@ -27,7 +27,7 @@ const DeviationTypeArt = "art"
 const DeviationTypeJournal = "journal"
 
 func (a *DeviantartNAPI) ExtendedDeviation(
-	deviationId int, username string, deviationType string, includeSession bool, session http.SessionInterface,
+	deviationId int, username string, deviationType string, includeSession bool, session http.TlsClientSessionInterface,
 ) (*ExtendedDeviationResponse, error) {
 	if session == nil {
 		session = a.UserSession

@@ -2,7 +2,7 @@ package ehentai
 
 import (
 	"fmt"
-	http "github.com/bogdanfinn/fhttp"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -23,7 +23,7 @@ type searchGalleryItem struct {
 // the cookie only gets set in a response of a gallery
 func (m *ehentai) getSkCookie(item *models.TrackedItem) (exists bool, value *http.Cookie) {
 	requestUrl, _ := url.Parse(item.URI)
-	cookies := m.Session.GetClient().GetCookies(requestUrl)
+	cookies := m.Session.GetCookies(requestUrl)
 	for _, cookie := range cookies {
 		if cookie.Name == "sk" {
 			return true, cookie

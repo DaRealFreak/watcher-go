@@ -36,11 +36,11 @@ func (ct *CustomTime) UnmarshalJSON(b []byte) error {
 // Client manages communication with the Kemono API
 type Client struct {
 	BaseURL string
-	Client  http.SessionInterface
+	Client  http.TlsClientSessionInterface
 }
 
 // NewClient returns a new Kemono API client
-func NewClient(baseURL string, client http.SessionInterface) *Client {
+func NewClient(baseURL string, client http.TlsClientSessionInterface) *Client {
 	return &Client{
 		BaseURL: baseURL,
 		Client:  client,

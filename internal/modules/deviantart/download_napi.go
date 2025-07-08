@@ -106,7 +106,7 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 }
 
 func (m *deviantArt) downloadDeviationNapi(
-	trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface, update bool,
+	trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI, downloadSession http.TlsClientSessionInterface, update bool,
 ) error {
 	if downloadSession == nil {
 		downloadSession = m.nAPI.UserSession
@@ -396,7 +396,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI,
 }
 
 func (m *deviantArt) downloadContentNapi(
-	deviationItem downloadQueueItemNAPI, downloadSession http.SessionInterface, downloadedFiles *[]string,
+	deviationItem downloadQueueItemNAPI, downloadSession http.TlsClientSessionInterface, downloadedFiles *[]string,
 ) error {
 	if downloadSession == nil {
 		downloadSession = m.nAPI.UserSession
