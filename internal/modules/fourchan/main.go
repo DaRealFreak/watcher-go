@@ -11,7 +11,7 @@ import (
 	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -90,7 +90,7 @@ func (m *fourChan) InitializeModule() {
 	}
 
 	// set the module implementation for access to the session, database, etc
-	fourChanSession := session.NewSession(m.Key)
+	fourChanSession := tls_session.NewSession(m.Key)
 	fourChanSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 	m.Session = fourChanSession
 

@@ -2,18 +2,16 @@ package napi
 
 import (
 	"bytes"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	http "github.com/bogdanfinn/fhttp"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
 )
 
 type DeviantArtErrorHandler struct {
-	session.DefaultErrorHandler
+	tls_session.TlsClientErrorHandler
 	ModuleKey string
 }
 
@@ -32,11 +30,15 @@ func (e DeviantArtErrorHandler) CheckResponse(response *http.Response) (error er
 
 			time.Sleep(2 * time.Minute)
 
-			return session.StatusError{
+			return tls_session.StatusError{
 				StatusCode: response.StatusCode,
 			}, false
 		}
 	}
 
-	return e.DefaultErrorHandler.CheckResponse(response)
+	return e.TlsClientErrorHandler.CheckResponse(response)
+}
+
+func (e DeviantArtErrorHandler) IsFatalError(_ error) bool {
+	return false
 }

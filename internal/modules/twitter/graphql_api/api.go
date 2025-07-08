@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/x_transaction_id"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api/xpff"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
@@ -36,7 +36,7 @@ type TwitterGraphQlAPI struct {
 
 // NewTwitterAPI returns the settings of the Twitter API
 func NewTwitterAPI(moduleKey string, settings twitter_settings.TwitterSettings, proxySettings *watcherHttp.ProxySettings) *TwitterGraphQlAPI {
-	graphQLSession := session.NewSession(moduleKey, TwitterErrorHandler{})
+	graphQLSession := tls_session.NewSession(moduleKey, TwitterErrorHandler{})
 	raven.CheckError(graphQLSession.SetProxy(proxySettings))
 
 	return &TwitterGraphQlAPI{

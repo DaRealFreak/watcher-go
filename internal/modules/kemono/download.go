@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -99,7 +99,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 			),
 			downloadItem.FileURI,
 		); err != nil {
-			if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
+			if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
 				log.WithField("module", m.Key).Warnf(
 					"received 404 status code error \"%s\", trying thumbnail fallback url \"%s\"",
 					err.Error(),

@@ -1,11 +1,10 @@
 package graphql_api
 
 import (
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	http "github.com/bogdanfinn/fhttp"
 	"strings"
 	"time"
-
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
 )
 
 type DMCAError struct {
@@ -81,13 +80,13 @@ func (e TwitterErrorHandler) CheckResponse(response *http.Response) (err error, 
 	}
 
 	// fallback to default error handler
-	defaultErrorHandler := session.DefaultErrorHandler{}
+	defaultErrorHandler := tls_session.TlsClientErrorHandler{}
 	return defaultErrorHandler.CheckResponse(response)
 }
 
 func (e TwitterErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
 	// fallback to default error handler
-	defaultErrorHandler := session.DefaultErrorHandler{}
+	defaultErrorHandler := tls_session.TlsClientErrorHandler{}
 	return defaultErrorHandler.CheckDownloadedFileForErrors(writtenSize, responseHeader)
 }
 
@@ -97,5 +96,9 @@ func (e TwitterErrorHandler) hasSetCookieHeader(response *http.Response) bool {
 			return true
 		}
 	}
+	return false
+}
+
+func (e TwitterErrorHandler) IsFatalError(_ error) bool {
 	return false
 }

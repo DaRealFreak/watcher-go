@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
@@ -60,7 +60,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 			}
 
 			if err != nil {
-				if e, ok := err.(session.StatusError); ok && e.StatusCode == 404 {
+				if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 {
 					log.WithField("module", m.ModuleKey()).Warnf(
 						"received 404 status code for URI \"https://www.pixiv.net/en/artworks/%d\", "+
 							"content got most likely deleted, skipping",

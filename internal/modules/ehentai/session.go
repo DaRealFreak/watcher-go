@@ -24,6 +24,8 @@ func (m *ehentai) post(requestUrl string, data url.Values, session ...http2.Sess
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	return m.do(req, session...)
 }
 

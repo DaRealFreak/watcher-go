@@ -3,7 +3,7 @@ package fourchan
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -19,7 +19,7 @@ import (
 type proxySession struct {
 	inUse         bool
 	proxy         http.ProxySettings
-	session       *session.DefaultSession
+	session       *tls_session.TlsClientSession
 	occurredError error
 }
 
@@ -30,7 +30,7 @@ func (m *fourChan) initializeProxySessions() {
 
 	for _, proxy := range m.settings.LoopProxies {
 		if proxy.Enable {
-			singleSession := session.NewSession(m.Key)
+			singleSession := tls_session.NewSession(m.Key)
 			singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 			// copy login cookies for session
 			singleSession.Client.SetCookies(fourChanUrl, m.Session.GetClient().GetCookies(fourChanUrl))

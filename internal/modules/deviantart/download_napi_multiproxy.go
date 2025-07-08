@@ -1,14 +1,16 @@
 package deviantart
 
 import (
+	"errors"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
+	"io"
 	"net/url"
 	"time"
 )
@@ -16,7 +18,7 @@ import (
 type proxySession struct {
 	inUse         bool
 	proxy         http.ProxySettings
-	session       *session.DefaultSession
+	session       *tls_session.TlsClientSession
 	occurredError error
 }
 
@@ -26,7 +28,7 @@ func (m *deviantArt) initializeProxySessions() {
 	daWwwURL, _ := url.Parse("https://www.deviantart.com")
 
 	for _, proxy := range m.settings.LoopProxies {
-		singleSession := session.NewSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
+		singleSession := tls_session.NewSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for the session
 		singleSession.Client.SetCookies(daWwwURL, m.nAPI.UserSession.GetClient().GetCookies(daWwwURL))
@@ -175,6 +177,26 @@ func (m *deviantArt) downloadItemSessionNapi(
 			if v == index {
 				m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
 				break
+			}
+		}
+	} else {
+		log.WithField("module", m.Key).Errorf(
+			"error occurred downloading item %s (%s) with proxy %s: %s",
+			trackedItem.URI, deviationItem.itemID, downloadSession.proxy.Host, downloadSession.occurredError.Error(),
+		)
+
+		var scErr tls_session.StatusError
+		if errors.As(downloadSession.occurredError, &scErr) {
+			// 404 and 400 errors are mostly caused by expired CSRF tokens, not exactly sure where to refresh it
+			// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
+			if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
+				res, err2 := m.nAPI.UserSession.Get(deviationItem.deviation.URL)
+				if err2 != nil {
+					return
+				}
+
+				html, _ := io.ReadAll(res.Body)
+				_ = html
 			}
 		}
 	}

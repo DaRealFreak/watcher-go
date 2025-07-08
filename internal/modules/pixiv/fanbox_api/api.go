@@ -10,7 +10,7 @@ import (
 	"os"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,7 +33,7 @@ type FanboxAPI struct {
 func NewFanboxAPI(moduleKey string) *FanboxAPI {
 	fanboxAPI := &FanboxAPI{
 		Key:     moduleKey,
-		Session: session.NewSession(moduleKey),
+		Session: tls_session.NewSession(moduleKey),
 	}
 	fanboxAPI.StorageURL, _ = url.Parse("https://www.fanbox.cc")
 

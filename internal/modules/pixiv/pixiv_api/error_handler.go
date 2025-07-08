@@ -33,3 +33,7 @@ func (e PixivErrorHandler) CheckResponse(response *http.Response) (err error, fa
 func (e PixivErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
 	return nil
 }
+
+func (e PixivErrorHandler) IsFatalError(_ error) bool {
+	return false
+}

@@ -2,21 +2,18 @@
 package http
 
 import (
-	"compress/gzip"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	"github.com/PuerkitoBio/goquery"
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/spf13/viper"
 )
 
 // SessionInterface of used functions from the application to eventually change the underlying library
@@ -40,6 +37,7 @@ type SessionInterface interface {
 type ErrorHandler interface {
 	CheckResponse(response *http.Response) (error error, fatal bool)
 	CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) (err error)
+	IsFatalError(err error) bool
 }
 
 // Session is an implementation to the SessionInterface to provide basic functions
@@ -99,27 +97,9 @@ func (s *Session) EnsureDownloadDirectory(fileName string) {
 
 // GetDocument converts the http response to a *goquery.Document
 func (s *Session) GetDocument(response *http.Response) *goquery.Document {
-	var (
-		reader io.ReadCloser
-		err    error
-	)
+	defer raven.CheckClosure(response.Body)
 
-	switch response.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(response.Body)
-		if err == nil {
-			readerRes, readerErr := io.ReadAll(reader)
-			raven.CheckError(readerErr)
-
-			response.Body = io.NopCloser(strings.NewReader(string(readerRes)))
-		}
-	}
-
-	reader = response.Body
-
-	defer raven.CheckClosure(reader)
-
-	document, documentErr := goquery.NewDocumentFromReader(reader)
+	document, documentErr := goquery.NewDocumentFromReader(response.Body)
 	raven.CheckError(documentErr)
 
 	return document

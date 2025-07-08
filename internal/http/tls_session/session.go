@@ -1,26 +1,24 @@
-// Package session contains a default implementation of the session browser
-package session
+package tls_session
 
 import (
 	"context"
 	"fmt"
+	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
+	"github.com/DaRealFreak/watcher-go/internal/raven"
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"io"
 	"net/url"
 	"os"
 	"strings"
 	"time"
-
-	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 )
 
-// DefaultSession is an extension to the implemented SessionInterface for HTTP sessions
-type DefaultSession struct {
+// TlsClientSession is an extension to the implemented SessionInterface for HTTP sessions
+type TlsClientSession struct {
 	watcherHttp.Session
 	Client             tls_client.HttpClient
 	RateLimiter        *rate.Limiter
@@ -31,10 +29,10 @@ type DefaultSession struct {
 }
 
 // NewSession initializes a new session and sets all the required headers etc
-func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *DefaultSession {
+func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *TlsClientSession {
 	jar := tls_client.NewCookieJar()
 	if len(errorHandlers) == 0 {
-		errorHandlers = []watcherHttp.ErrorHandler{DefaultErrorHandler{}}
+		errorHandlers = []watcherHttp.ErrorHandler{TlsClientErrorHandler{}}
 	}
 
 	options := []tls_client.HttpClientOption{
@@ -45,7 +43,7 @@ func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *De
 
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 
-	app := DefaultSession{
+	app := TlsClientSession{
 		Client:             client,
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
@@ -59,7 +57,7 @@ func NewSession(moduleKey string, errorHandlers ...watcherHttp.ErrorHandler) *De
 }
 
 // Get sends a GET request, returns the occurred error if something went wrong even after multiple tries
-func (s *DefaultSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
+func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
 	// access the passed url and return the data or the error which persisted multiple retries
 	// post the request with the retries option
 	for try := 1; try <= s.MaxRetries; try++ {
@@ -78,6 +76,12 @@ func (s *DefaultSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandl
 					break
 				}
 			}
+		} else {
+			for _, errorHandler := range s.ErrorHandlers {
+				if fatal = errorHandler.IsFatalError(err); fatal {
+					break
+				}
+			}
 		}
 
 		// check request registered error handlers
@@ -85,6 +89,15 @@ func (s *DefaultSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandl
 			for _, errorHandler := range errorHandlers {
 				if err, fatal = errorHandler.CheckResponse(response); err != nil {
 					break
+				}
+			}
+		} else {
+			// if fatal is already true, we don't have to check the request error handlers
+			if fatal == false {
+				for _, errorHandler := range errorHandlers {
+					if fatal = errorHandler.IsFatalError(err); fatal {
+						break
+					}
 				}
 			}
 		}
@@ -107,7 +120,7 @@ func (s *DefaultSession) Get(uri string, errorHandlers ...watcherHttp.ErrorHandl
 }
 
 // Post sends a POST request, returns the occurred error if something went wrong even after multiple tries
-func (s *DefaultSession) Post(uri string, data url.Values, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
+func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
 	formBody := data.Encode() // "k=v&x=y"
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
@@ -155,7 +168,7 @@ func (s *DefaultSession) Post(uri string, data url.Values, errorHandlers ...watc
 }
 
 // Do function handles the passed request, returns the occurred error if something went wrong even after multiple tries
-func (s *DefaultSession) Do(req *http.Request, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
+func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.ErrorHandler) (response *http.Response, err error) {
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
@@ -199,24 +212,14 @@ func (s *DefaultSession) Do(req *http.Request, errorHandlers ...watcherHttp.Erro
 }
 
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
-func (s *DefaultSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) (err error) {
-	for try := 1; try <= s.MaxDownloadRetries; try++ {
-		log.WithField("module", s.ModuleKey).Debug(
-			fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try),
-		)
+func (s *TlsClientSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) (err error) {
+	log.WithField("module", s.ModuleKey).Debug(
+		fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri),
+	)
 
-		err = s.tryDownloadFile(filepath, uri, errorHandlers...)
-		if err != nil {
-			// sleep if an error occurred
-			time.Sleep(time.Duration(try+1) * time.Second)
-		} else {
-			// if no error occurred return nil
-			return nil
-		}
-	}
-
+	err = s.tryDownloadFile(filepath, uri, errorHandlers...)
 	if err != nil {
-		// try to clean up failed file if it exists
+		// try to clean up the failed file if it exists
 		if _, statErr := os.Stat(filepath); statErr == nil {
 			_ = os.Remove(filepath)
 		}
@@ -226,7 +229,7 @@ func (s *DefaultSession) DownloadFile(filepath string, uri string, errorHandlers
 }
 
 // DownloadFileFromResponse tries to download the file from the response, returns the occurred error if something went wrong even after multiple tries
-func (s *DefaultSession) DownloadFileFromResponse(resp *http.Response, filepath string, errorHandlers ...watcherHttp.ErrorHandler) (err error) {
+func (s *TlsClientSession) DownloadFileFromResponse(resp *http.Response, filepath string, errorHandlers ...watcherHttp.ErrorHandler) (err error) {
 	defer raven.CheckClosure(resp.Body)
 
 	// ensure the directory
@@ -273,7 +276,7 @@ func (s *DefaultSession) DownloadFileFromResponse(resp *http.Response, filepath 
 
 // tryDownloadFile will try download an url to a local file.
 // It's efficient because it will write as it downloads and not load the whole file into memory.
-func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) error {
+func (s *TlsClientSession) tryDownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.ErrorHandler) error {
 	// retrieve the data
 	resp, err := s.Get(uri, errorHandlers...)
 	if err != nil {
@@ -284,30 +287,30 @@ func (s *DefaultSession) tryDownloadFile(filepath string, uri string, errorHandl
 }
 
 // GetClient returns the used *http.Client, required f.e. to manually set cookies
-func (s *DefaultSession) GetClient() tls_client.HttpClient {
+func (s *TlsClientSession) GetClient() tls_client.HttpClient {
 	return s.Client
 }
 
 // SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
-func (s *DefaultSession) SetClient(client tls_client.HttpClient) {
+func (s *TlsClientSession) SetClient(client tls_client.HttpClient) {
 	s.Client = client
 }
 
-func (s *DefaultSession) GetCookies(u *url.URL) []*http.Cookie {
+func (s *TlsClientSession) GetCookies(u *url.URL) []*http.Cookie {
 	return s.Client.GetCookies(u)
 }
 
-func (s *DefaultSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
+func (s *TlsClientSession) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	// set the cookies for the given URL
 	s.Client.SetCookies(u, cookies)
 }
 
-func (s *DefaultSession) SetRateLimiter(rateLimiter *rate.Limiter) {
+func (s *TlsClientSession) SetRateLimiter(rateLimiter *rate.Limiter) {
 	s.RateLimiter = rateLimiter
 }
 
 // ApplyRateLimit waits for the leaky bucket to fill again
-func (s *DefaultSession) ApplyRateLimit() {
+func (s *TlsClientSession) ApplyRateLimit() {
 	// if no rate limiter is defined, we don't have to wait
 	if s.RateLimiter != nil {
 		// wait for the request to stay within the rate limit
@@ -317,7 +320,7 @@ func (s *DefaultSession) ApplyRateLimit() {
 }
 
 // SetProxy sets the current proxy for the client
-func (s *DefaultSession) SetProxy(ps *watcherHttp.ProxySettings) error {
+func (s *TlsClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 	if ps == nil || !ps.Enable || ps.Host == "" {
 		return s.Client.SetProxy("")
 	}

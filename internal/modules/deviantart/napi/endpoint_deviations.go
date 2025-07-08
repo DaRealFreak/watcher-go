@@ -3,6 +3,7 @@ package napi
 import (
 	"encoding/json"
 	"github.com/DaRealFreak/watcher-go/internal/http"
+	"io"
 	"net/url"
 	"strconv"
 )
@@ -51,6 +52,8 @@ func (a *DeviantartNAPI) ExtendedDeviation(
 	apiUrl := "https://www.deviantart.com/_puppy/dadeviation/init?" + values.Encode()
 	response, err := a.get(apiUrl, session)
 	if err != nil {
+		html, _ := io.ReadAll(response.Body)
+		_ = html
 		return nil, err
 	}
 

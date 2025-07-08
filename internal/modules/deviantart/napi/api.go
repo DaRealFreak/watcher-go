@@ -14,7 +14,7 @@ import (
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/login"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -192,7 +192,7 @@ type DeviantartNAPI struct {
 // NewDeviantartNAPI returns the settings of the DeviantArt API
 func NewDeviantartNAPI(moduleKey string, userAgent string) *DeviantartNAPI {
 	return &DeviantartNAPI{
-		UserSession: session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
+		UserSession: tls_session.NewSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 		UserAgent:   userAgent,

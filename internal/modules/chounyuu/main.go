@@ -5,19 +5,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	http "github.com/bogdanfinn/fhttp"
-	"net/url"
-	"regexp"
-	"strings"
-
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/chounyuu/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	http "github.com/bogdanfinn/fhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"net/url"
+	"regexp"
+	"strings"
 )
 
 // chounyuu contains the implementation of the ModuleInterface
@@ -60,7 +59,7 @@ func NewBareModule() *models.Module {
 // InitializeModule initializes the module
 func (m *chounyuu) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
-	m.Session = session.NewSession(m.Key, errorHandler{})
+	m.Session = tls_session.NewSession(m.Key, errorHandler{})
 	m.api.Session = m.Session
 
 	// set the proxy if requested

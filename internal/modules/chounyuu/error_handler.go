@@ -1,7 +1,7 @@
 package chounyuu
 
 import (
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	http "github.com/bogdanfinn/fhttp"
 )
 
@@ -21,12 +21,16 @@ func (e errorHandler) CheckResponse(response *http.Response) (err error, fatal b
 	}
 
 	// fallback to default error handler
-	defaultErrorHandler := session.DefaultErrorHandler{}
+	defaultErrorHandler := tls_session.TlsClientErrorHandler{}
 	return defaultErrorHandler.CheckResponse(response)
 }
 
 func (e errorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
 	// fallback to default error handler
-	defaultErrorHandler := session.DefaultErrorHandler{}
+	defaultErrorHandler := tls_session.TlsClientErrorHandler{}
 	return defaultErrorHandler.CheckDownloadedFileForErrors(writtenSize, responseHeader)
+}
+
+func (e errorHandler) IsFatalError(_ error) bool {
+	return false
 }

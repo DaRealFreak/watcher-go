@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -22,7 +22,7 @@ import (
 type jinjaModoki struct {
 	*models.Module
 	baseURL        *url.URL
-	defaultSession *session.DefaultSession
+	defaultSession *tls_session.TlsClientSession
 	settings       *models.ProxyLoopConfiguration
 }
 
@@ -66,7 +66,7 @@ func (m *jinjaModoki) InitializeModule() {
 
 	m.baseURL, _ = url.Parse("https://gs-uploader.jinja-modoki.com/")
 
-	moduleSession := session.NewSession(m.Key)
+	moduleSession := tls_session.NewSession(m.Key)
 	m.defaultSession = moduleSession
 	m.Session = m.defaultSession
 

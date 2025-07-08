@@ -103,7 +103,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 						screenName,
 					)
 				} else {
-					log.WithField("module", m.ModuleKey()).Infof(
+					log.WithField("module", m.ModuleKey()).Warnf(
 						"user %s is protected, but follow request sent, waiting for approval",
 						screenName,
 					)

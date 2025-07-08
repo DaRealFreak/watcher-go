@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -58,7 +58,7 @@ func NewBareModule() *models.Module {
 func (m *giantessWorld) InitializeModule() {
 	// set the module implementation for access to the session, database, etc
 	m.baseURL, _ = url.Parse("https://www.giantessworld.net")
-	m.Session = session.NewSession(m.Key)
+	m.Session = tls_session.NewSession(m.Key)
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

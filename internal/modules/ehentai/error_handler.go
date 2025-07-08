@@ -2,8 +2,10 @@ package ehentai
 
 import (
 	"bytes"
+	"errors"
 	http "github.com/bogdanfinn/fhttp"
 	"io"
+	"net/url"
 	"strings"
 )
 
@@ -46,4 +48,15 @@ func (e ErrorHandler) CheckResponse(response *http.Response) (err error, fatal b
 
 func (e ErrorHandler) CheckDownloadedFileForErrors(_ int64, _ http.Header) error {
 	return nil
+}
+
+func (e ErrorHandler) IsFatalError(err error) bool {
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		if ue.Err != nil && ue.Err.Error() == "tls: invalid server key share" {
+			return true
+		}
+	}
+
+	return false
 }

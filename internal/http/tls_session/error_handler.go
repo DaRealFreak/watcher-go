@@ -1,4 +1,4 @@
-package session
+package tls_session
 
 import (
 	"fmt"
@@ -23,10 +23,10 @@ func (e WrittenSizeError) Error() string {
 	return e.Message
 }
 
-type DefaultErrorHandler struct {
+type TlsClientErrorHandler struct {
 }
 
-func (e DefaultErrorHandler) CheckResponse(response *http.Response) (error error, fatal bool) {
+func (e TlsClientErrorHandler) CheckResponse(response *http.Response) (error error, fatal bool) {
 	switch {
 	case response.StatusCode < 400:
 		// everything is okay
@@ -50,7 +50,7 @@ func (e DefaultErrorHandler) CheckResponse(response *http.Response) (error error
 	}
 }
 
-func (e DefaultErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
+func (e TlsClientErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, responseHeader http.Header) error {
 	if val, ok := responseHeader["Content-Length"]; ok {
 		fileSize, err := strconv.Atoi(val[0])
 		if err == nil {
@@ -72,4 +72,8 @@ func (e DefaultErrorHandler) CheckDownloadedFileForErrors(writtenSize int64, res
 	}
 
 	return nil
+}
+
+func (e TlsClientErrorHandler) IsFatalError(_ error) bool {
+	return false
 }

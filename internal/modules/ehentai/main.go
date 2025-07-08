@@ -12,7 +12,7 @@ import (
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -104,7 +104,7 @@ func (m *ehentai) InitializeModule() {
 	}
 
 	// set rate limiter on 2.5 seconds with burst limit of 1
-	ehSession := session.NewSession(m.Key, ErrorHandler{}, session.DefaultErrorHandler{})
+	ehSession := tls_session.NewSession(m.Key, ErrorHandler{}, tls_session.TlsClientErrorHandler{})
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 
 	m.Session = ehSession
@@ -141,7 +141,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	m.LoggedIn = strings.Contains(htmlResponse, "You are currently at")
 
 	if !m.LoggedIn {
-		// else try to log-in (possibly broken due to them adding captchas sometimes)
+		// else try to log in (possibly broken due to them adding captchas sometimes)
 		res, err = m.post("https://forums.e-hentai.org/index.php?act=Login&CODE=01", values)
 		if err != nil {
 			m.TriedLogin = true

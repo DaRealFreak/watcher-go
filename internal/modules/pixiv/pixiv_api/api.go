@@ -10,7 +10,7 @@ import (
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api/internal"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
@@ -35,7 +35,7 @@ type PixivAPI struct {
 func NewPixivAPI(moduleKey string, oAuthClient *models.OAuthClient, referer string) *PixivAPI {
 	return &PixivAPI{
 		moduleKey: moduleKey,
-		Session:   session.NewSession(moduleKey, PixivErrorHandler{}, session.DefaultErrorHandler{}),
+		Session:   tls_session.NewSession(moduleKey, PixivErrorHandler{}, tls_session.TlsClientErrorHandler{}),
 		OAuth2Config: &oauth2.Config{
 			ClientID:     "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 			ClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
