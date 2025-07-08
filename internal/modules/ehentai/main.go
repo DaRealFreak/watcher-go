@@ -307,6 +307,15 @@ func (m *ehentai) setProxyMethod() error {
 		}
 		m.ProxyLoopIndex++
 
+		for m.settings.LoopProxies[m.ProxyLoopIndex].Enable == false {
+			// skip to the next proxy if the current one is disabled
+			m.ProxyLoopIndex++
+			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
+				m.ProxyLoopIndex = -1
+				break
+			}
+		}
+
 		return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:
 		return nil
