@@ -36,13 +36,14 @@ type PostRoot struct {
 }
 
 type Post struct {
-	ID        string     `json:"id"`
-	User      string     `json:"user"`
-	Title     string     `json:"title"`
-	Embed     Embed      `json:"embed"`
-	Content   string     `json:"content"`
-	File      File       `json:"file"`
-	Published CustomTime `json:"published"`
+	ID          string       `json:"id"`
+	User        string       `json:"user"`
+	Title       string       `json:"title"`
+	Embed       Embed        `json:"embed"`
+	Content     string       `json:"content"`
+	File        File         `json:"file"`
+	Attachments []Attachment `json:"attachments"`
+	Published   CustomTime   `json:"published"`
 }
 
 type Embed struct {

@@ -291,8 +291,9 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQ
 	if root.Post.File.Path != "" {
 		fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), root.Post.File.Path)
 		downloadItem := models.DownloadQueueItem{
-			ItemID:  fileUri,
-			FileURI: fileUri,
+			ItemID:   fileUri,
+			FileURI:  fileUri,
+			FileName: root.Post.File.Name,
 		}
 
 		links = append(links, &downloadItem)
@@ -306,8 +307,9 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQ
 			}
 
 			downloadItem := models.DownloadQueueItem{
-				ItemID:  fileUri,
-				FileURI: fileUri,
+				ItemID:   fileUri,
+				FileURI:  fileUri,
+				FileName: attachment.Name,
 			}
 
 			links = append(links, &downloadItem)
@@ -340,8 +342,9 @@ func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQ
 
 			if !found {
 				downloadItem := models.DownloadQueueItem{
-					ItemID:  fileUri,
-					FileURI: fileUri,
+					ItemID:   fileUri,
+					FileURI:  fileUri,
+					FileName: preview.Name,
 				}
 				links = append(links, &downloadItem)
 			}
