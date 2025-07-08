@@ -75,30 +75,30 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 
 			return err
 		}
-	}
-
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
-	)
-
-	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
-	}
-
-	for index, deviationItem := range downloadQueue {
+	} else {
 		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
-				"downloading updates for uri: %s (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue))*100,
-			),
+			fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
 		)
 
-		if err := m.downloadDeviationNapi(trackedItem, deviationItem, nil, true); err != nil {
-			return err
+		for _, notification := range notifications {
+			log.WithField("module", m.Key).Log(
+				notification.Level,
+				notification.Message,
+			)
+		}
+
+		for index, deviationItem := range downloadQueue {
+			log.WithField("module", m.Key).Info(
+				fmt.Sprintf(
+					"downloading updates for uri: %s (%0.2f%%)",
+					trackedItem.URI,
+					float64(index+1)/float64(len(downloadQueue))*100,
+				),
+			)
+
+			if err := m.downloadDeviationNapi(trackedItem, deviationItem, nil, true); err != nil {
+				return err
+			}
 		}
 	}
 
