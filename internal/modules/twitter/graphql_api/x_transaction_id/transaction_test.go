@@ -2,7 +2,7 @@ package x_transaction_id
 
 import (
 	"encoding/base64"
-	"github.com/DaRealFreak/watcher-go/internal/http/session"
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"github.com/PuerkitoBio/goquery"
 	"strings"
@@ -382,7 +382,7 @@ input::-webkit-search-cancel-button,input::-webkit-search-decoration,input::-web
 
 	// call with overrides (handler fields not set)
 	h := NewXTransactionIdHandler(
-		tls_session.NewSession("twitterXTransactionIdTest"),
+		tls_session.NewTlsClientSession("twitterXTransactionIdTest"),
 		twitter_settings.TwitterSettings{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0",
 		},

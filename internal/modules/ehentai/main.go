@@ -104,8 +104,6 @@ func (m *ehentai) InitializeModule() {
 	}
 
 	// set rate limiter on 2.5 seconds with burst limit of 1
-	// ehSession := tls_session.NewTlsClientSession(m.Key, ErrorHandler{}, tls_session.TlsClientErrorHandler{})
-	// ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 	ehSession := std_session.NewStdClientSession(m.Key, ErrorHandler{}, std_session.StdClientErrorHandler{})
 	ehSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 
