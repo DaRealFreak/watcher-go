@@ -1,14 +1,17 @@
 package kemono
 
 import (
+	"errors"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
+	"github.com/bogdanfinn/fhttp/http2"
 	html2 "golang.org/x/net/html"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -89,17 +92,28 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 			continue
 		}
 
-		if err = m.Session.DownloadFile(
-			path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				fp.TruncateMaxLength(m.getSubFolder(item)),
-				fp.TruncateMaxLength(postFolderPath),
-				fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", data.ID, index+1, fileName))),
-			),
-			downloadItem.FileURI,
-		); err != nil {
-			if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
+		file := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(m.getSubFolder(item)),
+			fp.TruncateMaxLength(postFolderPath),
+			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", data.ID, index+1, fileName))),
+		)
+		if err = m.Session.DownloadFile(file, downloadItem.FileURI); err != nil {
+			var scErr http2.StreamError
+			if errors.As(err, &scErr) {
+				log.WithField("module", m.Key).Warnf("received stream error \"%s\", trying to download in chunks", err.Error())
+				err = m.downloadChunks(
+					downloadItem.FileURI,
+					file,
+					1*1024*1024,
+					5,
+					5*time.Second,
+				)
+			}
+
+			var e tls_session.StatusError
+			if errors.As(err, &e) && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
 				log.WithField("module", m.Key).Warnf(
 					"received 404 status code error \"%s\", trying thumbnail fallback url \"%s\"",
 					err.Error(),
@@ -120,7 +134,9 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 				}
 			}
 
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
