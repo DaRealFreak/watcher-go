@@ -91,7 +91,7 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 				log.WithField("module", m.Key).Warn(requestErr)
 			} else {
 				if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-					log.WithField("module", m.Key).Warn("bad status code: %d", resp.StatusCode)
+					log.WithField("module", m.Key).Warnf("bad status code: %d", resp.StatusCode)
 				} else {
 					// write body to file
 					if _, copyErr := io.Copy(f, resp.Body); copyErr != nil {

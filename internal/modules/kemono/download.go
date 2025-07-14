@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
+	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
 	"github.com/bogdanfinn/fhttp/http2"
-	html2 "golang.org/x/net/html"
 	"net/url"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 
@@ -221,55 +220,27 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 	}
 
 	html := post.Post.Content
-
 	if post.Post.Embed.Url != "" {
 		links = append(links, post.Post.Embed.Url)
 	}
 
-	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("a[href]:not([href^='/'])").Each(func(index int, item *goquery.Selection) {
-		href, exists := item.Attr("href")
-		if exists {
-			// find text nodes immediately after the <a> tag
-			var afterAnchor string
-			for sibling := item.Nodes[0].NextSibling; sibling != nil; sibling = sibling.NextSibling {
-				if sibling.Type == html2.TextNode {
-					afterAnchor = strings.TrimSpace(sibling.Data)
-					// only take the immediate next text node
-					break
-				}
-			}
-
-			// combine href with the fragment
-			fullURL := href
-			if afterAnchor != "" && strings.HasPrefix(afterAnchor, "#") {
-				fullURL += afterAnchor
-			}
-
-			if !strings.Contains(fullURL, ".fanbox.cc/") && !strings.Contains(fullURL, "discord.gg/") {
-				links = append(links, fullURL)
-			}
+	htmlLinks := linkfinder.GetLinks(html)
+	for _, link := range htmlLinks {
+		if !strings.Contains(link, ".fanbox.cc/") && !strings.Contains(link, "discord.gg/") {
+			links = append(links, link)
 		}
-	})
+	}
 
-	// If you want to handle any remaining non-anchor URLs, you can use a regex as a fallback
-	// Extract non-anchor URLs from the plain text
-	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=!]*)`)
 	for _, comment := range comments {
 		if comment.Commenter != post.Post.User {
 			continue
 		}
 
 		if comment.Content != "" {
-			urlMatches := pattern.FindAllStringSubmatch(comment.Content, -1)
-			if len(urlMatches) > 0 {
-				for _, match := range urlMatches {
-					q, _ := url.Parse(match[0])
-					q.Scheme = "https"
-
-					if !strings.Contains(q.String(), ".fanbox.cc/") {
-						links = append(links, q.String())
-					}
+			commentLinks := linkfinder.GetLinks(comment.Content)
+			for _, link := range commentLinks {
+				if !strings.Contains(link, ".fanbox.cc/") && !strings.Contains(link, "discord.gg/") {
+					links = append(links, link)
 				}
 			}
 		}
