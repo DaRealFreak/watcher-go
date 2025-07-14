@@ -230,16 +230,17 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 	document.Find("a[href]:not([href^='/'])").Each(func(index int, item *goquery.Selection) {
 		href, exists := item.Attr("href")
 		if exists {
-			// Find text nodes immediately after the <a> tag
+			// find text nodes immediately after the <a> tag
 			var afterAnchor string
 			for sibling := item.Nodes[0].NextSibling; sibling != nil; sibling = sibling.NextSibling {
 				if sibling.Type == html2.TextNode {
 					afterAnchor = strings.TrimSpace(sibling.Data)
-					break // Only take the immediate next text node
+					// only take the immediate next text node
+					break
 				}
 			}
 
-			// Combine href with the fragment
+			// combine href with the fragment
 			fullURL := href
 			if afterAnchor != "" && strings.HasPrefix(afterAnchor, "#") {
 				fullURL += afterAnchor

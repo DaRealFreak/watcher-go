@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
 	"io"
 	"net/url"
 	"os"
@@ -57,6 +58,17 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				err = m.downloadUgoira(data, item.ID)
 			default:
 				err = m.downloadIllustration(data, item)
+			}
+
+			if m.settings.ExternalUrls.PrintExternalItems && item.Caption != "" {
+				links := linkfinder.GetLinks(item.Caption)
+				for _, link := range links {
+					log.WithField("module", m.Key).Infof(
+						"found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
+						link,
+						item.ID,
+					)
+				}
 			}
 
 			if err != nil {

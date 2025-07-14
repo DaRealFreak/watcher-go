@@ -13,6 +13,7 @@ type Illustration struct {
 	ID             int    `json:"id"`
 	Title          string `json:"title"`
 	Type           string `json:"type"`
+	Caption        string `json:"caption"`
 	MetaSinglePage struct {
 		OriginalImageURL *string `json:"original_image_url"`
 	} `json:"meta_single_page"`

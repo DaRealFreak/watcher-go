@@ -42,6 +42,9 @@ type pixivSettings struct {
 	Fanbox struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"fanbox"`
+	ExternalUrls struct {
+		PrintExternalItems bool `mapstructure:"print_external_items"`
+	} `mapstructure:"external_urls"`
 }
 
 type pixivPattern struct {
