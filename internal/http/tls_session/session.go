@@ -94,7 +94,7 @@ func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.TlsClien
 			}
 		} else {
 			// if fatal is already true, we don't have to check the request error handlers
-			if fatal == false {
+			if !fatal {
 				for _, errorHandler := range errorHandlers {
 					if fatal = errorHandler.IsFatalError(err); fatal {
 						break

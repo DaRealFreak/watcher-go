@@ -78,7 +78,7 @@ func (m *nhentai) getGalleryImageUrls(galleryResponse *galleryResponse) (gallery
 				galleryLanguage,
 				galleryResponse.GalleryID.String(),
 			),
-			FileName: fmt.Sprintf("%s", fp.GetFileName(imageURL)),
+			FileName: fp.GetFileName(imageURL),
 			FileURI:  imageURL,
 		})
 	}

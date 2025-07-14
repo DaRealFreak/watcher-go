@@ -2,21 +2,12 @@ package nhentai
 
 import (
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/models"
+	log "github.com/sirupsen/logrus"
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
-
-	"github.com/DaRealFreak/watcher-go/internal/models"
-	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 )
-
-// searchGalleryItem contains the required variables for gallery items of the search function
-type searchGalleryItem struct {
-	id  string
-	uri string
-}
 
 // parseSearch parses the tracked item if we detected a search/tag
 func (m *nhentai) parseSearch(item *models.TrackedItem) error {
@@ -169,34 +160,4 @@ func (m *nhentai) getSubFolder(item *models.TrackedItem) string {
 
 	// no matches at all
 	return ""
-}
-
-// getSearchGalleryUrls returns all gallery URLs from the passed HTML
-func (m *nhentai) getSearchGalleryUrls(html string) []searchGalleryItem {
-	var items []searchGalleryItem
-
-	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	document.Find("div.index-container > div.gallery > a[href*=\"/g/\"]").Each(func(index int, row *goquery.Selection) {
-		uri, _ := row.Attr("href")
-
-		items = append(items, searchGalleryItem{
-			id:  m.searchGalleryIDPattern.FindStringSubmatch(uri)[1],
-			uri: m.getAbsoluteUri(uri),
-		})
-	})
-
-	return items
-}
-
-// getNextSearchPageURL retrieves the url of the next page if it exists
-func (m *nhentai) getNextSearchPageURL(html string) (string, bool) {
-	document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-	pages := document.Find("section.pagination > a.next[href]")
-	// return empty url if we don't have any result due to f.e. removed galleries
-	if pages.Length() == 0 {
-		return "", false
-	}
-
-	nextPageUrl, _ := pages.First().Attr("href")
-	return m.getAbsoluteUri(nextPageUrl), true
 }

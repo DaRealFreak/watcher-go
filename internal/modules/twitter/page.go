@@ -95,7 +95,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 				return userErr
 			}
 
-			if user.Data.User.Result.Privacy.Protected == true {
+			if user.Data.User.Result.Privacy.Protected {
 				followRequestSent := user.Data.User.Result.Legacy.FollowRequestSent
 				if followRequestSent == nil || !*followRequestSent {
 					log.WithField("module", m.ModuleKey()).Warnf(

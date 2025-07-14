@@ -84,7 +84,7 @@ func (m *nhentai) InitializeModule() {
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
 }
 
-// AddModuleCommand adds custom module specific settings and commands to our application
+// AddModuleCommand adds custom module-specific settings and commands to our application
 func (m *nhentai) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
 	m.AddProxyLoopCommands(command)
@@ -102,13 +102,4 @@ func (m *nhentai) Parse(item *models.TrackedItem) error {
 	} else {
 		return m.parseSearch(item)
 	}
-}
-
-// getAbsoluteUri adds the base scheme and host since the site is using relative links
-func (m *nhentai) getAbsoluteUri(uri string) string {
-	parsedUri, _ := url.Parse(uri)
-	parsedUri.Scheme = m.baseURL.Scheme
-	parsedUri.Host = m.baseURL.Host
-
-	return parsedUri.String()
 }

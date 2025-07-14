@@ -125,7 +125,7 @@ func (m *jinjaModoki) setProxyMethod() error {
 		}
 		m.ProxyLoopIndex++
 
-		for m.settings.LoopProxies[m.ProxyLoopIndex].Enable == false {
+		for !m.settings.LoopProxies[m.ProxyLoopIndex].Enable {
 			// skip to the next proxy if the current one is disabled
 			m.ProxyLoopIndex++
 			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
