@@ -150,7 +150,7 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 		return m.getProxyError().occurredError
 	}
 
-	// if no error occurred update the tracked item to the last item ID
+	// if no error occurred, update the tracked item to the last item ID
 	if len(downloadQueue) > 0 {
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].id)
 	}

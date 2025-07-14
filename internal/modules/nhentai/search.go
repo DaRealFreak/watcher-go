@@ -20,7 +20,31 @@ type searchGalleryItem struct {
 
 // parseSearch parses the tracked item if we detected a search/tag
 func (m *nhentai) parseSearch(item *models.TrackedItem) error {
-	response, err := m.get(item.URI)
+	searchQuery := ""
+	search := regexp.MustCompile(`https://nhentai.net/search/.*`)
+	if search.MatchString(item.URI) {
+		parsedUrl, _ := url.Parse(item.URI)
+		if parsedUrl.Query().Has("q") {
+			searchQuery = parsedUrl.Query().Get("q")
+		}
+	}
+
+	// if search was not matching we only have those options left
+	subFolderTags := []string{"artist", "tag", "parody", "character"}
+	folder := regexp.MustCompile(`https://nhentai.net/\w+/([^/?&]+)/$`)
+	for _, subFolder := range subFolderTags {
+		subFolderRegexp := regexp.MustCompile(fmt.Sprintf(`https://nhentai.net/%s/.*`, subFolder))
+		if subFolderRegexp.MatchString(item.URI) {
+			matches := folder.FindStringSubmatch(item.URI)
+			if len(matches) > 1 {
+				searchQuery = fmt.Sprintf("%s:%s", subFolder, matches[1])
+				break
+			}
+		}
+	}
+
+	page := 1
+	apiResponse, err := m.getSearch(searchQuery, page, SortingRecent)
 	if err != nil {
 		return err
 	}
@@ -29,57 +53,38 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
 
-	if response.StatusCode == 503 {
-		return fmt.Errorf(
-			"returned status code was 503, check cloudflare.user_agent setting and cf_clearance cookie." +
-				"cloudflare checks used IP and User-Agent to validate the cf_clearance cookie",
-		)
-	}
-
-	var itemQueue []searchGalleryItem
-
-	html, _ := m.Session.GetDocument(response).Html()
+	var itemQueue []*galleryResponse
 	foundCurrentItem := false
-
-	for !foundCurrentItem {
-		for _, galleryItem := range m.getSearchGalleryUrls(html) {
-			var (
-				currentItemID int64
-				galleryItemID int64
-			)
-
+	for {
+		for _, gallery := range apiResponse.Galleries {
 			// will return 0 on error, so fine for us too for the current item
-			currentItemID, _ = strconv.ParseInt(item.CurrentItem, 10, 64)
-			galleryItemID, err = strconv.ParseInt(galleryItem.id, 10, 64)
-			if err != nil {
-				return err
-			}
+			currentItemID, _ := strconv.ParseInt(item.CurrentItem, 10, 64)
+			galleryItemID, _ := gallery.GalleryID.Int64()
 
 			if item.CurrentItem != "" && galleryItemID <= currentItemID {
 				foundCurrentItem = true
 				break
 			}
 
-			itemQueue = append(itemQueue, galleryItem)
+			itemQueue = append(itemQueue, gallery)
 		}
 
-		// break outer loop too if the current item got found
+		// break the outer loop too if the current item got found
 		if foundCurrentItem {
 			break
 		}
 
-		nextPageURL, exists := m.getNextSearchPageURL(html)
-		if !exists {
-			// no further page exists anymore, break here
+		numberOfPages, _ := apiResponse.NumPages.Int64()
+		if page >= int(numberOfPages) {
+			// no further pages exist, break here
 			break
 		}
 
-		response, err = m.get(nextPageURL)
+		page++
+		apiResponse, err = m.getSearch(searchQuery, page, SortingRecent)
 		if err != nil {
 			return err
 		}
-
-		html, _ = m.Session.GetDocument(response).Html()
 	}
 
 	// reverse to add the oldest items first
@@ -92,7 +97,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 	)
 
 	for _, gallery := range itemQueue {
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
 		if m.Cfg.Run.Force && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
@@ -108,21 +113,21 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		log.WithField("module", m.Key).Info(
 			fmt.Sprintf(
 				"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
-				gallery.uri,
+				gallery.GetURL(),
 				item.URI,
 				float64(index+1)/float64(len(itemQueue))*100,
 			),
 		)
 
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
-		if err = m.Parse(galleryItem); err != nil {
+		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
+		if err = m.parseGalleryFromApiResponse(galleryItem, gallery); err != nil {
 			log.WithField("module", item.Module).Warningf(
 				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
 			)
 			return err
 		}
 
-		m.DbIO.UpdateTrackedItem(item, gallery.id)
+		m.DbIO.UpdateTrackedItem(item, gallery.GalleryID.String())
 	}
 
 	return nil
@@ -134,8 +139,8 @@ func (m *nhentai) getSubFolder(item *models.TrackedItem) string {
 		return ""
 	}
 
-	// if we inherit the sub folder from the search item
-	// and the sub folder isn't empty return it instead of searching everytime
+	// if we inherit the subfolder from the search item
+	// and the subfolder isn't empty, return it instead of searching everytime
 	if m.settings.Search.InheritSubFolder && item.SubFolder != "" {
 		return item.SubFolder
 	}
