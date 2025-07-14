@@ -60,13 +60,27 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				err = m.downloadIllustration(data, item)
 			}
 
-			if m.settings.ExternalUrls.PrintExternalItems && item.Caption != "" {
-				links := linkfinder.GetLinks(item.Caption)
+			if m.settings.ExternalUrls.PrintExternalItems {
+				checkedIllustration := item
+				// I could not find a pattern when the caption is actually empty
+				// or just removed in the API Search/UserIllustration response, so we check the actual details
+				if item.Caption == "" {
+					detail, detailErr := m.mobileAPI.GetIllustDetail(item.ID)
+					checkedIllustration = detail.Illustration
+					if detailErr != nil {
+						log.WithField("module", m.Key).Errorf(
+							"failed to get illustration details for ID %d: %v",
+							item.ID,
+							detailErr,
+						)
+					}
+				}
+				links := linkfinder.GetLinks(checkedIllustration.Caption)
 				for _, link := range links {
 					log.WithField("module", m.Key).Infof(
 						"found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
 						link,
-						item.ID,
+						checkedIllustration.ID,
 					)
 				}
 			}
