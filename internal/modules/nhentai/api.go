@@ -48,6 +48,12 @@ type searchResponse struct {
 }
 
 func (a *galleryResponse) GetLanguage() string {
+	textlessTag := "[Textless]"
+	if strings.Contains(a.Title.Japanese, textlessTag) || strings.Contains(a.Title.English, textlessTag) {
+		// if the title contains the textless tag, we return Textless as language
+		return "Textless"
+	}
+
 	if len(a.Tags) == 0 {
 		return ""
 	}

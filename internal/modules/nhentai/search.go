@@ -98,7 +98,7 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 
 	for _, gallery := range itemQueue {
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
-		if m.Cfg.Run.Force && galleryItem.CurrentItem != "" {
+		if (m.Cfg.Run.Force || m.Cfg.Run.ResetProgress) && galleryItem.CurrentItem != "" {
 			log.WithField("module", m.Key).Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
 			)
