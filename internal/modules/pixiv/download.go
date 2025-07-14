@@ -66,7 +66,6 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				// or just removed in the API Search/UserIllustration response, so we check the actual details
 				if item.Caption == "" {
 					detail, detailErr := m.mobileAPI.GetIllustDetail(item.ID)
-					checkedIllustration = detail.Illustration
 					if detailErr != nil {
 						log.WithField("module", m.Key).Errorf(
 							"failed to get illustration details for ID %d: %v",
@@ -74,6 +73,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 							detailErr,
 						)
 					}
+					checkedIllustration = detail.Illustration
 				}
 				links := linkfinder.GetLinks(checkedIllustration.Caption)
 				for _, link := range links {
