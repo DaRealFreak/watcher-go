@@ -111,6 +111,11 @@ func (m *ehentai) InitializeModule() {
 
 	// set the proxy if requested
 	raven.CheckError(m.setProxyMethod())
+
+	// initialize the proxy sessions if multi-proxy is enabled
+	if m.settings.MultiProxy {
+		m.initializeProxySessions()
+	}
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
@@ -158,7 +163,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 	exURL, _ := url.Parse("https://exhentai.org")
 	m.Session.SetCookies(exURL, m.Session.GetCookies(ehURL))
 
-	// initialize proxy sessions after login
+	// reinitialize proxy sessions after login to ensure they have the correct cookies
 	if m.LoggedIn && m.settings.MultiProxy {
 		m.initializeProxySessions()
 	}

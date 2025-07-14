@@ -42,7 +42,11 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 
 	if exists, _ := m.getSkCookie(item); !exists {
 		// call an example gallery, which will return a "Set-Cookie" header containing the required sk cookie
-		_, err := m.get("https://exhentai.org/g/1717239/a8f9b0c99c/")
+		exampleGalleryUrl := "https://exhentai.org/g/1717239/a8f9b0c99c/"
+		if strings.Contains(item.CurrentItem, "e-hentai") {
+			searchUrl = "https://e-hentai.org/g/1717239/a8f9b0c99c/"
+		}
+		_, err := m.get(exampleGalleryUrl)
 		if err != nil {
 			return err
 		}
