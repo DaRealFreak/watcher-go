@@ -24,7 +24,7 @@ type fourChan struct {
 	*models.Module
 	rateLimit     int
 	threadPattern *regexp.Regexp
-	settings      *fourChanSettings
+	settings      fourChanSettings
 	proxies       []*proxySession
 	multiProxy    struct {
 		currentIndexes []int
@@ -124,8 +124,6 @@ func (m *fourChan) Parse(item *models.TrackedItem) error {
 // setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
 func (m *fourChan) setProxyMethod() error {
 	switch {
-	case m.settings == nil:
-		return nil
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:

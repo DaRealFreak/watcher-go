@@ -32,7 +32,7 @@ type ehentai struct {
 	galleryImageIDPattern    *regexp.Regexp
 	galleryImageIndexPattern *regexp.Regexp
 	searchGalleryIDPattern   *regexp.Regexp
-	settings                 *ehentaiSettings
+	settings                 ehentaiSettings
 	proxies                  []*proxySession
 	multiProxy               struct {
 		currentIndexes []int
@@ -299,8 +299,6 @@ func (m *ehentai) downloadImage(trackedItem *models.TrackedItem, downloadQueueIt
 // setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
 func (m *ehentai) setProxyMethod() error {
 	switch {
-	case m.settings == nil:
-		return nil
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:

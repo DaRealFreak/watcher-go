@@ -23,7 +23,7 @@ type jinjaModoki struct {
 	*models.Module
 	baseURL        *url.URL
 	defaultSession *tls_session.TlsClientSession
-	settings       *models.ProxyLoopConfiguration
+	settings       models.ProxyLoopConfiguration
 }
 
 // nolint: gochecknoinits
@@ -111,7 +111,6 @@ func (m *jinjaModoki) Parse(item *models.TrackedItem) error {
 // setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
 func (m *jinjaModoki) setProxyMethod() error {
 	switch {
-	case m.settings == nil:
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.settings.Proxy.Enable:
