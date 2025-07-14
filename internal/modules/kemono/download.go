@@ -78,14 +78,14 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
 			return parsedErr
 		}
 
-		fileName := fp.SanitizePath(fp.GetFileName(downloadItem.FileURI), false)
-		if parsedLink.Query().Get("f") != "" {
-			fileName = fp.SanitizePath(parsedLink.Query().Get("f"), false)
+		fileName := fp.GetFileName(downloadItem.FileURI)
+		if f := parsedLink.Query().Get("f"); f != "" {
+			fileName = f
 		}
-
 		if downloadItem.FileName != "" {
-			fileName = fp.SanitizePath(downloadItem.FileName, false)
+			fileName = downloadItem.FileName
 		}
+		fileName = fp.SanitizePath(fileName, false)
 
 		// ignore mega folder icons
 		if strings.Contains(fileName, "mega.nz_rich-folder") {
