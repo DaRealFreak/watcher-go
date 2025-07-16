@@ -23,6 +23,9 @@ type proxySession struct {
 }
 
 func (m *ehentai) initializeProxySessions() {
+	// reset the multi-proxy sessions
+	m.proxies = make([]*proxySession, 0)
+
 	// copy the cookies for e-hentai to exhentai
 	ehURL, _ := url.Parse("https://e-hentai.org")
 	exURL, _ := url.Parse("https://exhentai.org")
