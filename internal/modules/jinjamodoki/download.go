@@ -79,10 +79,12 @@ func (m *jinjaModoki) downloadItem(data downloadQueueItem, item *models.TrackedI
 
 	filePath := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, data.FileName)
 
-	err := m.Session.DownloadFile(
-		filePath,
-		data.FileURI,
-	)
+	res, err := m.get(data.FileURI)
+	if err != nil {
+		return err
+	}
+
+	err = m.Session.DownloadFileFromResponse(res, filePath)
 	if err != nil {
 		return err
 	}
@@ -122,6 +124,10 @@ func (m *jinjaModoki) checkDownloadedFileForErrors(filePath string) error {
 	if !strings.Contains(string(content), "<!-- ERROR MESSAGE -->") {
 		// no errors
 		return nil
+	}
+
+	if strings.Contains(string(content), "<h1>Warning!</h1>") {
+		return errors.New("referer error, please check your settings")
 	}
 
 	doc, documentErr := goquery.NewDocumentFromReader(bytes.NewReader(content))
