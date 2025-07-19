@@ -22,6 +22,8 @@ func (m *jinjaModoki) post(url string, data url.Values) (*http.Response, error) 
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	return m.do(req)
 }
 

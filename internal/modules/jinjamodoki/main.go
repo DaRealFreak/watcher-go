@@ -90,6 +90,12 @@ func (m *jinjaModoki) InitializeModule() {
 			fmt.Errorf("could not change browsing restrictions, your IP is most likely blacklisted"),
 		)
 	}
+
+	if !strings.Contains(string(content), "Access settings for browsing-restricted contents have been changed.") {
+		log.WithField("module", m.Key).Fatal(
+			fmt.Errorf("unable to change browsing restrictions, please check settings"),
+		)
+	}
 }
 
 // AddModuleCommand adds custom module specific settings and commands to our application
