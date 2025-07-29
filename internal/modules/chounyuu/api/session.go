@@ -20,10 +20,11 @@ func (a *ChounyuuAPI) Get(requestUrl string) (*http.Response, error) {
 		domain = SuperFutaDomain
 	}
 
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Origin", fmt.Sprintf("https://g.%s", domain))
-	req.Header.Set("Referer", fmt.Sprintf("https://g.%s", domain))
-	req.Header.Set("User-Agent", browser.Firefox())
+	req.Header.Set("Referer", fmt.Sprintf("https://g.%s/", domain))
+	req.Header.Set("User-Agent", browser.Chrome())
 
 	return a.Session.Do(req)
 }
