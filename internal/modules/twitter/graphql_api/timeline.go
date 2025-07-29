@@ -16,6 +16,39 @@ type Timeline struct {
 	} `json:"instructions"`
 }
 
+func (t *Timeline) TombstoneEntries() (tweets []*Tweet) {
+	if t == nil {
+		return
+	}
+
+	for _, instruction := range t.Instructions {
+		if instruction.Type != "TimelineAddEntries" &&
+			instruction.Type != "TimelineAddToModule" {
+			continue
+		}
+
+		for _, entry := range instruction.Entries {
+			if entry.Content.Items == nil {
+				continue
+			}
+
+			for _, item := range entry.Content.Items {
+				if item.Item.ItemContent.TweetResults.Result.Tombstone != nil {
+					tweets = append(tweets, item)
+				}
+			}
+		}
+
+		for _, moduleItem := range instruction.ModuleItems {
+			if moduleItem.Item.ItemContent.TweetResults.Result.Tombstone != nil {
+				tweets = append(tweets, moduleItem)
+			}
+		}
+	}
+
+	return tweets
+}
+
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
 func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	if t == nil {

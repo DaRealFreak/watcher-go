@@ -21,6 +21,10 @@ func (s *SearchTimelineData) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.TweetEntries(userIDs...)
 }
 
+func (s *SearchTimelineData) TombstoneEntries() (tweets []*Tweet) {
+	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.TombstoneEntries()
+}
+
 func (s *SearchTimelineData) BottomCursor() string {
 	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.BottomCursor()
 }

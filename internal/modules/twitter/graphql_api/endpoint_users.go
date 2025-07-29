@@ -12,6 +12,7 @@ import (
 
 type TimelineInterface interface {
 	TweetEntries(userIDs ...string) (tweets []*Tweet)
+	TombstoneEntries() (tweets []*Tweet)
 	BottomCursor() string
 }
 
@@ -41,6 +42,10 @@ type TwitterUserTimeline struct {
 // TweetEntries returns all tweet entries from the entries in the timeline response (it also returns cursor entries)
 func (t *TwitterUserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	return t.Data.User.Result.Timeline.Timeline.TweetEntries(userIDs...)
+}
+
+func (t *TwitterUserTimeline) TombstoneEntries() (tweets []*Tweet) {
+	return t.Data.User.Result.Timeline.Timeline.TombstoneEntries()
 }
 
 // BottomCursor checks for the next cursor in the timeline response

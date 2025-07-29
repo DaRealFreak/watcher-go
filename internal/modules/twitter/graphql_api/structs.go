@@ -13,9 +13,15 @@ type Instruction[E any] struct {
 }
 
 type SingleTweet struct {
-	Tweet  *SingleTweet `json:"tweet"`
-	RestID json.Number  `json:"rest_id"`
-	Core   struct {
+	Tweet     *SingleTweet `json:"tweet"`
+	RestID    json.Number  `json:"rest_id"`
+	Tombstone *struct {
+		Text struct {
+			Text string `json:"text"`
+			RTL  bool   `json:"rtl"`
+		} `json:"text"`
+	} `json:"tombstone"`
+	Core struct {
 		UserResults struct {
 			Result *User `json:"result"`
 		} `json:"user_results"`

@@ -88,6 +88,16 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			return timelineErr
 		}
 
+		tombstoneEntries := timeline.TombstoneEntries()
+		if len(tombstoneEntries) > 0 {
+			log.WithField("module", m.ModuleKey()).Warnf(
+				"found %d tombstone entries for user %s, check your profile for location settings and IP location, skipping",
+				len(tombstoneEntries),
+				screenName,
+			)
+			return nil
+		}
+
 		tweetEntries := timeline.TweetEntries(userId)
 		if len(tweetEntries) == 0 && searchTime == nil && bottomCursor == "" {
 			user, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
@@ -175,7 +185,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 					break
 				}
 
-				// search until previous day of the last post (in case of multiple posts on the same day)
+				// search until the previous day of the last post (in case of multiple posts on the same day)
 				searchTime = &tmp
 
 				// reset searched media tweets
