@@ -8,7 +8,7 @@ import (
 )
 
 func (m *kemono) parseUser(item *models.TrackedItem) error {
-	search := regexp.MustCompile(`https://(?:kemono|coomer).su/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://(?:kemono|coomer).\w+/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
 	userId := ""
 	service := ""
 	if len(search) == 3 {

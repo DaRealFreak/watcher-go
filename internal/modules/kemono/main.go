@@ -47,6 +47,7 @@ func NewBareModule() *models.Module {
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`kemono.su`),
+			regexp.MustCompile(`kemono.cr`),
 			regexp.MustCompile(`coomer.su`),
 		},
 	}
@@ -96,10 +97,10 @@ func (m *kemono) Parse(item *models.TrackedItem) error {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
 
-	if strings.Contains(item.URI, "coomer.su") {
-		m.baseUrl, _ = url.Parse("https://coomer.su")
+	if strings.Contains(item.URI, "coomer") {
+		m.baseUrl, _ = url.Parse("https://coomer.st")
 	} else {
-		m.baseUrl, _ = url.Parse("https://kemono.su")
+		m.baseUrl, _ = url.Parse("https://kemono.cr")
 	}
 	m.api = api.NewClient(m.baseUrl.String(), m.Session)
 
@@ -115,7 +116,7 @@ func (m *kemono) getSubFolder(item *models.TrackedItem) string {
 		return item.SubFolder
 	}
 
-	search := regexp.MustCompile(`https://(?:kemono|coomer).su/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://(?:kemono|coomer).\w+/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
 	if len(search) == 3 {
 		return fp.SanitizePath(fmt.Sprintf("%s/%s", search[1], search[2]), true)
 	}
