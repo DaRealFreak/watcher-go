@@ -33,14 +33,16 @@ func (t *Timeline) TombstoneEntries() (tweets []*Tweet) {
 			}
 
 			for _, item := range entry.Content.Items {
-				if item.Item.ItemContent.TweetResults.Result.Tombstone != nil {
+				if item.Item.ItemContent.TweetResults.Result != nil &&
+					item.Item.ItemContent.TweetResults.Result.Tombstone != nil {
 					tweets = append(tweets, item)
 				}
 			}
 		}
 
 		for _, moduleItem := range instruction.ModuleItems {
-			if moduleItem.Item.ItemContent.TweetResults.Result.Tombstone != nil {
+			if moduleItem.Item.ItemContent.TweetResults.Result != nil &&
+				moduleItem.Item.ItemContent.TweetResults.Result.Tombstone != nil {
 				tweets = append(tweets, moduleItem)
 			}
 		}
