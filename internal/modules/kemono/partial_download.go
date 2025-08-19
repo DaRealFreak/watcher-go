@@ -2,14 +2,15 @@ package kemono
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/raven"
-	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/internal/raven"
+	http "github.com/bogdanfinn/fhttp"
+	log "github.com/sirupsen/logrus"
 )
 
 func (m *kemono) getTotalSize(url string) (int64, error) {

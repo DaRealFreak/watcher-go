@@ -3,9 +3,6 @@ package kemono
 import (
 	"errors"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
-	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
-	"github.com/bogdanfinn/fhttp/http2"
 	"net/url"
 	"os"
 	"path"
@@ -15,12 +12,15 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/bogdanfinn/fhttp/http2"
 	log "github.com/sirupsen/logrus"
 )
 
-func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []api.Result, notifications ...*models.Notification) error {
+func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []api.QuickPost, notifications ...*models.Notification) error {
 	log.WithField("module", m.Key).Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
 	)
@@ -51,7 +51,7 @@ func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []
 	return nil
 }
 
-func (m *kemono) downloadPost(item *models.TrackedItem, data api.Result) error {
+func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) error {
 	webUrl := fmt.Sprintf("%s/%s/user/%s/post/%s", m.baseUrl.String(), data.Service, data.User, data.ID)
 	post, err := m.api.GetPostDetails(data.Service, data.User, data.ID)
 	if err != nil {

@@ -2,9 +2,11 @@ package kemono
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
-	"regexp"
+	log "github.com/sirupsen/logrus"
 )
 
 func (m *kemono) parseUser(item *models.TrackedItem) error {
@@ -20,19 +22,28 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		return fmt.Errorf("could not extract user ID and service from URL: %s", item.URI)
 	}
 
-	root, err := m.api.GetUserPosts(service, userId, 0)
+	profile, err := m.api.GetUserProfile(service, userId)
+	if err != nil {
+		return fmt.Errorf("failed to fetch user profile: %w", err)
+	}
+
+	log.WithField("module", m.Key).Info(
+		fmt.Sprintf("Found user %s (%s) with %d posts", profile.Name, profile.ID, profile.PostCount),
+	)
+
+	userPosts, err := m.api.GetUserPosts(service, userId, 0)
 	if err != nil {
 		return fmt.Errorf("failed to fetch user posts: %w", err)
 	}
 
 	var (
-		downloadQueue    []api.Result
+		downloadQueue    []api.QuickPost
 		foundCurrentItem bool
 		offset           int
 	)
 
-	for len(root.Results) != 0 {
-		for _, post := range root.Results {
+	for {
+		for _, post := range userPosts {
 			// check if we reached the current item already
 			if post.ID == item.CurrentItem {
 				foundCurrentItem = true
@@ -42,18 +53,14 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 			downloadQueue = append(downloadQueue, post)
 		}
 
-		if foundCurrentItem {
+		if foundCurrentItem || profile.PostCount <= offset+50 {
 			break
 		}
 
 		// increase offset for the next page
 		offset += 50
-		maxCount, _ := root.Properties.Count.Int64()
-		if offset >= int(maxCount) {
-			break
-		}
 
-		root, err = m.api.GetUserPosts(service, userId, offset)
+		userPosts, err = m.api.GetUserPosts(service, userId, offset)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal JSON: %w", err)
 		}
@@ -74,7 +81,7 @@ func (m *kemono) parsePost(item *models.TrackedItem) error {
 		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)
 	}
 
-	return m.processDownloadQueue(item, []api.Result{{
+	return m.processDownloadQueue(item, []api.QuickPost{{
 		Service: postId[1],
 		User:    postId[2],
 		ID:      postId[3],

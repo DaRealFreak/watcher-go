@@ -3,9 +3,10 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/http"
 	"io"
 	"time"
+
+	"github.com/DaRealFreak/watcher-go/internal/http"
 )
 
 // CustomTime for parsing timestamps with fractional seconds
@@ -47,10 +48,9 @@ func NewClient(baseURL string, client http.TlsClientSessionInterface) *Client {
 	}
 }
 
-// GetUserPosts fetches user posts from the API
-func (api *Client) GetUserPosts(service, userID string, offset int) (*Root, error) {
-	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/posts-legacy?o=%d", api.BaseURL, service, userID, offset)
-	resp, err := api.Client.Get(apiURL)
+func (api *Client) GetUserProfile(service string, userID string) (*Profile, error) {
+	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/profile", api.BaseURL, service, userID)
+	resp, err := api.Get(apiURL)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (api *Client) GetUserPosts(service, userID string, offset int) (*Root, erro
 		return nil, err
 	}
 
-	var root Root
+	var root Profile
 	err = json.Unmarshal(body, &root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
@@ -69,10 +69,30 @@ func (api *Client) GetUserPosts(service, userID string, offset int) (*Root, erro
 	return &root, nil
 }
 
+// GetUserPosts fetches user posts from the API
+func (api *Client) GetUserPosts(service, userID string, offset int) ([]QuickPost, error) {
+	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/posts", api.BaseURL, service, userID)
+	if offset > 0 {
+		apiURL = fmt.Sprintf("%s?o=%d", apiURL, offset)
+	}
+	resp, err := api.Get(apiURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var posts []QuickPost
+	if err = json.NewDecoder(resp.Body).Decode(&posts); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON into []QuickPost: %w", err)
+	}
+
+	return posts, nil
+}
+
 // GetPostDetails fetches post details from the API
 func (api *Client) GetPostDetails(service, userID, postID string) (*PostRoot, error) {
 	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/post/%s", api.BaseURL, service, userID, postID)
-	resp, err := api.Client.Get(apiURL)
+	resp, err := api.Get(apiURL)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +113,7 @@ func (api *Client) GetPostDetails(service, userID, postID string) (*PostRoot, er
 
 func (api *Client) GetPostComments(service, userID, postID string) (comments []Comment, err error) {
 	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/post/%s/comments", api.BaseURL, service, userID, postID)
-	resp, err := api.Client.Get(apiURL)
+	resp, err := api.Get(apiURL)
 	// normal behavior if no comments are available is a 404 response
 	if resp != nil && resp.StatusCode == 404 {
 		return comments, nil

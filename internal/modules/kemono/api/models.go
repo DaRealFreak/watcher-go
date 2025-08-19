@@ -1,31 +1,29 @@
 package api
 
-import (
-	"encoding/json"
-)
-
-type Root struct {
-	Properties  *Properties     `json:"props"`
-	Results     []Result        `json:"results"`
-	Attachments *[][]Attachment `json:"result_attachments"`
-	Previews    *[][]Thumbnail  `json:"result_previews"`
+type Profile struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	Service    string     `json:"service"`
+	Indexed    CustomTime `json:"indexed"`
+	Updated    CustomTime `json:"updated"`
+	PublicID   string     `json:"public_id"`
+	RelationID *string    `json:"relation_id"`
+	HasChats   bool       `json:"has_chats"`
+	PostCount  int        `json:"post_count"`
+	DmCount    int        `json:"dm_count"`
+	ShareCount int        `json:"share_count"`
+	ChatCount  int        `json:"chat_count"`
 }
 
-type Properties struct {
-	CurrentPage string      `json:"currentPage"`
-	ID          string      `json:"id"`
-	Service     string      `json:"service"`
-	Name        string      `json:"name"`
-	Count       json.Number `json:"count"`
-	Limit       json.Number `json:"limit"`
-}
-
-type Result struct {
-	ID        string     `json:"id"`
-	User      string     `json:"user"`
-	Service   string     `json:"service"`
-	Title     string     `json:"title"`
-	Published CustomTime `json:"published"`
+type QuickPost struct {
+	ID          string     `json:"id"`
+	User        string     `json:"user"`
+	Service     string     `json:"service"`
+	Title       string     `json:"title"`
+	Substring   string     `json:"substring"`
+	Published   CustomTime `json:"published"`
+	File        File       `json:"file"`
+	Attachments []File     `json:"attachments"`
 }
 
 type PostRoot struct {

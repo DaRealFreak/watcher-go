@@ -2,8 +2,6 @@ package kemono
 
 import (
 	"fmt"
-	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
-	"golang.org/x/time/rate"
 	"net/url"
 	"regexp"
 	"strings"
@@ -13,10 +11,12 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
+	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 type kemono struct {
