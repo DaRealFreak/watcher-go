@@ -1,18 +1,20 @@
 package api
 
+import "encoding/json"
+
 type Profile struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	Service    string     `json:"service"`
-	Indexed    CustomTime `json:"indexed"`
-	Updated    CustomTime `json:"updated"`
-	PublicID   string     `json:"public_id"`
-	RelationID *string    `json:"relation_id"`
-	HasChats   bool       `json:"has_chats"`
-	PostCount  int        `json:"post_count"`
-	DmCount    int        `json:"dm_count"`
-	ShareCount int        `json:"share_count"`
-	ChatCount  int        `json:"chat_count"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Service    string      `json:"service"`
+	Indexed    CustomTime  `json:"indexed"`
+	Updated    CustomTime  `json:"updated"`
+	PublicID   string      `json:"public_id"`
+	RelationID json.Number `json:"relation_id"`
+	HasChats   bool        `json:"has_chats"`
+	PostCount  int         `json:"post_count"`
+	DmCount    int         `json:"dm_count"`
+	ShareCount int         `json:"share_count"`
+	ChatCount  int         `json:"chat_count"`
 }
 
 type QuickPost struct {
