@@ -3,6 +3,10 @@ package deviantart
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
+	"time"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -10,9 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
-	"io"
-	"net/url"
-	"time"
 )
 
 type proxySession struct {
@@ -28,6 +29,10 @@ func (m *deviantArt) initializeProxySessions() {
 	daWwwURL, _ := url.Parse("https://www.deviantart.com")
 
 	for _, proxy := range m.settings.LoopProxies {
+		if !proxy.Enable {
+			continue
+		}
+
 		singleSession := tls_session.NewTlsClientSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for the session

@@ -2,6 +2,11 @@ package ehentai
 
 import (
 	"fmt"
+	"net/url"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -9,10 +14,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
-	"net/url"
-	"path"
-	"strings"
-	"time"
 )
 
 type proxySession struct {
@@ -31,6 +32,10 @@ func (m *ehentai) initializeProxySessions() {
 	exURL, _ := url.Parse("https://exhentai.org")
 
 	for _, proxy := range m.settings.LoopProxies {
+		if !proxy.Enable {
+			continue
+		}
+
 		singleSession := std_session.NewStdClientSession(m.Key, ErrorHandler{}, std_session.StdClientErrorHandler{})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		// copy login cookies for session

@@ -2,10 +2,11 @@ package api
 
 import (
 	"fmt"
-	browser "github.com/EDDYCJY/fake-useragent"
-	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"strings"
+
+	browser "github.com/EDDYCJY/fake-useragent"
+	http "github.com/bogdanfinn/fhttp"
 )
 
 func (a *ChounyuuAPI) Get(requestUrl string) (*http.Response, error) {

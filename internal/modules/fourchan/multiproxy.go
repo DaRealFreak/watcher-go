@@ -2,6 +2,12 @@ package fourchan
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -9,11 +15,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
-	"net/url"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 type proxySession struct {
@@ -29,20 +30,22 @@ func (m *fourChan) initializeProxySessions() {
 	archiveUrl, _ := url.Parse("https://desuarchive.org/")
 
 	for _, proxy := range m.settings.LoopProxies {
-		if proxy.Enable {
-			singleSession := tls_session.NewTlsClientSession(m.Key)
-			singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-			// copy login cookies for session
-			singleSession.Client.SetCookies(fourChanUrl, m.Session.GetClient().GetCookies(fourChanUrl))
-			singleSession.Client.SetCookies(archiveUrl, m.Session.GetClient().GetCookies(fourChanUrl))
-			raven.CheckError(singleSession.SetProxy(&proxy))
-			m.proxies = append(m.proxies, &proxySession{
-				inUse:         false,
-				proxy:         proxy,
-				session:       singleSession,
-				occurredError: nil,
-			})
+		if !proxy.Enable {
+			continue
 		}
+
+		singleSession := tls_session.NewTlsClientSession(m.Key)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+		// copy login cookies for session
+		singleSession.Client.SetCookies(fourChanUrl, m.Session.GetClient().GetCookies(fourChanUrl))
+		singleSession.Client.SetCookies(archiveUrl, m.Session.GetClient().GetCookies(fourChanUrl))
+		raven.CheckError(singleSession.SetProxy(&proxy))
+		m.proxies = append(m.proxies, &proxySession{
+			inUse:         false,
+			proxy:         proxy,
+			session:       singleSession,
+			occurredError: nil,
+		})
 	}
 }
 
