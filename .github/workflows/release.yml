@@ -89,17 +89,14 @@ jobs:
         shell: bash
         run: |
           ARCHIVE_NAME="watcher-go-v${{ steps.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          mkdir -p "${ARCHIVE_NAME}"
 
           EXT=""
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
 
-          cp "watcher${EXT}" README.md LICENSE "${ARCHIVE_NAME}/"
-
           if [ "${{ matrix.archive_format }}" = "zip" ]; then
-            7z a "${ARCHIVE_NAME}.zip" "${ARCHIVE_NAME}"
+            7z a "${ARCHIVE_NAME}.zip" "watcher${EXT}" README.md LICENSE
           else
-            tar -czf "${ARCHIVE_NAME}.tar.gz" "${ARCHIVE_NAME}"
+            tar -czf "${ARCHIVE_NAME}.tar.gz" "watcher${EXT}" README.md LICENSE
           fi
 
       - name: Upload artifact
