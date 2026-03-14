@@ -85,7 +85,7 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.Ap
 				return err
 			}
 
-			err = os.WriteFile(cfg.Database, content, os.ModePerm)
+			err = os.WriteFile(cfg.Database, content, 0644)
 			if err != nil {
 				return err
 			}
@@ -166,7 +166,7 @@ func (app *Watcher) restoreSettings(reader archive.Reader, cfg *configuration.Ap
 			return err
 		}
 
-		return os.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
+		return os.WriteFile(cfg.ConfigurationFile, content, 0644)
 	}
 
 	slog.Warn(

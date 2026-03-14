@@ -139,7 +139,7 @@ func (m *giantessWorld) downloadChapter(htmlContent []byte, item *models.Tracked
 	// ensure download directory since we directly create the files
 	m.Session.EnsureDownloadDirectory(filePath)
 
-	err = os.WriteFile(filePath, []byte(text), os.ModePerm)
+	err = os.WriteFile(filePath, []byte(text), 0644)
 	if err != nil {
 		return err
 	}

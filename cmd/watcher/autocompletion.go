@@ -107,7 +107,7 @@ func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byt
 	}
 
 	filePath := filepath.ToSlash(filepath.Join(dir, ".watcher", "completion", fName))
-	if err = os.WriteFile(filePath, fContent, os.ModePerm); err != nil {
+	if err = os.WriteFile(filePath, fContent, 0644); err != nil {
 		return err
 	}
 

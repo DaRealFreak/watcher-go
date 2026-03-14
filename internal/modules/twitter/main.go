@@ -144,7 +144,7 @@ func (m *twitter) AddItem(uri string) (string, error) {
 
 			slog.Info(
 				fmt.Sprintf("converting twitter username \"%s\"", screenName),
-				"module", m.Module.Key,
+				"module", m.Key,
 			)
 
 			userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)

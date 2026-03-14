@@ -339,7 +339,7 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 		)
 		slog.Debug(fmt.Sprintf("downloading description: \"%s\"", filePath), "module", m.Key)
 
-		if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+		if err = os.WriteFile(filePath, []byte(text), 0644); err != nil {
 			return err
 		}
 
@@ -369,7 +369,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI,
 	)
 	slog.Debug(fmt.Sprintf("downloading literature: \"%s\"", filePath), "module", m.Key)
 
-	if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
+	if err = os.WriteFile(filePath, []byte(text), 0644); err != nil {
 		return err
 	}
 

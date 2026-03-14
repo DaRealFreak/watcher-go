@@ -291,7 +291,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 
 	m.mobileAPI.Session.EnsureDownloadDirectory(filepath)
 
-	if err = os.WriteFile(filepath, fileContent, os.ModePerm); err != nil {
+	if err = os.WriteFile(filepath, fileContent, 0644); err != nil {
 		return err
 	}
 

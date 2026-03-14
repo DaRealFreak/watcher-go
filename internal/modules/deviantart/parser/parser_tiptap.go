@@ -72,7 +72,7 @@ func ParseTipTapFormat(jsonStr string) (string, error) {
 				textAlign = "left"
 			}
 
-			buffer.WriteString(fmt.Sprintf(`<p style="text-align: %s;">%s`, textAlign, indentation))
+			fmt.Fprintf(&buffer, `<p style="text-align: %s;">%s`, textAlign, indentation)
 
 			for _, content := range element.Content {
 				switch content.Type {

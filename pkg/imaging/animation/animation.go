@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"strings"
 
+	"log/slog"
+
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging"
 	"github.com/google/uuid"
-	"log/slog"
 
 	// imports of 3rd party libraries to register image formats to decoder
 	_ "golang.org/x/image/bmp"
@@ -156,7 +157,7 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 			return err
 		}
 
-		err = os.WriteFile(fPath, frame, os.ModePerm)
+		err = os.WriteFile(fPath, frame, 0644)
 		if err != nil {
 			return err
 		}
