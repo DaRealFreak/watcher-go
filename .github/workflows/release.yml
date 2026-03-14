@@ -1,0 +1,130 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            archive_format: tar.gz
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            archive_format: tar.gz
+            cc: aarch64-linux-gnu-gcc
+          - os: macos-13
+            goos: darwin
+            goarch: amd64
+            archive_format: tar.gz
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            archive_format: tar.gz
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            archive_format: zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install ARM64 cross-compiler
+        if: matrix.goos == 'linux' && matrix.goarch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build binary
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '1'
+        run: |
+          if [ -n "${{ matrix.cc }}" ]; then
+            export CC="${{ matrix.cc }}"
+          fi
+
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+
+          go build -v -trimpath \
+            -ldflags "-s -w -X github.com/DaRealFreak/watcher-go/internal/version.version=${{ steps.version.outputs.version }}" \
+            -o "watcher${EXT}" .
+
+      - name: Create archive
+        shell: bash
+        run: |
+          ARCHIVE_NAME="watcher-go-v${{ steps.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          mkdir -p "${ARCHIVE_NAME}"
+
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+
+          cp "watcher${EXT}" README.md LICENSE "${ARCHIVE_NAME}/"
+
+          if [ "${{ matrix.archive_format }}" = "zip" ]; then
+            7z a "${ARCHIVE_NAME}.zip" "${ARCHIVE_NAME}"
+          else
+            tar -czf "${ARCHIVE_NAME}.tar.gz" "${ARCHIVE_NAME}"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: watcher-go-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: watcher-go-v*.${{ matrix.archive_format }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: artifacts
+        run: sha256sum watcher-go-v* > checksums.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

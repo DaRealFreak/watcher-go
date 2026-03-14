@@ -1,7 +1,5 @@
 name: build
 on:
-  # trigger workflow on push and pull requests on the master branch
-  # disable for feature branches (since mac builds are expensive af)
   push:
     branches:
       - master
@@ -13,17 +11,14 @@ jobs:
   build:
     strategy:
       matrix:
-        go-version: [1.24.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Get dependencies
-        run: go get -v -t -d ./...
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - name: Build Project
         run: go build -v .
