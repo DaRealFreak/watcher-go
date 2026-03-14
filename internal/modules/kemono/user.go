@@ -6,7 +6,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *kemono) parseUser(item *models.TrackedItem) error {
@@ -27,9 +27,7 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 		return fmt.Errorf("failed to fetch user profile: %w", err)
 	}
 
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("Found user %s (%s) with %d posts", profile.Name, profile.ID, profile.PostCount),
-	)
+	slog.Info(fmt.Sprintf("Found user %s (%s) with %d posts", profile.Name, profile.ID, profile.PostCount), "module", m.Key)
 
 	userPosts, err := m.api.GetUserPosts(service, userId, 0)
 	if err != nil {

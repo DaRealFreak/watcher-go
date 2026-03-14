@@ -12,8 +12,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
+	"context"
 )
 
 type proxySession struct {
@@ -97,15 +98,11 @@ func (m *deviantArt) resetProxies() {
 }
 
 func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
@@ -117,21 +114,17 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 
 		// handle if errors occurred in previous downloads
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-			log.WithField("module", m.Key).Warnf(
-				"error occurred during download for proxy: %s",
-				erroneousProxy.proxy.Host,
-			)
+			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+				erroneousProxy.proxy.Host,), "module", m.Key)
 			return m.getProxyError().occurredError
 		}
 
 		if m.hasFreeProxy() {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf(
+			slog.Info(fmt.Sprintf(
 					"downloading updates for uri: \"%s\" (%0.2f%%)",
 					trackedItem.URI,
 					float64(index+1)/float64(len(downloadQueue))*100,
-				),
-			)
+				), "module", m.Key)
 
 			m.multiProxy.waitGroup.Add(1)
 			proxy := m.getFreeProxy()
@@ -151,10 +144,8 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 
 	// handle if errors occurred in previous downloads
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-		log.WithField("module", m.Key).Warnf(
-			"error occurred during download for proxy: %s",
-			erroneousProxy.proxy.Host,
-		)
+		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+			erroneousProxy.proxy.Host,), "module", m.Key)
 		return m.getProxyError().occurredError
 	}
 
@@ -185,10 +176,8 @@ func (m *deviantArt) downloadItemSessionNapi(
 			}
 		}
 	} else {
-		log.WithField("module", m.Key).Errorf(
-			"error occurred downloading item %s (%s) with proxy %s: %s",
-			trackedItem.URI, deviationItem.itemID, downloadSession.proxy.Host, downloadSession.occurredError.Error(),
-		)
+		slog.Error(fmt.Sprintf("error occurred downloading item %s (%s) with proxy %s: %s",
+			trackedItem.URI, deviationItem.itemID, downloadSession.proxy.Host, downloadSession.occurredError.Error(),), "module", m.Key)
 
 		var scErr tls_session.StatusError
 		if errors.As(downloadSession.occurredError, &scErr) {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *kemono) getTotalSize(url string) (int64, error) {
@@ -56,7 +56,7 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 	if err != nil {
 		return err
 	}
-	log.WithField("module", m.Key).Debugf("total size: %d bytes", total)
+	slog.Debug(fmt.Sprintf("total size: %d bytes", total), "module", m.Key)
 
 	// remove an existing file if present
 	if _, err = os.Stat(outFile); err == nil {
@@ -83,25 +83,23 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 
 		var success bool
 		for attempt := 1; attempt <= retries; attempt++ {
-			log.WithField("module", m.Key).Debugf("fetching bytes %d-%d (attempt %d)", offset, end, attempt)
+			slog.Debug(fmt.Sprintf("fetching bytes %d-%d (attempt %d)", offset, end, attempt), "module", m.Key)
 			req, _ := http.NewRequest("GET", url, nil)
 			req.Header.Set("Range", rangeHdr)
 
 			resp, requestErr := client.Do(req)
 			if requestErr != nil {
-				log.WithField("module", m.Key).Warn(requestErr)
+				slog.Warn(requestErr.Error(), "module", m.Key)
 			} else {
 				if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-					log.WithField("module", m.Key).Warnf("bad status code: %d", resp.StatusCode)
+					slog.Warn(fmt.Sprintf("bad status code: %d", resp.StatusCode), "module", m.Key)
 				} else {
 					// write body to file
 					if _, copyErr := io.Copy(f, resp.Body); copyErr != nil {
-						log.WithField("module", m.Key).Warnf(
-							"error writing chunk %d-%d: %v",
+						slog.Warn(fmt.Sprintf("error writing chunk %d-%d: %v",
 							offset,
 							end,
-							copyErr,
-						)
+							copyErr,), "module", m.Key)
 					} else {
 						success = true
 						break
@@ -110,7 +108,7 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 			}
 
 			if attempt < retries {
-				log.WithField("module", m.Key).Debugf("retrying in %s", delay)
+				slog.Debug(fmt.Sprintf("retrying in %s", delay), "module", m.Key)
 				time.Sleep(delay)
 			}
 		}
@@ -122,6 +120,6 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 		offset = end + 1
 	}
 
-	log.WithField("module", m.Key).Infof("successfully downloaded chunks to file: %s", outFile)
+	slog.Info(fmt.Sprintf("successfully downloaded chunks to file: %s", outFile), "module", m.Key)
 	return nil
 }

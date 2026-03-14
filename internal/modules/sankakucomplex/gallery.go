@@ -8,7 +8,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // parseGallery parses galleries based on the tags in the tracked item
@@ -29,9 +29,7 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 		}
 
 		if nextItem == "" && len(apiGalleryResponse.Data) == 0 {
-			log.WithField("module", m.Key).Warn(
-				fmt.Sprintf("first request has no results, tag probably changed for uri %s", item.URI),
-			)
+			slog.Warn(fmt.Sprintf("first request has no results, tag probably changed for uri %s", item.URI), "module", m.Key)
 		}
 
 		nextItem = apiGalleryResponse.Meta.Next

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -37,11 +37,9 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 		threadTitle := m.getThreadTitle(html)
 		for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
 			if strings.Contains(strings.ToLower(threadTitle), strings.ToLower(blacklistedTag)) {
-				log.WithField("module", m.Key).Warnf(
-					"thread title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+				slog.Warn(fmt.Sprintf("thread title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 					threadTitle,
-					blacklistedTag,
-				)
+					blacklistedTag,), "module", m.Key)
 				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 				return nil
 			}

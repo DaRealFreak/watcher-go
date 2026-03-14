@@ -9,7 +9,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName string) (err error) {
@@ -50,7 +50,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 					return followErr
 				}
 
-				log.WithField("module", m.ModuleKey()).Infof("followed user %s", screenName)
+				slog.Info(fmt.Sprintf("followed user %s", screenName), "module", m.ModuleKey())
 			}
 		}
 	}
@@ -90,11 +90,9 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 		tombstoneEntries := timeline.TombstoneEntries()
 		if len(tombstoneEntries) > 0 {
-			log.WithField("module", m.ModuleKey()).Warnf(
-				"found %d tombstone entries for user %s, check your profile for location settings and IP location, skipping",
+			slog.Warn(fmt.Sprintf("found %d tombstone entries for user %s, check your profile for location settings and IP location, skipping",
 				len(tombstoneEntries),
-				screenName,
-			)
+				screenName,), "module", m.ModuleKey())
 			return nil
 		}
 
@@ -108,29 +106,21 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			if user.Data.User.Result.Privacy.Protected {
 				followRequestSent := user.Data.User.Result.Legacy.FollowRequestSent
 				if followRequestSent == nil || !*followRequestSent {
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"user %s is protected, but no follow request sent, skipping",
-						screenName,
-					)
+					slog.Warn(fmt.Sprintf("user %s is protected, but no follow request sent, skipping",
+						screenName,), "module", m.ModuleKey())
 				} else {
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"user %s is protected, but follow request sent, waiting for approval",
-						screenName,
-					)
+					slog.Warn(fmt.Sprintf("user %s is protected, but follow request sent, waiting for approval",
+						screenName,), "module", m.ModuleKey())
 				}
 			} else if user.Data.User.Result.TypeName != nil && *user.Data.User.Result.TypeName == "UserUnavailable" {
 				// we only want to check entries if we are not in search mode, and we should have at least one entry
-				log.WithField("module", m.ModuleKey()).Warnf(
-					"user %s is unavailable anymore, reason from twitter: %s",
+				slog.Warn(fmt.Sprintf("user %s is unavailable anymore, reason from twitter: %s",
 					screenName,
-					*user.Data.User.Result.Reason,
-				)
+					*user.Data.User.Result.Reason,), "module", m.ModuleKey())
 			} else {
 				// we only want to check entries if we are not in search mode, and we should have at least one entry
-				log.WithField("module", m.ModuleKey()).Warnf(
-					"no tweet entries found for user %s, possibly deleted",
-					screenName,
-				)
+				slog.Warn(fmt.Sprintf("no tweet entries found for user %s, possibly deleted",
+					screenName,), "module", m.ModuleKey())
 			}
 
 			return nil
@@ -147,11 +137,9 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 						tweet.Item.ItemContent.TweetResults.Result.TweetData().Core.UserResults.Result.Core.ScreenName,
 					)
 
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+					slog.Warn(fmt.Sprintf("author changed its name, updated tracked uri from \"%s\" to \"%s\"",
 						item.URI,
-						uri,
-					)
+						uri,), "module", m.ModuleKey())
 
 					m.DbIO.ChangeTrackedItemUri(item, uri)
 				}

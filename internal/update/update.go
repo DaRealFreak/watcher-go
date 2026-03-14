@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"log/slog"
+
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/internal/version"
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
-	log "github.com/sirupsen/logrus"
 	"github.com/tcnksm/go-gitconfig"
 )
 
@@ -37,7 +38,7 @@ func (u *Checker) CheckForAvailableUpdates() {
 func (u *Checker) isUpdateAvailable() (updateAvailable bool, err error) {
 	latest, found, err := selfupdate.DetectLatest("DaRealFreak/watcher-go")
 	if err != nil {
-		log.Warning("error occurred while detecting version: ", err)
+		slog.Warn(fmt.Sprint("error occurred while detecting version: ", err))
 		return false, err
 	}
 
@@ -79,7 +80,7 @@ func (u *Checker) UpdateApplication() (err error) {
 	// retrieve latest asset url again
 	latest, _, err := up.DetectLatest("DaRealFreak/watcher-go")
 	if err != nil {
-		log.Warning("error occurred while retrieving latest asset URLs: ", err)
+		slog.Warn(fmt.Sprint("error occurred while retrieving latest asset URLs: ", err))
 		return err
 	}
 
@@ -92,7 +93,7 @@ func (u *Checker) UpdateApplication() (err error) {
 		return err
 	}
 
-	log.Info("successfully updated to version " + latest.Version.String())
+	slog.Info("successfully updated to version " + latest.Version.String())
 
 	return nil
 }

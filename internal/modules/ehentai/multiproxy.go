@@ -12,8 +12,9 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
+	"context"
 )
 
 type proxySession struct {
@@ -100,15 +101,11 @@ func (m *ehentai) resetProxies() {
 }
 
 func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
@@ -120,21 +117,17 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 
 		// handle if errors occurred in previous downloads
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-			log.WithField("module", m.Key).Warnf(
-				"error occurred during download for proxy: %s",
-				erroneousProxy.proxy.Host,
-			)
+			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+				erroneousProxy.proxy.Host,), "module", m.Key)
 			return m.getProxyError().occurredError
 		}
 
 		if m.hasFreeProxy() {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf(
+			slog.Info(fmt.Sprintf(
 					"downloading updates for uri: \"%s\" (%0.2f%%)",
 					trackedItem.URI,
 					float64(index+1)/float64(len(downloadQueue))*100,
-				),
-			)
+				), "module", m.Key)
 
 			m.multiProxy.waitGroup.Add(1)
 			proxy := m.getFreeProxy()
@@ -151,10 +144,8 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 
 	// handle if errors occurred in previous downloads
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-		log.WithField("module", m.Key).Warnf(
-			"error occurred during download for proxy: %s",
-			erroneousProxy.proxy.Host,
-		)
+		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+			erroneousProxy.proxy.Host,), "module", m.Key)
 		return m.getProxyError().occurredError
 	}
 
@@ -195,11 +186,9 @@ func (m *ehentai) downloadItemSession(
 			return
 		}
 
-		log.WithField("module", m.Key).Warnf(
-			"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+		slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
 			data.uri,
-			fallback.FileURI,
-		)
+			fallback.FileURI,), "module", m.Key)
 
 		downloadQueueItem.FileURI = fallback.FileURI
 		downloadQueueItem.FallbackFileURI = ""
@@ -218,7 +207,7 @@ func (m *ehentai) downloadImageSession(
 	// check for limit
 	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
-		log.WithField("module", m.Key).Info("download limit reached, skipping galleries from now on")
+		slog.Info("download limit reached, skipping galleries from now on", "module", m.Key)
 		m.downloadLimitReached = true
 
 		return fmt.Errorf("download limit reached")

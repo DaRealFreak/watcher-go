@@ -5,7 +5,7 @@ import (
 	"fmt"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 	"io"
@@ -59,8 +59,9 @@ func (s *StdClientSession) Get(uri string, errorHandlers ...watcherHttp.StdClien
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+			"module", s.ModuleKey,
 		)
 
 		response, err = s.Client.Get(uri)
@@ -121,8 +122,9 @@ func (s *StdClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+			"module", s.ModuleKey,
 		)
 
 		// use the generic Post method on the TLS-Client interface:
@@ -168,8 +170,9 @@ func (s *StdClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.St
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening %s uri \"%s\" (try: %d)", req.Method, req.URL.String(), try),
+			"module", s.ModuleKey,
 		)
 
 		// use the generic Post method on the TLS-Client interface:
@@ -209,8 +212,9 @@ func (s *StdClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.St
 
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *StdClientSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.StdClientErrorHandler) (err error) {
-	log.WithField("module", s.ModuleKey).Debug(
+	slog.Debug(
 		fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri),
+		"module", s.ModuleKey,
 	)
 
 	err = s.tryDownloadFile(filepath, uri, errorHandlers...)
@@ -339,8 +343,9 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		proxyType = "https"
 	}
 
-	log.WithField("module", s.ModuleKey).Infof(
-		"setting proxy: [%s %s:%d]", proxyType, ps.Host, ps.Port,
+	slog.Info(
+		fmt.Sprintf("setting proxy: [%s %s:%d]", proxyType, ps.Host, ps.Port),
+		"module", s.ModuleKey,
 	)
 
 	switch proxyType {

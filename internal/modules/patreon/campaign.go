@@ -13,7 +13,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // campaignResponse contains the struct for most relevant data of posts
@@ -186,7 +186,7 @@ func (m *patreon) extractPostDownload(
 				embedUrl.RawQuery = parsedQueryString.Encode()
 				download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
 			} else {
-				log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", externalUrl)
+				slog.Warn(fmt.Sprintf("unable to parse found URL: \"%s\"", externalUrl), "module", m.Key)
 			}
 		}
 	}
@@ -199,7 +199,7 @@ func (m *patreon) extractPostDownload(
 			embedUrl.RawQuery = parsedQueryString.Encode()
 			download.ExternalURLs = append(download.ExternalURLs, embedUrl.String())
 		} else {
-			log.WithField("module", m.Key).Warnf("unable to parse found URL: \"%s\"", post.Attributes.Embed.URL)
+			slog.Warn(fmt.Sprintf("unable to parse found URL: \"%s\"", post.Attributes.Embed.URL), "module", m.Key)
 		}
 	}
 
@@ -302,7 +302,7 @@ func (m *patreon) getCampaignPostsURI(campaignID int) string {
 func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, error) {
 	client := m.Session.GetClient()
 	req, _ := http.NewRequest("GET", campaignPostsURI, nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Upgrade-Insecure-Requests", "1")

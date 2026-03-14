@@ -8,7 +8,7 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
 	"io"
 	"net/url"
@@ -64,8 +64,9 @@ func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.TlsClien
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+			"module", s.ModuleKey,
 		)
 
 		response, err = s.Client.Get(uri)
@@ -126,8 +127,9 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening GET uri \"%s\" (try: %d)", uri, try),
+			"module", s.ModuleKey,
 		)
 
 		// use the generic Post method on the TLS-Client interface:
@@ -173,8 +175,9 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 	for try := 1; try <= s.MaxRetries; try++ {
 		s.ApplyRateLimit()
 
-		log.WithField("module", s.ModuleKey).Debug(
+		slog.Debug(
 			fmt.Sprintf("opening %s uri \"%s\" (try: %d)", req.Method, req.URL.String(), try),
+			"module", s.ModuleKey,
 		)
 
 		// use the generic Post method on the TLS-Client interface:
@@ -214,8 +217,9 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 
 // DownloadFile tries to download the file, returns the occurred error if something went wrong even after multiple tries
 func (s *TlsClientSession) DownloadFile(filepath string, uri string, errorHandlers ...watcherHttp.TlsClientErrorHandler) (err error) {
-	log.WithField("module", s.ModuleKey).Debug(
+	slog.Debug(
 		fmt.Sprintf("downloading file: \"%s\" (uri: %s)", filepath, uri),
+		"module", s.ModuleKey,
 	)
 
 	err = s.tryDownloadFile(filepath, uri, errorHandlers...)
@@ -344,8 +348,9 @@ func (s *TlsClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		ps.Port,
 	)
 
-	log.WithField("module", s.ModuleKey).Debug(
+	slog.Debug(
 		fmt.Sprintf("setting proxy: %s", strings.Replace(proxyURL, auth, "****:****@", 1)),
+		"module", s.ModuleKey,
 	)
 
 	return s.Client.SetProxy(proxyURL)

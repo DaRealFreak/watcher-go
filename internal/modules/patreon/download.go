@@ -9,7 +9,8 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"context"
+	"log/slog"
 )
 
 // postDownload is the struct used for downloading post contents
@@ -24,24 +25,23 @@ type postDownload struct {
 }
 
 func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
+	slog.Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI),
+		"module", m.Key,
 	)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key).Info(
+		slog.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				item.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
+			"module", m.Key,
 		)
 
 		for _, attachment := range data.Attachments {
@@ -62,11 +62,9 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			default:
 				// if no download URL is returned from the API we don't have the reward unlocked and can't download it
 				if attachment.Attributes.DownloadURL == "" {
-					log.WithField("module", m.Key).Warningf(
-						"post %s not unlocked, skipping attachment %s",
+					slog.Warn(fmt.Sprintf("post %s not unlocked, skipping attachment %s",
 						data.PatreonURL,
-						attachment.ID,
-					)
+						attachment.ID,), "module", m.Key)
 
 					continue
 				}
@@ -88,11 +86,9 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 
 		for _, externalURL := range data.ExternalURLs {
 			if m.settings.ExternalURLs.PrintExternalItems {
-				log.WithField("module", m.Key).Infof(
-					"found external URL: \"%s\" in post \"%s\"",
+				slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"",
 					externalURL,
-					data.PatreonURL,
-				)
+					data.PatreonURL,), "module", m.Key)
 			}
 
 			if m.settings.ExternalURLs.DownloadExternalItems {
@@ -104,21 +100,17 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				// don't delete previously already added items
 				deleteAfter := newItem.CurrentItem == ""
 				if m.Cfg.Run.Force && newItem.CurrentItem != "" {
-					log.WithField("module", m.Key).Info(
-						fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem),
-					)
+					slog.Info(fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem), "module", m.Key)
 					newItem.CurrentItem = ""
 					m.DbIO.ChangeTrackedItemCompleteStatus(newItem, false)
 					m.DbIO.UpdateTrackedItem(newItem, "")
 				}
 
 				if err := module.Parse(newItem); err != nil {
-					log.WithField("module", m.Key).Warnf(
-						"unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
+					slog.Warn(fmt.Sprintf("unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
 						newItem.URI,
 						data.PatreonURL,
-						err.Error(),
-					)
+						err.Error(),), "module", m.Key)
 					if !m.settings.ExternalURLs.SkipErrorsForExternalURLs {
 						if deleteAfter {
 							m.DbIO.DeleteTrackedItem(newItem)

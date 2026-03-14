@@ -9,10 +9,11 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
 
+	"log/slog"
+
 	"github.com/DaRealFreak/watcher-go/pkg/archive/gzip"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/tar"
 	"github.com/DaRealFreak/watcher-go/pkg/archive/zip"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
@@ -35,7 +36,7 @@ func (app *Watcher) Restore(archiveName string, cfg *configuration.AppConfigurat
 
 	if cfg.Restore.Settings {
 		raven.CheckError(app.restoreSettings(reader, cfg))
-		log.Info("settings restored successfully")
+		slog.Info("settings restored successfully")
 	}
 
 	if cfg.Restore.Database.Accounts.Enabled ||
@@ -89,7 +90,7 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.Ap
 				return err
 			}
 
-			log.Info("restored database file from archive")
+			slog.Info("restored database file from archive")
 		}
 
 		return app.restoreTablesFromArchive(
@@ -111,7 +112,7 @@ func (app *Watcher) restoreDatabase(reader archive.Reader, cfg *configuration.Ap
 	}
 
 	// no restore option selected, should be unreachable from the command line options
-	log.Warning("no restore option selected")
+	slog.Warn("no restore option selected")
 
 	return nil
 }
@@ -139,7 +140,7 @@ func (app *Watcher) restoreTablesFromArchive(reader archive.Reader, filesNames .
 				return err
 			}
 
-			log.Infof("restored database settings from file %s", sqlFileName)
+			slog.Info(fmt.Sprintf("restored database settings from file %s", sqlFileName))
 		}
 	}
 
@@ -168,9 +169,8 @@ func (app *Watcher) restoreSettings(reader archive.Reader, cfg *configuration.Ap
 		return os.WriteFile(cfg.ConfigurationFile, content, os.ModePerm)
 	}
 
-	log.Warnf(
-		"the passed archive does not contain your current configuration file %s",
-		cfg.ConfigurationFile,
+	slog.Warn(
+		fmt.Sprintf("the passed archive does not contain your current configuration file %s", cfg.ConfigurationFile),
 	)
 
 	return nil

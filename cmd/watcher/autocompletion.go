@@ -9,7 +9,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/mitchellh/go-homedir"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/spf13/cobra"
 )
 
@@ -111,8 +111,8 @@ func (cli *CliApplication) createAutoCompletionFile(fName string, fContent []byt
 		return err
 	}
 
-	log.Info("auto completion script got created at: " + filePath)
-	log.Info(
+	slog.Info("auto completion script got created at: " + filePath)
+	slog.Info(
 		fmt.Sprintf(
 			"run the following command to add the auto completion to your profile: \n%s",
 			fmt.Sprintf(activationCmd, filePath),

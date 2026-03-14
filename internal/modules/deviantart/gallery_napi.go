@@ -6,7 +6,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -61,11 +61,9 @@ func (m *deviantArt) parseGalleryNapi(item *models.TrackedItem) error {
 			galleryIntID,
 			strings.ToLower(url.PathEscape(strings.ReplaceAll(galleryFolder.Name, " ", "-"))),
 		)
-		log.WithField("module", m.ModuleKey()).Warnf(
-			"gallery owner changed its name, updated tracked uri from \"%s\" to \"%s\"",
+		slog.Warn(fmt.Sprintf("gallery owner changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
-			uri,
-		)
+			uri,), "module", m.ModuleKey())
 
 		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}

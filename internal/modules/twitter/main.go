@@ -3,16 +3,16 @@ package twitter
 
 import (
 	"fmt"
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/twitter_settings"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -86,10 +86,10 @@ func (m *twitter) InitializeModule() {
 	// ToDo: guest cookie
 
 	if err := m.twitterGraphQlAPI.InitializeSession(); err != nil {
-		log.WithField("module", m.Key).Fatalf(
-			"unable to initialize graphQL session: %s", err.Error(),
+		slog.Error(
+			fmt.Sprintf("unable to initialize graphQL session: %s", err.Error()),
+			"module", m.Key,
 		)
-		// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
 		os.Exit(1)
 	}
 }
@@ -111,8 +111,9 @@ func (m *twitter) Parse(item *models.TrackedItem) error {
 		if err == nil {
 			m.DbIO.ChangeTrackedItemUri(item, newUri)
 		} else {
-			log.WithField("module", item.Module).Warningf(
-				"unable to convert screen name to ID for URI %s (%s)", item.URI, err.Error(),
+			slog.Warn(
+				fmt.Sprintf("unable to convert screen name to ID for URI %s (%s)", item.URI, err.Error()),
+				"module", item.Module,
 			)
 		}
 	}
@@ -141,8 +142,9 @@ func (m *twitter) AddItem(uri string) (string, error) {
 				return uri, screenNameErr
 			}
 
-			log.WithField("module", m.Module.Key).Infof(
-				"converting twitter username \"%s\"", screenName,
+			slog.Info(
+				fmt.Sprintf("converting twitter username \"%s\"", screenName),
+				"module", m.Module.Key,
 			)
 
 			userInformation, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)

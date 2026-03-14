@@ -7,7 +7,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *nhentai) parseGalleryFromApiResponse(
@@ -17,11 +17,9 @@ func (m *nhentai) parseGalleryFromApiResponse(
 	galleryTitle := fmt.Sprintf("%s [%s]", apiResponse.GetTitle(), apiResponse.GetLanguage())
 	for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
 		if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
-			log.WithField("module", m.Key).Warnf(
-				"gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+			slog.Warn(fmt.Sprintf("gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 				galleryTitle,
-				blacklistedTag,
-			)
+				blacklistedTag,), "module", m.Key)
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 			return nil
 		}

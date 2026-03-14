@@ -2,17 +2,20 @@
 package models
 
 import (
+	"context"
 	"fmt"
-	http "github.com/bogdanfinn/fhttp"
+	"log/slog"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"strings"
 
+	http "github.com/bogdanfinn/fhttp"
+
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
 	internalHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,6 +36,7 @@ type ModuleInterface interface {
 	AddItem(uri string) (string, error)
 	// Load initializes the module, logs in and updates the progress of the process
 	Load() error
+	SetCookies()
 }
 
 // DownloadQueueItem is a generic struct in case the module doesn't require special actions
@@ -129,24 +133,23 @@ func (t *Module) SetCookies() {
 
 // ProcessDownloadQueue processes the default download queue, can be used if the module doesn't require special actions
 func (t *Module) ProcessDownloadQueue(downloadQueue []DownloadQueueItem, trackedItem *TrackedItem, notifications ...*Notification) error {
-	log.WithField("module", t.Key).Info(
+	slog.Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+		"module", t.Key,
 	)
 
 	for _, notification := range notifications {
-		log.WithField("module", t.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), notification.Level, notification.Message, "module", t.Key)
 	}
 
 	for index, data := range downloadQueue {
-		log.WithField("module", t.Key).Info(
+		slog.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
+			"module", t.Key,
 		)
 
 		err := t.Session.DownloadFile(
@@ -189,7 +192,7 @@ func (t *Module) Load() error {
 		t.InitializeModule()
 
 		// set whatever cookies we have
-		t.SetCookies()
+		t.ModuleInterface.SetCookies()
 		t.Initialized = true
 	}
 
@@ -202,8 +205,9 @@ func (t *Module) Load() error {
 	// no account available but module requires a login
 	if account == nil {
 		if t.RequiresLogin {
-			log.WithField("module", t.Key).Errorf(
+			slog.Error(
 				"module requires a login, but no account could be found",
+				"module", t.Key,
 			)
 		} else {
 			t.Initialized = true
@@ -211,20 +215,24 @@ func (t *Module) Load() error {
 		}
 	}
 
-	log.WithField("module", t.Key).Info(
+	slog.Info(
 		fmt.Sprintf("logging in for module %s", t.Key),
+		"module", t.Key,
 	)
 
 	// login into the module
 	if t.Login(account) {
-		log.WithField("module", t.Key).Info("login successful")
+		slog.Info("login successful", "module", t.Key)
 	} else {
 		if t.RequiresLogin {
-			log.WithField("module", t.Key).Fatalf(
+			slog.Error(
 				"module requires a login, but the login failed",
+				"module", t.Key,
 			)
+			os.Exit(1)
 		} else {
-			log.WithField("module", t.Key).Fatalf("login not successful")
+			slog.Error("login not successful", "module", t.Key)
+			os.Exit(1)
 		}
 	}
 

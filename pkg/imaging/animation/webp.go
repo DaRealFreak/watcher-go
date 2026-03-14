@@ -1,13 +1,14 @@
 package animation
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
 )
 
 // FileFormatWebp is the file extension for the WEBP format
@@ -30,7 +31,7 @@ func (h *Helper) CreateAnimationWebp(fData *FileData) (content []byte, err error
 		"-loop", "0",
 		filepath.Join(fData.WorkPath, h.outputFileName+".webp"),
 	}
-	log.Debugf("running command: ffmpeg %s", strings.Join(args, " "))
+	slog.Debug(fmt.Sprintf("running command: ffmpeg %s", strings.Join(args, " ")))
 
 	cmd := exec.Command("ffmpeg", args...)
 	err = cmd.Start()

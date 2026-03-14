@@ -3,12 +3,12 @@ package raven
 
 import (
 	"io"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/DaRealFreak/watcher-go/internal/version"
 	"github.com/getsentry/sentry-go"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +24,8 @@ func SetupSentry() {
 		Dsn:     sentryDsn,
 		Release: "watcher-go@" + version.GetVersion(),
 	}); err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 }
 
@@ -35,7 +36,8 @@ func CheckError(err error) {
 		// Since sentry emits events in the background we need to make sure
 		// they are sent before we shut down
 		sentry.Flush(time.Second * 5)
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 }
 
@@ -47,7 +49,7 @@ func CheckErrorNonFatal(err error) {
 		// Since sentry emits events in the background we need to make sure
 		// they are sent before we warn the user and continue
 		sentry.Flush(time.Second * 5)
-		log.Warning(err)
+		slog.Warn(err.Error())
 	}
 }
 

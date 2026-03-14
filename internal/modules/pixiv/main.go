@@ -3,17 +3,17 @@ package pixiv
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -118,10 +118,10 @@ func (m *pixiv) AddModuleCommand(command *cobra.Command) {
 func (m *pixiv) Login(_ *models.Account) bool {
 	oauthClient := m.DbIO.GetOAuthClient(m)
 	if oauthClient == nil || oauthClient.ClientID == "" || oauthClient.ClientSecret == "" {
-		log.WithField("module", m.Key).Fatalf(
+		slog.Error(
 			"module requires an OAuth2 consumer ID and token",
+			"module", m.Key,
 		)
-		// log.Fatal will already exit with error code 1, so the exit is just for the IDE here
 		os.Exit(1)
 	}
 
@@ -222,13 +222,15 @@ func (m *pixiv) addRunCommand(command *cobra.Command) {
 						continue
 					}
 
-					log.WithField("module", item.Module).Info(
+					slog.Info(
 						fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+						"module", item.Module,
 					)
 
 					if err := m.Parse(item); err != nil {
-						log.WithField("module", item.Module).Warningf(
-							"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+						slog.Warn(
+							fmt.Sprintf("error occurred parsing item %s (%s), skipping", item.URI, err.Error()),
+							"module", item.Module,
 						)
 					}
 				}

@@ -9,9 +9,10 @@ import (
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
+	"fmt"
 )
 
 // SankakuComplexApi contains all required items to communicate with the API
@@ -41,14 +42,14 @@ func NewSankakuComplexApi(moduleKey string, session watcherHttp.TlsClientSession
 	// Create an OIDC client.
 	oidc, err := NewOIDCClient(oidcCfg)
 	if err != nil {
-		log.WithField("module", moduleKey).Warnf("failed to create OIDC client: %s", err.Error())
+		slog.Warn(fmt.Sprintf("failed to create OIDC client: %s", err.Error()), "module", moduleKey)
 		return nil
 	}
 
 	// Use the OIDC flow to get an OAuth token.
 	token, err := oidc.GetOAuthToken(ctx, account.Username, account.Password)
 	if err != nil {
-		log.WithField("module", moduleKey).Warnf("OIDC authentication failed: %s", err.Error())
+		slog.Warn(fmt.Sprintf("OIDC authentication failed: %s", err.Error()), "module", moduleKey)
 		return nil
 	}
 

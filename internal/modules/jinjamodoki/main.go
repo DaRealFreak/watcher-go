@@ -8,14 +8,15 @@ import (
 	"regexp"
 	"strings"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log/slog"
+	"os"
 )
 
 // jinjaModoki contains the implementation of the ModuleInterface
@@ -86,15 +87,13 @@ func (m *jinjaModoki) InitializeModule() {
 	content, _ := io.ReadAll(res.Body)
 	if strings.Contains(string(content),
 		"You are not allowed to change your access settings for browsing-restricted contents") {
-		log.WithField("module", m.Key).Fatal(
-			fmt.Errorf("could not change browsing restrictions, your IP is most likely blacklisted"),
-		)
+		slog.Error("could not change browsing restrictions, your IP is most likely blacklisted", "module", m.Key)
+		os.Exit(1)
 	}
 
 	if !strings.Contains(string(content), "Access settings for browsing-restricted contents have been changed.") {
-		log.WithField("module", m.Key).Fatal(
-			fmt.Errorf("unable to change browsing restrictions, please check settings"),
-		)
+		slog.Error("unable to change browsing restrictions, please check settings", "module", m.Key)
+		os.Exit(1)
 	}
 }
 

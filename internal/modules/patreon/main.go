@@ -13,14 +13,14 @@ import (
 	"strings"
 	"unicode"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log/slog"
 )
 
 // patreon contains the implementation of the ModuleInterface
@@ -195,7 +195,7 @@ func (m *patreon) Login(account *models.Account) bool {
 	}
 
 	if foundCookie {
-		log.WithField("module", m.Key).Info("using existing session cookie")
+		slog.Info("using existing session cookie", "module", m.Key)
 		m.LoggedIn = true
 		return m.LoggedIn
 	}
@@ -221,20 +221,19 @@ func (m *patreon) Login(account *models.Account) bool {
 
 	data, err := json.Marshal(formData)
 	if err != nil {
-		log.WithField("module", m.Key).Error(err)
+		slog.Error(err.Error(), "module", m.Key)
 	}
 
 	res, err := m.get("https://www.patreon.com/login")
 	if err != nil {
-		log.WithField("module", m.Key).Error(err)
+		slog.Error(err.Error(), "module", m.Key)
 		return false
 	}
 
 	loginCsrfMatches := m.loginCsrfPattern.FindStringSubmatch(m.Session.GetDocument(res).Text())
 	if len(loginCsrfMatches) != 2 {
-		log.WithField("module", m.Key).Fatal(
-			fmt.Errorf("unexpected amount of matches in search of login CSRF token"),
-		)
+		slog.Error("unexpected amount of matches in search of login CSRF token", "module", m.Key)
+		os.Exit(1)
 		return false
 	}
 
@@ -247,10 +246,10 @@ func (m *patreon) Login(account *models.Account) bool {
 
 	res, err = m.Session.GetClient().Do(req)
 	if err != nil {
-		log.WithField("module", m.Key).Error(err)
+		slog.Error(err.Error(), "module", m.Key)
 	}
 	if res.StatusCode != 200 {
-		log.WithField("module", m.Key).Error("unable to login to patreon.com")
+		slog.Error("unable to login to patreon.com", "module", m.Key)
 	}
 
 	loginRes := m.Session.GetDocument(res).Text()
@@ -261,7 +260,7 @@ func (m *patreon) Login(account *models.Account) bool {
 	)
 
 	if err = json.Unmarshal([]byte(loginRes), &loginError); err != nil {
-		log.WithField("module", m.Key).Error(err)
+		slog.Error(err.Error(), "module", m.Key)
 	}
 
 	if len(loginError.Errors) > 0 {
@@ -276,9 +275,8 @@ func (m *patreon) Login(account *models.Account) bool {
 				})
 				verificationRes, verificationError := m.get(strings.TrimSuffix(text, "\n"))
 				if verificationError != nil {
-					log.WithField("module", m.Key).Fatal(
-						fmt.Errorf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail),
-					)
+					slog.Error(fmt.Sprintf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail), "module", m.Key)
+					os.Exit(1)
 					return false
 				}
 
@@ -287,14 +285,13 @@ func (m *patreon) Login(account *models.Account) bool {
 				}
 			}
 
-			log.WithField("module", m.Key).Fatal(
-				fmt.Errorf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail),
-			)
+			slog.Error(fmt.Sprintf("error occurred during login (code: %s): %s", loginErr.Code, loginErr.Detail), "module", m.Key)
+			os.Exit(1)
 		}
 	}
 
 	if err = json.Unmarshal([]byte(loginRes), &loginSuccess); err != nil {
-		log.WithField("module", m.Key).Error(err)
+		slog.Error(err.Error(), "module", m.Key)
 	}
 
 	m.LoggedIn = loginSuccess.Data.ID.String() != ""
@@ -309,8 +306,9 @@ func (m *patreon) Parse(item *models.TrackedItem) error {
 		if err == nil {
 			m.DbIO.ChangeTrackedItemUri(item, newUri)
 		} else {
-			log.WithField("module", item.Module).Warningf(
-				"unable to convert campaign URL to ID for %s (%s)", item.URI, err.Error(),
+			slog.Warn(
+				fmt.Sprintf("unable to convert campaign URL to ID for %s (%s)", item.URI, err.Error()),
+				"module", item.Module,
 			)
 		}
 	}

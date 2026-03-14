@@ -16,7 +16,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // CheckForSimilarity uses image magick to check for image similarity
@@ -64,7 +64,7 @@ func CheckForSimilarity(file1 string, file2 string) (similarity float64, err err
 func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 	executable, args := imaging.GetImageMagickEnv("compare")
 	args = append(args, "-metric", "mse", file1, file2, "NULL:")
-	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+	slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 	// ImageMagick compare returns 0 on similar images, 1 on dissimilar images, 2 on error according to the man page
 	// since we want to return similarity we have to handle exit code 1 too which would be handled as error in go
@@ -92,7 +92,7 @@ func getSimilarity(file1 string, file2 string) (similarity float64, err error) {
 func resizeImage(fileName string, width int, height int) error {
 	executable, args := imaging.GetImageMagickEnv("convert")
 	args = append(args, fileName, "-resize", fmt.Sprintf("%dx%d!", width, height), fileName)
-	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+	slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 	cmd := exec.Command(executable, args...)
 	err := cmd.Start()

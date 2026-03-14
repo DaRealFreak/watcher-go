@@ -12,7 +12,7 @@ import (
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // CookieSession is the session cookie which is set after a successful login
@@ -44,9 +44,7 @@ func NewFanboxAPI(moduleKey string) *FanboxAPI {
 // and adds the round trippers to the session client
 func (a *FanboxAPI) AddRoundTrippers() {
 	if a.SessionCookie == nil {
-		log.WithField("module", a.Key).Fatalf(
-			"required cookie %s does not exist or expired", CookieSession,
-		)
+		slog.Error(fmt.Sprintf("required cookie %s does not exist or expired", CookieSession,), "module", a.Key)
 		os.Exit(1)
 	}
 

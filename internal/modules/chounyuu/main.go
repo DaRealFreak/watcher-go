@@ -5,15 +5,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/chounyuu/api"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"strings"
@@ -152,13 +152,15 @@ func (m *chounyuu) addRunCommand(command *cobra.Command) {
 						continue
 					}
 
-					log.WithField("module", item.Module).Info(
+					slog.Info(
 						fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+						"module", item.Module,
 					)
 
 					if err := m.Parse(item); err != nil {
-						log.WithField("module", item.Module).Warningf(
-							"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+						slog.Warn(
+							fmt.Sprintf("error occurred parsing item %s (%s), skipping", item.URI, err.Error()),
+							"module", item.Module,
 						)
 					}
 				}

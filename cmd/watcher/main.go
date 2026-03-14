@@ -3,17 +3,18 @@ package watcher
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 	"time"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/internal/update"
 	"github.com/DaRealFreak/watcher-go/internal/version"
 	watcherApp "github.com/DaRealFreak/watcher-go/internal/watcher"
 	"github.com/mattn/go-colorable"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -75,7 +76,7 @@ func (cli *CliApplication) addPersistentFlags() {
 	)
 	cli.rootCmd.PersistentFlags().StringVarP(
 		&cli.config.LogLevel,
-		"verbosity", "v", log.InfoLevel.String(),
+		"verbosity", "v", "info",
 		"log level (debug, info, warn, error, fatal, panic",
 	)
 	cli.rootCmd.PersistentFlags().BoolVar(
@@ -166,19 +167,31 @@ func (cli *CliApplication) initWatcher() {
 
 // initLogger initializes the logger
 func (cli *CliApplication) initLogger() {
-	log.SetOutput(colorable.NewColorableStdout())
-	lvl, err := log.ParseLevel(cli.config.LogLevel)
-	raven.CheckError(err)
-	log.SetLevel(lvl)
-	// set custom text formatter for the logger
-	log.StandardLogger().Formatter = &formatter.Formatter{
-		DisableColors:            cli.config.Cli.DisableColors,
-		ForceColors:              cli.config.Cli.ForceColors,
-		DisableTimestamp:         cli.config.Cli.DisableTimestamp,
-		UseUppercaseLevel:        cli.config.Cli.UseUppercaseLevel,
+	handler := formatter.NewHandler(colorable.NewColorableStdout(), &formatter.Handler{
+		DisableColors:           cli.config.Cli.DisableColors,
+		ForceColors:             cli.config.Cli.ForceColors,
+		DisableTimestamp:        cli.config.Cli.DisableTimestamp,
+		UseUppercaseLevel:       cli.config.Cli.UseUppercaseLevel,
 		UseTimePassedAsTimestamp: cli.config.Cli.UseTimePassedAsTimestamp,
-		TimestampFormat:          time.StampMilli,
-		PadAllLogEntries:         true,
+		TimestampFormat:         time.StampMilli,
+		PadAllLogEntries:        true,
+		Level:                   cli.parseSlogLevel(cli.config.LogLevel),
+	})
+	slog.SetDefault(slog.New(handler))
+}
+
+func (cli *CliApplication) parseSlogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }
 

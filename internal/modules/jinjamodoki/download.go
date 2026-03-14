@@ -12,8 +12,9 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
+	"context"
 )
 
 type downloadQueueItem struct {
@@ -26,25 +27,19 @@ func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *mode
 	// only the downloads have a rate limit, so we only set it here
 	m.defaultSession.RateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range queue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				item.URI,
 				float64(index+1)/float64(len(queue))*100,
-			),
-		)
+			), "module", m.Key)
 
 		if err := m.downloadItem(data, item); err != nil {
 			return err

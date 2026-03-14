@@ -3,6 +3,7 @@ package watcher
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
@@ -10,7 +11,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
-	log "github.com/sirupsen/logrus"
 
 	// registered modules imported for registering into the module factory
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/chounyuu"
@@ -82,21 +82,24 @@ func (app *Watcher) Run() {
 			raven.CheckError(module.Load())
 
 			if (app.Cfg.Run.Force || app.Cfg.Run.ResetProgress) && item.CurrentItem != "" {
-				log.WithField("module", module.Key).Info(
+				slog.Info(
 					fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
+					"module", module.Key,
 				)
 				item.CurrentItem = ""
 				app.DbCon.ChangeTrackedItemCompleteStatus(item, false)
 				app.DbCon.UpdateTrackedItem(item, "")
 			}
 
-			log.WithField("module", module.Key).Info(
+			slog.Info(
 				fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+				"module", module.Key,
 			)
 
 			if err := module.Parse(item); err != nil {
-				log.WithField("module", item.Module).Warningf(
-					"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+				slog.Warn(
+					fmt.Sprintf("error occurred parsing item %s (%s), skipping", item.URI, err.Error()),
+					"module", item.Module,
 				)
 			}
 		}
@@ -113,9 +116,9 @@ func (app *Watcher) getRelevantTrackedItems() []*models.TrackedItem {
 			module := app.ModuleFactory.GetModuleFromURI(itemURL)
 			if !app.ModuleFactory.IsModuleIncluded(module, app.Cfg.Run.ModuleURL) ||
 				app.ModuleFactory.IsModuleExcluded(module, app.Cfg.Run.DisableURL) {
-				log.WithField("module", module.Key).Warningf(
-					"ignoring directly passed item %s due to not matching the module constraints",
-					itemURL,
+				slog.Warn(
+					fmt.Sprintf("ignoring directly passed item %s due to not matching the module constraints", itemURL),
+					"module", module.Key,
 				)
 
 				continue
@@ -180,21 +183,24 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 	for _, item := range trackedItems {
 		if (app.Cfg.Run.Force || app.Cfg.Run.ResetProgress) && item.CurrentItem != "" {
-			log.WithField("module", module.Key).Info(
+			slog.Info(
 				fmt.Sprintf("resetting progress for item %s (current id: %s)", item.URI, item.CurrentItem),
+				"module", module.Key,
 			)
 			item.CurrentItem = ""
 			app.DbCon.ChangeTrackedItemCompleteStatus(item, false)
 			app.DbCon.UpdateTrackedItem(item, "")
 		}
 
-		log.WithField("module", module.Key).Info(
+		slog.Info(
 			fmt.Sprintf("parsing item %s (current id: %s)", item.URI, item.CurrentItem),
+			"module", module.Key,
 		)
 
 		if err := module.Parse(item); err != nil {
-			log.WithField("module", item.Module).Warningf(
-				"error occurred parsing item %s (%s), skipping", item.URI, err.Error(),
+			slog.Warn(
+				fmt.Sprintf("error occurred parsing item %s (%s), skipping", item.URI, err.Error()),
+				"module", item.Module,
 			)
 		}
 	}

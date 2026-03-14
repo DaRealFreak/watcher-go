@@ -9,7 +9,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // imageGalleryItem contains the relevant data of gallery items
@@ -53,11 +53,9 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 	if !whitelisted && !m.Cfg.Run.Force {
 		for _, blacklistedTag := range m.settings.Search.BlacklistedTags {
 			if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
-				log.WithField("module", m.Key).Warnf(
-					"gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
+				slog.Warn(fmt.Sprintf("gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 					galleryTitle,
-					blacklistedTag,
-				)
+					blacklistedTag,), "module", m.Key)
 				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 				return nil
 			}
@@ -147,7 +145,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []*image
 // hasGalleryErrors checks if the gallery has any errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool, *models.TrackedItem) {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		log.WithField("module", m.Key).Info("newer version of gallery available, updating uri of: " + item.URI)
+		slog.Info("newer version of gallery available, updating uri of: " + item.URI, "module", m.Key)
 
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
@@ -158,7 +156,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 			url, exists := row.Attr("href")
 			if exists {
 				newGalleryItem = m.DbIO.GetFirstOrCreateTrackedItem(url, m.getSubFolder(item), m)
-				log.WithField("module", m.Key).Info("added gallery to tracked items: " + url)
+				slog.Info("added gallery to tracked items: " + url, "module", m.Key)
 			}
 		})
 
@@ -166,7 +164,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 	}
 
 	if strings.Contains(html, "document.location = \"https://exhentai.org/\";") {
-		log.WithField("module", m.Key).Warning("this gallery has been removed due to a copyright claim")
+		slog.Warn("this gallery has been removed due to a copyright claim", "module", m.Key)
 		return true, nil
 	}
 

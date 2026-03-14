@@ -19,7 +19,8 @@ import (
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+	"context"
 )
 
 type downloadQueueItem struct {
@@ -29,25 +30,19 @@ type downloadQueueItem struct {
 }
 
 func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
-			),
-		)
+			), "module", m.Key)
 
 		switch item := data.DownloadItem.(type) {
 		case mobileapi.Illustration:
@@ -67,31 +62,25 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				if item.Caption == "" {
 					detail, detailErr := m.mobileAPI.GetIllustDetail(item.ID)
 					if detailErr != nil {
-						log.WithField("module", m.Key).Errorf(
-							"failed to get illustration details for ID %d: %v",
+						slog.Error(fmt.Sprintf("failed to get illustration details for ID %d: %v",
 							item.ID,
-							detailErr,
-						)
+							detailErr,), "module", m.Key)
 					}
 					checkedIllustration = detail.Illustration
 				}
 				links := linkfinder.GetLinks(checkedIllustration.Caption)
 				for _, link := range links {
-					log.WithField("module", m.Key).Infof(
-						"found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
+					slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
 						link,
-						checkedIllustration.ID,
-					)
+						checkedIllustration.ID,), "module", m.Key)
 				}
 			}
 
 			if err != nil {
 				if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 {
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"received 404 status code for URI \"https://www.pixiv.net/en/artworks/%d\", "+
+					slog.Warn(fmt.Sprintf("received 404 status code for URI \"https://www.pixiv.net/en/artworks/%d\", "+
 							"content got most likely deleted, skipping",
-						data.ItemID,
-					)
+						data.ItemID,), "module", m.ModuleKey())
 				} else {
 					return err
 				}
@@ -131,7 +120,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		if len(urlMatches) > 0 {
 			for _, match := range urlMatches {
 				q, _ := url.Parse(match[0])
-				log.WithField("module", m.Key).Warnf("found URL from author in comments: %s (%d)", q.String(), postID)
+				slog.Warn(fmt.Sprintf("found URL from author in comments: %s (%d)", q.String(), postID), "module", m.Key)
 			}
 		}
 	}
@@ -140,7 +129,7 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	if len(urlMatches) > 0 {
 		for _, match := range urlMatches {
 			q, _ := url.Parse(match[0])
-			log.WithField("module", m.Key).Warnf("found URL from author in text body: %s (%d)", q.String(), postID)
+			slog.Warn(fmt.Sprintf("found URL from author in text body: %s (%d)", q.String(), postID), "module", m.Key)
 		}
 	}
 
@@ -298,9 +287,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 	}
 
 	filepath := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag, fileName)
-	log.WithField("module", m.Key).Debug(
-		fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)),
-	)
+	slog.Debug(fmt.Sprintf("saving converted animation: %s (frames: %d)", filepath, len(animationData.Frames)), "module", m.Key)
 
 	m.mobileAPI.Session.EnsureDownloadDirectory(filepath)
 

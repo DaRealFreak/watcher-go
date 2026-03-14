@@ -3,7 +3,7 @@ package nhentai
 import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -83,16 +83,12 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 		itemQueue[i], itemQueue[j] = itemQueue[j], itemQueue[i]
 	}
 
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: %s", len(itemQueue), item.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: %s", len(itemQueue), item.URI), "module", m.Key)
 
 	for _, gallery := range itemQueue {
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
 		if (m.Cfg.Run.Force || m.Cfg.Run.ResetProgress) && galleryItem.CurrentItem != "" {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem),
-			)
+			slog.Info(fmt.Sprintf("resetting progress for item %s (current id: %s)", galleryItem.URI, galleryItem.CurrentItem), "module", m.Key)
 			galleryItem.CurrentItem = ""
 			m.DbIO.ChangeTrackedItemCompleteStatus(galleryItem, false)
 			m.DbIO.UpdateTrackedItem(galleryItem, "")
@@ -101,20 +97,16 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 
 	// add items
 	for index, gallery := range itemQueue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
 				gallery.GetURL(),
 				item.URI,
 				float64(index+1)/float64(len(itemQueue))*100,
-			),
-		)
+			), "module", m.Key)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
 		if err = m.parseGalleryFromApiResponse(galleryItem, gallery); err != nil {
-			log.WithField("module", item.Module).Warningf(
-				"error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),
-			)
+			slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),), "module", item.Module)
 			return err
 		}
 

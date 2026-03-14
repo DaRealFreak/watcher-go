@@ -13,7 +13,8 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+	"context"
 )
 
 type downloadQueue struct {
@@ -83,12 +84,10 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 		}
 
 		if time.Now().Unix() >= expiration {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf(
+			slog.Info(fmt.Sprintf(
 					"links expired for uri, refreshing progress: \"%s\"",
 					trackedItem.URI,
-				),
-			)
+				), "module", m.Key)
 
 			return true, m.Parse(trackedItem)
 		}
@@ -101,9 +100,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 
 	if err != nil && galleryItem.item.FallbackFileURI != "" && galleryItem.item.FallbackFileURI != galleryItem.item.FileURI {
 		// fallback to resized image
-		log.WithField("module", m.Key).Warn(
-			fmt.Sprintf("error occurred: %s, using fallback URI", err.Error()),
-		)
+		slog.Warn(fmt.Sprintf("error occurred: %s, using fallback URI", err.Error()), "module", m.Key)
 
 		galleryItem.item.FileURI = galleryItem.item.FallbackFileURI
 		ext := fp.GetFileExtension(galleryItem.item.FileName)
@@ -114,12 +111,10 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	}
 
 	if expiration > 0 && time.Now().Unix() >= expiration {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"links expired for uri, refreshing progress: \"%s\"",
 				trackedItem.URI,
-			),
-		)
+			), "module", m.Key)
 
 		return true, m.Parse(trackedItem)
 	}
@@ -127,7 +122,7 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 	if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 &&
 		galleryItem.item.FallbackFileURI == galleryItem.item.FileURI &&
 		regexp.MustCompile(`/books\?`).MatchString(trackedItem.URI) {
-		log.WithField("module", m.Key).Warnf("skipping book galleryItem: %s, status code was 404", galleryItem.item.ItemID)
+		slog.Warn(fmt.Sprintf("skipping book galleryItem: %s, status code was 404", galleryItem.item.ItemID), "module", m.Key)
 		return false, nil
 	}
 
@@ -135,36 +130,28 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 }
 
 func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue.items)+len(downloadQueue.books), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue.items)+len(downloadQueue.books), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue.items {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue.items))*100,
-			),
-		)
+			), "module", m.Key)
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data); expired || err != nil {
 			if err != nil {
 				if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 {
 					// continue on 404 errors, since they most likely won't get fixed
-					log.WithField("module", m.Key).Warnf("skipping item: %s, status code was 404", data.item.ItemID)
+					slog.Warn(fmt.Sprintf("skipping item: %s, status code was 404", data.item.ItemID), "module", m.Key)
 				} else if m.settings.Download.SkipBrokenStreams && strings.HasPrefix(err.Error(), "stream error: stream ID") {
 					// skip broken streams if configured to do so
-					log.WithField("module", m.Key).Warn(
-						fmt.Sprintf("skipping item: %s, download stream is broken", data.item.ItemID),
-					)
+					slog.Warn(fmt.Sprintf("skipping item: %s, download stream is broken", data.item.ItemID), "module", m.Key)
 				} else {
 					return err
 				}
@@ -184,13 +171,11 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 			return err
 		}
 
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue.books))*100,
-			),
-		)
+			), "module", m.Key)
 
 		bookLanguage := ""
 		if len(data.bookLanguage) > 0 {

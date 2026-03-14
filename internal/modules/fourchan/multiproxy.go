@@ -13,7 +13,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
 )
 
@@ -98,9 +98,7 @@ func (m *fourChan) resetProxies() {
 }
 
 func (m *fourChan) processDownloadQueueMultiProxy(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for index, data := range downloadQueue {
 		// sleep until we have a free proxy again
@@ -111,21 +109,17 @@ func (m *fourChan) processDownloadQueueMultiProxy(downloadQueue []models.Downloa
 
 		// handle if errors occurred in previous downloads
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-			log.WithField("module", m.Key).Warnf(
-				"error occurred during download for proxy: %s",
-				erroneousProxy.proxy.Host,
-			)
+			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+				erroneousProxy.proxy.Host,), "module", m.Key)
 			return m.getProxyError().occurredError
 		}
 
 		if m.hasFreeProxy() {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf(
+			slog.Info(fmt.Sprintf(
 					"downloading updates for uri: \"%s\" (%0.2f%%)",
 					trackedItem.URI,
 					float64(index+1)/float64(len(downloadQueue))*100,
-				),
-			)
+				), "module", m.Key)
 
 			m.multiProxy.waitGroup.Add(1)
 			proxy := m.getFreeProxy()
@@ -145,10 +139,8 @@ func (m *fourChan) processDownloadQueueMultiProxy(downloadQueue []models.Downloa
 
 	// handle if errors occurred in previous downloads
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-		log.WithField("module", m.Key).Warnf(
-			"error occurred during download for proxy: %s",
-			erroneousProxy.proxy.Host,
-		)
+		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+			erroneousProxy.proxy.Host,), "module", m.Key)
 		return m.getProxyError().occurredError
 	}
 
@@ -171,10 +163,8 @@ func (m *fourChan) downloadItemSession(
 			return
 		}
 
-		log.WithField("module", m.Key).Warnf(
-			"received status code 404 on gallery url \"%s\"",
-			downloadQueueItem.FileURI,
-		)
+		slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\"",
+			downloadQueueItem.FileURI,), "module", m.Key)
 	}
 
 	downloadSession.inUse = false
@@ -196,10 +186,8 @@ func (m *fourChan) downloadImageSession(
 	}
 
 	if res.StatusCode == 429 {
-		log.WithField("module", m.Key).Warnf(
-			"received status code 429 on gallery url \"%s\"",
-			downloadQueueItem.FileURI,
-		)
+		slog.Warn(fmt.Sprintf("received status code 429 on gallery url \"%s\"",
+			downloadQueueItem.FileURI,), "module", m.Key)
 		time.Sleep(time.Second * 5)
 
 		return m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index)
@@ -218,10 +206,8 @@ func (m *fourChan) downloadImageSession(
 			// bump the file’s mtime so that ordering by time == ordering by index
 			if info, statErr := os.Stat(dst); statErr == nil && !info.IsDir() {
 				if chtErr := os.Chtimes(dst, startTime, startTime); chtErr != nil {
-					log.WithField("module", m.Key).Warnf(
-						"failed to reset timestamp for %s: %v",
-						dst, chtErr,
-					)
+					slog.Warn(fmt.Sprintf("failed to reset timestamp for %s: %v",
+						dst, chtErr,), "module", m.Key)
 				}
 			}
 
@@ -244,10 +230,8 @@ func (m *fourChan) downloadImageSession(
 
 		return downloadErr
 	} else {
-		log.WithField("module", m.Key).Warnf(
-			"received status code 404 on gallery url \"%s\"",
-			downloadQueueItem.FileURI,
-		)
+		slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\"",
+			downloadQueueItem.FileURI,), "module", m.Key)
 
 		// it's completely normal for 404 errors to occur on that website. the image just doesn't exist anymore,
 		// so log a warning and return nil

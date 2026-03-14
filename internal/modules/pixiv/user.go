@@ -8,7 +8,7 @@ import (
 	mobileapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/mobile_api"
 	pixivapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/pixiv_api"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *pixiv) parseUser(item *models.TrackedItem) error {
@@ -18,10 +18,8 @@ func (m *pixiv) parseUser(item *models.TrackedItem) error {
 	if err != nil {
 		switch err.(type) {
 		case pixivapi.UserUnavailableError:
-			log.WithField("module", m.Key).Warningf(
-				"couldn't retrieve user details, changing artist to complete (%s)",
-				item.URI,
-			)
+			slog.Warn(fmt.Sprintf("couldn't retrieve user details, changing artist to complete (%s)",
+				item.URI,), "module", m.Key)
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 
 			return nil

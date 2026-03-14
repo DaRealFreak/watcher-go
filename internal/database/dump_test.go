@@ -2,7 +2,6 @@ package database
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"testing"
 
@@ -23,7 +22,7 @@ var dbIO *DbIO
 func TestMain(m *testing.M) {
 	f, err := os.CreateTemp("", "*.db")
 	if err != nil {
-		log.Fatal("couldn't create temporary database file for unit tests", err)
+		panic("couldn't create temporary database file for unit tests: " + err.Error())
 	}
 
 	// close the file, set the database path and remove the temporary file

@@ -15,7 +15,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 
 	// imports of 3rd party libraries to register image formats to decoder
 	_ "golang.org/x/image/bmp"
@@ -83,7 +83,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 
 	args = append(args, "-loop", "0", filepath.Join(fData.WorkPath, h.outputFileName+"."+fExt))
 
-	log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+	slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 	cmd := exec.Command(executable, args...)
 	err = cmd.Start()
@@ -177,7 +177,7 @@ func (h *Helper) guessImageFormat(r io.Reader) (format string, err error) {
 // to convert images to videos from different image formats.
 // So we convert frames to PNG with ImageMagick and try to create the video again
 func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]byte, error) {
-	log.Debug("using image format fallback to PNG")
+	slog.Debug("using image format fallback to PNG")
 
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		executable, args := imaging.GetImageMagickEnv("convert")
@@ -185,7 +185,7 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 		args = append(args, fData.FilePaths[i], newFilePath)
 		fData.FilePaths[i] = newFilePath
 
-		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+		slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 		cmd := exec.Command(executable, args...)
 		err := cmd.Start()
@@ -204,7 +204,7 @@ func (h *Helper) imageFormatFallback(fData *FileData, fExt string, del bool) ([]
 }
 
 func (h *Helper) resizeImagesForAnimation(fData *FileData) error {
-	log.Debug("resizing images for animations (even width/height)")
+	slog.Debug("resizing images for animations (even width/height)")
 
 	for index, filePath := range fData.FilePaths {
 		fileExt := filepath.Ext(filePath)
@@ -219,7 +219,7 @@ func (h *Helper) resizeImagesForAnimation(fData *FileData) error {
 		args = append(args, newFilePath)
 		args = append(args, "-y")
 
-		log.Debugf("running command: %s %s", executable, strings.Join(args, " "))
+		slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 		cmd := exec.Command(executable, args...)
 		err := cmd.Start()

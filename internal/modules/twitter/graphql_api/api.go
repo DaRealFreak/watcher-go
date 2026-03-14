@@ -16,7 +16,7 @@ import (
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"golang.org/x/time/rate"
 )
 
@@ -109,10 +109,8 @@ func (a *TwitterGraphQlAPI) handleGetRequest(apiRequestURL string, values url.Va
 			// try to use a fallback auth token if available
 			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
 				// inform user about the session termination
-				log.WithField("module", a.moduleKey).Warnf(
-					"received 401 status code for URI \"%s\", session got probably terminated",
-					requestURL.String(),
-				)
+				slog.Warn(fmt.Sprintf("received 401 status code for URI \"%s\", session got probably terminated",
+					requestURL.String(),), "module", a.moduleKey)
 
 				twitterURL, _ := url.Parse("https://x.com")
 				currentCookies := a.Session.GetCookies(twitterURL)
@@ -130,10 +128,8 @@ func (a *TwitterGraphQlAPI) handleGetRequest(apiRequestURL string, values url.Va
 				return a.handleGetRequest(apiRequestURL, values)
 			}
 		case SessionRefreshError:
-			log.WithField("module", a.moduleKey).Warnf(
-				"received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
-				requestURL.String(),
-			)
+			slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
+				requestURL.String(),), "module", a.moduleKey)
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}
@@ -154,10 +150,8 @@ func (a *TwitterGraphQlAPI) handlePostRequest(apiRequestURL string, values url.V
 			// try to use a fallback auth token if available
 			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
 				// inform user about the session termination
-				log.WithField("module", a.moduleKey).Warnf(
-					"received 401 status code for URI \"%s\", session got probably terminated",
-					requestURL.String(),
-				)
+				slog.Warn(fmt.Sprintf("received 401 status code for URI \"%s\", session got probably terminated",
+					requestURL.String(),), "module", a.moduleKey)
 
 				twitterURL, _ := url.Parse("https://x.com")
 				currentCookies := a.Session.GetCookies(twitterURL)
@@ -175,10 +169,8 @@ func (a *TwitterGraphQlAPI) handlePostRequest(apiRequestURL string, values url.V
 				return a.handlePostRequest(apiRequestURL, values)
 			}
 		case SessionRefreshError:
-			log.WithField("module", a.moduleKey).Warnf(
-				"received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
-				requestURL.String(),
-			)
+			slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
+				requestURL.String(),), "module", a.moduleKey)
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}

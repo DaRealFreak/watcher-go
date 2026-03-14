@@ -9,13 +9,14 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/duplication"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"time"
+	"context"
 )
 
 type downloadQueueItemNAPI struct {
@@ -62,10 +63,8 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 				// 404 and 400 errors are mostly caused by expired CSRF tokens, not exactly sure where to refresh it
 				// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
 				if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
-					log.WithField("module", m.Key).Warnf(
-						"error occurred downloading item %s (%s) with multi-proxy: %s, re-login",
-						trackedItem.URI, downloadQueue[0].itemID, err.Error(),
-					)
+					slog.Warn(fmt.Sprintf("error occurred downloading item %s (%s) with multi-proxy: %s, re-login",
+						trackedItem.URI, downloadQueue[0].itemID, err.Error(),), "module", m.Key)
 					os.Exit(-1)
 					if successfulLogin := m.Login(m.nAPI.Account); successfulLogin {
 						return m.Parse(trackedItem)
@@ -76,25 +75,19 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			return err
 		}
 	} else {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI),
-		)
+		slog.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 		for _, notification := range notifications {
-			log.WithField("module", m.Key).Log(
-				notification.Level,
-				notification.Message,
-			)
+			slog.Log(context.Background(), 
+				notification.Level, notification.Message, "module", m.Key)
 		}
 
 		for index, deviationItem := range downloadQueue {
-			log.WithField("module", m.Key).Info(
-				fmt.Sprintf(
+			slog.Info(fmt.Sprintf(
 					"downloading updates for uri: %s (%0.2f%%)",
 					trackedItem.URI,
 					float64(index+1)/float64(len(downloadQueue))*100,
-				),
-			)
+				), "module", m.Key)
 
 			if err := m.downloadDeviationNapi(trackedItem, deviationItem, nil, true); err != nil {
 				return err
@@ -137,9 +130,7 @@ func (m *deviantArt) downloadDeviationNapi(
 			}
 
 			if watchRes.Success {
-				log.WithField("module", m.Key).Info(
-					fmt.Sprintf("followed user \"%s\" for deviation", res.Deviation.Author.Username),
-				)
+				slog.Info(fmt.Sprintf("followed user \"%s\" for deviation", res.Deviation.Author.Username), "module", m.Key)
 			} else {
 				return fmt.Errorf("unable to follow user \"%s\" for deviation, skipping", res.Deviation.Author.Username)
 			}
@@ -155,9 +146,7 @@ func (m *deviantArt) downloadDeviationNapi(
 				}
 
 				if watchRes.Success {
-					log.WithField("module", m.Key).Info(
-						fmt.Sprintf("unfollowed user \"%s\" after downloading deviation", res.Deviation.Author.Username),
-					)
+					slog.Info(fmt.Sprintf("unfollowed user \"%s\" after downloading deviation", res.Deviation.Author.Username), "module", m.Key)
 				} else {
 					return fmt.Errorf("unable to unfollow user \"%s\" for deviation, skipping", res.Deviation.Author.Username)
 				}
@@ -166,11 +155,9 @@ func (m *deviantArt) downloadDeviationNapi(
 			return nil
 		}
 
-		log.WithField("module", m.Key).Warnf(
-			"no access to deviation \"%s\", deviation is only available to %s, skipping",
+		slog.Warn(fmt.Sprintf("no access to deviation \"%s\", deviation is only available to %s, skipping",
 			deviationItem.deviation.URL,
-			res.Deviation.PremiumFolderData.Type,
-		)
+			res.Deviation.PremiumFolderData.Type,), "module", m.Key)
 		return nil
 	}
 
@@ -228,11 +215,9 @@ func (m *deviantArt) downloadDeviationNapi(
 	// ──────────────────────────────────────────────────────────────
 	for _, additionalMedia := range deviationItem.deviation.Extended.AdditionalMedia {
 		if additionalMedia.Media.BaseUri != "" {
-			log.WithField("module", m.Key).Debugf(
-				"downloading additional media: %s (%s bytes)",
+			slog.Debug(fmt.Sprintf("downloading additional media: %s (%s bytes)",
 				additionalMedia.Media.BaseUri,
-				additionalMedia.FileSize.String(),
-			)
+				additionalMedia.FileSize.String(),), "module", m.Key)
 
 			if additionalMedia.Media.Token != nil && additionalMedia.Media.Token.GetToken() != "" {
 				fileUri, _ := url.Parse(additionalMedia.Media.BaseUri)
@@ -321,9 +306,7 @@ func (m *deviantArt) downloadDeviationNapi(
 
 		if info, infoErr := os.Stat(f); infoErr == nil && !info.IsDir() {
 			if err = os.Chtimes(f, t, t); err != nil {
-				log.WithField("module", m.Key).Warnf(
-					"failed to reset timestamp for %s: %v", f, err,
-				)
+				slog.Warn(fmt.Sprintf("failed to reset timestamp for %s: %v", f, err,), "module", m.Key)
 			}
 		}
 	}
@@ -354,7 +337,7 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 				fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 			),
 		)
-		log.WithField("module", m.Key).Debugf("downloading description: \"%s\"", filePath)
+		slog.Debug(fmt.Sprintf("downloading description: \"%s\"", filePath), "module", m.Key)
 
 		if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 			return err
@@ -384,7 +367,7 @@ func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI,
 			fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 		),
 	)
-	log.WithField("module", m.Key).Debugf("downloading literature: \"%s\"", filePath)
+	slog.Debug(fmt.Sprintf("downloading literature: \"%s\"", filePath), "module", m.Key)
 
 	if err = os.WriteFile(filePath, []byte(text), os.ModePerm); err != nil {
 		return err
@@ -499,9 +482,7 @@ func (m *deviantArt) downloadContentNapi(
 		sim, err := duplication.CheckForSimilarity(downloadFilePath, contentFilePath)
 		// if either the file couldn't be converted (probably different file type) or similarity is below 95%
 		if err == nil && sim >= 0.95 {
-			log.WithField("module", m.Key).Debug(
-				fmt.Sprintf(`content has higher match between download and content than configured, removing file %f`, sim),
-			)
+			slog.Debug(fmt.Sprintf(`content has higher match between download and content than configured, removing file %f`, sim), "module", m.Key)
 			return os.Remove(contentFilePath)
 		}
 	}

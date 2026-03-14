@@ -11,15 +11,15 @@ import (
 	"regexp"
 	"strings"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log/slog"
 )
 
 type youtube struct {
@@ -71,13 +71,13 @@ func (m *youtube) InitializeModule() {
 
 	if m.settings.CookieFileLocation != "" {
 		if _, err := os.Stat(m.settings.CookieFileLocation); os.IsNotExist(err) {
-			log.WithField("module", m.Key).Fatal(
-				"the cookie file could not be stated but could not be read",
-			)
+			slog.Error("the cookie file could not be stated but could not be read", "module", m.Key)
+			os.Exit(1)
 		}
 	} else {
-		log.WithField("module", m.Key).Warn(
+		slog.Warn(
 			"no cookie file location is set, potentially unable to download private/adult videos",
+			"module", m.Key,
 		)
 	}
 
@@ -89,8 +89,9 @@ func (m *youtube) InitializeModule() {
 			raven.CheckError(err)
 		}
 	} else {
-		log.WithField("module", m.Key).Warn(
+		slog.Warn(
 			"no archive file location is set, it'll download videos of lists and users multiple times",
+			"module", m.Key,
 		)
 	}
 
@@ -123,7 +124,7 @@ func (m *youtube) Parse(item *models.TrackedItem) error {
 		return cmdErr
 	}
 
-	log.Debugf("running command: yt-dlp %s", strings.Join(args, " "))
+	slog.Debug(fmt.Sprintf("running command: yt-dlp %s", strings.Join(args, " ")))
 	_, stderr, err := executeCommand(exec.Command("yt-dlp", args...))
 	if stderr.Len() > 0 {
 		return fmt.Errorf("running command returned error: %s", stderr.String())

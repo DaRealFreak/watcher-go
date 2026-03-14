@@ -7,22 +7,18 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/twitter/graphql_api"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet, trackedItem *models.TrackedItem) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for index, tweet := range downloadQueue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
-			),
-		)
+			), "module", m.Key)
 
 		downloadItems := tweet.DownloadItems()
 		for i := range downloadItems {
@@ -40,15 +36,11 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 			if err != nil {
 				switch err.(type) {
 				case graphql_api.DMCAError:
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"received 403 status code for URI \"%s\", content got most likely DMCA'd, skipping",
-						downloadItem.FileURI,
-					)
+					slog.Warn(fmt.Sprintf("received 403 status code for URI \"%s\", content got most likely DMCA'd, skipping",
+						downloadItem.FileURI,), "module", m.ModuleKey())
 				case graphql_api.DeletedMediaError:
-					log.WithField("module", m.ModuleKey()).Warnf(
-						"received 404 status code for URI \"%s\", content got most likely deleted, skipping",
-						downloadItem.FileURI,
-					)
+					slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", content got most likely deleted, skipping",
+						downloadItem.FileURI,), "module", m.ModuleKey())
 				default:
 					return err
 				}

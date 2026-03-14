@@ -3,17 +3,17 @@ package deviantart
 
 import (
 	"fmt"
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
+	"log/slog"
 	"regexp"
 	"sync"
 	"time"
@@ -119,7 +119,7 @@ func (m *deviantArt) Login(account *models.Account) bool {
 
 	// set the proxy if requested
 	if m.settings.Cloudflare.LoginWithoutProxy {
-		log.WithField("module", m.Key).Debug("setting proxy to false for login without proxy")
+		slog.Debug("setting proxy to false for login without proxy", "module", m.Key)
 		raven.CheckError(m.nAPI.UserSession.SetProxy(&http.ProxySettings{Enable: false}))
 	}
 
@@ -150,7 +150,7 @@ func (m *deviantArt) extractCsrfToken(item *models.TrackedItem) (csrfToken strin
 		return "", requestErr
 	}
 
-	jsonPattern := regexp.MustCompile(`.*\\"csrfToken\\":\\"(?P<Number>[^\\"]+)\\".*`)
+	jsonPattern := regexp.MustCompile(`.*window\.__CSRF_TOKEN__\s*=\s*'(?P<Number>[^']+)';.*`)
 	document, documentErr := goquery.NewDocumentFromReader(res.Body)
 	if documentErr != nil {
 		return "", err
@@ -180,7 +180,7 @@ func (m *deviantArt) Parse(item *models.TrackedItem) (err error) {
 	}
 
 	m.nAPI.CSRFToken = csrfToken
-	log.WithField("module", m.Key).Debugf("extracted new CSRF token: %s", csrfToken)
+	slog.Debug(fmt.Sprintf("extracted new CSRF token: %s", csrfToken), "module", m.Key)
 
 	switch {
 	case m.daPattern.artPattern.MatchString(item.URI):

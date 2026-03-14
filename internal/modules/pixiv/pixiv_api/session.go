@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -62,9 +62,7 @@ func (a *PixivAPI) Do(req *http.Request) (*http.Response, error) {
 
 func (a *PixivAPI) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= 3; try++ {
-		log.WithField("module", a.moduleKey).Debug(
-			fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try),
-		)
+		slog.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try), "module", a.moduleKey)
 
 		err = a.tryDownloadFile(filepath, uri)
 		if err != nil {

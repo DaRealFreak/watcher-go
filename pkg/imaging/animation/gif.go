@@ -6,8 +6,8 @@ import (
 	"image"
 	"image/color/palette"
 	"image/gif"
+	"log/slog"
 
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/draw"
 
 	// imports for registering formats to image decoder
@@ -25,7 +25,7 @@ const FileFormatGif = ".gif"
 // CreateAnimationGif creates a .gif (Graphics Interchange Format) file from the passed fileData.
 // If ImageMagick GIF creation fails we use a fallback method to retrieve a lower quality gif made with golang libraries
 func (h *Helper) CreateAnimationGif(fData *FileData) (content []byte, err error) {
-	log.Debugf("trying to create GIF animation with ImageMagick")
+	slog.Debug("trying to create GIF animation with ImageMagick")
 
 	return h.createAnimationGifImageMagick(fData)
 }

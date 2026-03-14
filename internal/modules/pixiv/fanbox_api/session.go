@@ -3,7 +3,7 @@ package fanboxapi
 import (
 	"fmt"
 	http "github.com/bogdanfinn/fhttp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -36,9 +36,7 @@ func (a *FanboxAPI) do(req *http.Request) (*http.Response, error) {
 
 func (a *FanboxAPI) DownloadFile(filepath string, uri string) (err error) {
 	for try := 1; try <= 3; try++ {
-		log.WithField("module", a.Key).Debug(
-			fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try),
-		)
+		slog.Debug(fmt.Sprintf("downloading file: \"%s\" (uri: %s, try: %d)", filepath, uri, try), "module", a.Key)
 
 		err = a.tryDownloadFile(filepath, uri)
 		if err != nil {

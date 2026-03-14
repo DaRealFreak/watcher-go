@@ -4,30 +4,25 @@ import (
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"path"
+	"context"
 )
 
 func (m *chounyuu) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
-		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
-	)
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), 
+			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key).Info(
-			fmt.Sprintf(
+		slog.Info(fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
-			),
-		)
+			), "module", m.Key)
 
 		err := m.Session.DownloadFile(
 			path.Join(
@@ -42,10 +37,8 @@ func (m *chounyuu) processDownloadQueue(downloadQueue []models.DownloadQueueItem
 		if err != nil {
 			switch err.(type) {
 			case DeletedMediaError:
-				log.WithField("module", m.ModuleKey()).Warnf(
-					"received 404 status code for URI \"%s\", content got most likely deleted, skipping",
-					data.FileURI,
-				)
+				slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", content got most likely deleted, skipping",
+					data.FileURI,), "module", m.ModuleKey())
 			default:
 				return err
 			}

@@ -2,6 +2,7 @@
 package ehentai
 
 import (
+	"context"
 	"fmt"
 	http2 "net/http"
 	"net/url"
@@ -11,17 +12,17 @@ import (
 	"sync"
 	"time"
 
-	formatter "github.com/DaRealFreak/colored-nested-formatter"
+	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
+	"log/slog"
 )
 
 // ehentai contains the implementation of the ModuleInterface and extends it by custom-required values
@@ -226,24 +227,23 @@ func (m *ehentai) Parse(item *models.TrackedItem) (err error) {
 
 // processDownloadQueue processes the download queue consisting of gallery items
 func (m *ehentai) processDownloadQueue(downloadQueue []*imageGalleryItem, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
-	log.WithField("module", m.Key).Info(
+	slog.Info(
 		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+		"module", m.Key,
 	)
 
 	for _, notification := range notifications {
-		log.WithField("module", m.Key).Log(
-			notification.Level,
-			notification.Message,
-		)
+		slog.Log(context.Background(), notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
-		log.WithField("module", m.Key).Info(
+		slog.Info(
 			fmt.Sprintf(
 				"downloading updates for uri: \"%s\" (%0.2f%%)",
 				trackedItem.URI,
 				float64(index+1)/float64(len(downloadQueue))*100,
 			),
+			"module", m.Key,
 		)
 
 		if err := m.downloadItem(trackedItem, data); err != nil {
@@ -268,10 +268,11 @@ func (m *ehentai) downloadItem(trackedItem *models.TrackedItem, data *imageGalle
 				return fallbackErr
 			}
 
-			log.WithField("module", m.Key).Warnf(
-				"received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
-				data.uri,
-				fallback.FileURI,
+			slog.Warn(
+				fmt.Sprintf("received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+					data.uri,
+					fallback.FileURI),
+				"module", m.Key,
 			)
 
 			downloadQueueItem.FileURI = fallback.FileURI
@@ -302,7 +303,7 @@ func (m *ehentai) downloadImage(trackedItem *models.TrackedItem, downloadQueueIt
 			return m.downloadImage(trackedItem, downloadQueueItem)
 		}
 
-		log.WithField("module", m.Key).Info("download limit reached, skipping galleries from now on")
+		slog.Info("download limit reached, skipping galleries from now on", "module", m.Key)
 		m.downloadLimitReached = true
 
 		return fmt.Errorf("download limit reached")

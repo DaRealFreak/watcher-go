@@ -6,7 +6,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -29,11 +29,9 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 
 	if strings.ToLower(userInfo.User.Username) != username {
 		uri := fmt.Sprintf("https://www.deviantart.com/%s", userInfo.User.GetUsernameUrl())
-		log.WithField("module", m.ModuleKey()).Warnf(
-			"author changed its name, updated tracked uri from \"%s\" to \"%s\"",
+		slog.Warn(fmt.Sprintf("author changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
-			uri,
-		)
+			uri,), "module", m.ModuleKey())
 
 		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}
