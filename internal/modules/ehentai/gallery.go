@@ -55,7 +55,7 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 			if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
 				slog.Warn(fmt.Sprintf("gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 					galleryTitle,
-					blacklistedTag,), "module", m.Key)
+					blacklistedTag), "module", m.Key)
 				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 				return nil
 			}
@@ -145,7 +145,7 @@ func (m *ehentai) getGalleryImageUrls(html string, galleryTitle string) []*image
 // hasGalleryErrors checks if the gallery has any errors and should be skipped
 func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool, *models.TrackedItem) {
 	if strings.Contains(html, "There are newer versions of this gallery available") {
-		slog.Info("newer version of gallery available, updating uri of: " + item.URI, "module", m.Key)
+		slog.Info("newer version of gallery available, updating uri of: "+item.URI, "module", m.Key)
 
 		document, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 		newGalleryLinks := document.Find("#gnd > a")
@@ -156,7 +156,7 @@ func (m *ehentai) hasGalleryErrors(item *models.TrackedItem, html string) (bool,
 			url, exists := row.Attr("href")
 			if exists {
 				newGalleryItem = m.DbIO.GetFirstOrCreateTrackedItem(url, m.getSubFolder(item), m)
-				slog.Info("added gallery to tracked items: " + url, "module", m.Key)
+				slog.Info("added gallery to tracked items: "+url, "module", m.Key)
 			}
 		})
 

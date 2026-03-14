@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	http "github.com/bogdanfinn/fhttp"
-	"log/slog"
 	"io"
+	"log/slog"
 	"strings"
 	"time"
 )

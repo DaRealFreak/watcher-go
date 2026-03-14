@@ -140,23 +140,23 @@ func (m *ehentai) parseSearch(item *models.TrackedItem) error {
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.uri, m.getSubFolder(item), m)
 		if m.ipBanned {
 			slog.Info(fmt.Sprintf(
-					"download limit reached, skipping galleries for search item: \"%s\" (%0.2f%%)",
-					item.URI,
-					float64(index+1)/float64(len(itemQueue))*100,
-				), "module", m.Key)
+				"download limit reached, skipping galleries for search item: \"%s\" (%0.2f%%)",
+				item.URI,
+				float64(index+1)/float64(len(itemQueue))*100,
+			), "module", m.Key)
 			break
 		}
 
 		if !galleryItem.Complete {
 			slog.Info(fmt.Sprintf(
-					"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
-					gallery.uri,
-					item.URI,
-					float64(index+1)/float64(len(itemQueue))*100,
-				), "module", m.Key)
+				"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
+				gallery.uri,
+				item.URI,
+				float64(index+1)/float64(len(itemQueue))*100,
+			), "module", m.Key)
 
 			if err = m.Parse(galleryItem); err != nil {
-				slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),), "module", item.Module)
+				slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error()), "module", item.Module)
 				return err
 			}
 		}

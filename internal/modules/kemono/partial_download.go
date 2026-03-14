@@ -99,7 +99,7 @@ func (m *kemono) downloadChunks(url, outFile string, chunkSize int64, retries in
 						slog.Warn(fmt.Sprintf("error writing chunk %d-%d: %v",
 							offset,
 							end,
-							copyErr,), "module", m.Key)
+							copyErr), "module", m.Key)
 					} else {
 						success = true
 						break

@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	"log/slog"
 	"golang.org/x/time/rate"
-	"context"
+	"log/slog"
 )
 
 type proxySession struct {
@@ -104,7 +104,7 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		slog.Log(context.Background(), 
+		slog.Log(context.Background(),
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
@@ -118,16 +118,16 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 		// handle if errors occurred in previous downloads
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
 			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
-				erroneousProxy.proxy.Host,), "module", m.Key)
+				erroneousProxy.proxy.Host), "module", m.Key)
 			return m.getProxyError().occurredError
 		}
 
 		if m.hasFreeProxy() {
 			slog.Info(fmt.Sprintf(
-					"downloading updates for uri: \"%s\" (%0.2f%%)",
-					trackedItem.URI,
-					float64(index+1)/float64(len(downloadQueue))*100,
-				), "module", m.Key)
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			), "module", m.Key)
 
 			m.multiProxy.waitGroup.Add(1)
 			proxy := m.getFreeProxy()
@@ -145,7 +145,7 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	// handle if errors occurred in previous downloads
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
 		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
-			erroneousProxy.proxy.Host,), "module", m.Key)
+			erroneousProxy.proxy.Host), "module", m.Key)
 		return m.getProxyError().occurredError
 	}
 
@@ -188,7 +188,7 @@ func (m *ehentai) downloadItemSession(
 
 		slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
 			data.uri,
-			fallback.FileURI,), "module", m.Key)
+			fallback.FileURI), "module", m.Key)
 
 		downloadQueueItem.FileURI = fallback.FileURI
 		downloadQueueItem.FallbackFileURI = ""

@@ -1,6 +1,7 @@
 package deviantart
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/DaRealFreak/watcher-go/internal/http"
@@ -16,7 +17,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-	"context"
 )
 
 type downloadQueueItemNAPI struct {
@@ -64,7 +64,7 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 				// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
 				if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
 					slog.Warn(fmt.Sprintf("error occurred downloading item %s (%s) with multi-proxy: %s, re-login",
-						trackedItem.URI, downloadQueue[0].itemID, err.Error(),), "module", m.Key)
+						trackedItem.URI, downloadQueue[0].itemID, err.Error()), "module", m.Key)
 					os.Exit(-1)
 					if successfulLogin := m.Login(m.nAPI.Account); successfulLogin {
 						return m.Parse(trackedItem)
@@ -78,16 +78,16 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 		slog.Info(fmt.Sprintf("found %d new items for uri: %s", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 		for _, notification := range notifications {
-			slog.Log(context.Background(), 
+			slog.Log(context.Background(),
 				notification.Level, notification.Message, "module", m.Key)
 		}
 
 		for index, deviationItem := range downloadQueue {
 			slog.Info(fmt.Sprintf(
-					"downloading updates for uri: %s (%0.2f%%)",
-					trackedItem.URI,
-					float64(index+1)/float64(len(downloadQueue))*100,
-				), "module", m.Key)
+				"downloading updates for uri: %s (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			), "module", m.Key)
 
 			if err := m.downloadDeviationNapi(trackedItem, deviationItem, nil, true); err != nil {
 				return err
@@ -157,7 +157,7 @@ func (m *deviantArt) downloadDeviationNapi(
 
 		slog.Warn(fmt.Sprintf("no access to deviation \"%s\", deviation is only available to %s, skipping",
 			deviationItem.deviation.URL,
-			res.Deviation.PremiumFolderData.Type,), "module", m.Key)
+			res.Deviation.PremiumFolderData.Type), "module", m.Key)
 		return nil
 	}
 
@@ -217,7 +217,7 @@ func (m *deviantArt) downloadDeviationNapi(
 		if additionalMedia.Media.BaseUri != "" {
 			slog.Debug(fmt.Sprintf("downloading additional media: %s (%s bytes)",
 				additionalMedia.Media.BaseUri,
-				additionalMedia.FileSize.String(),), "module", m.Key)
+				additionalMedia.FileSize.String()), "module", m.Key)
 
 			if additionalMedia.Media.Token != nil && additionalMedia.Media.Token.GetToken() != "" {
 				fileUri, _ := url.Parse(additionalMedia.Media.BaseUri)
@@ -306,7 +306,7 @@ func (m *deviantArt) downloadDeviationNapi(
 
 		if info, infoErr := os.Stat(f); infoErr == nil && !info.IsDir() {
 			if err = os.Chtimes(f, t, t); err != nil {
-				slog.Warn(fmt.Sprintf("failed to reset timestamp for %s: %v", f, err,), "module", m.Key)
+				slog.Warn(fmt.Sprintf("failed to reset timestamp for %s: %v", f, err), "module", m.Key)
 			}
 		}
 	}

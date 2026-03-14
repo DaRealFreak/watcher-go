@@ -16,8 +16,8 @@ import (
 	"time"
 
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
-	"log/slog"
 	"golang.org/x/time/rate"
+	"log/slog"
 )
 
 const CookieAuth = "auth_token"
@@ -110,7 +110,7 @@ func (a *TwitterGraphQlAPI) handleGetRequest(apiRequestURL string, values url.Va
 			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
 				// inform user about the session termination
 				slog.Warn(fmt.Sprintf("received 401 status code for URI \"%s\", session got probably terminated",
-					requestURL.String(),), "module", a.moduleKey)
+					requestURL.String()), "module", a.moduleKey)
 
 				twitterURL, _ := url.Parse("https://x.com")
 				currentCookies := a.Session.GetCookies(twitterURL)
@@ -129,7 +129,7 @@ func (a *TwitterGraphQlAPI) handleGetRequest(apiRequestURL string, values url.Va
 			}
 		case SessionRefreshError:
 			slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
-				requestURL.String(),), "module", a.moduleKey)
+				requestURL.String()), "module", a.moduleKey)
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}
@@ -151,7 +151,7 @@ func (a *TwitterGraphQlAPI) handlePostRequest(apiRequestURL string, values url.V
 			if a.authTokenFallbackIndex < len(a.settings.FallbackAuthTokens) {
 				// inform user about the session termination
 				slog.Warn(fmt.Sprintf("received 401 status code for URI \"%s\", session got probably terminated",
-					requestURL.String(),), "module", a.moduleKey)
+					requestURL.String()), "module", a.moduleKey)
 
 				twitterURL, _ := url.Parse("https://x.com")
 				currentCookies := a.Session.GetCookies(twitterURL)
@@ -170,7 +170,7 @@ func (a *TwitterGraphQlAPI) handlePostRequest(apiRequestURL string, values url.V
 			}
 		case SessionRefreshError:
 			slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", session probably needs a refresh after 429 status code",
-				requestURL.String(),), "module", a.moduleKey)
+				requestURL.String()), "module", a.moduleKey)
 			if err = a.InitializeSession(); err != nil {
 				return nil, err
 			}

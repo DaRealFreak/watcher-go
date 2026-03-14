@@ -90,7 +90,7 @@ func (m *deviantArt) parseCollectionNapi(item *models.TrackedItem) error {
 		)
 		slog.Warn(fmt.Sprintf("collection owner changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
-			uri,), "module", m.ModuleKey())
+			uri), "module", m.ModuleKey())
 
 		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}

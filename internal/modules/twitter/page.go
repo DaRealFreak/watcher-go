@@ -92,7 +92,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		if len(tombstoneEntries) > 0 {
 			slog.Warn(fmt.Sprintf("found %d tombstone entries for user %s, check your profile for location settings and IP location, skipping",
 				len(tombstoneEntries),
-				screenName,), "module", m.ModuleKey())
+				screenName), "module", m.ModuleKey())
 			return nil
 		}
 
@@ -107,20 +107,20 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 				followRequestSent := user.Data.User.Result.Legacy.FollowRequestSent
 				if followRequestSent == nil || !*followRequestSent {
 					slog.Warn(fmt.Sprintf("user %s is protected, but no follow request sent, skipping",
-						screenName,), "module", m.ModuleKey())
+						screenName), "module", m.ModuleKey())
 				} else {
 					slog.Warn(fmt.Sprintf("user %s is protected, but follow request sent, waiting for approval",
-						screenName,), "module", m.ModuleKey())
+						screenName), "module", m.ModuleKey())
 				}
 			} else if user.Data.User.Result.TypeName != nil && *user.Data.User.Result.TypeName == "UserUnavailable" {
 				// we only want to check entries if we are not in search mode, and we should have at least one entry
 				slog.Warn(fmt.Sprintf("user %s is unavailable anymore, reason from twitter: %s",
 					screenName,
-					*user.Data.User.Result.Reason,), "module", m.ModuleKey())
+					*user.Data.User.Result.Reason), "module", m.ModuleKey())
 			} else {
 				// we only want to check entries if we are not in search mode, and we should have at least one entry
 				slog.Warn(fmt.Sprintf("no tweet entries found for user %s, possibly deleted",
-					screenName,), "module", m.ModuleKey())
+					screenName), "module", m.ModuleKey())
 			}
 
 			return nil
@@ -139,7 +139,7 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 					slog.Warn(fmt.Sprintf("author changed its name, updated tracked uri from \"%s\" to \"%s\"",
 						item.URI,
-						uri,), "module", m.ModuleKey())
+						uri), "module", m.ModuleKey())
 
 					m.DbIO.ChangeTrackedItemUri(item, uri)
 				}

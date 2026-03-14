@@ -9,8 +9,8 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/mitchellh/go-homedir"
-	"log/slog"
 	"github.com/spf13/cobra"
+	"log/slog"
 )
 
 // addGenerateAutoCompletionCommand adds the generate-autocomplete sub command

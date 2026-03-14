@@ -168,14 +168,14 @@ func (cli *CliApplication) initWatcher() {
 // initLogger initializes the logger
 func (cli *CliApplication) initLogger() {
 	handler := formatter.NewHandler(colorable.NewColorableStdout(), &formatter.Handler{
-		DisableColors:           cli.config.Cli.DisableColors,
-		ForceColors:             cli.config.Cli.ForceColors,
-		DisableTimestamp:        cli.config.Cli.DisableTimestamp,
-		UseUppercaseLevel:       cli.config.Cli.UseUppercaseLevel,
+		DisableColors:            cli.config.Cli.DisableColors,
+		ForceColors:              cli.config.Cli.ForceColors,
+		DisableTimestamp:         cli.config.Cli.DisableTimestamp,
+		UseUppercaseLevel:        cli.config.Cli.UseUppercaseLevel,
 		UseTimePassedAsTimestamp: cli.config.Cli.UseTimePassedAsTimestamp,
-		TimestampFormat:         time.StampMilli,
-		PadAllLogEntries:        true,
-		Level:                   cli.parseSlogLevel(cli.config.LogLevel),
+		TimestampFormat:          time.StampMilli,
+		PadAllLogEntries:         true,
+		Level:                    cli.parseSlogLevel(cli.config.LogLevel),
 	})
 	slog.SetDefault(slog.New(handler))
 }

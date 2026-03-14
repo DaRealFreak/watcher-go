@@ -31,7 +31,7 @@ func (m *deviantArt) parseUserNapi(item *models.TrackedItem) error {
 		uri := fmt.Sprintf("https://www.deviantart.com/%s", userInfo.User.GetUsernameUrl())
 		slog.Warn(fmt.Sprintf("author changed its name, updated tracked uri from \"%s\" to \"%s\"",
 			item.URI,
-			uri,), "module", m.ModuleKey())
+			uri), "module", m.ModuleKey())
 
 		m.DbIO.ChangeTrackedItemUri(item, uri)
 	}

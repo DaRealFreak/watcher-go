@@ -7,12 +7,12 @@ import (
 	"io"
 	"time"
 
+	"fmt"
 	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/models"
-	"log/slog"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
-	"fmt"
+	"log/slog"
 )
 
 // SankakuComplexApi contains all required items to communicate with the API

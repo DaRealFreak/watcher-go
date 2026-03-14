@@ -88,10 +88,10 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 	// add items
 	for index, gallery := range itemQueue {
 		slog.Info(fmt.Sprintf(
-				"added gallery to tracked items: \"%s\" (%0.2f%%)",
-				gallery,
-				float64(index+1)/float64(len(itemQueue))*100,
-			), "module", m.Key)
+			"added gallery to tracked items: \"%s\" (%0.2f%%)",
+			gallery,
+			float64(index+1)/float64(len(itemQueue))*100,
+		), "module", m.Key)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery, m.getSubFolder(item), m)
 		if m.Cfg.Run.Force && galleryItem.CurrentItem != "" {
@@ -102,7 +102,7 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 		}
 
 		if err = m.Parse(galleryItem); err != nil {
-			slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),), "module", item.Module)
+			slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error()), "module", item.Module)
 			continue
 		}
 

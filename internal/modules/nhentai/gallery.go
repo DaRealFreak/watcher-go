@@ -19,7 +19,7 @@ func (m *nhentai) parseGalleryFromApiResponse(
 		if strings.Contains(strings.ToLower(galleryTitle), strings.ToLower(blacklistedTag)) {
 			slog.Warn(fmt.Sprintf("gallery title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 				galleryTitle,
-				blacklistedTag,), "module", m.Key)
+				blacklistedTag), "module", m.Key)
 			m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 			return nil
 		}

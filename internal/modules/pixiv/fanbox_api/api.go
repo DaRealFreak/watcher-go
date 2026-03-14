@@ -44,7 +44,7 @@ func NewFanboxAPI(moduleKey string) *FanboxAPI {
 // and adds the round trippers to the session client
 func (a *FanboxAPI) AddRoundTrippers() {
 	if a.SessionCookie == nil {
-		slog.Error(fmt.Sprintf("required cookie %s does not exist or expired", CookieSession,), "module", a.Key)
+		slog.Error(fmt.Sprintf("required cookie %s does not exist or expired", CookieSession), "module", a.Key)
 		os.Exit(1)
 	}
 

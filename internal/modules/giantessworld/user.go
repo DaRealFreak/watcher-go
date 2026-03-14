@@ -112,7 +112,7 @@ func (m *giantessWorld) addNewStories(item *models.TrackedItem, newStories []sto
 		newItem := m.DbIO.GetFirstOrCreateTrackedItem(story.chapterURL, "", m)
 		if newItem.CurrentItem == "" {
 			// if story doesn't have a current item yet, it's probably a new story
-			slog.Info("added story to tracked items: " + story.chapterURL, "module", m.Key)
+			slog.Info("added story to tracked items: "+story.chapterURL, "module", m.Key)
 		}
 	}
 }

@@ -15,10 +15,10 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 
 	for index, tweet := range downloadQueue {
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			trackedItem.URI,
+			float64(index+1)/float64(len(downloadQueue))*100,
+		), "module", m.Key)
 
 		downloadItems := tweet.DownloadItems()
 		for i := range downloadItems {
@@ -37,10 +37,10 @@ func (m *twitter) processDownloadQueueGraphQL(downloadQueue []*graphql_api.Tweet
 				switch err.(type) {
 				case graphql_api.DMCAError:
 					slog.Warn(fmt.Sprintf("received 403 status code for URI \"%s\", content got most likely DMCA'd, skipping",
-						downloadItem.FileURI,), "module", m.ModuleKey())
+						downloadItem.FileURI), "module", m.ModuleKey())
 				case graphql_api.DeletedMediaError:
 					slog.Warn(fmt.Sprintf("received 404 status code for URI \"%s\", content got most likely deleted, skipping",
-						downloadItem.FileURI,), "module", m.ModuleKey())
+						downloadItem.FileURI), "module", m.ModuleKey())
 				default:
 					return err
 				}

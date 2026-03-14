@@ -39,7 +39,7 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 			if strings.Contains(strings.ToLower(threadTitle), strings.ToLower(blacklistedTag)) {
 				slog.Warn(fmt.Sprintf("thread title \"%s\" contains blacklisted tag \"%s\", setting item to complete",
 					threadTitle,
-					blacklistedTag,), "module", m.Key)
+					blacklistedTag), "module", m.Key)
 				m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 				return nil
 			}

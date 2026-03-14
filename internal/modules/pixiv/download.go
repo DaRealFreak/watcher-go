@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	fanboxapi "github.com/DaRealFreak/watcher-go/internal/modules/pixiv/fanbox_api"
@@ -20,7 +21,6 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/imaging/animation"
 	"log/slog"
-	"context"
 )
 
 type downloadQueueItem struct {
@@ -33,16 +33,16 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		slog.Log(context.Background(), 
+		slog.Log(context.Background(),
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			trackedItem.URI,
+			float64(index+1)/float64(len(downloadQueue))*100,
+		), "module", m.Key)
 
 		switch item := data.DownloadItem.(type) {
 		case mobileapi.Illustration:
@@ -64,7 +64,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 					if detailErr != nil {
 						slog.Error(fmt.Sprintf("failed to get illustration details for ID %d: %v",
 							item.ID,
-							detailErr,), "module", m.Key)
+							detailErr), "module", m.Key)
 					}
 					checkedIllustration = detail.Illustration
 				}
@@ -72,15 +72,15 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				for _, link := range links {
 					slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
 						link,
-						checkedIllustration.ID,), "module", m.Key)
+						checkedIllustration.ID), "module", m.Key)
 				}
 			}
 
 			if err != nil {
 				if e, ok := err.(tls_session.StatusError); ok && e.StatusCode == 404 {
 					slog.Warn(fmt.Sprintf("received 404 status code for URI \"https://www.pixiv.net/en/artworks/%d\", "+
-							"content got most likely deleted, skipping",
-						data.ItemID,), "module", m.ModuleKey())
+						"content got most likely deleted, skipping",
+						data.ItemID), "module", m.ModuleKey())
 				} else {
 					return err
 				}

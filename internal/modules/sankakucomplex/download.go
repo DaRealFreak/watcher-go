@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"log/slog"
-	"context"
 )
 
 type downloadQueue struct {
@@ -85,9 +85,9 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 
 		if time.Now().Unix() >= expiration {
 			slog.Info(fmt.Sprintf(
-					"links expired for uri, refreshing progress: \"%s\"",
-					trackedItem.URI,
-				), "module", m.Key)
+				"links expired for uri, refreshing progress: \"%s\"",
+				trackedItem.URI,
+			), "module", m.Key)
 
 			return true, m.Parse(trackedItem)
 		}
@@ -112,9 +112,9 @@ func (m *sankakuComplex) downloadDownloadQueueItem(trackedItem *models.TrackedIt
 
 	if expiration > 0 && time.Now().Unix() >= expiration {
 		slog.Info(fmt.Sprintf(
-				"links expired for uri, refreshing progress: \"%s\"",
-				trackedItem.URI,
-			), "module", m.Key)
+			"links expired for uri, refreshing progress: \"%s\"",
+			trackedItem.URI,
+		), "module", m.Key)
 
 		return true, m.Parse(trackedItem)
 	}
@@ -133,16 +133,16 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue.items)+len(downloadQueue.books), trackedItem.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		slog.Log(context.Background(), 
+		slog.Log(context.Background(),
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue.items {
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue.items))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			trackedItem.URI,
+			float64(index+1)/float64(len(downloadQueue.items))*100,
+		), "module", m.Key)
 
 		if expired, err := m.downloadDownloadQueueItem(trackedItem, data); expired || err != nil {
 			if err != nil {
@@ -172,10 +172,10 @@ func (m *sankakuComplex) processDownloadQueue(downloadQueue *downloadQueue, trac
 		}
 
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue.books))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			trackedItem.URI,
+			float64(index+1)/float64(len(downloadQueue.books))*100,
+		), "module", m.Key)
 
 		bookLanguage := ""
 		if len(data.bookLanguage) > 0 {

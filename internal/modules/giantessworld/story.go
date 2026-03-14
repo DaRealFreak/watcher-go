@@ -28,7 +28,7 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 
 	if bytes.Contains(htmlContent, []byte("Access denied. This story has not been validated by the adminstrators of this site.")) {
 		slog.Warn(fmt.Sprintf("story has been deleted: \"%s\", setting item to completed",
-			item.URI,), "module", m.Key)
+			item.URI), "module", m.Key)
 		m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
 
 		return nil
@@ -36,9 +36,9 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 
 	if item.CurrentItem == "" {
 		slog.Info(fmt.Sprintf(
-				"downloading initial chapter for uri: \"%s\"",
-				item.URI,
-			), "module", m.Key)
+			"downloading initial chapter for uri: \"%s\"",
+			item.URI,
+		), "module", m.Key)
 
 		err = m.downloadChapter(htmlContent, item)
 		if err != nil {
@@ -57,10 +57,10 @@ func (m *giantessWorld) parseStory(item *models.TrackedItem) error {
 
 		// download chapter updating the item and repeat the function for recursively going through story pages
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				item.URI,
-				float64(index+1)/float64(len(newChapters))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			item.URI,
+			float64(index+1)/float64(len(newChapters))*100,
+		), "module", m.Key)
 
 		err = m.downloadChapter(htmlContent, item)
 		if err != nil {

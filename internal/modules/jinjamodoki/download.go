@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/PuerkitoBio/goquery"
-	"log/slog"
 	"golang.org/x/time/rate"
-	"context"
+	"log/slog"
 )
 
 type downloadQueueItem struct {
@@ -30,16 +30,16 @@ func (m *jinjaModoki) processDownloadQueue(queue []downloadQueueItem, item *mode
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(queue), item.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		slog.Log(context.Background(), 
+		slog.Log(context.Background(),
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range queue {
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				item.URI,
-				float64(index+1)/float64(len(queue))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			item.URI,
+			float64(index+1)/float64(len(queue))*100,
+		), "module", m.Key)
 
 		if err := m.downloadItem(data, item); err != nil {
 			return err

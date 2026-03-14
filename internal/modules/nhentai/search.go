@@ -98,15 +98,15 @@ func (m *nhentai) parseSearch(item *models.TrackedItem) error {
 	// add items
 	for index, gallery := range itemQueue {
 		slog.Info(fmt.Sprintf(
-				"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
-				gallery.GetURL(),
-				item.URI,
-				float64(index+1)/float64(len(itemQueue))*100,
-			), "module", m.Key)
+			"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
+			gallery.GetURL(),
+			item.URI,
+			float64(index+1)/float64(len(itemQueue))*100,
+		), "module", m.Key)
 
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(gallery.GetURL(), m.getSubFolder(item), m)
 		if err = m.parseGalleryFromApiResponse(galleryItem, gallery); err != nil {
-			slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error(),), "module", item.Module)
+			slog.Warn(fmt.Sprintf("error occurred parsing item %s (%s), skipping", galleryItem.URI, err.Error()), "module", item.Module)
 			return err
 		}
 

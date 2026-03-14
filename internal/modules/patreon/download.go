@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
-	"context"
 	"log/slog"
 )
 
@@ -64,7 +64,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 				if attachment.Attributes.DownloadURL == "" {
 					slog.Warn(fmt.Sprintf("post %s not unlocked, skipping attachment %s",
 						data.PatreonURL,
-						attachment.ID,), "module", m.Key)
+						attachment.ID), "module", m.Key)
 
 					continue
 				}
@@ -88,7 +88,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			if m.settings.ExternalURLs.PrintExternalItems {
 				slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"",
 					externalURL,
-					data.PatreonURL,), "module", m.Key)
+					data.PatreonURL), "module", m.Key)
 			}
 
 			if m.settings.ExternalURLs.DownloadExternalItems {
@@ -110,7 +110,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					slog.Warn(fmt.Sprintf("unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
 						newItem.URI,
 						data.PatreonURL,
-						err.Error(),), "module", m.Key)
+						err.Error()), "module", m.Key)
 					if !m.settings.ExternalURLs.SkipErrorsForExternalURLs {
 						if deleteAfter {
 							m.DbIO.DeleteTrackedItem(newItem)

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
@@ -18,23 +19,22 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bogdanfinn/fhttp/http2"
 	"log/slog"
-	"context"
 )
 
 func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []api.QuickPost, notifications ...*models.Notification) error {
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI), "module", m.Key)
 
 	for _, notification := range notifications {
-		slog.Log(context.Background(), 
+		slog.Log(context.Background(),
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
 	for index, data := range downloadQueue {
 		slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				item.URI,
-				float64(index+1)/float64(len(downloadQueue))*100,
-			), "module", m.Key)
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			item.URI,
+			float64(index+1)/float64(len(downloadQueue))*100,
+		), "module", m.Key)
 
 		if err := m.downloadPost(item, data); err != nil {
 			return err
@@ -110,7 +110,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 			if errors.As(err, &e) && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
 				slog.Warn(fmt.Sprintf("received 404 status code error \"%s\", trying thumbnail fallback url \"%s\"",
 					err.Error(),
-					downloadItem.FallbackFileURI,), "module", m.Key)
+					downloadItem.FallbackFileURI), "module", m.Key)
 
 				if err = m.Session.DownloadFile(
 					path.Join(
@@ -138,7 +138,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 		if m.settings.ExternalURLs.PrintExternalItems {
 			slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"",
 				externalURL,
-				webUrl,), "module", m.Key)
+				webUrl), "module", m.Key)
 		}
 
 		if m.settings.ExternalURLs.DownloadExternalItems {
@@ -161,7 +161,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 					slog.Warn(fmt.Sprintf("unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
 						newItem.URI,
 						webUrl,
-						err.Error(),), "module", m.Key)
+						err.Error()), "module", m.Key)
 					if !m.settings.ExternalURLs.SkipErrorsForExternalURLs {
 						if deleteAfter {
 							m.DbIO.DeleteTrackedItem(newItem)
@@ -177,7 +177,7 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 			} else {
 				slog.Warn(fmt.Sprintf("unable to parse URL \"%s\" found in post \"%s\"",
 					externalURL,
-					webUrl,), "module", m.Key)
+					webUrl), "module", m.Key)
 			}
 		}
 	}
