@@ -3,6 +3,14 @@ package ehentai
 
 import (
 	"fmt"
+	http2 "net/http"
+	"net/url"
+	"path"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+
 	formatter "github.com/DaRealFreak/colored-nested-formatter"
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/std_session"
@@ -14,12 +22,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
-	"net/url"
-	"path"
-	"regexp"
-	"strings"
-	"sync"
-	"time"
 )
 
 // ehentai contains the implementation of the ModuleInterface and extends it by custom-required values
@@ -118,6 +120,28 @@ func (m *ehentai) InitializeModule() {
 	}
 }
 
+func (m *ehentai) SetCookies() {
+	sessionUrl, err := url.Parse(fmt.Sprintf("https://%s", m.Key))
+	if err != nil {
+		return
+	}
+
+	cookies := m.DbIO.GetAllCookies(m.Module)
+	sessionCookies := make([]*http2.Cookie, len(cookies))
+	for i, cookie := range cookies {
+		sessionCookies[i] = &http2.Cookie{
+			Name:   cookie.Name,
+			Value:  cookie.Value,
+			Domain: sessionUrl.Host,
+		}
+	}
+
+	if len(sessionCookies) > 0 && m.Session != nil {
+		// StdClientSessionInterface clearly supports cookies (you already use SetCookies in Login)
+		m.Session.SetCookies(sessionUrl, sessionCookies)
+	}
+}
+
 // AddModuleCommand adds custom module specific settings and commands to our application
 func (m *ehentai) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
@@ -143,7 +167,7 @@ func (m *ehentai) Login(account *models.Account) bool {
 
 	// check if we have a current session based on the stored session cookies
 	htmlResponse, _ := m.Session.GetDocument(res).Html()
-	m.LoggedIn = strings.Contains(htmlResponse, "You are currently at")
+	m.LoggedIn = strings.Contains(htmlResponse, "Your current key is")
 
 	if !m.LoggedIn {
 		// else try to log in (possibly broken due to them adding captchas sometimes)
