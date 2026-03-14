@@ -8,6 +8,10 @@
 Application to keep track of items from multiple sources with a local database.
 It will download any detected item and update the index in the database on completion of the download.
 
+## Requirements
+
+- **Go 1.24+** with CGO enabled (required for SQLite3)
+
 ## Dependencies
 
 Optional dependencies (some functionality may not be accessible without):
@@ -55,7 +59,7 @@ Global Flags:
       --log-force-colors            enforces colored output even for non-tty terminals
       --log-level-uppercase         transforms the log levels into upper case
       --log-timestamp-passed-time   uses the passed time since the program is running in seconds instead of a formatted time
-  -v, --verbosity string            log level (debug, info, warn, error, fatal, panic (default "info")
+  -v, --verbosity string            log level (debug, info, warn, error) (default "info")
 ```
 
 The sentry is disabled by default and has to be enabled before errors will be sent to the sentry server.
@@ -75,8 +79,9 @@ Flags for the `run` command are:
 Flags:
   -d, --directory string   download directory (will be saved in config file)
   -x, --disable strings    url of module you want don't want to run
-  -f, --force              forces to ignore previous progress
+  -f, --force              forces to ignore previous progress and blacklisted terms
   -p, --parallel           run modules parallel
+  -r, --reset-progress     forces to ignore previous progress
   -u, --url strings        url of module you want to run
 ```
 
@@ -315,7 +320,18 @@ yourself.
 
 ## Development
 
-Want to contribute? Great!  
+```bash
+# Build
+go build -v .
+
+# Run tests
+go test ./...
+
+# Lint (golangci-lint v2)
+golangci-lint run
+```
+
+Want to contribute? Great!
 I'm always glad hearing about bugs or pull requests.
 
 ## License
