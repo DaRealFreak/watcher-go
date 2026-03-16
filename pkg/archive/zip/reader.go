@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/pkg/archive"
 )
 
@@ -17,19 +16,23 @@ type zipArchiveReader struct {
 }
 
 // NewReader initializes the reader and returns the struct
-func NewReader(f io.Reader) archive.Reader {
+func NewReader(f io.Reader) (archive.Reader, error) {
 	// we have to convert the io.Reader to an io.ReaderAt for zip files, so copy the whole thing into a new buffer
 	buff := bytes.NewBuffer([]byte{})
 	size, err := io.Copy(buff, f)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 	// and create a bytes reader out of it (which implements all required functions of io.ReaderAt)
 	reader := bytes.NewReader(buff.Bytes())
 	zipReader, err := zip.NewReader(reader, size)
-	raven.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	return &zipArchiveReader{
 		zipReader: zipReader,
-	}
+	}, nil
 }
 
 // GetFiles returns all files in the archive

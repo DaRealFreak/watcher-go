@@ -23,7 +23,8 @@ func TestGetFiles(t *testing.T) {
 	f, err := os.Open(tmpArchiveFile.Name())
 	assertion.NoError(err)
 
-	reader := NewReader(f)
+	reader, err := NewReader(f)
+	assertion.NoError(err)
 	// archive
 	archivetest.GetFiles(t, reader)
 }
@@ -42,7 +43,8 @@ func TestGetFile(t *testing.T) {
 	f, err := os.Open(tmpArchiveFile.Name())
 	assertion.NoError(err)
 
-	archiveReader := NewReader(f)
+	archiveReader, err := NewReader(f)
+	assertion.NoError(err)
 	// test if all files exist and the content is equal
 	archivetest.GetFile(t, archiveReader)
 }

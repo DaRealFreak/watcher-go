@@ -55,7 +55,7 @@ func (app *Watcher) getArchiveReader(archiveName string) (reader archive.Reader,
 
 	switch {
 	case strings.HasSuffix(archiveName, zip.FileExt):
-		return zip.NewReader(file), nil
+		return zip.NewReader(file)
 	case strings.HasSuffix(archiveName, tar.FileExt):
 		return tar.NewReader(file), nil
 	case strings.HasSuffix(archiveName, gzip.FileExt):
