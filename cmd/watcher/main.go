@@ -46,6 +46,7 @@ func NewWatcherApplication() *CliApplication {
 	}
 	app.addPersistentFlags()
 	app.addAddCommand()
+	app.addImportCommand()
 	app.addListCommand()
 	app.addRunCommand()
 	app.addUpdateCommand()
