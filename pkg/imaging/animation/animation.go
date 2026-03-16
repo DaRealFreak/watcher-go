@@ -34,10 +34,13 @@ type FileData struct {
 	Frames          [][]byte
 	MsDelays        []int
 	FilePaths       []string
-	PreviousPath    string
 	WorkPath        string
 	ConvertedFrames bool
 }
+
+// imageMagickDelayDivisor is the conversion factor from milliseconds to ImageMagick delay ticks.
+// Empirically determined to best approximate correct animation length on ugoira works.
+const imageMagickDelayDivisor = 13
 
 // Helper contains the output settings and encapsulates the animation creation functions
 type Helper struct {
@@ -75,9 +78,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	for i := 0; i <= len(fData.Frames)-1; i++ {
 		args = append(args,
 			"-delay",
-			// don't ask me about the conversion rate, was the result of trying to approach
-			// the best length on multiple long ugoira works
-			fmt.Sprintf("%0.2f", float64(fData.MsDelays[i])/13),
+			fmt.Sprintf("%0.2f", float64(fData.MsDelays[i])/imageMagickDelayDivisor),
 			filepath.Base(fData.FilePaths[i]),
 		)
 	}
@@ -87,6 +88,7 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 	slog.Debug(fmt.Sprintf("running command: %s %s", executable, strings.Join(args, " ")))
 
 	cmd := exec.Command(executable, args...)
+	cmd.Dir = fData.WorkPath
 	err = cmd.Start()
 	if err == nil {
 		err = cmd.Wait()
@@ -112,8 +114,6 @@ func (h *Helper) createAnimationImageMagick(fData *FileData, fExt string, del bo
 
 	// option to keep converted mkv for further conversions
 	if del {
-		raven.CheckError(os.Chdir(fData.PreviousPath))
-
 		// clean up the created folder/files
 		defer raven.CheckPathRemoval(fData.WorkPath)
 	}
@@ -136,27 +136,17 @@ func (h *Helper) dumpFramesForImageMagick(fData *FileData) (err error) {
 		return err
 	}
 
-	// save previous directory path since we cd into the created temporary directory
-	// for converting images without using the full file path
-	// (max command length in windows is 8191, linux/darwin normally 128*1024)
-	fData.PreviousPath, err = os.Getwd()
-	raven.CheckError(err)
-
-	// change into directory
-	raven.CheckError(os.Chdir(fData.WorkPath))
-
 	// reset file paths to allow multiple conversions of one FileData struct
 	fData.FilePaths = []string{}
 	// dump frames into folder and append created file paths into the file data
 	for index, frame := range fData.Frames {
 		// guess the image format for the file extension
 		fType, err := h.guessImageFormat(bytes.NewReader(frame))
-		fPath := filepath.Join(fData.WorkPath, fmt.Sprintf("%d.%s", index+1, fType))
-
 		if err != nil {
 			return err
 		}
 
+		fPath := filepath.Join(fData.WorkPath, fmt.Sprintf("%d.%s", index+1, fType))
 		err = os.WriteFile(fPath, frame, 0644)
 		if err != nil {
 			return err
