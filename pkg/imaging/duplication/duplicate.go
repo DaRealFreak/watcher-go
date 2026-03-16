@@ -22,30 +22,28 @@ import (
 // CheckForSimilarity uses image magick to check for image similarity
 func CheckForSimilarity(file1 string, file2 string) (similarity float64, err error) {
 	f1, err := getFileResourceReader(file1)
+	if err != nil {
+		return 0, err
+	}
 	defer raven.CheckClosureNonFatal(f1)
 
+	f2, err := getFileResourceReader(file2)
 	if err != nil {
 		return 0, err
 	}
-
-	f2, err := getFileResourceReader(file2)
 	defer raven.CheckClosureNonFatal(f2)
 
-	if err != nil {
-		return 0, err
-	}
-
 	tmpFile1, err := copyToTempFile(f1)
-	defer raven.CheckFileRemoval(tmpFile1)
 	if err != nil {
 		return 0, err
 	}
+	defer raven.CheckFileRemoval(tmpFile1)
 
 	tmpFile2, err := copyToTempFile(f2)
-	defer raven.CheckFileRemoval(tmpFile2)
 	if err != nil {
 		return 0, err
 	}
+	defer raven.CheckFileRemoval(tmpFile2)
 
 	if err = resizeImage(tmpFile1.Name(), 400, 400); err != nil {
 		return 0, err
@@ -122,6 +120,7 @@ func getFileResourceReader(source string) (r *os.File, err error) {
 		if err != nil {
 			return nil, err
 		}
+		defer raven.CheckClosureNonFatal(resp.Body)
 
 		if _, err = io.Copy(f, resp.Body); err != nil {
 			return nil, err
