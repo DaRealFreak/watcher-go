@@ -30,13 +30,14 @@ These libraries can only generate a GIF file with 256 colors, so it is not recom
 
 These root commands are currently available with following functionality:
 
-```  
+```
 Available Commands:
   add                   add an item, account, OAuth2 client or cookie to the database
   backup                generates a backup of the current settings and database file
   completion            Generate the autocompletion script for the specified shell
   generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
   help                  Help about any command
+  import                import data from files into the database
   list                  lists items or accounts from the database
   module                lists the module specific commands and settings
   restore               restores the current settings/database from the passed backup archive
@@ -129,6 +130,30 @@ Flags:
       --client-secret string   OAuth2 client secret
       --refresh-token string   OAuth2 refresh token
   -u, --url string             url for the association of the OAuth2 client (required)
+```
+
+### Importing Cookies
+
+Cookies can be imported from Netscape/Mozilla format cookie files or directly from the clipboard.
+This is useful with browser extensions like "cookies.txt" that export cookies in this format.
+
+```
+Available Commands:
+  cookies            imports cookies from a Netscape cookie file
+  cookies-clipboard  imports cookies from clipboard (Netscape format)
+```
+
+The module is auto-detected from the cookie domain. You can override it with `--url`:
+
+```bash
+# Import from file (module auto-detected from cookie domain)
+watcher import cookies cookies.txt
+
+# Import from clipboard (copy cookies in browser extension, then run)
+watcher import cookies-clipboard
+
+# Explicitly specify the module
+watcher import cookies cookies.txt -u https://fantia.jp
 ```
 
 ### List Accounts/OAuth2 Clients/Cookies/Items/Modules
