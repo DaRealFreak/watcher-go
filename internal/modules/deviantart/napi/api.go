@@ -220,8 +220,9 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 
 	a.CSRFToken = info.CSRFToken
 
+	// Step 2: Submit username to /_sisu/do/step2
 	values := url.Values{
-		"referer":      {"https://www.deviantart.com"},
+		"referer":      {"https://www.deviantart.com/users/login"},
 		"referer_type": {""},
 		"csrf_token":   {info.CSRFToken},
 		"challenge":    {"0"},
@@ -231,7 +232,22 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	}
 
 	req, _ := http.NewRequest("POST", "https://www.deviantart.com/_sisu/do/step2", strings.NewReader(values.Encode()))
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
+	req.Header.Set("Referer", "https://www.deviantart.com/users/login")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://www.deviantart.com")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Priority", "u=0, i")
+
 	res, err = a.do(req)
 	if err != nil {
 		return err
@@ -246,12 +262,18 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 		return fmt.Errorf("could not retrieve lu_token2 token from login page")
 	}
 
-	// update tokens, reset username (taken from lu_token2 from DA serverside) and add password
-	values["csrf_token"] = []string{info.CSRFToken}
-	values["lu_token"] = []string{info.LuToken}
-	values["lu_token2"] = []string{info.LuToken2}
-	values["username"] = []string{""}
-	values["password"] = []string{account.Password}
+	// Step 3: Submit password to /_sisu/do/signin
+	values = url.Values{
+		"referer":      {"https://www.deviantart.com/_sisu/do/step2"},
+		"referer_type": {""},
+		"csrf_token":   {info.CSRFToken},
+		"challenge":    {"0"},
+		"lu_token":     {info.LuToken},
+		"lu_token2":    {info.LuToken2},
+		"username":     {""},
+		"password":     {account.Password},
+		"remember":     {"on"},
+	}
 
 	req, _ = http.NewRequest(
 		"POST",
