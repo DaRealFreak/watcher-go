@@ -55,7 +55,7 @@ func (h *Helper) CreateAnimationGifGo(fData *FileData) (content []byte, err erro
 
 		// append the new paletted image and the delay to the image
 		outGif.Image = append(outGif.Image, imageFilePaletted)
-		outGif.Delay = append(outGif.Delay, 0)
+		outGif.Delay = append(outGif.Delay, fData.MsDelays[i]/10)
 	}
 
 	f := new(bytes.Buffer)
