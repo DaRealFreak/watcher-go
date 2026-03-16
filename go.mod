@@ -3,9 +3,9 @@ module github.com/DaRealFreak/watcher-go
 go 1.25.0
 
 require (
-	github.com/DaRealFreak/colored-nested-formatter/v2 v2.0.0
+	github.com/DaRealFreak/colored-nested-formatter/v2 v2.0.1
 	github.com/EDDYCJY/fake-useragent v0.2.0
-	github.com/PuerkitoBio/goquery v1.11.0
+	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bogdanfinn/fhttp v0.6.8
 	github.com/bogdanfinn/tls-client v1.14.0
