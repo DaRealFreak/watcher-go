@@ -31,9 +31,7 @@ func getLinksFromHtml(html string) (links []string) {
 				fullURL += afterAnchor
 			}
 
-			if !strings.Contains(fullURL, ".fanbox.cc/") && !strings.Contains(fullURL, "discord.gg/") {
-				links = append(links, fullURL)
-			}
+			links = append(links, fullURL)
 		}
 	})
 

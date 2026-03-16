@@ -212,7 +212,7 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 	htmlLinks := linkfinder.GetLinks(html)
 	for _, link := range htmlLinks {
 		if !strings.Contains(link, ".fanbox.cc/") && !strings.Contains(link, "discord.gg/") {
-			links = append(links, link)
+			links = append(links, strings.Replace(link, "http://", "https://", 1))
 		}
 	}
 
@@ -225,7 +225,7 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 			commentLinks := linkfinder.GetLinks(comment.Content)
 			for _, link := range commentLinks {
 				if !strings.Contains(link, ".fanbox.cc/") && !strings.Contains(link, "discord.gg/") {
-					links = append(links, link)
+					links = append(links, strings.Replace(link, "http://", "https://", 1))
 				}
 			}
 		}

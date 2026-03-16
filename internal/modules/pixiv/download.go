@@ -70,6 +70,10 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				}
 				links := linkfinder.GetLinks(checkedIllustration.Caption)
 				for _, link := range links {
+					if strings.Contains(link, ".fanbox.cc/") || strings.Contains(link, "discord.gg/") {
+						continue
+					}
+					link = strings.Replace(link, "http://", "https://", 1)
 					slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
 						link,
 						checkedIllustration.ID), "module", m.Key)
