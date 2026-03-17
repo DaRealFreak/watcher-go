@@ -25,7 +25,36 @@ type proxySession struct {
 }
 
 func (m *deviantArt) initializeProxySessions() {
-	// copy the cookies from the logged-in session
+	// get the shared cookie jar from the main session so all proxy sessions
+	// share the same cookies and stay in sync with Set-Cookie updates
+	mainSession, ok := m.nAPI.UserSession.(*tls_session.TlsClientSession)
+	if !ok {
+		slog.Error("cannot share cookie jar: main session is not a TlsClientSession, falling back to cookie copy")
+		m.initializeProxySessionsLegacy()
+		return
+	}
+
+	sharedJar := mainSession.Jar
+
+	for _, proxy := range m.settings.LoopProxies {
+		if !proxy.Enable {
+			continue
+		}
+
+		singleSession := tls_session.NewTlsClientSessionWithJar(m.Key, sharedJar, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
+		raven.CheckError(singleSession.SetProxy(&proxy))
+		m.proxies = append(m.proxies, &proxySession{
+			inUse:         false,
+			proxy:         proxy,
+			session:       singleSession,
+			occurredError: nil,
+		})
+	}
+}
+
+// initializeProxySessionsLegacy is the fallback that copies cookies once (old behavior)
+func (m *deviantArt) initializeProxySessionsLegacy() {
 	daURL, _ := url.Parse("https://deviantart.com")
 	daWwwURL, _ := url.Parse("https://www.deviantart.com")
 
@@ -36,7 +65,6 @@ func (m *deviantArt) initializeProxySessions() {
 
 		singleSession := tls_session.NewTlsClientSession(m.Key, napi.DeviantArtErrorHandler{ModuleKey: m.ModuleKey()})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-		// copy login cookies for the session
 		singleSession.Client.SetCookies(daWwwURL, m.nAPI.UserSession.GetClient().GetCookies(daWwwURL))
 		singleSession.Client.SetCookies(daURL, m.nAPI.UserSession.GetClient().GetCookies(daURL))
 		raven.CheckError(singleSession.SetProxy(&proxy))

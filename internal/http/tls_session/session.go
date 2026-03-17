@@ -21,6 +21,7 @@ import (
 type TlsClientSession struct {
 	watcherHttp.TlsClientSession
 	Client             tls_client.HttpClient
+	Jar                tls_client.CookieJar
 	RateLimiter        *rate.Limiter
 	ErrorHandlers      []watcherHttp.TlsClientErrorHandler
 	MaxRetries         int
@@ -30,7 +31,16 @@ type TlsClientSession struct {
 
 // NewTlsClientSession initializes a new session and sets all the required headers etc
 func NewTlsClientSession(moduleKey string, errorHandlers ...watcherHttp.TlsClientErrorHandler) *TlsClientSession {
-	jar := tls_client.NewCookieJar()
+	return NewTlsClientSessionWithJar(moduleKey, nil, errorHandlers...)
+}
+
+// NewTlsClientSessionWithJar initializes a new session with an optional shared cookie jar.
+// If jar is nil, a new cookie jar is created.
+func NewTlsClientSessionWithJar(moduleKey string, jar tls_client.CookieJar, errorHandlers ...watcherHttp.TlsClientErrorHandler) *TlsClientSession {
+	if jar == nil {
+		jar = tls_client.NewCookieJar()
+	}
+
 	if len(errorHandlers) == 0 {
 		errorHandlers = []watcherHttp.TlsClientErrorHandler{TlsClientErrorHandler{}}
 	}
@@ -46,6 +56,7 @@ func NewTlsClientSession(moduleKey string, errorHandlers ...watcherHttp.TlsClien
 
 	app := TlsClientSession{
 		Client:             client,
+		Jar:                jar,
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
 		MaxDownloadRetries: 3,

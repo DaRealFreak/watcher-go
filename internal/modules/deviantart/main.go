@@ -38,10 +38,11 @@ type deviantArtSettings struct {
 	LoopProxies []http.ProxySettings `mapstructure:"loopproxies"`
 	MultiProxy  bool                 `mapstructure:"multiproxy"`
 	RateLimit   *int                 `mapstructure:"rate_limit"`
-	Download    struct {
-		DescriptionMinLength  int  `mapstructure:"description_min_length"`
-		FollowForContent      bool `mapstructure:"follow_for_content"`
-		UnfollowAfterDownload bool `mapstructure:"unfollow_after_download"`
+	Download struct {
+		DescriptionMinLength   int  `mapstructure:"description_min_length"`
+		FollowForContent       bool `mapstructure:"follow_for_content"`
+		UnfollowAfterDownload  bool `mapstructure:"unfollow_after_download"`
+		SkipSourceDownloads    bool `mapstructure:"skip_source_downloads"`
 	} `mapstructure:"download"`
 	Cloudflare struct {
 		UserAgent         string `mapstructure:"user_agent"`

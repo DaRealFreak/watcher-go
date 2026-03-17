@@ -105,7 +105,7 @@ func (m *deviantArt) downloadDeviationNapi(
 		downloadSession = m.nAPI.UserSession
 	}
 
-	// record a single “reference” timestamp:
+	// record a single "reference" timestamp:
 	started := time.Now()
 
 	// collect paths of every file we download / write:
@@ -177,21 +177,32 @@ func (m *deviantArt) downloadDeviationNapi(
 	)
 
 	// ──────────────────────────────────────────────────────────────
-	// download the “downloadable” version (if it exists)
+	// download the "downloadable" version (if it exists)
 	// ──────────────────────────────────────────────────────────────
+	skippedSourceDownload := false
 	if deviationItem.deviation.IsDownloadable && deviationItem.deviation.Extended != nil {
-		dst := path.Join(
-			m.GetDownloadDirectory(),
-			m.Key,
-			deviationItem.downloadTag,
-			deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
-		)
-		if err = downloadSession.DownloadFile(dst, deviationItem.deviation.Extended.Download.URL); err != nil {
-			return err
-		}
+		if m.settings.Download.SkipSourceDownloads {
+			skippedSourceDownload = true
+			slog.Warn(fmt.Sprintf(
+				"skipping source download (download limit) for deviation %s by %s: %s",
+				deviationItem.deviation.DeviationId.String(),
+				deviationItem.deviation.Author.Username,
+				deviationItem.deviation.Extended.Download.URL,
+			), "module", m.Key)
+		} else {
+			dst := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				deviationItem.downloadTag,
+				deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
+			)
+			if err = downloadSession.DownloadFile(dst, deviationItem.deviation.Extended.Download.URL); err != nil {
+				return err
+			}
 
-		// record that path
-		downloadedFiles = append(downloadedFiles, dst)
+			// record that path
+			downloadedFiles = append(downloadedFiles, dst)
+		}
 	}
 
 	// handle token if set
@@ -211,7 +222,7 @@ func (m *deviantArt) downloadDeviationNapi(
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// download any “AdditionalMedia”, which are mostly slides/galleries
+	// download any "AdditionalMedia", which are mostly slides/galleries
 	// ──────────────────────────────────────────────────────────────
 	for _, additionalMedia := range deviationItem.deviation.Extended.AdditionalMedia {
 		if additionalMedia.Media.BaseUri != "" {
@@ -269,7 +280,7 @@ func (m *deviantArt) downloadDeviationNapi(
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// download the “literature” (for journal/literature types)
+	// download the "literature" (for journal/literature types)
 	// ──────────────────────────────────────────────────────────────
 	switch deviationItem.deviation.Type {
 	case "journal", "literature":
@@ -278,8 +289,13 @@ func (m *deviantArt) downloadDeviationNapi(
 		}
 	case "image", "pdf", "film", "status":
 		// ──────────────────────────────────────────────────────────────
-		// download the “content” (full-view image/video/etc.)
+		// download the "content" (full-view image/video/etc.)
+		// if source download was skipped, force content download by
+		// treating the deviation as non-downloadable temporarily
 		// ──────────────────────────────────────────────────────────────
+		if skippedSourceDownload {
+			deviationItem.deviation.IsDownloadable = false
+		}
 		if err = m.downloadContentNapi(deviationItem, downloadSession, &downloadedFiles); err != nil {
 			return err
 		}
@@ -462,7 +478,7 @@ func (m *deviantArt) downloadContentNapi(
 		}
 	}
 
-	// 5) If we downloaded “contentFilePath” and it's an image that needs similarity checking:
+	// 5) If we downloaded "contentFilePath" and it's an image that needs similarity checking:
 	if downloadedContentFile &&
 		deviationItem.deviation.IsDownloadable &&
 		deviationItem.deviation.Extended != nil &&
