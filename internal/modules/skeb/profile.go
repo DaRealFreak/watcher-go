@@ -233,9 +233,12 @@ func (m *skeb) extractMediaFromWork(work workResponse) []mediaItem {
 	var items []mediaItem
 
 	for _, p := range work.Previews {
-		ext := p.Information.Extension
+		ext := extractServedExtension(p.URL)
 		if ext == "" {
-			ext = extractExtensionFromURL(p.URL)
+			ext = p.Information.Extension
+		}
+		if ext == "" {
+			ext = "jpg"
 		}
 
 		items = append(items, mediaItem{
@@ -247,13 +250,16 @@ func (m *skeb) extractMediaFromWork(work workResponse) []mediaItem {
 	return items
 }
 
-func extractExtensionFromURL(rawURL string) string {
-	// strip query parameters
-	if idx := strings.Index(rawURL, "?"); idx >= 0 {
-		rawURL = rawURL[:idx]
+// extractServedExtension parses the actual served format from an imgix URL's fm= parameter
+func extractServedExtension(rawURL string) string {
+	if idx := strings.Index(rawURL, "fm="); idx >= 0 {
+		val := rawURL[idx+3:]
+		if end := strings.IndexAny(val, "&# "); end >= 0 {
+			val = val[:end]
+		}
+		if val != "" {
+			return val
+		}
 	}
-	if idx := strings.LastIndex(rawURL, "."); idx >= 0 {
-		return rawURL[idx+1:]
-	}
-	return "jpg"
+	return ""
 }
