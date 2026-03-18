@@ -27,7 +27,6 @@ const (
 type XTransactionIdHandler struct {
 	transactionSession     http.TlsClientSessionInterface
 	settings               twitter_settings.TwitterSettings
-	onDemandFileRegex      *regexp.Regexp
 	indicesRegex           *regexp.Regexp
 	defaultRowIndex        int
 	defaultKeyBytesIndices []int
@@ -40,8 +39,6 @@ func NewXTransactionIdHandler(transactionSession http.TlsClientSessionInterface,
 	handler := &XTransactionIdHandler{
 		transactionSession: transactionSession,
 		settings:           settings,
-		// Matches "'ondemand.s':'<token>'" in the HTML
-		onDemandFileRegex: regexp.MustCompile(`['"]ondemand\.s['"]:\s*['"]([\w]+)['"]`),
 		// Matches "(x[NN], 16)" in the JS file
 		indicesRegex: regexp.MustCompile(`\(\w\[(\d{1,2})\],\s*16\)`),
 	}
@@ -482,12 +479,24 @@ func (h *XTransactionIdHandler) getIndices(homeDoc *goquery.Document) (int, []in
 		return 0, nil, fmt.Errorf("couldn't serialize home page: %w", err)
 	}
 
-	// extract token
-	m := h.onDemandFileRegex.FindStringSubmatch(html)
-	if len(m) < 2 {
-		return 0, nil, fmt.Errorf("couldn't find ondemand token")
+	// extract token via indirect key lookup:
+	// the chunk map changed from "ondemand.s":"hash" to key:"ondemand.s",...,key:"hash"
+	// 1) find the obfuscated key before "ondemand.s" (between "," and ":")
+	// 2) search forward from "ondemand.s" for that key's hash value
+	ondemandKeyRe := regexp.MustCompile(`,([^,:]+):"ondemand\.s"`)
+	keyMatch := ondemandKeyRe.FindStringSubmatch(html)
+	if keyMatch == nil {
+		return 0, nil, fmt.Errorf("couldn't find ondemand.s key in homepage")
 	}
-	token := m[1]
+	ondemandKey := keyMatch[1]
+
+	ondemandPos := strings.Index(html, `"ondemand.s"`)
+	valueRe := regexp.MustCompile(regexp.QuoteMeta(ondemandKey) + `:"(\w+)"`)
+	valueMatch := valueRe.FindStringSubmatch(html[ondemandPos:])
+	if valueMatch == nil {
+		return 0, nil, fmt.Errorf("couldn't find ondemand hash value")
+	}
+	token := valueMatch[1]
 
 	// fetch the JS
 	jsURL := fmt.Sprintf("https://abs.twimg.com/responsive-web/client-web/ondemand.s.%sa.js", token)
