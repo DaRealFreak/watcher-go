@@ -2,7 +2,6 @@ package ehentai
 
 import (
 	"fmt"
-	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -28,20 +27,22 @@ func (m *ehentai) initializeProxySessions() {
 	// reset the multi-proxy sessions
 	m.proxies = make([]*proxySession, 0)
 
-	// copy the cookies for e-hentai to exhentai
-	ehURL, _ := url.Parse("https://e-hentai.org")
-	exURL, _ := url.Parse("https://exhentai.org")
+	// share the cookie jar from the main session so all proxy sessions stay in sync
+	mainSession, ok := m.Session.(*std_session.StdClientSession)
+	if !ok {
+		slog.Error("cannot share cookie jar: main session is not a StdClientSession")
+		return
+	}
+
+	sharedJar := mainSession.Jar
 
 	for _, proxy := range m.settings.LoopProxies {
 		if !proxy.Enable {
 			continue
 		}
 
-		singleSession := std_session.NewStdClientSession(m.Key, ErrorHandler{}, std_session.StdClientErrorHandler{})
+		singleSession := std_session.NewStdClientSessionWithJar(m.Key, sharedJar, ErrorHandler{}, std_session.StdClientErrorHandler{})
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-		// copy login cookies for session
-		singleSession.SetCookies(ehURL, m.Session.GetCookies(ehURL))
-		singleSession.SetCookies(exURL, m.Session.GetCookies(ehURL))
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
 			inUse:         false,

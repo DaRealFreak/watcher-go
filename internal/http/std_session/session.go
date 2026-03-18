@@ -22,6 +22,7 @@ import (
 type StdClientSession struct {
 	watcherHttp.StdClientSession
 	Client             *http.Client
+	Jar                http.CookieJar
 	RateLimiter        *rate.Limiter
 	ErrorHandlers      []watcherHttp.StdClientErrorHandler
 	MaxRetries         int
@@ -31,7 +32,16 @@ type StdClientSession struct {
 
 // NewStdClientSession initializes a new session and sets all the required headers etc
 func NewStdClientSession(moduleKey string, errorHandlers ...watcherHttp.StdClientErrorHandler) *StdClientSession {
-	jar, _ := cookiejar.New(nil)
+	return NewStdClientSessionWithJar(moduleKey, nil, errorHandlers...)
+}
+
+// NewStdClientSessionWithJar initializes a new session with an optional shared cookie jar.
+// If jar is nil, a new cookie jar is created.
+func NewStdClientSessionWithJar(moduleKey string, jar http.CookieJar, errorHandlers ...watcherHttp.StdClientErrorHandler) *StdClientSession {
+	if jar == nil {
+		jar, _ = cookiejar.New(nil)
+	}
+
 	if len(errorHandlers) == 0 {
 		errorHandlers = []watcherHttp.StdClientErrorHandler{StdClientErrorHandler{}}
 	}
@@ -41,6 +51,7 @@ func NewStdClientSession(moduleKey string, errorHandlers ...watcherHttp.StdClien
 			Jar:       jar,
 			Transport: http.DefaultTransport,
 		},
+		Jar:                jar,
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
 		MaxDownloadRetries: 3,

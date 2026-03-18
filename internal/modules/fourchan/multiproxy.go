@@ -2,7 +2,6 @@ package fourchan
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -25,20 +24,22 @@ type proxySession struct {
 }
 
 func (m *fourChan) initializeProxySessions() {
-	// copy the cookies for 4chan to desuarchive
-	fourChanUrl, _ := url.Parse("https://www.4chan.org/")
-	archiveUrl, _ := url.Parse("https://desuarchive.org/")
+	// share the cookie jar from the main session so all proxy sessions stay in sync
+	mainSession, ok := m.Session.(*tls_session.TlsClientSession)
+	if !ok {
+		slog.Error("cannot share cookie jar: main session is not a TlsClientSession")
+		return
+	}
+
+	sharedJar := mainSession.Jar
 
 	for _, proxy := range m.settings.LoopProxies {
 		if !proxy.Enable {
 			continue
 		}
 
-		singleSession := tls_session.NewTlsClientSession(m.Key)
+		singleSession := tls_session.NewTlsClientSessionWithJar(m.Key, sharedJar)
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
-		// copy login cookies for session
-		singleSession.Client.SetCookies(fourChanUrl, m.Session.GetClient().GetCookies(fourChanUrl))
-		singleSession.Client.SetCookies(archiveUrl, m.Session.GetClient().GetCookies(fourChanUrl))
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
 			inUse:         false,
