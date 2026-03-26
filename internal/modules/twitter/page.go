@@ -88,6 +88,11 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 			return timelineErr
 		}
 
+		if nilCount := timeline.NilItemCount(); nilCount > 0 {
+			slog.Warn(fmt.Sprintf("encountered %d nil tweet items in timeline response for user %s (uri: %s, cursor: %s)",
+				nilCount, screenName, item.URI, bottomCursor), "module", m.ModuleKey())
+		}
+
 		tombstoneEntries := timeline.TombstoneEntries()
 		if len(tombstoneEntries) > 0 {
 			slog.Warn(fmt.Sprintf("found %d tombstone entries for user %s, check your profile for location settings and IP location, skipping",

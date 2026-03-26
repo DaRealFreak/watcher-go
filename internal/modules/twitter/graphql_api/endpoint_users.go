@@ -14,6 +14,7 @@ type TimelineInterface interface {
 	TweetEntries(userIDs ...string) (tweets []*Tweet)
 	TombstoneEntries() (tweets []*Tweet)
 	BottomCursor() string
+	NilItemCount() int
 }
 
 // TweetData returns the actual tweet entry
@@ -46,6 +47,10 @@ func (t *TwitterUserTimeline) TweetEntries(userIDs ...string) (tweets []*Tweet) 
 
 func (t *TwitterUserTimeline) TombstoneEntries() (tweets []*Tweet) {
 	return t.Data.User.Result.Timeline.Timeline.TombstoneEntries()
+}
+
+func (t *TwitterUserTimeline) NilItemCount() int {
+	return t.Data.User.Result.Timeline.Timeline.NilItemCount()
 }
 
 // BottomCursor checks for the next cursor in the timeline response

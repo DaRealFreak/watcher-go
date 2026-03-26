@@ -33,6 +33,10 @@ func (t *Timeline) TombstoneEntries() (tweets []*Tweet) {
 			}
 
 			for _, item := range entry.Content.Items {
+				if item == nil {
+					continue
+				}
+
 				if item.Item.ItemContent.TweetResults.Result != nil &&
 					item.Item.ItemContent.TweetResults.Result.Tombstone != nil {
 					tweets = append(tweets, item)
@@ -41,6 +45,10 @@ func (t *Timeline) TombstoneEntries() (tweets []*Tweet) {
 		}
 
 		for _, moduleItem := range instruction.ModuleItems {
+			if moduleItem == nil {
+				continue
+			}
+
 			if moduleItem.Item.ItemContent.TweetResults.Result != nil &&
 				moduleItem.Item.ItemContent.TweetResults.Result.Tombstone != nil {
 				tweets = append(tweets, moduleItem)
@@ -69,6 +77,10 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 			}
 
 			for _, item := range entry.Content.Items {
+				if item == nil {
+					continue
+				}
+
 				// possibly blocked tweet in your region or you got blocked
 				if item.Item.ItemContent.TweetResults.Result.TweetData() == nil {
 					continue
@@ -97,6 +109,10 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 		// some Twitter user items starting with page 2 return tweets as module items
 		// absolutely no idea why exactly (example user ID: 2323917366)
 		for _, moduleItem := range instruction.ModuleItems {
+			if moduleItem == nil {
+				continue
+			}
+
 			// possibly blocked tweet in your region or you got blocked
 			if moduleItem.Item.ItemContent.TweetResults.Result.TweetData() == nil {
 				continue
@@ -123,6 +139,30 @@ func (t *Timeline) TweetEntries(userIDs ...string) (tweets []*Tweet) {
 	}
 
 	return tweets
+}
+
+func (t *Timeline) NilItemCount() int {
+	if t == nil {
+		return 0
+	}
+
+	count := 0
+	for _, instruction := range t.Instructions {
+		for _, entry := range instruction.Entries {
+			for _, item := range entry.Content.Items {
+				if item == nil {
+					count++
+				}
+			}
+		}
+		for _, moduleItem := range instruction.ModuleItems {
+			if moduleItem == nil {
+				count++
+			}
+		}
+	}
+
+	return count
 }
 
 func (t *Timeline) BottomCursor() string {

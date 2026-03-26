@@ -25,6 +25,10 @@ func (s *SearchTimelineData) TombstoneEntries() (tweets []*Tweet) {
 	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.TombstoneEntries()
 }
 
+func (s *SearchTimelineData) NilItemCount() int {
+	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.NilItemCount()
+}
+
 func (s *SearchTimelineData) BottomCursor() string {
 	return s.Data.SearchByRawQuery.SearchTimeline.Timeline.BottomCursor()
 }
