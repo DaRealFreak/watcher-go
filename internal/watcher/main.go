@@ -26,6 +26,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/patreon"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex"
+	_ "github.com/DaRealFreak/watcher-go/internal/modules/schalenetwork"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/skeb"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/twitter"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/youtube"
