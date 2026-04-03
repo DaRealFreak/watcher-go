@@ -47,7 +47,7 @@ func NewTlsClientSessionWithJar(moduleKey string, jar tls_client.CookieJar, erro
 
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(30 * 60),
-		tls_client.WithClientProfile(profiles.Firefox_135),
+		tls_client.WithClientProfile(profiles.Firefox_147),
 		tls_client.WithRandomTLSExtensionOrder(),
 		tls_client.WithCookieJar(jar),
 	}

@@ -3,20 +3,40 @@ package nhentai
 import (
 	"encoding/json"
 	"fmt"
-	http "github.com/bogdanfinn/fhttp"
 	"io"
 	"net/url"
 	"strconv"
 	"strings"
+
+	http "github.com/bogdanfinn/fhttp"
 )
 
 const (
-	SortingRecent       = "recent"
+	SortingDate         = "date"
 	SortingPopularToday = "popular-today"
 	SortingPopularWeek  = "popular-week"
 	SortingPopular      = "popular"
 	SortingPopularMonth = "popular-month"
 )
+
+type galleryPage struct {
+	Number          int    `json:"number"`
+	Path            string `json:"path"`
+	Width           int    `json:"width"`
+	Height          int    `json:"height"`
+	Thumbnail       string `json:"thumbnail"`
+	ThumbnailWidth  int    `json:"thumbnail_width"`
+	ThumbnailHeight int    `json:"thumbnail_height"`
+}
+
+type galleryTag struct {
+	ID    json.Number `json:"id"`
+	Type  string      `json:"type"`
+	Name  string      `json:"name"`
+	Slug  string      `json:"slug"`
+	URL   string      `json:"url"`
+	Count int         `json:"count"`
+}
 
 type galleryResponse struct {
 	GalleryID json.Number `json:"id"`
@@ -26,25 +46,45 @@ type galleryResponse struct {
 		Japanese string `json:"japanese"`
 		Pretty   string `json:"pretty"`
 	} `json:"title"`
-	Images struct {
-		Pages []struct {
-			Type   string `json:"t"`
-			Width  int    `json:"w"`
-			Height int    `json:"h"`
-		} `json:"pages"`
-	} `json:"images"`
-	Tags []struct {
-		ID   json.Number `json:"id"`
-		Type string      `json:"type"`
-		Name string      `json:"name"`
-		URL  string      `json:"url"`
-	} `json:"tags"`
+	Cover struct {
+		Path   string `json:"path"`
+		Width  int    `json:"width"`
+		Height int    `json:"height"`
+	} `json:"cover"`
+	Scanlator    string        `json:"scanlator"`
+	UploadDate   int64         `json:"upload_date"`
+	Tags         []galleryTag  `json:"tags"`
+	NumPages     int           `json:"num_pages"`
+	NumFavorites int           `json:"num_favorites"`
+	Pages        []galleryPage `json:"pages"`
+}
+
+type searchResultItem struct {
+	ID              json.Number `json:"id"`
+	MediaID         json.Number `json:"media_id"`
+	EnglishTitle    string      `json:"english_title"`
+	JapaneseTitle   string      `json:"japanese_title"`
+	Thumbnail       string      `json:"thumbnail"`
+	ThumbnailWidth  int         `json:"thumbnail_width"`
+	ThumbnailHeight int         `json:"thumbnail_height"`
+	NumPages        int         `json:"num_pages"`
+	TagIDs          []int       `json:"tag_ids"`
+	Blacklisted     bool        `json:"blacklisted"`
 }
 
 type searchResponse struct {
-	Galleries []*galleryResponse `json:"result"`
-	NumPages  json.Number        `json:"num_pages"`
-	PerPage   json.Number        `json:"per_page"`
+	Result   []*searchResultItem `json:"result"`
+	NumPages json.Number         `json:"num_pages"`
+	PerPage  json.Number         `json:"per_page"`
+}
+
+type tagResponse struct {
+	ID    json.Number `json:"id"`
+	Type  string      `json:"type"`
+	Name  string      `json:"name"`
+	Slug  string      `json:"slug"`
+	URL   string      `json:"url"`
+	Count int         `json:"count"`
 }
 
 func (a *galleryResponse) GetLanguage() string {
@@ -76,21 +116,10 @@ func (a *galleryResponse) GetLanguage() string {
 }
 
 func (a *galleryResponse) GetImages() []string {
-	images := make([]string, 0, len(a.Images.Pages))
+	images := make([]string, 0, len(a.Pages))
 
-	for i, page := range a.Images.Pages {
-		// page.Type == "j" case
-		imageExtension := ""
-		switch page.Type {
-		case "j":
-			imageExtension = "jpg"
-		case "p":
-			imageExtension = "png"
-		case "w":
-			imageExtension = "webp"
-		}
-
-		imageURL := fmt.Sprintf("https://i.nhentai.net/galleries/%s/%d.%s", a.MediaID, i+1, imageExtension)
+	for _, page := range a.Pages {
+		imageURL := fmt.Sprintf("https://i.nhentai.net/%s", page.Path)
 		images = append(images, imageURL)
 	}
 
@@ -113,9 +142,13 @@ func (a *galleryResponse) GetURL() string {
 	return fmt.Sprintf("https://nhentai.net/g/%s/", a.GalleryID)
 }
 
+func (s *searchResultItem) GetURL() string {
+	return fmt.Sprintf("https://nhentai.net/g/%s/", s.ID)
+}
+
 func (m *nhentai) getGallery(galleryID string) (*galleryResponse, error) {
 	// construct the request URL
-	apiUrl := fmt.Sprintf("https://nhentai.net/api/gallery/%s", galleryID)
+	apiUrl := fmt.Sprintf("https://nhentai.net/api/v2/galleries/%s", galleryID)
 
 	// make the request
 	res, err := m.get(apiUrl)
@@ -127,7 +160,7 @@ func (m *nhentai) getGallery(galleryID string) (*galleryResponse, error) {
 			)
 		}
 
-		return nil, fmt.Errorf("failed to get search results: %w", err)
+		return nil, fmt.Errorf("failed to get gallery: %w", err)
 	}
 
 	// check if the response is successful
@@ -151,7 +184,7 @@ func (m *nhentai) getSearch(searchQuery string, page int, sorting string) (*sear
 		"sort":  []string{sorting},
 	}
 
-	apiUrl := fmt.Sprintf("https://nhentai.net/api/galleries/search?%s", params.Encode())
+	apiUrl := fmt.Sprintf("https://nhentai.net/api/v2/search?%s", params.Encode())
 	res, err := m.get(apiUrl)
 	if err != nil || res == nil {
 		if res != nil && res.StatusCode == 503 {
@@ -169,7 +202,65 @@ func (m *nhentai) getSearch(searchQuery string, page int, sorting string) (*sear
 		return nil, fmt.Errorf("failed to get search results: status code %d", res.StatusCode)
 	}
 
-	// map the response into the galleryResponse struct
+	// map the response into the searchResponse struct
+	var apiRes searchResponse
+	if err = m.mapAPIResponse(res, &apiRes); err != nil {
+		return nil, fmt.Errorf("failed to map API response: %w", err)
+	}
+
+	return &apiRes, nil
+}
+
+func (m *nhentai) getTag(tagType string, slug string) (*tagResponse, error) {
+	apiUrl := fmt.Sprintf("https://nhentai.net/api/v2/tags/%s/%s", tagType, slug)
+	res, err := m.get(apiUrl)
+	if err != nil || res == nil {
+		if res != nil && res.StatusCode == 503 {
+			return nil, fmt.Errorf(
+				"returned status code was 503, check cloudflare.user_agent setting and cf_clearance cookie." +
+					"cloudflare checks used IP and User-Agent to validate the cf_clearance cookie",
+			)
+		}
+
+		return nil, fmt.Errorf("failed to get tag: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get tag: status code %d", res.StatusCode)
+	}
+
+	var apiRes tagResponse
+	if err = m.mapAPIResponse(res, &apiRes); err != nil {
+		return nil, fmt.Errorf("failed to map API response: %w", err)
+	}
+
+	return &apiRes, nil
+}
+
+func (m *nhentai) getTaggedGalleries(tagID string, page int, sorting string) (*searchResponse, error) {
+	params := url.Values{
+		"tag_id": []string{tagID},
+		"sort":   []string{sorting},
+		"page":   []string{strconv.Itoa(page)},
+	}
+
+	apiUrl := fmt.Sprintf("https://nhentai.net/api/v2/galleries/tagged?%s", params.Encode())
+	res, err := m.get(apiUrl)
+	if err != nil || res == nil {
+		if res != nil && res.StatusCode == 503 {
+			return nil, fmt.Errorf(
+				"returned status code was 503, check cloudflare.user_agent setting and cf_clearance cookie." +
+					"cloudflare checks used IP and User-Agent to validate the cf_clearance cookie",
+			)
+		}
+
+		return nil, fmt.Errorf("failed to get tagged galleries: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get tagged galleries: status code %d", res.StatusCode)
+	}
+
 	var apiRes searchResponse
 	if err = m.mapAPIResponse(res, &apiRes); err != nil {
 		return nil, fmt.Errorf("failed to map API response: %w", err)
