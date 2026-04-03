@@ -2,6 +2,7 @@ package schalenetwork
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path"
@@ -15,10 +16,12 @@ import (
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
+	"golang.org/x/time/rate"
 )
 
 type proxySession struct {
 	inUse         bool
+	excluded      bool
 	proxy         watcherHttp.ProxySettings
 	session       *tls_session.TlsClientSession
 	occurredError error
@@ -40,7 +43,7 @@ func (m *schaleNetwork) initializeProxySessions() {
 			continue
 		}
 
-		singleSession := tls_session.NewTlsClientSessionWithJar(m.Key, sharedJar)
+		singleSession := tls_session.NewTlsClientSessionWithJar(m.Key, sharedJar, schaleErrorHandler{module: m})
 
 		// use Firefox 147 profile for each proxy session
 		client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(),
@@ -50,6 +53,7 @@ func (m *schaleNetwork) initializeProxySessions() {
 			tls_client.WithCookieJar(sharedJar),
 		)
 		singleSession.SetClient(client)
+		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{
@@ -74,7 +78,7 @@ func (m *schaleNetwork) isLowestIndex(index int) bool {
 
 func (m *schaleNetwork) hasFreeProxy() bool {
 	for _, proxy := range m.proxies {
-		if !proxy.inUse {
+		if !proxy.inUse && !proxy.excluded {
 			return true
 		}
 	}
@@ -84,12 +88,22 @@ func (m *schaleNetwork) hasFreeProxy() bool {
 
 func (m *schaleNetwork) getFreeProxy() *proxySession {
 	for _, proxy := range m.proxies {
-		if !proxy.inUse {
+		if !proxy.inUse && !proxy.excluded {
 			return proxy
 		}
 	}
 
 	return nil
+}
+
+func (m *schaleNetwork) hasAvailableProxies() bool {
+	for _, proxy := range m.proxies {
+		if !proxy.excluded {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *schaleNetwork) getProxyError() *proxySession {
@@ -105,6 +119,7 @@ func (m *schaleNetwork) getProxyError() *proxySession {
 func (m *schaleNetwork) resetProxies() {
 	for _, proxy := range m.proxies {
 		proxy.inUse = false
+		proxy.excluded = false
 		proxy.occurredError = nil
 	}
 }
@@ -123,17 +138,36 @@ func (m *schaleNetwork) processDownloadQueueMultiProxy(
 		slog.Log(context.Background(), notification.Level, notification.Message, "module", m.Key)
 	}
 
-	for index, data := range downloadQueue {
-		// sleep until we have a free proxy again
+	for index := 0; index < len(downloadQueue); index++ {
+		data := downloadQueue[index]
+
+		// sleep until we have a free proxy again or an error occurred
 		for !m.hasFreeProxy() && m.getProxyError() == nil {
 			time.Sleep(time.Millisecond * 100)
 		}
 
-		// handle if errors occurred in previous downloads
+		// handle errors: exclude 403 proxies, fail on other errors
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
+			var statusErr tls_session.StatusError
+			if errors.As(erroneousProxy.occurredError, &statusErr) && statusErr.StatusCode == 403 {
+				slog.Warn(fmt.Sprintf("proxy %s returned 403, excluding it from rotation",
+					erroneousProxy.proxy.Host), "module", m.Key)
+				erroneousProxy.excluded = true
+				erroneousProxy.occurredError = nil
+				erroneousProxy.inUse = false
+
+				if !m.hasAvailableProxies() {
+					return fmt.Errorf("all proxies excluded due to 403 errors")
+				}
+
+				// retry this item with a different proxy
+				index--
+				continue
+			}
+
 			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
 				erroneousProxy.proxy.Host), "module", m.Key)
-			return m.getProxyError().occurredError
+			return erroneousProxy.occurredError
 		}
 
 		if m.hasFreeProxy() {
@@ -157,11 +191,19 @@ func (m *schaleNetwork) processDownloadQueueMultiProxy(
 
 	m.multiProxy.waitGroup.Wait()
 
-	// handle if errors occurred in previous downloads
+	// handle remaining errors after all downloads complete
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
-		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
-			erroneousProxy.proxy.Host), "module", m.Key)
-		return m.getProxyError().occurredError
+		var statusErr tls_session.StatusError
+		if errors.As(erroneousProxy.occurredError, &statusErr) && statusErr.StatusCode == 403 {
+			slog.Warn(fmt.Sprintf("proxy %s returned 403, excluding it from rotation",
+				erroneousProxy.proxy.Host), "module", m.Key)
+			erroneousProxy.excluded = true
+			erroneousProxy.occurredError = nil
+		} else {
+			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
+				erroneousProxy.proxy.Host), "module", m.Key)
+			return erroneousProxy.occurredError
+		}
 	}
 
 	// if no error occurred, update the tracked item to the last item ID
@@ -217,11 +259,11 @@ func (m *schaleNetwork) downloadFileWithSession(session *tls_session.TlsClientSe
 
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Referer", "https://niyaniya.moe/")
-	req.Header.Set("Origin", "https://niyaniya.moe")
+	req.Header.Set("Referer", m.siteBaseURL()+"/")
+	req.Header.Set("Origin", m.siteBaseURL())
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
-	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	req.Header.Set("Sec-Fetch-Site", m.secFetchSite())
 
 	if m.settings.Cloudflare.UserAgent != "" {
 		req.Header.Set("User-Agent", m.settings.Cloudflare.UserAgent)

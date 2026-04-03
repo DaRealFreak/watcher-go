@@ -13,15 +13,15 @@ import (
 
 // parseSearch parses the tracked item if we detected a search or tag
 func (m *schaleNetwork) parseSearch(item *models.TrackedItem) error {
-	searchQuery := m.extractSearchQuery(item.URI)
+	searchQuery, extraParams := m.extractSearchParams(item.URI)
 
 	page := 1
-	apiResponse, err := m.getSearch(searchQuery, page)
+	apiResponse, err := m.getSearch(searchQuery, page, extraParams)
 	if err != nil {
 		return err
 	}
 
-	if m.settings.Search.CategorizeSearch && item.SubFolder == "" {
+	if item.SubFolder == "" {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
 
@@ -49,7 +49,7 @@ func (m *schaleNetwork) parseSearch(item *models.TrackedItem) error {
 		}
 
 		page++
-		apiResponse, err = m.getSearch(searchQuery, page)
+		apiResponse, err = m.getSearch(searchQuery, page, extraParams)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (m *schaleNetwork) parseSearch(item *models.TrackedItem) error {
 	slog.Info(fmt.Sprintf("found %d new items for uri: %s", len(itemQueue), item.URI), "module", m.Key)
 
 	for _, entry := range itemQueue {
-		galleryURL := fmt.Sprintf("https://niyaniya.moe/g/%d/%s", entry.ID, entry.Key)
+		galleryURL := fmt.Sprintf("%s/g/%d/%s", m.siteBaseURL(), entry.ID, entry.Key)
 		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryURL, m.getSubFolder(item), m)
 		if (m.Cfg.Run.Force || m.Cfg.Run.ResetProgress) && galleryItem.CurrentItem != "" {
 			slog.Info(
@@ -77,7 +77,7 @@ func (m *schaleNetwork) parseSearch(item *models.TrackedItem) error {
 	}
 
 	for index, entry := range itemQueue {
-		galleryURL := fmt.Sprintf("https://niyaniya.moe/g/%d/%s", entry.ID, entry.Key)
+		galleryURL := fmt.Sprintf("%s/g/%d/%s", m.siteBaseURL(), entry.ID, entry.Key)
 
 		slog.Info(fmt.Sprintf(
 			"added gallery to tracked items: \"%s\", search item: \"%s\" (%0.2f%%)",
@@ -113,13 +113,24 @@ func (m *schaleNetwork) parseSearch(item *models.TrackedItem) error {
 }
 
 // extractSearchQuery extracts the search query from a URI
-func (m *schaleNetwork) extractSearchQuery(uri string) string {
+// extractSearchParams extracts the search query and any extra query parameters (like lang) from a URI
+func (m *schaleNetwork) extractSearchParams(uri string) (string, url.Values) {
+	extra := url.Values{}
+
 	// check for browse/search URI with ?s= parameter
 	browsePattern := regexp.MustCompile(`/browse\b`)
 	if browsePattern.MatchString(uri) {
 		parsedURL, parseErr := url.Parse(uri)
 		if parseErr == nil && parsedURL.Query().Has("s") {
-			return parsedURL.Query().Get("s")
+			query := parsedURL.Query().Get("s")
+			// preserve other query parameters (e.g. lang)
+			for key, values := range parsedURL.Query() {
+				if key != "s" && key != "page" && key != "sort" {
+					extra[key] = values
+				}
+			}
+
+			return query, extra
 		}
 	}
 
@@ -133,18 +144,18 @@ func (m *schaleNetwork) extractSearchQuery(uri string) string {
 		}
 		// replace + with space (same as gallery-dl)
 		tag = strings.ReplaceAll(tag, "+", " ")
-		return tag
+		// wrap tag value in ^...$ for exact matching (e.g. "artist:azuki" -> "artist:^azuki$")
+		if parts := strings.SplitN(tag, ":", 2); len(parts) == 2 {
+			tag = parts[0] + ":^" + parts[1] + "$"
+		}
+		return tag, extra
 	}
 
-	return ""
+	return "", extra
 }
 
 // getSubFolder returns the subfolder for categorization
 func (m *schaleNetwork) getSubFolder(item *models.TrackedItem) string {
-	if !m.settings.Search.CategorizeSearch {
-		return ""
-	}
-
 	browsePattern := regexp.MustCompile(`/browse\b`)
 	if browsePattern.MatchString(item.URI) {
 		parsedURL, parseErr := url.Parse(item.URI)
