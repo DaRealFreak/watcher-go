@@ -52,6 +52,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`.*nhentai.net`),
 		},
 		ProxyLoopIndex: -1,
+		SettingsSchema: nhentaiSettings{},
 	}
 	module.ModuleInterface = &nhentai{
 		Module:                 module,

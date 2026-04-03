@@ -73,7 +73,8 @@ func NewBareModule() *models.Module {
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*e[\-x]hentai.org`),
 		},
-		ProxyLoopIndex: -1,
+		ProxyLoopIndex:  -1,
+		SettingsSchema: ehentaiSettings{},
 	}
 	module.ModuleInterface = &ehentai{
 		Module:                   module,

@@ -43,6 +43,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`.*([./])x.com`),
 			regexp.MustCompile(`twitter:(graphQL|api)/\d+/.*`),
 		},
+		SettingsSchema: twitter_settings.TwitterSettings{},
 	}
 	module.ModuleInterface = &twitter{
 		Module:              module,

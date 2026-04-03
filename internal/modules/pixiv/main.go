@@ -70,6 +70,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(".*pixiv.(co.jp|net)"),
 			regexp.MustCompile(".*fanbox.(cc)"),
 		},
+		SettingsSchema: pixivSettings{},
 	}
 	module.ModuleInterface = &pixiv{
 		Module:          module,

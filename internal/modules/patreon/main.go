@@ -97,6 +97,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`(https://www.|^)patreon.com`),
 			regexp.MustCompile("patreon://creator/"),
 		},
+		SettingsSchema: patreonSettings{},
 	}
 	module.ModuleInterface = &patreon{
 		Module:              module,

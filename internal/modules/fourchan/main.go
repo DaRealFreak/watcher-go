@@ -59,6 +59,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile("4chan.org"),
 			regexp.MustCompile("desuarchive.org"),
 		},
+		SettingsSchema: fourChanSettings{},
 	}
 	module.ModuleInterface = &fourChan{
 		Module:        module,

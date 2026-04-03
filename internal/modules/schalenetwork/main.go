@@ -51,6 +51,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`.*hoshino\.one`),
 		},
 		ProxyLoopIndex: -1,
+		SettingsSchema: schaleNetworkSettings{},
 	}
 	module.ModuleInterface = &schaleNetwork{
 		Module:         module,

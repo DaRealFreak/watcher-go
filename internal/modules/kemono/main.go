@@ -50,6 +50,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`kemono.cr`),
 			regexp.MustCompile(`coomer.su`),
 		},
+		SettingsSchema: kemonoSettings{},
 	}
 	module.ModuleInterface = &kemono{
 		Module: module,

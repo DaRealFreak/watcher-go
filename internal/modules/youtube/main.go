@@ -47,6 +47,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(`youtube.com`),
 			regexp.MustCompile(`youtu.be`),
 		},
+		SettingsSchema: youtubeSettings{},
 	}
 	module.ModuleInterface = &youtube{
 		Module: module,

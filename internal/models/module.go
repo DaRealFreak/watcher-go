@@ -61,6 +61,7 @@ type Module struct {
 	URISchemas     []*regexp.Regexp
 	ProxyLoopIndex int
 	Cfg            *configuration.AppConfiguration
+	SettingsSchema interface{}
 }
 
 type ModuleNotImplementedError struct {

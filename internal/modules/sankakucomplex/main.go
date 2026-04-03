@@ -44,6 +44,7 @@ func NewBareModule() *models.Module {
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(".*sankakucomplex.com"),
 		},
+		SettingsSchema: sankakuSettings{},
 	}
 	module.ModuleInterface = &sankakuComplex{
 		Module: module,

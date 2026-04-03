@@ -40,6 +40,7 @@ func NewBareModule() *models.Module {
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*skeb\.jp`),
 		},
+		SettingsSchema: skebSettings{},
 	}
 	module.ModuleInterface = &skeb{
 		Module: module,

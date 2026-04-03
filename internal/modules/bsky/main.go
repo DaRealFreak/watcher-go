@@ -44,6 +44,7 @@ func NewBareModule() *models.Module {
 		URISchemas: []*regexp.Regexp{
 			regexp.MustCompile(`.*bsky\.app`),
 		},
+		SettingsSchema: bskySettings{},
 	}
 	module.ModuleInterface = &bsky{
 		Module: module,

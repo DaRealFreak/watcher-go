@@ -78,6 +78,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile(".*deviantart.com"),
 			regexp.MustCompile(`deviantart://.*`),
 		},
+		SettingsSchema: deviantArtSettings{},
 	}
 	module.ModuleInterface = &deviantArt{
 		Module:    module,
