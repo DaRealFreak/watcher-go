@@ -160,7 +160,9 @@ func (m *schaleNetwork) getSubFolder(item *models.TrackedItem) string {
 	if browsePattern.MatchString(item.URI) {
 		parsedURL, parseErr := url.Parse(item.URI)
 		if parseErr == nil && parsedURL.Query().Has("s") {
-			return fmt.Sprintf("search %s", parsedURL.Query().Get("s"))
+			query := parsedURL.Query().Get("s")
+			query = strings.NewReplacer("^", "", "$", "").Replace(query)
+			return fmt.Sprintf("search %s", query)
 		}
 	}
 
