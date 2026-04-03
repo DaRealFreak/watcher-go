@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
+	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,11 +25,21 @@ type schaleNetwork struct {
 	tagPattern     *regexp.Regexp
 	settings       schaleNetworkSettings
 	crt            string
+	proxies        []*proxySession
+	multiProxy     struct {
+		currentIndexes []int
+		waitGroup      sync.WaitGroup
+	}
 }
 
 type schaleNetworkSettings struct {
-	Crt    string `mapstructure:"crt"`
-	Search struct {
+	Crt        string `mapstructure:"crt"`
+	Cloudflare struct {
+		UserAgent string `mapstructure:"user_agent"`
+	} `mapstructure:"cloudflare"`
+	MultiProxy  bool                          `mapstructure:"multiproxy"`
+	LoopProxies []watcherHttp.ProxySettings   `mapstructure:"loopproxies"`
+	Search      struct {
 		CategorizeSearch bool `mapstructure:"categorize_search"`
 	} `mapstructure:"search"`
 }
@@ -76,10 +90,26 @@ func (m *schaleNetwork) InitializeModule() {
 		&m.settings,
 	))
 
-	m.Session = tls_session.NewTlsClientSession(m.Key)
+	session := tls_session.NewTlsClientSession(m.Key)
+
+	// replace the default client with a Firefox 147 profile, reusing the same cookie jar
+	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(),
+		tls_client.WithTimeoutSeconds(30*60),
+		tls_client.WithClientProfile(profiles.Firefox_147),
+		tls_client.WithRandomTLSExtensionOrder(),
+		tls_client.WithCookieJar(session.Jar),
+	)
+	session.SetClient(client)
+
+	m.Session = session
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))
+
+	// initialize multi-proxy sessions if enabled
+	if m.settings.MultiProxy {
+		m.initializeProxySessions()
+	}
 }
 
 // AddModuleCommand adds custom module-specific settings and commands to our application

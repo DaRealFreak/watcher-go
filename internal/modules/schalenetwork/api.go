@@ -27,8 +27,8 @@ type bookDataResponse struct {
 }
 
 type bookFormat struct {
-	ID  string `json:"id"`
-	Key string `json:"key"`
+	ID  json.Number `json:"id"`
+	Key string      `json:"key"`
 }
 
 type bookImageListResponse struct {
@@ -125,7 +125,11 @@ func (m *schaleNetwork) getBookData(id, key string) (*bookDataResponse, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get book data: status code %d (crt token may be expired)", res.StatusCode)
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf(
+			"failed to get book data: status code %d (crt token may be expired or user_agent mismatch). response: %s",
+			res.StatusCode, string(body),
+		)
 	}
 
 	var apiRes bookDataResponse

@@ -3,6 +3,7 @@ package schalenetwork
 import (
 	"fmt"
 	"log/slog"
+	"path"
 	"strconv"
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -43,7 +44,7 @@ func (m *schaleNetwork) parseGalleryFromDetail(
 		return fmt.Errorf("gallery %s/%s: %w", id, key, err)
 	}
 
-	imageList, err := m.getBookImages(id, key, format.ID, format.Key, fmtW)
+	imageList, err := m.getBookImages(id, key, format.ID.String(), format.Key, fmtW)
 	if err != nil {
 		return err
 	}
@@ -67,11 +68,58 @@ func (m *schaleNetwork) parseGalleryFromDetail(
 		downloadQueue[i], downloadQueue[j] = downloadQueue[j], downloadQueue[i]
 	}
 
-	if err = m.ProcessDownloadQueue(downloadQueue, item); err != nil {
-		return err
+	if m.settings.MultiProxy && len(m.proxies) > 0 {
+		m.resetProxies()
+		if err = m.processDownloadQueueMultiProxy(downloadQueue, item); err != nil {
+			return err
+		}
+	} else {
+		if err = m.processDownloadQueue(downloadQueue, item); err != nil {
+			return err
+		}
 	}
 
 	m.DbIO.ChangeTrackedItemCompleteStatus(item, true)
+
+	return nil
+}
+
+// processDownloadQueue downloads files with the required headers for the CDN
+func (m *schaleNetwork) processDownloadQueue(downloadQueue []models.DownloadQueueItem, trackedItem *models.TrackedItem) error {
+	slog.Info(
+		fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), trackedItem.URI),
+		"module", m.Key,
+	)
+
+	for index, data := range downloadQueue {
+		slog.Info(
+			fmt.Sprintf(
+				"downloading updates for uri: \"%s\" (%0.2f%%)",
+				trackedItem.URI,
+				float64(index+1)/float64(len(downloadQueue))*100,
+			),
+			"module", m.Key,
+		)
+
+		filePath := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(fp.SanitizePath(trackedItem.SubFolder, false)),
+			fp.TruncateMaxLength(fp.SanitizePath(data.DownloadTag, false)),
+			fp.TruncateMaxLength(fp.SanitizePath(data.FileName, false)),
+		)
+
+		resp, err := m.get(data.FileURI)
+		if err != nil {
+			return err
+		}
+
+		if err = m.Session.DownloadFileFromResponse(resp, filePath); err != nil {
+			return err
+		}
+
+		m.DbIO.UpdateTrackedItem(trackedItem, data.ItemID)
+	}
 
 	return nil
 }
@@ -81,7 +129,7 @@ func (m *schaleNetwork) selectFormat(bookData *bookDataResponse) (bookFormat, st
 	formatPriority := []string{"0", "1600", "1280", "980", "780"}
 
 	for _, fmtW := range formatPriority {
-		if f, ok := bookData.Data[fmtW]; ok && f.ID != "" {
+		if f, ok := bookData.Data[fmtW]; ok && f.ID.String() != "" {
 			slog.Debug(fmt.Sprintf("selected format %s", fmtW), "module", m.Key)
 			return f, fmtW, nil
 		}
@@ -118,7 +166,7 @@ func (m *schaleNetwork) getGalleryImageURLs(
 		items = append(items, models.DownloadQueueItem{
 			ItemID:      strconv.Itoa(i + 1),
 			DownloadTag: downloadTag,
-			FileName:    fp.GetFileName(fileURI),
+			FileName:    fmt.Sprintf("%03d_%s", i+1, fp.GetFileName(fileURI)),
 			FileURI:     fileURI,
 		})
 	}

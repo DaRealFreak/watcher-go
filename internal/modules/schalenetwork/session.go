@@ -24,8 +24,16 @@ func (m *schaleNetwork) post(uri string) (*http.Response, error) {
 
 func (m *schaleNetwork) do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Referer", "https://niyaniya.moe/")
 	req.Header.Set("Origin", "https://niyaniya.moe")
+	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+
+	if m.settings.Cloudflare.UserAgent != "" {
+		req.Header.Set("User-Agent", m.settings.Cloudflare.UserAgent)
+	}
 
 	return m.Session.Do(req)
 }
