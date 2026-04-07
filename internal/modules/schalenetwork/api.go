@@ -156,6 +156,11 @@ func (m *schaleNetwork) rotateToClearProxy() error {
 		return fmt.Errorf("main session is not a TlsClientSession")
 	}
 
+	// reset proxy exclusions so previously blocked proxies are retried
+	for _, proxy := range m.proxies {
+		proxy.excluded = false
+	}
+
 	// try clearance with the current main session first
 	err := m.tryClearanceWithSession(mainSession)
 	if err == nil {
@@ -207,9 +212,22 @@ func (m *schaleNetwork) rotateToClearProxy() error {
 	return fmt.Errorf("all proxies excluded due to 403 errors")
 }
 
-// recoverFrom403 handles 403 recovery: prompts for new crt, validates clearance, rotates proxies if needed
+// recoverFrom403 handles 403 recovery.
+// If clearance was already validated (crt previously accepted), try proxy rotation first
+// since the most common cause is the current VPN/proxy getting blacklisted.
+// If clearance was never validated (startup), prompt for a new crt token first.
 func (m *schaleNetwork) recoverFrom403() error {
-	slog.Warn("received 403, requesting new crt token...", "module", m.Key)
+	if m.clearanceValidated {
+		slog.Warn("received 403 after successful clearance, trying proxy rotation first...", "module", m.Key)
+		if err := m.rotateToClearProxy(); err == nil {
+			return nil
+		}
+
+		slog.Warn("proxy rotation failed, requesting new crt token...", "module", m.Key)
+	} else {
+		slog.Warn("received 403, requesting new crt token...", "module", m.Key)
+	}
+
 	m.promptCrtRefresh()
 
 	if m.crt == "" {
