@@ -32,10 +32,21 @@ func (a *DeviantartNAPI) do(req *http.Request, session ...http2.TlsClientSession
 		}
 	}
 
+	if a.Logger != nil {
+		a.Logger.LogRequest(req)
+	}
+
 	usedSession := a.UserSession
 	if len(session) > 0 {
 		usedSession = session[0]
 	}
 
-	return usedSession.Do(req)
+	resp, err := usedSession.Do(req)
+
+	if a.Logger != nil && resp != nil {
+		getCookies := usedSession.GetCookies
+		a.Logger.LogResponse(req, resp, a.CSRFToken, getCookies)
+	}
+
+	return resp, err
 }

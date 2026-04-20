@@ -187,15 +187,18 @@ type DeviantartNAPI struct {
 	CSRFToken string
 	UserAgent string
 	moduleKey string
+	Logger    *RequestLogger
 }
 
-// NewDeviantartNAPI returns the settings of the DeviantArt API
-func NewDeviantartNAPI(moduleKey string, userAgent string) *DeviantartNAPI {
+// NewDeviantartNAPI returns the settings of the DeviantArt API.
+// logger may be nil to disable request/response dumping.
+func NewDeviantartNAPI(moduleKey string, userAgent string, logger *RequestLogger) *DeviantartNAPI {
 	return &DeviantartNAPI{
 		UserSession: tls_session.NewTlsClientSession(moduleKey, DeviantArtErrorHandler{ModuleKey: moduleKey}),
 		ctx:         context.Background(),
 		moduleKey:   moduleKey,
 		UserAgent:   userAgent,
+		Logger:      logger,
 	}
 }
 
@@ -354,7 +357,36 @@ func (a *Author) GetUsernameUrl() string {
 }
 
 func (t *MediaType) GetCrop(prettyName string) string {
-	return strings.ReplaceAll(t.Crop, "<prettyName>", prettyName)
+	crop := strings.ReplaceAll(t.Crop, "<prettyName>", prettyName)
+	crop = clampBlurParam(crop)
+	return crop
+}
+
+// clampBlurParam rewrites blur_N in a wixmp crop path to blur_30 if N > 30.
+// DeviantArt sometimes returns blur values above the wixmp maximum of 100,
+// and 30 is the minimum the JWT token allows, so we always use 30.
+func clampBlurParam(crop string) string {
+	idx := strings.Index(crop, "blur_")
+	if idx == -1 {
+		return crop
+	}
+
+	start := idx + len("blur_")
+	end := start
+	for end < len(crop) && crop[end] >= '0' && crop[end] <= '9' {
+		end++
+	}
+
+	if end == start {
+		return crop
+	}
+
+	val, err := strconv.Atoi(crop[start:end])
+	if err != nil || val <= 30 {
+		return crop
+	}
+
+	return crop[:start] + "30" + crop[end:]
 }
 
 func (d *Deviation) GetPrettyName() string {

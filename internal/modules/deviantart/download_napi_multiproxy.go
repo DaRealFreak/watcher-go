@@ -3,18 +3,19 @@ package deviantart
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"context"
+	"log/slog"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/deviantart/napi"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"golang.org/x/time/rate"
-	"log/slog"
 )
 
 type proxySession struct {
@@ -77,17 +78,6 @@ func (m *deviantArt) initializeProxySessionsLegacy() {
 	}
 }
 
-func (m *deviantArt) isLowestIndex(index int) bool {
-	lowestIndex := 999
-	for _, v := range m.multiProxy.currentIndexes {
-		if v < lowestIndex {
-			lowestIndex = v
-		}
-	}
-
-	return lowestIndex == index
-}
-
 func (m *deviantArt) hasFreeProxy() bool {
 	for _, proxy := range m.proxies {
 		if !proxy.inUse {
@@ -133,6 +123,9 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 			notification.Level, notification.Message, "module", m.Key)
 	}
 
+	// track which items completed successfully for progress saving on error
+	completedItems := make([]bool, len(downloadQueue))
+
 	for index, data := range downloadQueue {
 		// sleep until we have a free proxy again
 		for !m.hasFreeProxy() && m.getProxyError() == nil {
@@ -144,7 +137,7 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
 			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
 				erroneousProxy.proxy.Host), "module", m.Key)
-			return m.getProxyError().occurredError
+			break
 		}
 
 		if m.hasFreeProxy() {
@@ -160,7 +153,7 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 
 			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
 
-			go m.downloadItemSessionNapi(proxy, trackedItem, data, index)
+			go m.downloadItemSessionNapi(proxy, trackedItem, data, index, completedItems)
 
 			// sleep 100 milliseconds to queue the next download after the current one
 			time.Sleep(time.Millisecond * 100)
@@ -168,7 +161,22 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 
 	}
 
+	// always wait for in-flight goroutines before returning
 	m.multiProxy.waitGroup.Wait()
+
+	// save progress up to the last contiguously completed item
+	lastCompleted := -1
+	for i, done := range completedItems {
+		if done {
+			lastCompleted = i
+		} else {
+			break
+		}
+	}
+
+	if lastCompleted >= 0 {
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[lastCompleted].itemID)
+	}
 
 	// handle if errors occurred in previous downloads
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
@@ -177,24 +185,17 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 		return m.getProxyError().occurredError
 	}
 
-	// if no error occurred, update the tracked item to the last item ID
-	if len(downloadQueue) > 0 {
-		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[len(downloadQueue)-1].itemID)
-	}
-
 	return nil
 }
 
 func (m *deviantArt) downloadItemSessionNapi(
 	downloadSession *proxySession, trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI, index int,
+	completedItems []bool,
 ) {
 	downloadSession.occurredError = m.downloadDeviationNapi(trackedItem, deviationItem, downloadSession.session, false)
 
 	if downloadSession.occurredError == nil {
-		if m.isLowestIndex(index) {
-			// if we are the lowest index (to prevent skips on errors), update the downloaded item
-			m.DbIO.UpdateTrackedItem(trackedItem, deviationItem.itemID)
-		}
+		completedItems[index] = true
 
 		// remove the current index from the current list since we finished
 		for i, v := range m.multiProxy.currentIndexes {
@@ -204,22 +205,27 @@ func (m *deviantArt) downloadItemSessionNapi(
 			}
 		}
 	} else {
-		slog.Error(fmt.Sprintf("error occurred downloading item %s (%s) with proxy %s: %s",
-			trackedItem.URI, deviationItem.itemID, downloadSession.proxy.Host, downloadSession.occurredError.Error()), "module", m.Key)
+		slog.Error(fmt.Sprintf("error occurred downloading item %s (%s) with proxy %s: %s (CSRF: %s)",
+			trackedItem.URI, deviationItem.itemID, downloadSession.proxy.Host, downloadSession.occurredError.Error(), m.nAPI.CSRFToken), "module", m.Key)
 
 		var scErr tls_session.StatusError
 		if errors.As(downloadSession.occurredError, &scErr) {
-			// 404 and 400 errors are mostly caused by expired CSRF tokens, not exactly sure where to refresh it
-			// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
-			if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
-				res, err2 := m.nAPI.UserSession.Get(deviationItem.deviation.URL)
-				if err2 != nil {
-					return
-				}
+			if scErr.StatusCode == 400 && strings.Contains(scErr.Body, "image is invalid") {
+				// broken/corrupt image on DA's side, skip and continue
+				slog.Warn(fmt.Sprintf("skipping invalid image for deviation %s (%s): %s",
+					deviationItem.deviation.URL, deviationItem.itemID, scErr.Body), "module", m.Key)
+				downloadSession.occurredError = nil
+				completedItems[index] = true
 
-				html, _ := io.ReadAll(res.Body)
-				_ = html
+				for i, v := range m.multiProxy.currentIndexes {
+					if v == index {
+						m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
+						break
+					}
+				}
 			}
+			// other 400s (invalid crop, expired token, etc.) and 404s bubble up
+			// to processDownloadQueueNapi which triggers a re-login
 		}
 	}
 

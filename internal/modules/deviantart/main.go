@@ -48,6 +48,10 @@ type deviantArtSettings struct {
 		UserAgent         string `mapstructure:"user_agent"`
 		LoginWithoutProxy bool   `mapstructure:"login_without_proxy"`
 	} `mapstructure:"cloudflare"`
+	Debug struct {
+		LogRequests bool   `mapstructure:"log_requests"`
+		LogDir      string `mapstructure:"log_dir"`
+	} `mapstructure:"debug"`
 }
 
 type deviantArtPattern struct {
@@ -117,7 +121,15 @@ func (m *deviantArt) AddModuleCommand(command *cobra.Command) {
 
 // Login logs us in for the current session if possible/account available
 func (m *deviantArt) Login(account *models.Account) bool {
-	m.nAPI = napi.NewDeviantartNAPI(m.Key, m.settings.Cloudflare.UserAgent)
+	var logger *napi.RequestLogger
+	if m.settings.Debug.LogRequests {
+		dir := m.settings.Debug.LogDir
+		if dir == "" {
+			dir = "da-requests"
+		}
+		logger = napi.NewRequestLogger(dir)
+	}
+	m.nAPI = napi.NewDeviantartNAPI(m.Key, m.settings.Cloudflare.UserAgent, logger)
 
 	// set the proxy if requested
 	if m.settings.Cloudflare.LoginWithoutProxy {

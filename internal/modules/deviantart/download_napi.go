@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"regexp"
+	"strings"
+
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
@@ -51,6 +55,93 @@ func (i *downloadQueueItemNAPI) GetFileName(fileType int) (filename string) {
 	return filename
 }
 
+var (
+	wixmpFillRegex     = regexp.MustCompile(`/v1/fill/([^/]+)/`)
+	wixmpWidthRegex    = regexp.MustCompile(`w_(\d+)`)
+	wixmpHeightRegex   = regexp.MustCompile(`h_(\d+)`)
+	maxPixelsBodyRegex = regexp.MustCompile(`must not exceed (\d+)`)
+)
+
+const defaultMaxPixels int64 = 33177600
+
+func parseMaxPixels(body string) int64 {
+	match := maxPixelsBodyRegex.FindStringSubmatch(body)
+	if match != nil {
+		val, err := strconv.ParseInt(match[1], 10, 64)
+		if err == nil {
+			return val
+		}
+	}
+	return defaultMaxPixels
+}
+
+func scaleWixmpURL(uri string, maxPixels int64) string {
+	fillMatch := wixmpFillRegex.FindString(uri)
+	if fillMatch == "" {
+		return uri
+	}
+
+	wMatch := wixmpWidthRegex.FindStringSubmatch(fillMatch)
+	hMatch := wixmpHeightRegex.FindStringSubmatch(fillMatch)
+	if wMatch == nil || hMatch == nil {
+		return uri
+	}
+
+	w, _ := strconv.ParseInt(wMatch[1], 10, 64)
+	h, _ := strconv.ParseInt(hMatch[1], 10, 64)
+
+	if w*h <= maxPixels {
+		return uri
+	}
+
+	// apply a 0.5% safety margin to account for server-side rounding of dimensions
+	scale := math.Sqrt(float64(maxPixels)*0.995 / float64(w*h))
+	newW := int64(math.Floor(float64(w) * scale))
+	newH := int64(math.Floor(float64(h) * scale))
+
+	newFill := wixmpWidthRegex.ReplaceAllString(fillMatch, fmt.Sprintf("w_%d", newW))
+	newFill = wixmpHeightRegex.ReplaceAllString(newFill, fmt.Sprintf("h_%d", newH))
+
+	return strings.Replace(uri, fillMatch, newFill, 1)
+}
+
+// downloadFile wraps DownloadFile with request/response logging for debugging.
+func (m *deviantArt) downloadFile(session http.TlsClientSessionInterface, filepath string, uri string) error {
+	if m.nAPI.Logger != nil {
+		m.nAPI.Logger.LogDownloadRequest("GET", uri)
+	}
+
+	err := session.DownloadFile(filepath, uri)
+
+	if m.nAPI.Logger != nil {
+		if err != nil {
+			var scErr tls_session.StatusError
+			if errors.As(err, &scErr) {
+				m.nAPI.Logger.LogDownloadResponse(uri, scErr.StatusCode, err.Error(), nil, nil)
+			} else {
+				m.nAPI.Logger.LogDownloadResponse(uri, 0, err.Error(), nil, nil)
+			}
+		} else {
+			m.nAPI.Logger.LogDownloadResponse(uri, 200, "OK (download success)", nil, nil)
+		}
+	}
+
+	// handle pixel limit exceeded: scale down dimensions and retry
+	if err != nil {
+		var scErr tls_session.StatusError
+		if errors.As(err, &scErr) && scErr.StatusCode == 400 && strings.Contains(scErr.Body, "total pixels") {
+			maxPixels := parseMaxPixels(scErr.Body)
+			scaledURI := scaleWixmpURL(uri, maxPixels)
+			if scaledURI != uri {
+				slog.Warn(fmt.Sprintf("pixel limit exceeded, retrying with scaled URL: %s", scaledURI), "module", m.Key)
+				return m.downloadFile(session, filepath, scaledURI)
+			}
+		}
+	}
+
+	return err
+}
+
 func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemNAPI, trackedItem *models.TrackedItem, notifications ...*models.Notification) error {
 	if m.settings.MultiProxy {
 		// reset usage and errors from previous galleries
@@ -60,13 +151,19 @@ func (m *deviantArt) processDownloadQueueNapi(downloadQueue []downloadQueueItemN
 			// Check if it's a session.StatusCode error
 			var scErr tls_session.StatusError
 			if errors.As(err, &scErr) {
-				// 404 and 400 errors are mostly caused by expired CSRF tokens, not exactly sure where to refresh it
-				// reading the home page returns 200 and a CSRF token, but it's invalid for the existing queue
 				if scErr.StatusCode == 404 || scErr.StatusCode == 400 {
-					slog.Warn(fmt.Sprintf("error occurred downloading item %s (%s) with multi-proxy: %s, re-login",
-						trackedItem.URI, downloadQueue[0].itemID, err.Error()), "module", m.Key)
-					os.Exit(-1)
-					if successfulLogin := m.Login(m.nAPI.Account); successfulLogin {
+					// 400 (invalid crop, expired token) or 404 (expired session)
+					// tear down and re-login
+					slog.Warn(fmt.Sprintf("error occurred downloading item %s (%s) with multi-proxy: %s, tearing down sessions and re-login (CSRF: %s)",
+						trackedItem.URI, downloadQueue[0].itemID, err.Error(), m.nAPI.CSRFToken), "module", m.Key)
+
+					// fully tear down old proxy sessions and multi-proxy state
+					// so Login + initializeProxySessions starts completely fresh
+					m.proxies = nil
+					m.multiProxy.currentIndexes = nil
+
+					account := m.nAPI.Account
+					if successfulLogin := m.Login(account); successfulLogin {
 						return m.Parse(trackedItem)
 					}
 				}
@@ -196,7 +293,7 @@ func (m *deviantArt) downloadDeviationNapi(
 				deviationItem.downloadTag,
 				deviationItem.GetFileName(downloadQueueItemNAPIDownloadFile),
 			)
-			if err = downloadSession.DownloadFile(dst, deviationItem.deviation.Extended.Download.URL); err != nil {
+			if err = m.downloadFile(downloadSession, dst, deviationItem.deviation.Extended.Download.URL); err != nil {
 				return err
 			}
 
@@ -251,7 +348,7 @@ func (m *deviantArt) downloadDeviationNapi(
 					fp.GetFileExtension(additionalMedia.Media.BaseUri),
 				),
 			)
-			if err = downloadSession.DownloadFile(dst, additionalMedia.Media.BaseUri); err != nil {
+			if err = m.downloadFile(downloadSession, dst, additionalMedia.Media.BaseUri); err != nil {
 				// fallback to full view if the additional media download failed (got 403 multiple times)
 				fullViewType = additionalMedia.Media.GetType(napi.MediaTypeFullView)
 				if fullViewType != nil {
@@ -259,7 +356,7 @@ func (m *deviantArt) downloadDeviationNapi(
 					fileUri.Path += fullViewType.GetCrop(additionalMedia.Media.PrettyName)
 					additionalMedia.Media.BaseUri = fileUri.String()
 
-					if err = downloadSession.DownloadFile(dst, additionalMedia.Media.BaseUri); err != nil {
+					if err = m.downloadFile(downloadSession, dst, additionalMedia.Media.BaseUri); err != nil {
 						return err
 					}
 				} else {
@@ -415,7 +512,7 @@ func (m *deviantArt) downloadContentNapi(
 				fp.GetFileExtension(*highestQualityVideoType.URL),
 			),
 		)
-		if err := downloadSession.DownloadFile(dst, *highestQualityVideoType.URL); err != nil {
+		if err := m.downloadFile(downloadSession, dst, *highestQualityVideoType.URL); err != nil {
 			return err
 		}
 
@@ -448,7 +545,7 @@ func (m *deviantArt) downloadContentNapi(
 			fullViewType.FileSize.String() != "" &&
 			fullViewType.FileSize.String() != "0") {
 		downloadedContentFile = true
-		if err := downloadSession.DownloadFile(contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
+		if err := m.downloadFile(downloadSession, contentFilePath, deviationItem.deviation.Media.BaseUri); err != nil {
 			return err
 		}
 		// record that path
@@ -470,7 +567,7 @@ func (m *deviantArt) downloadContentNapi(
 					fp.SanitizePath(deviationItem.deviation.GetPrettyName(), false),
 				),
 			)
-			if err := downloadSession.DownloadFile(dst, *pdfMedia.Source); err != nil {
+			if err := m.downloadFile(downloadSession, dst, *pdfMedia.Source); err != nil {
 				return err
 			}
 			// record that path

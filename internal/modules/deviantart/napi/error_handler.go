@@ -16,6 +16,20 @@ type DeviantArtErrorHandler struct {
 }
 
 func (e DeviantArtErrorHandler) CheckResponse(response *http.Response) (error error, fatal bool) {
+	if response.StatusCode == 400 {
+		out, _ := io.ReadAll(response.Body)
+		body := strings.TrimSpace(string(out))
+		response.Body = io.NopCloser(bytes.NewReader(out))
+
+		slog.Warn("received 400: "+body, "module", e.ModuleKey)
+
+		// all known 400 cases from wixmp are fatal (no point retrying)
+		return tls_session.StatusError{
+			StatusCode: response.StatusCode,
+			Body:       body,
+		}, true
+	}
+
 	if response.StatusCode == 403 {
 		// 403 is being returned if we're over the rate limit instead of 429
 		out, _ := io.ReadAll(response.Body)
