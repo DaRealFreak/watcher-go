@@ -9,9 +9,13 @@ import (
 
 type StatusError struct {
 	StatusCode int
+	Body       string
 }
 
 func (e StatusError) Error() string {
+	if e.Body != "" {
+		return fmt.Sprintf("unexpected status code: %d, body: %s", e.StatusCode, e.Body)
+	}
 	return fmt.Sprintf("unexpected status code: %d", e.StatusCode)
 }
 
