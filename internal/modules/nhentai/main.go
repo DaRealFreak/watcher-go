@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
@@ -14,6 +15,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 type nhentai struct {
@@ -27,7 +29,8 @@ type nhentaiSettings struct {
 	Cloudflare struct {
 		UserAgent string `mapstructure:"user_agent"`
 	} `mapstructure:"cloudflare"`
-	Search struct {
+	RateLimit *int `mapstructure:"rate_limit"`
+	Search    struct {
 		BlacklistedTags  []string `mapstructure:"blacklisted_tags"`
 		CategorizeSearch bool     `mapstructure:"categorize_search"`
 		InheritSubFolder bool     `mapstructure:"inherit_sub_folder"`
@@ -74,8 +77,15 @@ func (m *nhentai) InitializeModule() {
 		&m.settings,
 	))
 
+	rateLimit := 2500
+	if m.settings.RateLimit != nil {
+		rateLimit = *m.settings.RateLimit
+	}
+
 	m.baseURL, _ = url.Parse("https://nhentai.net/")
-	m.Session = tls_session.NewTlsClientSession(m.Key)
+	nhentaiSession := tls_session.NewTlsClientSession(m.Key)
+	nhentaiSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(rateLimit)*time.Millisecond), 1)
+	m.Session = nhentaiSession
 
 	// set the proxy if requested
 	raven.CheckError(m.Session.SetProxy(m.GetProxySettings()))

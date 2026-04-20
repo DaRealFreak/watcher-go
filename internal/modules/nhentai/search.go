@@ -71,7 +71,7 @@ func (m *nhentai) parseTagSearch(item *models.TrackedItem, tagType string, tagSl
 // parseQuerySearch handles search URLs using the v2 search API
 func (m *nhentai) parseQuerySearch(item *models.TrackedItem) error {
 	searchQuery := ""
-	search := regexp.MustCompile(`https://nhentai.net/search/.*`)
+	search := regexp.MustCompile(`https://nhentai.net/search[/?].*`)
 	if search.MatchString(item.URI) {
 		parsedUrl, _ := url.Parse(item.URI)
 		if parsedUrl.Query().Has("q") {
@@ -201,7 +201,7 @@ func (m *nhentai) getSubFolder(item *models.TrackedItem) string {
 		return item.SubFolder
 	}
 
-	search := regexp.MustCompile(`https://nhentai.net/search/.*`)
+	search := regexp.MustCompile(`https://nhentai.net/search[/?].*`)
 	if search.MatchString(item.URI) {
 		parsedUrl, _ := url.Parse(item.URI)
 		if parsedUrl.Query().Has("q") {
