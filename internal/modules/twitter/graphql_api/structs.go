@@ -36,7 +36,7 @@ type SingleTweet struct {
 				VideoInfo *struct {
 					Variants []struct {
 						Bitrate int    `json:"bitrate"`
-						URL     string `json:"URL"`
+						URL     string `json:"url"`
 					} `json:"variants"`
 				} `json:"video_info"`
 			} `json:"media"`

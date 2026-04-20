@@ -127,12 +127,12 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		return nil, err
 	}
 
-	// Features have changed: match the console-observed set
 	features := map[string]interface{}{
 		"rweb_video_screen_enabled":                                               false,
-		"payments_enabled":                                                        false,
+		"rweb_cashtags_enabled":                                                   true,
 		"profile_label_improvements_pcf_label_in_post_enabled":                    true,
-		"rweb_tipjar_consumption_enabled":                                         true,
+		"responsive_web_profile_redirect_enabled":                                 false,
+		"rweb_tipjar_consumption_enabled":                                         false,
 		"verified_phone_label_enabled":                                            false,
 		"creator_subscriptions_tweet_preview_api_enabled":                         true,
 		"responsive_web_graphql_timeline_navigation_enabled":                      true,
@@ -142,24 +142,28 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		"c9s_tweet_anatomy_moderator_badge_enabled":                               true,
 		"responsive_web_grok_analyze_button_fetch_trends_enabled":                 false,
 		"responsive_web_grok_analyze_post_followups_enabled":                      true,
-		"responsive_web_jetfuel_frame":                                            false,
+		"responsive_web_jetfuel_frame":                                            true,
 		"responsive_web_grok_share_attachment_enabled":                            true,
+		"responsive_web_grok_annotations_enabled":                                 true,
 		"articles_preview_enabled":                                                true,
 		"responsive_web_edit_tweet_api_enabled":                                   true,
 		"graphql_is_translatable_rweb_tweet_is_translatable_enabled":              true,
 		"view_counts_everywhere_api_enabled":                                      true,
 		"longform_notetweets_consumption_enabled":                                 true,
 		"responsive_web_twitter_article_tweet_consumption_enabled":                true,
-		"tweet_awards_web_tipping_enabled":                                        false,
-		"responsive_web_grok_show_grok_translated_post":                           false,
+		"content_disclosure_indicator_enabled":                                    true,
+		"content_disclosure_ai_generated_indicator_enabled":                       true,
+		"responsive_web_grok_show_grok_translated_post":                           true,
 		"responsive_web_grok_analysis_button_from_backend":                        true,
-		"creator_subscriptions_quote_tweet_preview_enabled":                       false,
+		"post_ctas_fetch_enabled":                                                 true,
 		"freedom_of_speech_not_reach_fetch_enabled":                               true,
 		"standardized_nudges_misinfo":                                             true,
 		"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
 		"longform_notetweets_rich_text_read_enabled":                              true,
-		"longform_notetweets_inline_media_enabled":                                true,
+		"longform_notetweets_inline_media_enabled":                                false,
 		"responsive_web_grok_image_annotation_enabled":                            true,
+		"responsive_web_grok_imagine_annotation_enabled":                          true,
+		"responsive_web_grok_community_note_auto_translation_is_enabled":          true,
 		"responsive_web_enhance_cards_enabled":                                    false,
 	}
 
@@ -176,8 +180,7 @@ func (a *TwitterGraphQlAPI) UserTimelineV2(
 		return nil, err
 	}
 
-	// Swap in the new query-hash and path
-	apiURI := "https://x.com/i/api/graphql/KDdlIFeZgikR2366ZRn0sw/UserMedia"
+	apiURI := "https://x.com/i/api/graphql/Uqb0z_IFBrxmPUhQ7pz6GQ/UserMedia"
 	values := url.Values{
 		"variables":    {string(varsJSON)},
 		"features":     {string(featsJSON)},
@@ -201,7 +204,8 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	a.applyRateLimit()
 
 	variables := map[string]interface{}{
-		"screen_name": username,
+		"screen_name":           username,
+		"withGrokTranslatedBio": true,
 	}
 	varsJSON, err := json.Marshal(variables)
 	if err != nil {
@@ -209,17 +213,16 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	}
 
 	features := map[string]interface{}{
-		"responsive_web_grok_bio_auto_translation_is_enabled":               false,
 		"hidden_profile_subscriptions_enabled":                              true,
-		"payments_enabled":                                                  false,
 		"profile_label_improvements_pcf_label_in_post_enabled":              true,
-		"rweb_tipjar_consumption_enabled":                                   true,
+		"responsive_web_profile_redirect_enabled":                           false,
+		"rweb_tipjar_consumption_enabled":                                   false,
 		"verified_phone_label_enabled":                                      false,
 		"subscriptions_verification_info_is_identity_verified_enabled":      true,
 		"subscriptions_verification_info_verified_since_enabled":            true,
 		"highlights_tweets_tab_ui_enabled":                                  true,
 		"responsive_web_twitter_article_notes_tab_enabled":                  true,
-		"subscriptions_feature_can_gift_premium":                            true,
+		"subscriptions_feature_can_gift_premium":                            false,
 		"creator_subscriptions_tweet_preview_api_enabled":                   true,
 		"responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
 		"responsive_web_graphql_timeline_navigation_enabled":                true,
@@ -230,6 +233,7 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 	}
 
 	fieldToggles := map[string]bool{
+		"withPayments":            false,
 		"withAuxiliaryUserLabels": true,
 	}
 	togglesJSON, err := json.Marshal(fieldToggles)
@@ -237,7 +241,7 @@ func (a *TwitterGraphQlAPI) UserByUsername(username string) (*UserInformation, e
 		return nil, err
 	}
 
-	apiURI := "https://x.com/i/api/graphql/jUKA--0QkqGIFhmfRZdWrQ/UserByScreenName"
+	apiURI := "https://x.com/i/api/graphql/IGgvgiOx4QZndDHuD3x9TQ/UserByScreenName"
 	values := url.Values{
 		"variables":    {string(varsJSON)},
 		"features":     {string(featsJSON)},
