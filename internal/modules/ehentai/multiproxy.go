@@ -18,6 +18,7 @@ import (
 
 type proxySession struct {
 	inUse         bool
+	limitReached  bool
 	proxy         http.ProxySettings
 	session       *std_session.StdClientSession
 	occurredError error
@@ -54,6 +55,9 @@ func (m *ehentai) initializeProxySessions() {
 }
 
 func (m *ehentai) isLowestIndex(index int) bool {
+	m.multiProxy.mutex.Lock()
+	defer m.multiProxy.mutex.Unlock()
+
 	lowestIndex := 999
 	for _, v := range m.multiProxy.currentIndexes {
 		if v < lowestIndex {
@@ -66,7 +70,7 @@ func (m *ehentai) isLowestIndex(index int) bool {
 
 func (m *ehentai) hasFreeProxy() bool {
 	for _, proxy := range m.proxies {
-		if !proxy.inUse {
+		if !proxy.inUse && !proxy.limitReached {
 			return true
 		}
 	}
@@ -74,14 +78,46 @@ func (m *ehentai) hasFreeProxy() bool {
 	return false
 }
 
-func (m *ehentai) getFreeProxy() *proxySession {
+// acquireFreeProxy atomically reserves a free, non-limit-reached proxy session.
+// Returns nil if none is currently available.
+func (m *ehentai) acquireFreeProxy() *proxySession {
+	m.multiProxy.mutex.Lock()
+	defer m.multiProxy.mutex.Unlock()
+
 	for _, proxy := range m.proxies {
-		if !proxy.inUse {
+		if !proxy.inUse && !proxy.limitReached {
+			proxy.inUse = true
 			return proxy
 		}
 	}
 
 	return nil
+}
+
+// waitForFreeProxy blocks until a usable proxy becomes available or all proxies have hit their
+// individual download limits. Returns nil in the latter case.
+func (m *ehentai) waitForFreeProxy() *proxySession {
+	for {
+		if m.allProxiesLimitReached() {
+			return nil
+		}
+
+		if proxy := m.acquireFreeProxy(); proxy != nil {
+			return proxy
+		}
+
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func (m *ehentai) allProxiesLimitReached() bool {
+	for _, proxy := range m.proxies {
+		if !proxy.limitReached {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (m *ehentai) getProxyError() *proxySession {
@@ -98,6 +134,20 @@ func (m *ehentai) resetProxies() {
 	for _, proxy := range m.proxies {
 		proxy.inUse = false
 		proxy.occurredError = nil
+		// limitReached persists across galleries - a proxy that has hit its daily quota
+		// stays excluded from rotation for the remainder of this watcher run
+	}
+}
+
+func (m *ehentai) removeCurrentIndex(index int) {
+	m.multiProxy.mutex.Lock()
+	defer m.multiProxy.mutex.Unlock()
+
+	for i, v := range m.multiProxy.currentIndexes {
+		if v == index {
+			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
+			break
+		}
 	}
 }
 
@@ -110,35 +160,45 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	}
 
 	for index, data := range downloadQueue {
-		// sleep until we have a free proxy again
-		for !m.hasFreeProxy() && m.getProxyError() == nil {
+		// wait until we have a free proxy, a proxy error, or every proxy exhausted its quota
+		for !m.hasFreeProxy() && m.getProxyError() == nil && !m.allProxiesLimitReached() {
 			time.Sleep(time.Millisecond * 100)
-			continue
+		}
+
+		// if every proxy has hit its download limit, stop scheduling more work
+		if m.allProxiesLimitReached() {
+			slog.Info("download limit reached across all proxies, skipping galleries from now on", "module", m.Key)
+			m.downloadLimitReached = true
+			break
 		}
 
 		// handle if errors occurred in previous downloads
 		if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
 			slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
 				erroneousProxy.proxy.Host), "module", m.Key)
-			return m.getProxyError().occurredError
+			m.multiProxy.waitGroup.Wait()
+			return erroneousProxy.occurredError
 		}
 
-		if m.hasFreeProxy() {
-			slog.Info(fmt.Sprintf(
-				"downloading updates for uri: \"%s\" (%0.2f%%)",
-				trackedItem.URI,
-				float64(index+1)/float64(len(downloadQueue))*100,
-			), "module", m.Key)
-
-			m.multiProxy.waitGroup.Add(1)
-			proxy := m.getFreeProxy()
-			proxy.inUse = true
-
-			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
-
-			go m.downloadItemSession(proxy, trackedItem, data, index)
+		proxy := m.acquireFreeProxy()
+		if proxy == nil {
+			// another goroutine beat us to the last free proxy; retry this index in the next iteration
+			continue
 		}
 
+		slog.Info(fmt.Sprintf(
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			trackedItem.URI,
+			float64(index+1)/float64(len(downloadQueue))*100,
+		), "module", m.Key)
+
+		m.multiProxy.waitGroup.Add(1)
+
+		m.multiProxy.mutex.Lock()
+		m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
+		m.multiProxy.mutex.Unlock()
+
+		go m.downloadItemSession(proxy, trackedItem, data, index)
 	}
 
 	m.multiProxy.waitGroup.Wait()
@@ -147,7 +207,11 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 	if erroneousProxy := m.getProxyError(); erroneousProxy != nil {
 		slog.Warn(fmt.Sprintf("error occurred during download for proxy: %s",
 			erroneousProxy.proxy.Host), "module", m.Key)
-		return m.getProxyError().occurredError
+		return erroneousProxy.occurredError
+	}
+
+	if m.downloadLimitReached {
+		return fmt.Errorf("download limit reached across all proxies")
 	}
 
 	// if no error occurred, update the tracked item to the last item ID
@@ -161,57 +225,97 @@ func (m *ehentai) processDownloadQueueMultiProxy(downloadQueue []*imageGalleryIt
 func (m *ehentai) downloadItemSession(
 	downloadSession *proxySession, trackedItem *models.TrackedItem, data *imageGalleryItem, index int,
 ) {
-	downloadQueueItem, err := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
-	if err != nil {
-		downloadSession.occurredError = err
-		downloadSession.inUse = false
-		m.multiProxy.waitGroup.Done()
+	defer m.multiProxy.waitGroup.Done()
+
+	currentSession := downloadSession
+	defer func() {
+		currentSession.inUse = false
+	}()
+
+	for {
+		downloadQueueItem, err := m.getDownloadQueueItem(currentSession.session, trackedItem, data)
+		if err != nil {
+			currentSession.occurredError = err
+			return
+		}
+
+		// an empty file URI typically means the proxy got rate-limited and the image page
+		// no longer rendered the expected img tag - swap proxies rather than failing the item
+		if downloadQueueItem.FileURI == "" {
+			slog.Warn(fmt.Sprintf(
+				"empty download URI for proxy: %s (likely rate-limited), excluding from rotation",
+				currentSession.proxy.Host), "module", m.Key)
+			currentSession.limitReached = true
+			currentSession.inUse = false
+
+			nextSession := m.waitForFreeProxy()
+			if nextSession == nil {
+				m.downloadLimitReached = true
+				m.removeCurrentIndex(index)
+				return
+			}
+
+			currentSession = nextSession
+			continue
+		}
+
+		downloadErr := m.downloadImageSession(currentSession, trackedItem, downloadQueueItem, index)
+		if downloadErr != nil && currentSession.limitReached {
+			// the proxy exhausted its quota - release it and try the remaining proxies
+			currentSession.inUse = false
+
+			nextSession := m.waitForFreeProxy()
+			if nextSession == nil {
+				m.downloadLimitReached = true
+				m.removeCurrentIndex(index)
+				return
+			}
+
+			currentSession = nextSession
+			continue
+		}
+
+		if downloadErr != nil {
+			if downloadQueueItem.FallbackFileURI == "" {
+				currentSession.occurredError = downloadErr
+				return
+			}
+
+			// we have a fallback URI
+			data.uri = downloadQueueItem.FallbackFileURI
+			fallback, fallbackErr := m.getDownloadQueueItem(currentSession.session, trackedItem, data)
+			if fallbackErr != nil {
+				currentSession.occurredError = fallbackErr
+				return
+			}
+
+			slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
+				data.uri,
+				fallback.FileURI), "module", m.Key)
+
+			downloadQueueItem.FileURI = fallback.FileURI
+			downloadQueueItem.FallbackFileURI = ""
+
+			// retry the fallback once and override the previous error with the new result
+			currentSession.occurredError = m.downloadImageSession(currentSession, trackedItem, downloadQueueItem, index)
+		}
+
 		return
 	}
-
-	if err = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index); err != nil {
-		if downloadQueueItem.FallbackFileURI == "" {
-			downloadSession.occurredError = err
-			downloadSession.inUse = false
-			m.multiProxy.waitGroup.Done()
-			return
-		}
-
-		// we have a fallback URI
-		data.uri = downloadQueueItem.FallbackFileURI
-		fallback, fallbackErr := m.getDownloadQueueItem(downloadSession.session, trackedItem, data)
-		if fallbackErr != nil {
-			downloadSession.occurredError = fallbackErr
-			downloadSession.inUse = false
-			m.multiProxy.waitGroup.Done()
-			return
-		}
-
-		slog.Warn(fmt.Sprintf("received status code 404 on gallery url \"%s\", trying fallback url \"%s\"",
-			data.uri,
-			fallback.FileURI), "module", m.Key)
-
-		downloadQueueItem.FileURI = fallback.FileURI
-		downloadQueueItem.FallbackFileURI = ""
-
-		// retry the fallback once and override the previous error with the new result
-		downloadSession.occurredError = m.downloadImageSession(downloadSession, trackedItem, downloadQueueItem, index)
-	}
-
-	downloadSession.inUse = false
-	m.multiProxy.waitGroup.Done()
 }
 
 func (m *ehentai) downloadImageSession(
 	downloadSession *proxySession, trackedItem *models.TrackedItem, downloadQueueItem *models.DownloadQueueItem, index int,
 ) error {
-	// check for limit
+	// check for per-proxy download limit
 	if downloadQueueItem.FileURI == "https://exhentai.org/img/509.gif" ||
 		downloadQueueItem.FileURI == "https://e-hentai.org/img/509.gif" {
-		slog.Info("download limit reached, skipping galleries from now on", "module", m.Key)
-		m.downloadLimitReached = true
+		slog.Warn(fmt.Sprintf(
+			"download limit reached for proxy: %s, excluding from rotation",
+			downloadSession.proxy.Host), "module", m.Key)
+		downloadSession.limitReached = true
 
-		return fmt.Errorf("download limit reached")
+		return fmt.Errorf("download limit reached for proxy %s", downloadSession.proxy.Host)
 	}
 
 	downloadErr := downloadSession.session.DownloadFile(
@@ -226,20 +330,12 @@ func (m *ehentai) downloadImageSession(
 	)
 
 	if downloadErr == nil {
-		downloadSession.inUse = false
-
 		if m.isLowestIndex(index) {
 			// if we are the lowest index (to prevent skips on errors) update the downloaded item
 			m.DbIO.UpdateTrackedItem(trackedItem, downloadQueueItem.ItemID)
 		}
 
-		// remove current index from current list since we finished
-		for i, v := range m.multiProxy.currentIndexes {
-			if v == index {
-				m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes[:i], m.multiProxy.currentIndexes[i+1:]...)
-				break
-			}
-		}
+		m.removeCurrentIndex(index)
 	}
 
 	return downloadErr

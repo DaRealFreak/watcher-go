@@ -40,6 +40,7 @@ type ehentai struct {
 	multiProxy               struct {
 		currentIndexes []int
 		waitGroup      sync.WaitGroup
+		mutex          sync.Mutex
 	}
 }
 
