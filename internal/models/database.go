@@ -11,6 +11,7 @@ type DatabaseInterface interface {
 	GetFirstOrCreateTrackedItem(uri string, subFolder string, module ModuleInterface) *TrackedItem
 	GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module ModuleInterface) (items []*TrackedItem)
 	UpdateTrackedItem(trackedItem *TrackedItem, currentItem string)
+	UpdateTrackedItemGeneratedNotes(trackedItem *TrackedItem, generatedNotes string)
 	ChangeTrackedItemUri(trackedItem *TrackedItem, uri string)
 	CreateTrackedItem(uri string, subFolder string, module ModuleInterface)
 	ChangeTrackedItemCompleteStatus(trackedItem *TrackedItem, complete bool)

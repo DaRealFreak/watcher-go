@@ -84,21 +84,63 @@ func (tc *TweetContent) GetTweet() *Tweet {
 
 type TweetEntry = Entry[TweetContent]
 
+type UserURL struct {
+	DisplayURL  string `json:"display_url"`
+	ExpandedURL string `json:"expanded_url"`
+	URL         string `json:"url"`
+	Indices     []int  `json:"indices,omitempty"`
+}
+
+type UserEntities struct {
+	Description struct {
+		URLs []UserURL `json:"urls"`
+	} `json:"description"`
+	URL struct {
+		URLs []UserURL `json:"urls"`
+	} `json:"url"`
+}
+
+type UserBirthdate struct {
+	Day            int    `json:"day"`
+	Month          int    `json:"month"`
+	Year           int    `json:"year,omitempty"`
+	Visibility     string `json:"visibility,omitempty"`
+	YearVisibility string `json:"year_visibility,omitempty"`
+}
+
 type User struct {
 	ID     string      `json:"id"`
 	RestID json.Number `json:"rest_id"`
-	Core   struct {
+	Avatar struct {
+		ImageURL string `json:"image_url"`
+	} `json:"avatar"`
+	Core struct {
 		Name       string `json:"name"`
 		ScreenName string `json:"screen_name"`
+		CreatedAt  string `json:"created_at,omitempty"`
 	} `json:"core"`
 	Privacy struct {
 		Protected bool `json:"protected"`
 	} `json:"privacy"`
+	Location struct {
+		Location string `json:"location"`
+	} `json:"location"`
+	LegacyExtendedProfile struct {
+		Birthdate *UserBirthdate `json:"birthdate,omitempty"`
+	} `json:"legacy_extended_profile"`
 	RelationshipPerspectives struct {
 		Following bool `json:"following"`
 	} `json:"relationship_perspectives"`
 	Legacy struct {
-		FollowRequestSent *bool `json:"follow_request_sent"`
+		FollowRequestSent *bool        `json:"follow_request_sent"`
+		Description       string       `json:"description,omitempty"`
+		URL               string       `json:"url,omitempty"`
+		Entities          UserEntities `json:"entities"`
+		ProfileBannerURL  string       `json:"profile_banner_url,omitempty"`
+		FollowersCount    int          `json:"followers_count,omitempty"`
+		FriendsCount      int          `json:"friends_count,omitempty"`
+		MediaCount        int          `json:"media_count,omitempty"`
+		StatusesCount     int          `json:"statuses_count,omitempty"`
 	} `json:"legacy"`
 	Message  *string `json:"message"`
 	Reason   *string `json:"reason"`

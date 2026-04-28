@@ -17,21 +17,22 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		m.DbIO.ChangeTrackedItemSubFolder(item, screenName)
 	}
 
+	isNormalizedURI := m.normalizedUriRegexp.MatchString(item.URI)
+
 	var userId string
 	var userInformation *graphql_api.UserInformation
 
-	if m.normalizedUriRegexp.MatchString(item.URI) {
+	if isNormalizedURI {
 		userId, err = m.extractId(item.URI)
 		if err != nil {
 			return err
 		}
 
-		if m.settings.FollowUser || (m.settings.FollowFavorites && item.Favorite) {
-			userInformation, err = m.twitterGraphQlAPI.UserByUsername(screenName)
-			if err != nil {
-				return err
-			}
-		}
+		// Profile fetch is deferred until after timeline parsing: twitter does NOT
+		// redirect old screen names after a rename, so calling UserByUsername with
+		// the (potentially stale) screen name from the URI would miss the renamed
+		// user. We still know userId from the URI, so the timeline call works
+		// regardless, and we read the current screen name back from the tweets.
 	} else {
 		var userErr error
 		userInformation, userErr = m.twitterGraphQlAPI.UserByUsername(screenName)
@@ -40,18 +41,9 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		}
 
 		userId = userInformation.Data.User.Result.RestID.String()
-	}
 
-	if userInformation != nil {
-		user := userInformation.Data.User.Result
-		if !user.RelationshipPerspectives.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
-			if m.settings.FollowUser || (m.settings.FollowFavorites && item.Favorite) {
-				if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
-					return followErr
-				}
-
-				slog.Info(fmt.Sprintf("followed user %s", screenName), "module", m.ModuleKey())
-			}
+		if applyErr := m.applyProfileResponse(item, userId, screenName, userInformation.Data.User.Result); applyErr != nil {
+			return applyErr
 		}
 	}
 
@@ -103,9 +95,17 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 
 		tweetEntries := timeline.TweetEntries(userId)
 		if len(tweetEntries) == 0 && searchTime == nil && bottomCursor == "" {
-			user, userErr := m.twitterGraphQlAPI.UserByUsername(screenName)
-			if userErr != nil {
-				return userErr
+			user := userInformation
+			if user == nil {
+				var userErr error
+				user, userErr = m.twitterGraphQlAPI.UserByUsername(screenName)
+				if userErr != nil {
+					return userErr
+				}
+			}
+
+			if applyErr := m.applyProfileResponse(item, userId, screenName, user.Data.User.Result); applyErr != nil {
+				return applyErr
 			}
 
 			if user.Data.User.Result.Privacy.Protected {
@@ -202,12 +202,48 @@ func (m *twitter) parsePageGraphQLApi(item *models.TrackedItem, screenName strin
 		}
 	}
 
+	// Profile capture / follow check for normalized URI items. Done now (rather than
+	// up front) because the rename detection inside the timeline loop above may have
+	// updated screenName to the user's current handle — calling UserByUsername with
+	// the stale name from the URI before then would miss renamed accounts.
+	if isNormalizedURI {
+		finalUser, finalErr := m.twitterGraphQlAPI.UserByUsername(screenName)
+		if finalErr != nil {
+			slog.Warn(fmt.Sprintf("unable to fetch user info for %s: %s",
+				screenName, finalErr.Error()), "module", m.ModuleKey())
+		} else {
+			if applyErr := m.applyProfileResponse(item, userId, screenName, finalUser.Data.User.Result); applyErr != nil {
+				return applyErr
+			}
+		}
+	}
+
 	for i, j := 0, len(newMediaTweets)-1; i < j; i, j = i+1, j-1 {
 		newMediaTweets[i], newMediaTweets[j] = newMediaTweets[j], newMediaTweets[i]
 	}
 
 	if downloadErr := m.processDownloadQueueGraphQL(newMediaTweets, item); downloadErr != nil {
 		return downloadErr
+	}
+
+	return nil
+}
+
+// applyProfileResponse persists the resolved profile to generated_notes and applies
+// the auto-follow rules for a single UserByUsername response. Centralized so both
+// the up-front fetch (non-normalized URI), the post-timeline fetch (normalized URI),
+// and the no-entries fallback share identical behavior.
+func (m *twitter) applyProfileResponse(item *models.TrackedItem, userId string, screenName string, user graphql_api.User) error {
+	m.persistGeneratedNotes(item, userId, user)
+
+	if !user.RelationshipPerspectives.Following && (user.Legacy.FollowRequestSent == nil || !*user.Legacy.FollowRequestSent) {
+		if m.settings.FollowUser || (m.settings.FollowFavorites && item.Favorite) {
+			if followErr := m.twitterGraphQlAPI.FollowUser(userId); followErr != nil {
+				return followErr
+			}
+
+			slog.Info(fmt.Sprintf("followed user %s", screenName), "module", m.ModuleKey())
+		}
 	}
 
 	return nil
@@ -233,6 +269,37 @@ func (m *twitter) extractId(uri string) (string, error) {
 	}
 
 	return "", fmt.Errorf("uri \"%s\" not matching the regular expression", uri)
+}
+
+// persistGeneratedNotes renders the resolved twitter user as a profile-view-style
+// snapshot and stores it in the generated_notes column of the tracked item. Used to
+// keep a local snapshot of the profile around so we still have something readable
+// after the upstream profile is deleted or suspended.
+//
+// The expectedUserId guard protects against handle reuse: twitter does not redirect
+// renamed screen names, so a stale screen name we still hold in a URI may now be
+// owned by an unrelated user. Saving that user's profile to OUR tracked item would
+// be wrong, so we skip when the response's rest_id does not match.
+//
+// Also skipped when the response does not contain a real user (UserUnavailable, or
+// rest_id missing entirely) to avoid clobbering previously captured data.
+func (m *twitter) persistGeneratedNotes(item *models.TrackedItem, expectedUserId string, user graphql_api.User) {
+	if user.RestID.String() == "" {
+		return
+	}
+	if expectedUserId != "" && user.RestID.String() != expectedUserId {
+		return
+	}
+	if user.TypeName != nil && *user.TypeName == "UserUnavailable" {
+		return
+	}
+
+	notes := user.FormatProfile()
+	if notes == "" || notes == item.GeneratedNotes {
+		return
+	}
+
+	m.DbIO.UpdateTrackedItemGeneratedNotes(item, notes)
 }
 
 func (m *twitter) extractScreenName(uri string) (string, error) {

@@ -33,7 +33,15 @@ func NewConnection() *DbIO {
 
 	dbIO.connection = db
 
+	dbIO.migrate()
+
 	return &dbIO
+}
+
+// migrate runs all idempotent schema migrations to bring older databases up to the
+// current expected shape. Called on every connection open.
+func (db *DbIO) migrate() {
+	db.migrateTrackedItemsTable()
 }
 
 // CloseConnection safely closes the database connection

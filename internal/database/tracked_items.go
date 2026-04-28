@@ -15,20 +15,59 @@ func (db *DbIO) createTrackedItemsTable(connection *sql.DB) (err error) {
 	sqlStatement := `
 		CREATE TABLE tracked_items
 		(
-			uid           INTEGER PRIMARY KEY AUTOINCREMENT,
-			uri           VARCHAR(255) DEFAULT '',
-			subfolder     VARCHAR(255) DEFAULT '',
-			current_item  VARCHAR(255) DEFAULT '',
-			module        VARCHAR(255) DEFAULT '' NOT NULL ,
-			last_modified DATETIME 	   DEFAULT (strftime('%s','now')),
-			favorite      BOOLEAN      DEFAULT FALSE NOT NULL,
-			complete      BOOLEAN      DEFAULT FALSE NOT NULL,
-			notes         TEXT         DEFAULT '' NOT NULL
+			uid             INTEGER PRIMARY KEY AUTOINCREMENT,
+			uri             VARCHAR(255) DEFAULT '',
+			subfolder       VARCHAR(255) DEFAULT '',
+			current_item    VARCHAR(255) DEFAULT '',
+			module          VARCHAR(255) DEFAULT '' NOT NULL ,
+			last_modified   DATETIME 	 DEFAULT (strftime('%s','now')),
+			favorite        BOOLEAN      DEFAULT FALSE NOT NULL,
+			complete        BOOLEAN      DEFAULT FALSE NOT NULL,
+			notes           TEXT         DEFAULT '' NOT NULL,
+			generated_notes TEXT         DEFAULT '' NOT NULL
 		);
 	`
 	_, err = connection.Exec(sqlStatement)
 
 	return err
+}
+
+// migrateTrackedItemsTable ensures schema additions present in newer versions of the
+// application also exist on older databases. Each migration step is idempotent.
+func (db *DbIO) migrateTrackedItemsTable() {
+	if !db.columnExists("tracked_items", "generated_notes") {
+		_, err := db.connection.Exec(
+			`ALTER TABLE tracked_items ADD COLUMN generated_notes TEXT DEFAULT '' NOT NULL`,
+		)
+		raven.CheckError(err)
+	}
+}
+
+// columnExists returns true if the passed column already exists on the passed table.
+func (db *DbIO) columnExists(tableName string, columnName string) bool {
+	rows, err := db.connection.Query(`PRAGMA table_info("` + tableName + `")`)
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(rows)
+
+	for rows.Next() {
+		var (
+			cid          int
+			name         string
+			columnType   string
+			notNull      int
+			defaultValue sql.NullString
+			primaryKey   int
+		)
+
+		raven.CheckError(rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey))
+
+		if name == columnName {
+			return true
+		}
+	}
+
+	return false
 }
 
 // GetTrackedItems retrieves all tracked items from the sqlite database
@@ -41,17 +80,17 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 
 	if module == nil {
 		if includeCompleted {
-			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items ORDER BY module, favorite DESC, uid")
+			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items ORDER BY module, favorite DESC, uid")
 		} else {
-			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete ORDER BY module, favorite DESC, uid")
+			rows, err = db.connection.Query("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE NOT complete ORDER BY module, favorite DESC, uid")
 		}
 	} else {
 		var stmt *sql.Stmt
 
 		if includeCompleted {
-			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE module = ? ORDER BY favorite DESC, uid")
+			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE module = ? ORDER BY favorite DESC, uid")
 		} else {
-			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete AND module = ? ORDER BY favorite DESC, uid")
+			stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE NOT complete AND module = ? ORDER BY favorite DESC, uid")
 		}
 		defer raven.CheckClosure(stmt)
 		raven.CheckError(err)
@@ -66,7 +105,7 @@ func (db *DbIO) GetTrackedItems(module models.ModuleInterface, includeCompleted 
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete, &item.GeneratedNotes)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -85,9 +124,9 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 	var stmt *sql.Stmt
 
 	if includeCompleted {
-		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri LIKE ? ORDER BY favorite DESC, uid")
+		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE uri LIKE ? ORDER BY favorite DESC, uid")
 	} else {
-		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE NOT complete AND uri LIKE ? ORDER BY favorite DESC, uid")
+		stmt, err = db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE NOT complete AND uri LIKE ? ORDER BY favorite DESC, uid")
 	}
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
@@ -100,7 +139,7 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete, &item.GeneratedNotes)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -112,7 +151,7 @@ func (db *DbIO) GetTrackedItemsByDomain(domain string, includeCompleted bool) (i
 // GetFirstOrCreateTrackedItem checks if an item exists already, else creates it
 // returns the already persisted or the newly created item
 func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module models.ModuleInterface) *models.TrackedItem {
-	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri = ? and subfolder = ? and module = ?")
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE uri = ? and subfolder = ? and module = ?")
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
@@ -125,7 +164,7 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module
 
 	if rows.Next() {
 		// item already persisted
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete, &item.GeneratedNotes)
 		raven.CheckError(err)
 	} else {
 		// create the item and call the same function again
@@ -139,7 +178,7 @@ func (db *DbIO) GetFirstOrCreateTrackedItem(uri string, subFolder string, module
 // GetAllOrCreateTrackedItemIgnoreSubFolder checks if an item exists already, else creates it, ignores sub folders
 // returns the already persisted or the newly created item
 func (db *DbIO) GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module models.ModuleInterface) (items []*models.TrackedItem) {
-	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete FROM tracked_items WHERE uri = ? and module = ?")
+	stmt, err := db.connection.Prepare("SELECT uid, uri, subfolder, current_item, module, last_modified, favorite, complete, generated_notes FROM tracked_items WHERE uri = ? and module = ?")
 	defer raven.CheckClosure(stmt)
 	raven.CheckError(err)
 
@@ -151,7 +190,7 @@ func (db *DbIO) GetAllOrCreateTrackedItemIgnoreSubFolder(uri string, module mode
 	for rows.Next() {
 		item := models.TrackedItem{}
 
-		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete)
+		err = rows.Scan(&item.ID, &item.URI, &item.SubFolder, &item.CurrentItem, &item.Module, &item.LastModified, &item.Favorite, &item.Complete, &item.GeneratedNotes)
 		raven.CheckError(err)
 
 		items = append(items, &item)
@@ -188,6 +227,20 @@ func (db *DbIO) UpdateTrackedItem(trackedItem *models.TrackedItem, currentItem s
 
 	// update current item
 	trackedItem.CurrentItem = currentItem
+}
+
+// UpdateTrackedItemGeneratedNotes updates the generated_notes column of the passed tracked item in the
+// database, intended for module-generated metadata (e.g. cached profile data so it survives upstream deletion).
+func (db *DbIO) UpdateTrackedItemGeneratedNotes(trackedItem *models.TrackedItem, generatedNotes string) {
+	stmt, err := db.connection.Prepare("UPDATE tracked_items SET generated_notes = ? WHERE uid = ?")
+	raven.CheckError(err)
+
+	defer raven.CheckClosure(stmt)
+
+	_, err = stmt.Exec(generatedNotes, trackedItem.ID)
+	raven.CheckError(err)
+
+	trackedItem.GeneratedNotes = generatedNotes
 }
 
 // ChangeTrackedItemCompleteStatus changes the complete status of the passed tracked item in the database
