@@ -42,6 +42,9 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options
 func NewBareModule() *models.Module {
 	module := &models.Module{
+		// Key stays "kemono.su" even though the canonical host is now kemono.cr;
+		// it persists in tracked_items rows for existing users and changing it
+		// would orphan their entries.
 		Key:           "kemono.su",
 		RequiresLogin: false,
 		LoggedIn:      false,

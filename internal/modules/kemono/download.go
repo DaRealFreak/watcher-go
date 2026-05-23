@@ -3,6 +3,8 @@ package kemono
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/url"
 	"os"
 	"path"
@@ -20,6 +22,102 @@ import (
 	"github.com/bogdanfinn/fhttp/http2"
 	"log/slog"
 )
+
+// joinDataURL builds a "{host}/data/{path}" URL with exactly one slash between segments.
+// API responses return paths with a leading slash (e.g. "/bd/86/...jpg"); naive
+// fmt.Sprintf("%s/data/%s") would produce "host/data//bd/86/...jpg".
+func joinDataURL(host, p string) string {
+	return fmt.Sprintf("%s/data/%s", strings.TrimRight(host, "/"), strings.TrimLeft(p, "/"))
+}
+
+// extractDataPath pulls the hashed path out of any "{host}/data/{path}" URL.
+// Returns "" if uri doesn't follow that shape.
+func extractDataPath(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	const marker = "/data/"
+	idx := strings.Index(uri, marker)
+	if idx < 0 {
+		return ""
+	}
+	return uri[idx+len(marker):]
+}
+
+// isImageFile is a coarse "can this be served by /thumbnail/data/" check.
+// img.kemono.cr only serves thumbnail-rendered images, not arbitrary content.
+func isImageFile(name string) bool {
+	switch strings.ToLower(path.Ext(name)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp":
+		return true
+	}
+	return false
+}
+
+// thumbnailHost returns the img.<site> host used for /thumbnail/data/ URLs,
+// picked from the current base URL (kemono.cr vs coomer.st).
+func (m *kemono) thumbnailHost() string {
+	if m.baseUrl != nil && strings.Contains(m.baseUrl.Host, "coomer") {
+		return "img.coomer.st"
+	}
+	return "img.kemono.cr"
+}
+
+// buildThumbnailURL returns the img.<site>/thumbnail/data/<path> URL for an item,
+// or "" if the file isn't an image or the path can't be derived.
+func (m *kemono) buildThumbnailURL(item *models.DownloadQueueItem, fileName string) string {
+	if !isImageFile(fileName) {
+		// fall back to checking the URL path's own extension - the API-supplied
+		// FileName isn't always set, in which case downloadPost derives fileName
+		// from the URL which already has the hashed-path extension.
+		if !isImageFile(item.FileURI) {
+			return ""
+		}
+	}
+	dataPath := extractDataPath(item.FallbackFileURI)
+	if dataPath == "" {
+		dataPath = extractDataPath(item.FileURI)
+	}
+	if dataPath == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://%s/thumbnail/data/%s", m.thumbnailHost(), strings.TrimLeft(dataPath, "/"))
+}
+
+// isNetworkError reports whether err looks like a transport-level failure
+// (connect timeout, EOF mid-stream, connection reset) for which retrying via
+// a fallback host is worthwhile.
+func isNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var netErr *net.OpError
+	if errors.As(err, &netErr) {
+		return true
+	}
+	if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+		return true
+	}
+	// fhttp/tls-client wrap dial/connect errors as *url.Error; fall back to
+	// substring matching since the underlying types are unexported.
+	msg := err.Error()
+	for _, needle := range []string{
+		"connectex",                       // Windows winsock connect failures
+		"connection refused",
+		"connection reset",
+		"no such host",
+		"i/o timeout",
+		"deadline exceeded",
+		"network is unreachable",
+		"host is unreachable",
+		"TLS handshake timeout",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
+}
 
 func (m *kemono) processDownloadQueue(item *models.TrackedItem, downloadQueue []api.QuickPost, notifications ...*models.Notification) error {
 	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI), "module", m.Key)
@@ -106,13 +204,24 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 				)
 			}
 
-			var e tls_session.StatusError
-			if errors.As(err, &e) && e.StatusCode == 404 && downloadItem.FallbackFileURI != "" {
-				slog.Warn(fmt.Sprintf("received 404 status code error \"%s\", trying thumbnail fallback url \"%s\"",
+			// On 404 OR a transport-level network error against a CDN node, retry
+			// the download through the main host (which 302s back to the origin's
+			// preferred CDN node, possibly a different one).
+			var statusErr tls_session.StatusError
+			is404 := errors.As(err, &statusErr) && statusErr.StatusCode == 404
+			isNetErr := isNetworkError(err)
+			if (is404 || isNetErr) && downloadItem.FallbackFileURI != "" {
+				reason := "404"
+				if isNetErr && !is404 {
+					reason = "network error"
+				}
+				slog.Warn(fmt.Sprintf("received %s \"%s\" downloading \"%s\", retrying via fallback url \"%s\"",
+					reason,
 					err.Error(),
+					downloadItem.FileURI,
 					downloadItem.FallbackFileURI), "module", m.Key)
 
-				if err = m.Session.DownloadFile(
+				err = m.Session.DownloadFile(
 					path.Join(
 						m.GetDownloadDirectory(),
 						m.Key,
@@ -121,8 +230,41 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 						fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_fallback_%s", data.ID, index+1, fileName))),
 					),
 					downloadItem.FallbackFileURI,
-				); err != nil {
-					return err
+				)
+			}
+
+			// Last-resort fallback for images: the dedicated img.<site>/thumbnail
+			// host serves a downscaled JPEG rendered from the same content hash.
+			// We use this only when both the CDN node and the origin redirect are
+			// unreachable, since the result is a degraded version of the file.
+			if err != nil {
+				var s tls_session.StatusError
+				stillRetryable := errors.As(err, &s) && s.StatusCode == 404
+				stillRetryable = stillRetryable || isNetworkError(err)
+				if stillRetryable {
+					if thumbURL := m.buildThumbnailURL(downloadItem, fileName); thumbURL != "" {
+						slog.Warn(fmt.Sprintf("primary and fallback downloads failed for \"%s\" (last error: %s), saving thumbnail from \"%s\" as degraded fallback",
+							downloadItem.FileURI,
+							err.Error(),
+							thumbURL), "module", m.Key)
+
+						if thumbErr := m.Session.DownloadFile(
+							path.Join(
+								m.GetDownloadDirectory(),
+								m.Key,
+								fp.TruncateMaxLength(m.getSubFolder(item)),
+								fp.TruncateMaxLength(fp.SanitizePath(data.ID, false)),
+								fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_thumbnail_%s", data.ID, index+1, fileName))),
+							),
+							thumbURL,
+						); thumbErr == nil {
+							// thumbnail saved - treat the item as recovered
+							err = nil
+						} else {
+							slog.Warn(fmt.Sprintf("thumbnail fallback also failed for \"%s\": %s",
+								thumbURL, thumbErr.Error()), "module", m.Key)
+						}
+					}
 				}
 			}
 
@@ -261,95 +403,118 @@ func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (l
 }
 
 func (m *kemono) getDownloadLinks(root *api.PostRoot) (links []*models.DownloadQueueItem) {
+	// Collect canonical attachments from post.file + post.attachments.
+	// The API's top-level `attachments` array is empty in current responses;
+	// the real list lives on post.attachments. previews[]/videos[] carry the
+	// per-file CDN server hint that we apply below.
+	type pendingFile struct {
+		Name string
+		Path string
+	}
+	pending := make([]pendingFile, 0)
 	if root.Post.File.Path != "" {
-		fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), root.Post.File.Path)
-		downloadItem := models.DownloadQueueItem{
-			ItemID:   fileUri,
-			FileURI:  fileUri,
-			FileName: root.Post.File.Name,
-		}
-
-		links = append(links, &downloadItem)
+		pending = append(pending, pendingFile{Name: root.Post.File.Name, Path: root.Post.File.Path})
 	}
-
-	for _, attachment := range root.Attachments {
-		if attachment.Path != "" {
-			fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), attachment.Path)
-			if attachment.Server != nil && *attachment.Server != "" {
-				fileUri = fmt.Sprintf("%s/data/%s", *attachment.Server, attachment.Path)
-			}
-
-			downloadItem := models.DownloadQueueItem{
-				ItemID:   fileUri,
-				FileURI:  fileUri,
-				FileName: attachment.Name,
-			}
-
-			links = append(links, &downloadItem)
+	for _, a := range root.Post.Attachments {
+		if a.Path != "" {
+			pending = append(pending, pendingFile{Name: a.Name, Path: a.Path})
 		}
 	}
 
-	// add thumbnails as fallback if we can't download the original file
-	// or as additional download if we can't associate the thumbnail with an attachment/download
+	mainHost := m.baseUrl.String()
+	for _, pf := range pending {
+		mainURI := joinDataURL(mainHost, pf.Path)
+		links = append(links, &models.DownloadQueueItem{
+			ItemID:   mainURI,
+			FileURI:  mainURI,
+			FileName: pf.Name,
+		})
+	}
+
+	// previews[] gives us the CDN host per path. Promote that to the primary
+	// FileURI (faster, avoids origin redirect) and keep the main-host URL as a
+	// fallback so we can recover from CDN-node connectivity issues.
 	for _, preview := range root.Previews {
 		// ignore mega folder icons
 		if preview.Name == "https://mega.nz/rich-file.png" {
 			continue
 		}
-
-		if preview.Path != "" {
-			fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), preview.Path)
-			if preview.Server != nil && *preview.Server != "" {
-				fileUri = fmt.Sprintf("%s/data/%s", *preview.Server, preview.Path)
-			}
-
-			// search for initial file name in attachments
-			found := false
-			for _, link := range links {
-				if strings.HasSuffix(link.FileURI, preview.Path) {
-					link.FallbackFileURI = fileUri
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				downloadItem := models.DownloadQueueItem{
-					ItemID:   fileUri,
-					FileURI:  fileUri,
-					FileName: preview.Name,
-				}
-				links = append(links, &downloadItem)
-			}
-		}
-	}
-
-	for _, video := range root.Videos {
-		fileUri := fmt.Sprintf("%s/data/%s", m.baseUrl.String(), video.Path)
-		if video.Server != nil && *video.Server != "" {
-			fileUri = fmt.Sprintf("%s/data/%s", *video.Server, video.Path)
+		if preview.Path == "" {
+			continue
 		}
 
-		downloadItem := models.DownloadQueueItem{
-			ItemID:   fileUri,
-			FileURI:  fileUri,
-			FileName: video.Name,
+		mainURI := joinDataURL(mainHost, preview.Path)
+		cdnURI := mainURI
+		if preview.Server != nil && *preview.Server != "" {
+			cdnURI = joinDataURL(*preview.Server, preview.Path)
 		}
 
-		// update file name if we already have the file in the download queue
-		found := false
+		matched := false
 		for _, link := range links {
-			if link.FileURI == fileUri {
-				link.FileName = video.Name
-				found = true
+			if link.FileURI == mainURI {
+				if cdnURI != mainURI {
+					link.FileURI = cdnURI
+					link.ItemID = cdnURI
+					link.FallbackFileURI = mainURI
+				}
+				matched = true
 				break
 			}
 		}
-
-		// add download item if we didn't find it in the download queue
-		if !found {
-			links = append(links, &downloadItem)
+		if matched {
+			continue
 		}
+
+		// unmatched preview - add as standalone download with the same fallback semantics
+		item := &models.DownloadQueueItem{
+			ItemID:   cdnURI,
+			FileURI:  cdnURI,
+			FileName: preview.Name,
+		}
+		if cdnURI != mainURI {
+			item.FallbackFileURI = mainURI
+		}
+		links = append(links, item)
+	}
+
+	for _, video := range root.Videos {
+		if video.Path == "" {
+			continue
+		}
+		mainURI := joinDataURL(mainHost, video.Path)
+		cdnURI := mainURI
+		if video.Server != nil && *video.Server != "" {
+			cdnURI = joinDataURL(*video.Server, video.Path)
+		}
+
+		matched := false
+		for _, link := range links {
+			if link.FileURI == cdnURI || link.FileURI == mainURI {
+				if video.Name != "" {
+					link.FileName = video.Name
+				}
+				if link.FileURI == mainURI && cdnURI != mainURI {
+					link.FileURI = cdnURI
+					link.ItemID = cdnURI
+					link.FallbackFileURI = mainURI
+				}
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+
+		item := &models.DownloadQueueItem{
+			ItemID:   cdnURI,
+			FileURI:  cdnURI,
+			FileName: video.Name,
+		}
+		if cdnURI != mainURI {
+			item.FallbackFileURI = mainURI
+		}
+		links = append(links, item)
 	}
 
 	document, _ := goquery.NewDocumentFromReader(strings.NewReader(root.Post.Content))

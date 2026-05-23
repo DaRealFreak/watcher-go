@@ -51,7 +51,9 @@ func (m *kemono) parseUser(item *models.TrackedItem) error {
 			downloadQueue = append(downloadQueue, post)
 		}
 
-		if foundCurrentItem || profile.PostCount <= offset+50 {
+		// Stop on a short page; PostCount can drift between the profile fetch and
+		// later pages, so trusting the page size is safer than the reported count.
+		if foundCurrentItem || len(userPosts) < 50 {
 			break
 		}
 
