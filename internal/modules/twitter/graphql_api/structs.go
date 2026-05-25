@@ -66,8 +66,13 @@ type TweetContent struct {
 }
 
 func (tc *TweetContent) GetTweet() *Tweet {
+	var restID json.Number
+	if inner := tc.ItemContent.TweetResults.Result.TweetData(); inner != nil {
+		restID = inner.RestID
+	}
+
 	return &Tweet{
-		EntryID: "tweet-" + tc.ItemContent.TweetResults.Result.RestID.String(),
+		EntryID: "tweet-" + restID.String(),
 		Item: struct {
 			ItemContent struct {
 				TweetInner

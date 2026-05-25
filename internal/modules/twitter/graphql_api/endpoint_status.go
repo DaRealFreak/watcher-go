@@ -14,12 +14,30 @@ type StatusTweet struct {
 }
 
 func (t *StatusTweet) TweetEntries() (tweets []*Tweet) {
+	if t == nil {
+		return tweets
+	}
+
 	for _, instruction := range t.Data.Thread.Instructions {
 		if instruction.Type != "TimelineAddEntries" {
 			continue
 		}
 
 		for _, entry := range instruction.Entries {
+			// TweetDetail entries also include cursors and conversation modules
+			// whose content does not deserialize into a tweet payload — skip them
+			// before we try to read tweet fields.
+			if entry.Content.EntryType != "TimelineTimelineItem" {
+				continue
+			}
+
+			// blocked/deleted/region-restricted tweets come back with a nil
+			// result (or a wrapper around a nil inner tweet); either way there
+			// is nothing to download
+			if entry.Content.ItemContent.TweetResults.Result.TweetData() == nil {
+				continue
+			}
+
 			tweets = append(tweets, entry.Content.GetTweet())
 		}
 
