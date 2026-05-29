@@ -314,8 +314,9 @@ func (m *patreon) getCampaignData(campaignPostsURI string) (*campaignResponse, e
 	if err != nil {
 		return nil, err
 	}
-	readerRes, readerErr := io.ReadAll(res.Body)
+	defer func() { _ = res.Body.Close() }()
 
+	readerRes, readerErr := io.ReadAll(res.Body)
 	raven.CheckError(readerErr)
 
 	var postsData campaignResponse

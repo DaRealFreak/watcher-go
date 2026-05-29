@@ -268,6 +268,7 @@ func (m *schaleNetwork) getBookData(id, key string) (*bookDataResponse, error) {
 
 	if res.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
 		return nil, fmt.Errorf(
 			"failed to get book data: unexpected status code: %d. response: %s",
 			res.StatusCode, string(body),
@@ -356,8 +357,11 @@ func (m *schaleNetwork) isStatusError(err error, statusCode int) bool {
 	return errors.As(err, &statusErr) && statusErr.StatusCode == statusCode
 }
 
-// mapAPIResponse maps the API response into the passed APIResponse type
+// mapAPIResponse maps the API response into the passed APIResponse type.
+// Always closes res.Body so the global proxy connection budget slot is released.
 func (m *schaleNetwork) mapAPIResponse(res *http.Response, apiRes interface{}) error {
+	defer func() { _ = res.Body.Close() }()
+
 	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err

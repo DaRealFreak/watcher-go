@@ -82,6 +82,7 @@ func (m *jinjaModoki) InitializeModule() {
 		"restriction[]": {"0", "1", "2", "3", "4"},
 	})
 	raven.CheckError(err)
+	defer func() { _ = res.Body.Close() }()
 
 	// blacklisted IPs can't set access, so throw a fatal log if that occurs
 	content, _ := io.ReadAll(res.Body)

@@ -17,8 +17,11 @@ type Info struct {
 	LuToken2  string `json:"luToken2"`
 }
 
-// GetLoginCSRFToken returns the CSRF token from the login site to use in our POST login request
+// GetLoginCSRFToken returns the CSRF token from the login site to use in our POST login request.
+// Always closes res.Body so the global proxy connection budget slot is released.
 func (g DeviantArtLogin) GetLoginCSRFToken(res *http.Response) (*Info, error) {
+	defer func() { _ = res.Body.Close() }()
+
 	document, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return nil, err

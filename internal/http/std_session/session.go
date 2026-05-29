@@ -28,6 +28,10 @@ type StdClientSession struct {
 	MaxRetries         int
 	MaxDownloadRetries int
 	ctx                context.Context
+	// currentProxy is a snapshot of the most recently successfully applied
+	// proxy settings (or nil when no proxy / disabled). Read by the
+	// budgetingTransport wrapper to identify which pool a request belongs to.
+	currentProxy *watcherHttp.ProxySettings
 }
 
 // NewStdClientSession initializes a new session and sets all the required headers etc
@@ -46,7 +50,7 @@ func NewStdClientSessionWithJar(moduleKey string, jar http.CookieJar, errorHandl
 		errorHandlers = []watcherHttp.StdClientErrorHandler{StdClientErrorHandler{}}
 	}
 
-	app := StdClientSession{
+	app := &StdClientSession{
 		Client: &http.Client{
 			Jar:       jar,
 			Transport: http.DefaultTransport,
@@ -59,8 +63,11 @@ func NewStdClientSessionWithJar(moduleKey string, jar http.CookieJar, errorHandl
 	}
 
 	app.ModuleKey = moduleKey
+	app.Client.Transport = newBudgetingTransport(app.Client.Transport, func() (string, *watcherHttp.ProxySettings) {
+		return app.ModuleKey, app.currentProxy
+	})
 
-	return &app
+	return app
 }
 
 // Get sends a GET request, returns the occurred error if something went wrong even after multiple tries
@@ -112,12 +119,26 @@ func (s *StdClientSession) Get(uri string, errorHandlers ...watcherHttp.StdClien
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
 		// no more errors, we can break out of the loop here
 		if err == nil {
 			break
+		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
 		}
 
 		// any other error falls into the retry clause
@@ -164,6 +185,13 @@ func (s *StdClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
@@ -171,6 +199,14 @@ func (s *StdClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 		if err == nil {
 			break
 		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
+		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return response, err
@@ -209,6 +245,13 @@ func (s *StdClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.St
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
@@ -216,6 +259,14 @@ func (s *StdClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.St
 		if err == nil {
 			break
 		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
+		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return response, err
@@ -302,8 +353,14 @@ func (s *StdClientSession) GetClient() *http.Client {
 	return s.Client
 }
 
-// SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
+// SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications).
+// The client's transport is wrapped in budgetingTransport so every request - including module-level
+// Session.GetClient().Do(req) bypasses - is gated on the global ConnectionBudget.
 func (s *StdClientSession) SetClient(client *http.Client) {
+	inner := unwrapBudgetingTransport(client.Transport)
+	client.Transport = newBudgetingTransport(inner, func() (string, *watcherHttp.ProxySettings) {
+		return s.ModuleKey, s.currentProxy
+	})
 	s.Client = client
 }
 
@@ -330,20 +387,31 @@ func (s *StdClientSession) ApplyRateLimit() {
 	}
 }
 
-// SetProxy sets the current proxy for the client
+// SetProxy sets the current proxy for the client and snapshots the settings so
+// the budgetingTransport wrapper can identify which (username, domain) pool a
+// request belongs to. Every transport assignment is re-wrapped so requests
+// cannot bypass the budget.
 func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
+	wrap := func(tr http.RoundTripper) http.RoundTripper {
+		return newBudgetingTransport(tr, func() (string, *watcherHttp.ProxySettings) {
+			return s.ModuleKey, s.currentProxy
+		})
+	}
+
 	// reset to default transport (no Proxy, default DialContext)
 	if ps == nil || !ps.Enable || ps.Host == "" {
-		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+		s.currentProxy = nil
+		inner := unwrapBudgetingTransport(s.Client.Transport)
+		if orig, ok := inner.(*http.Transport); ok {
 			tr := orig.Clone()
 			tr.Proxy = nil
 			tr.DialContext = (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext
-			s.Client.Transport = tr
+			s.Client.Transport = wrap(tr)
 		} else {
-			s.Client.Transport = http.DefaultTransport
+			s.Client.Transport = wrap(http.DefaultTransport)
 		}
 		return nil
 	}
@@ -371,6 +439,7 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		}
 		dialer, err := proxy.SOCKS5("tcp", addr, auth, proxy.Direct)
 		if err != nil {
+			s.currentProxy = nil
 			return fmt.Errorf("failed to create SOCKS5 dialer: %w", err)
 		}
 
@@ -381,7 +450,8 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 
 		// apply onto cloned transport
 		var tr *http.Transport
-		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+		inner := unwrapBudgetingTransport(s.Client.Transport)
+		if orig, ok := inner.(*http.Transport); ok {
 			tr = orig.Clone()
 		} else {
 			tr = http.DefaultTransport.(*http.Transport).Clone()
@@ -389,7 +459,7 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		tr.DialContext = dialContext
 		// clear any HTTP Proxy setting
 		tr.Proxy = nil
-		s.Client.Transport = tr
+		s.Client.Transport = wrap(tr)
 
 	case "http", "https":
 		// build URL with optional basic auth
@@ -404,11 +474,13 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		proxyStr := fmt.Sprintf("%s://%s%s:%d", proxyType, userInfo, ps.Host, ps.Port)
 		parsed, err := url.Parse(proxyStr)
 		if err != nil {
+			s.currentProxy = nil
 			return fmt.Errorf("invalid proxy URL %q: %w", proxyStr, err)
 		}
 
 		var tr *http.Transport
-		if orig, ok := s.Client.Transport.(*http.Transport); ok {
+		inner := unwrapBudgetingTransport(s.Client.Transport)
+		if orig, ok := inner.(*http.Transport); ok {
 			tr = orig.Clone()
 		} else {
 			tr = http.DefaultTransport.(*http.Transport).Clone()
@@ -419,11 +491,14 @@ func (s *StdClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext
-		s.Client.Transport = tr
+		s.Client.Transport = wrap(tr)
 
 	default:
+		s.currentProxy = nil
 		return fmt.Errorf("unknown proxy type: %s", ps.Type)
 	}
 
+	snapshot := *ps
+	s.currentProxy = &snapshot
 	return nil
 }

@@ -72,6 +72,7 @@ func (m *patreon) getCreatorCampaign(creatorID int) (*userResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = res.Body.Close() }()
 
 	readerRes, readerErr := io.ReadAll(res.Body)
 	raven.CheckError(readerErr)

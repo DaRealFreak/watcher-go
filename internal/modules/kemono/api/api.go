@@ -114,6 +114,9 @@ func (api *Client) GetPostDetails(service, userID, postID string) (*PostRoot, er
 func (api *Client) GetPostComments(service, userID, postID string) (comments []Comment, err error) {
 	apiURL := fmt.Sprintf("%s/api/v1/%s/user/%s/post/%s/comments", api.BaseURL, service, userID, postID)
 	resp, err := api.Get(apiURL)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// normal behavior if no comments are available is a 404 response
 	if resp != nil && resp.StatusCode == 404 {
 		return comments, nil
@@ -122,8 +125,6 @@ func (api *Client) GetPostComments(service, userID, postID string) (comments []C
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

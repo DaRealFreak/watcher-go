@@ -81,6 +81,7 @@ func (m *giantessWorld) getChapterContent(base *url.URL, chapter string) (htmlCo
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = res.Body.Close() }()
 
 	return io.ReadAll(res.Body)
 }

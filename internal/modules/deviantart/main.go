@@ -163,6 +163,7 @@ func (m *deviantArt) extractCsrfToken(item *models.TrackedItem) (csrfToken strin
 	if requestErr != nil {
 		return "", requestErr
 	}
+	defer func() { _ = res.Body.Close() }()
 
 	jsonPattern := regexp.MustCompile(`.*window\.__CSRF_TOKEN__\s*=\s*'(?P<Number>[^']+)';.*`)
 	document, documentErr := goquery.NewDocumentFromReader(res.Body)

@@ -415,6 +415,7 @@ func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
 		}
 
 		doc, err = goquery.NewDocumentFromReader(resp.Body)
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -461,6 +462,7 @@ func (h *XTransactionIdHandler) handleMigration() (*goquery.Document, error) {
 		}
 
 		doc, err = goquery.NewDocumentFromReader(resp.Body)
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -506,6 +508,7 @@ func (h *XTransactionIdHandler) getIndices(homeDoc *goquery.Document) (int, []in
 	}
 
 	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
 	if err != nil {
 		return 0, nil, fmt.Errorf("error reading ondemand response: %w", err)
 	}

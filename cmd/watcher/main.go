@@ -10,6 +10,7 @@ import (
 
 	formatter "github.com/DaRealFreak/colored-nested-formatter/v2"
 	"github.com/DaRealFreak/watcher-go/internal/configuration"
+	watcherHttp "github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/raven"
 	"github.com/DaRealFreak/watcher-go/internal/update"
 	"github.com/DaRealFreak/watcher-go/internal/version"
@@ -53,6 +54,7 @@ func NewWatcherApplication() *CliApplication {
 	app.addBackupCommand()
 	app.addRestoreCommand()
 	app.addModulesCommand()
+	app.addProxyLimitsCommand()
 	app.addGenerateAutoCompletionCommand()
 
 	// read in environment variables that match
@@ -158,6 +160,12 @@ func (cli *CliApplication) initWatcher() {
 		// if viper has no database path set up, set it to the default value
 		viper.Set("Database.Path", watcherApp.DefaultDatabasePath)
 	}
+
+	// initialize the global proxy connection budget from config
+	watcherHttp.InitGlobalBudget(loadProxyConnectionLimits())
+	// initialize the lease coordinator that hands out per-module
+	// reservations against that budget
+	watcherHttp.InitGlobalLeases()
 
 	// initialize the watcher now after we parsed the configuration
 	cli.watcher = watcherApp.NewWatcher(cli.config)

@@ -253,6 +253,7 @@ func (m *pixiv) downloadUgoira(data *downloadQueueItem, illustID int) (err error
 	if err != nil {
 		return err
 	}
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

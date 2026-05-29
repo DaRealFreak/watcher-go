@@ -185,6 +185,17 @@ func (app *Watcher) runForItems(moduleKey string, trackedItems []*models.Tracked
 
 	raven.CheckError(module.Load())
 
+	// Reserve proxy budget slots for this module's run. Blocks here if a
+	// peer module is currently holding more than (cap - half) slots; queues
+	// in arrival order. Released after the item loop so the next module's
+	// goroutine can proceed.
+	leases := acquireModuleLeases(moduleKey)
+	defer func() {
+		for _, l := range leases {
+			l.Release()
+		}
+	}()
+
 	for _, item := range trackedItems {
 		if (app.Cfg.Run.Force || app.Cfg.Run.ResetProgress) && item.CurrentItem != "" {
 			slog.Info(

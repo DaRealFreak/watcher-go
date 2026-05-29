@@ -27,6 +27,10 @@ type TlsClientSession struct {
 	MaxRetries         int
 	MaxDownloadRetries int
 	ctx                context.Context
+	// currentProxy is a snapshot of the most recently successfully applied
+	// proxy settings (or nil when no proxy / disabled). Read by the
+	// budgetingTlsClient wrapper to identify which pool a request belongs to.
+	currentProxy *watcherHttp.ProxySettings
 }
 
 // NewTlsClientSession initializes a new session and sets all the required headers etc
@@ -54,8 +58,7 @@ func NewTlsClientSessionWithJar(moduleKey string, jar tls_client.CookieJar, erro
 
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 
-	app := TlsClientSession{
-		Client:             client,
+	app := &TlsClientSession{
 		Jar:                jar,
 		ErrorHandlers:      errorHandlers,
 		MaxRetries:         5,
@@ -64,8 +67,11 @@ func NewTlsClientSessionWithJar(moduleKey string, jar tls_client.CookieJar, erro
 	}
 
 	app.ModuleKey = moduleKey
+	app.Client = newBudgetingTlsClient(client, func() (string, *watcherHttp.ProxySettings) {
+		return app.ModuleKey, app.currentProxy
+	})
 
-	return &app
+	return app
 }
 
 // Get sends a GET request, returns the occurred error if something went wrong even after multiple tries
@@ -117,12 +123,26 @@ func (s *TlsClientSession) Get(uri string, errorHandlers ...watcherHttp.TlsClien
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
 		// no more errors, we can break out of the loop here
 		if err == nil {
 			break
+		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
 		}
 
 		// any other error falls into the retry clause
@@ -169,6 +189,13 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
@@ -176,6 +203,14 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 		if err == nil {
 			break
 		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
+		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return response, err
@@ -214,6 +249,13 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 
 		// fatal error we can instantly return without retry
 		if err != nil && fatal {
+			// Callers discard the response on error (the convention is
+			// `if err != nil { return nil, err }`), so close the body here to
+			// release the wrapped budget slot promptly instead of leaking it
+			// until the GC finalizer fires. StatusCode/headers stay readable.
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			return response, err
 		}
 
@@ -221,6 +263,14 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 		if err == nil {
 			break
 		}
+
+		// Retry: caller never sees this response. Close to release the budget slot
+		// held by the wrapped response body before re-acquiring on the next attempt.
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+			response = nil
+		}
+
 		time.Sleep(time.Duration(try+1) * time.Second)
 	}
 	return response, err
@@ -307,9 +357,13 @@ func (s *TlsClientSession) GetClient() tls_client.HttpClient {
 	return s.Client
 }
 
-// SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications)
+// SetClient sets the used *http.Client in case we are routing the requests (for f.e. OAuth2 Authentications).
+// The new client is wrapped in budgetingTlsClient so every request - including module-level
+// Session.GetClient().Do(req) bypasses - is gated on the global ConnectionBudget.
 func (s *TlsClientSession) SetClient(client tls_client.HttpClient) {
-	s.Client = client
+	s.Client = newBudgetingTlsClient(client, func() (string, *watcherHttp.ProxySettings) {
+		return s.ModuleKey, s.currentProxy
+	})
 }
 
 func (s *TlsClientSession) GetCookies(u *url.URL) []*http.Cookie {
@@ -335,9 +389,12 @@ func (s *TlsClientSession) ApplyRateLimit() {
 	}
 }
 
-// SetProxy sets the current proxy for the client
+// SetProxy sets the current proxy for the client and snapshots the settings so
+// the budgetingTlsClient wrapper can identify which (username, domain) pool a
+// request belongs to.
 func (s *TlsClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 	if ps == nil || !ps.Enable || ps.Host == "" {
+		s.currentProxy = nil
 		return s.Client.SetProxy("")
 	}
 
@@ -364,5 +421,11 @@ func (s *TlsClientSession) SetProxy(ps *watcherHttp.ProxySettings) error {
 		"module", s.ModuleKey,
 	)
 
-	return s.Client.SetProxy(proxyURL)
+	if err := s.Client.SetProxy(proxyURL); err != nil {
+		s.currentProxy = nil
+		return err
+	}
+	snapshot := *ps
+	s.currentProxy = &snapshot
+	return nil
 }

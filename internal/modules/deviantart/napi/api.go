@@ -325,8 +325,11 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	return nil
 }
 
-// mapAPIResponse maps the API response into the passed APIResponse type
+// mapAPIResponse maps the API response into the passed APIResponse type.
+// Always closes res.Body so the global proxy connection budget slot is released.
 func (a *DeviantartNAPI) mapAPIResponse(res *http.Response, apiRes interface{}) error {
+	defer func() { _ = res.Body.Close() }()
+
 	out, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
