@@ -55,8 +55,12 @@ func (m *tapas) parseSeries(item *models.TrackedItem) error {
 			"module", m.Key,
 		)
 
-		if err := m.downloadEpisode(item, episode.ID); err != nil {
+		advance, err := m.downloadEpisode(item, episode.ID)
+		if err != nil {
 			return err
+		}
+		if !advance {
+			return nil
 		}
 
 		m.DbIO.UpdateTrackedItem(item, episode.ID)

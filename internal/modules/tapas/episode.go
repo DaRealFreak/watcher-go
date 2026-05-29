@@ -14,6 +14,36 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// episodeAction is the policy decision for how to handle an episode based on
+// its release/payment state.
+type episodeAction int
+
+const (
+	// actionDownload: episode is downloadable.
+	actionDownload episodeAction = iota
+	// actionSkipAndAdvance: episode is not downloadable but won't become
+	// downloadable later either (paid, unlocked-only content). Advance the
+	// tracker so the warning isn't logged every run.
+	actionSkipAndAdvance
+	// actionStop: episode hasn't been released yet. Stop walking the list and
+	// do not advance the tracker, so the next run picks the same id back up
+	// once it goes live.
+	actionStop
+)
+
+// episodeActionFor decides what to do with an episode based purely on its
+// metadata. Pulled out as a pure function so the policy is unit-testable
+// without a live API.
+func episodeActionFor(ep api.Episode) episodeAction {
+	if ep.Scheduled {
+		return actionStop
+	}
+	if ep.MustPay && !ep.Unlocked {
+		return actionSkipAndAdvance
+	}
+	return actionDownload
+}
+
 // parseEpisodeItem handles the case where the user tracks a single episode
 // URL directly. Once downloaded the item is marked complete.
 func (m *tapas) parseEpisodeItem(item *models.TrackedItem) error {
@@ -22,8 +52,12 @@ func (m *tapas) parseEpisodeItem(item *models.TrackedItem) error {
 		return fmt.Errorf("could not extract episode id from %q", item.URI)
 	}
 
-	if err := m.downloadEpisode(item, match[1]); err != nil {
+	advance, err := m.downloadEpisode(item, match[1])
+	if err != nil {
 		return err
+	}
+	if !advance {
+		return nil
 	}
 
 	m.DbIO.UpdateTrackedItem(item, match[1])
@@ -33,33 +67,37 @@ func (m *tapas) parseEpisodeItem(item *models.TrackedItem) error {
 }
 
 // downloadEpisode fetches the episode payload and downloads every comic page
-// belonging to it. Paid/locked or scheduled episodes are skipped with a
-// warning so the watcher run can continue.
-func (m *tapas) downloadEpisode(item *models.TrackedItem, episodeID string) error {
+// belonging to it. The returned advance flag tells the caller whether the
+// tracker should be moved forward past this episode: false means try again
+// next run (e.g. the episode is scheduled for a future release).
+func (m *tapas) downloadEpisode(item *models.TrackedItem, episodeID string) (advance bool, err error) {
 	episode, err := m.api.Episode(episodeID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if episode.Episode.Scheduled {
+	switch episodeActionFor(episode.Episode) {
+	case actionStop:
+		when := strings.TrimSpace(episode.Episode.RelativePublishDate)
+		if when == "" {
+			when = "soon"
+		}
 		slog.Warn(
-			fmt.Sprintf("episode %s is scheduled for a future release, skipping", episodeID),
+			fmt.Sprintf("episode %s is scheduled for a future release (%s), stopping", episodeID, when),
 			"module", m.Key,
 		)
-		return nil
-	}
-
-	if episode.Episode.MustPay && !episode.Episode.Unlocked {
+		return false, nil
+	case actionSkipAndAdvance:
 		slog.Warn(
 			fmt.Sprintf("episode %s requires payment and is not unlocked, skipping", episodeID),
 			"module", m.Key,
 		)
-		return nil
+		return true, nil
 	}
 
 	imageURLs, err := extractEpisodeImages(episode.HTML)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if len(imageURLs) == 0 {
@@ -67,7 +105,7 @@ func (m *tapas) downloadEpisode(item *models.TrackedItem, episodeID string) erro
 			fmt.Sprintf("episode %s contained no downloadable images", episodeID),
 			"module", m.Key,
 		)
-		return nil
+		return true, nil
 	}
 
 	episodeFolder := buildEpisodeFolder(episode.Episode)
@@ -83,11 +121,11 @@ func (m *tapas) downloadEpisode(item *models.TrackedItem, episodeID string) erro
 		)
 
 		if err := m.Session.DownloadFile(filePath, imageURL); err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 // extractEpisodeImages scrapes the lazy-loaded image URLs out of the HTML

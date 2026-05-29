@@ -1,6 +1,37 @@
 package tapas
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/DaRealFreak/watcher-go/internal/modules/tapas/api"
+)
+
+// TestEpisodeActionFor_ScheduledStops locks in the contract that scheduled
+// (unreleased) episodes return actionStop so the caller does NOT advance the
+// tracker — previously the tracker was advanced past scheduled ids, making
+// the next run skip them once they actually went live.
+func TestEpisodeActionFor_ScheduledStops(t *testing.T) {
+	cases := []struct {
+		name     string
+		episode  api.Episode
+		expected episodeAction
+	}{
+		{"scheduled", api.Episode{Scheduled: true}, actionStop},
+		{"scheduled and paid still stops", api.Episode{Scheduled: true, MustPay: true}, actionStop},
+		{"paid and locked", api.Episode{MustPay: true, Unlocked: false}, actionSkipAndAdvance},
+		{"paid but unlocked downloads", api.Episode{MustPay: true, Unlocked: true}, actionDownload},
+		{"free", api.Episode{Free: true}, actionDownload},
+		{"plain", api.Episode{}, actionDownload},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := episodeActionFor(c.episode); got != c.expected {
+				t.Fatalf("episodeActionFor(%+v) = %d, want %d", c.episode, got, c.expected)
+			}
+		})
+	}
+}
 
 func TestExtractEpisodeImages(t *testing.T) {
 	body := `

@@ -46,6 +46,9 @@ type Episode struct {
 	MustPay       bool        `json:"must_pay"`
 	Scheduled     bool        `json:"scheduled"`
 	Unlocked      bool        `json:"unlocked"`
+	// RelativePublishDate is a human-readable countdown string supplied by
+	// tapas itself for scheduled episodes (e.g. "In 2 days", "In 3 hours").
+	RelativePublishDate string `json:"relative_publish_date"`
 	PrevEpisodeID json.Number `json:"prev_ep_id"`
 	NextEpisodeID json.Number `json:"next_ep_id"`
 }
