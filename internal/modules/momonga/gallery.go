@@ -98,7 +98,7 @@ func (m *momonga) isBlacklisted(html string, title string) (bool, string) {
 
 // parseGallery parses a tracked gallery item and downloads its new page images
 func (m *momonga) parseGallery(item *models.TrackedItem) error {
-	res, err := m.Session.Get(item.URI)
+	res, err := m.get(item.URI)
 	if err != nil {
 		return err
 	}

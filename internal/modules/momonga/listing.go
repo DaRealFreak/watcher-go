@@ -55,7 +55,7 @@ func (m *momonga) getNextListingPageURL(html string) (string, bool) {
 
 // parseListing paginates a listing page, discovers galleries, and parses each new one
 func (m *momonga) parseListing(item *models.TrackedItem) error {
-	res, err := m.Session.Get(item.URI)
+	res, err := m.get(item.URI)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (m *momonga) parseListing(item *models.TrackedItem) error {
 			return err
 		}
 
-		res, err = m.Session.Get(nextPageURL)
+		res, err = m.get(nextPageURL)
 		if err != nil {
 			return err
 		}
