@@ -39,8 +39,7 @@ func NewBareModule() *models.Module {
 		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile(`tapas\.io/series/.+`),
-			regexp.MustCompile(`tapas\.io/episode/\d+`),
+			regexp.MustCompile(`tapas\.io`),
 		},
 	}
 	module.ModuleInterface = &tapas{
