@@ -99,27 +99,14 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 
 	bookPattern := regexp.MustCompile(`/books\?`)
 	singleBookPattern := regexp.MustCompile(`/books/(\w+)`)
-	wikiPattern := regexp.MustCompile(`/wiki`)
 
 	itemDownloadQueue := &downloadQueue{}
 
-	if wikiPattern.MatchString(item.URI) {
-		tagName, err := m.extractItemTag(item)
-		if err != nil {
-			return err
-		}
-
-		bookUri := fmt.Sprintf("https://www.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
-		bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, "", m)
-
-		galleryUri := fmt.Sprintf("https://www.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
-		galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, "", m)
-
-		if err = m.Parse(bookItem); err != nil {
-			return err
-		}
-
-		return m.Parse(galleryItem)
+	// the /tags/{tag} overview (the successor of the former /wiki overview)
+	// exposes the tag through the URL path and represents the union of its
+	// tagged posts and books
+	if tagName, ok := extractTagFromOverviewURI(item.URI); ok {
+		return m.parseTagAggregate(tagName)
 	}
 
 	if singleBookPattern.MatchString(item.URI) {
@@ -146,6 +133,46 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 	}
 
 	return m.processDownloadQueue(itemDownloadQueue, item)
+}
+
+// tagOverviewPattern matches the tag overview endpoint, e.g.
+// https://www.sankakucomplex.com/tags/{tag}, capturing the tag name from the
+// URL path. It deliberately stops at "/" and "?" to not swallow trailing path
+// segments or query parameters.
+var tagOverviewPattern = regexp.MustCompile(`/tags/([^/?]+)`)
+
+// extractTagFromOverviewURI extracts and unescapes the tag name from a tag
+// overview URI (/tags/{tag}). The second return value reports whether the URI
+// is a tag overview URI at all.
+func extractTagFromOverviewURI(uri string) (tagName string, ok bool) {
+	matches := tagOverviewPattern.FindStringSubmatch(uri)
+	if len(matches) < 2 {
+		return "", false
+	}
+
+	if unescaped, err := url.PathUnescape(matches[1]); err == nil {
+		return unescaped, true
+	}
+
+	return matches[1], true
+}
+
+// parseTagAggregate tracks and parses both the posts (gallery) and the books
+// associated with the passed tag. It backs the /tags/{tag} overview endpoint,
+// which itself does not expose downloadable items but represents the union of
+// its tagged posts and books.
+func (m *sankakuComplex) parseTagAggregate(tagName string) error {
+	bookUri := fmt.Sprintf("https://www.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
+	bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, "", m)
+
+	galleryUri := fmt.Sprintf("https://www.sankakucomplex.com/?tags=%s", url.QueryEscape(tagName))
+	galleryItem := m.DbIO.GetFirstOrCreateTrackedItem(galleryUri, "", m)
+
+	if err := m.Parse(bookItem); err != nil {
+		return err
+	}
+
+	return m.Parse(galleryItem)
 }
 
 func (m *sankakuComplex) AddItem(uri string) (string, error) {
