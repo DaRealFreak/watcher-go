@@ -29,7 +29,21 @@ func (m *sankakuComplex) parseGallery(item *models.TrackedItem) (galleryItems []
 		}
 
 		if nextItem == "" && len(apiGalleryResponse.Data) == 0 {
-			slog.Warn(fmt.Sprintf("first request has no results, tag probably changed for uri %s", item.URI), "module", m.Key)
+			result, migrateErr := m.migrateAliasedSearch(item)
+			if migrateErr != nil {
+				return nil, migrateErr
+			}
+
+			switch result {
+			case tagMigrationRewritten:
+				// item URI now points at the canonical tag(s); restart parsing
+				return m.parseGallery(item)
+			case tagMigrationSuperseded:
+				// the canonical search is tracked by another item; nothing to do here
+				return nil, nil
+			default:
+				slog.Warn(fmt.Sprintf("first request has no results, tag probably changed for uri %s", item.URI), "module", m.Key)
+			}
 		}
 
 		nextItem = apiGalleryResponse.Meta.Next

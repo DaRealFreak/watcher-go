@@ -156,6 +156,21 @@ func (m *sankakuComplex) parseBooks(item *models.TrackedItem) (downloadBookItems
 			return nil, apiErr
 		}
 
+		if page == 1 && len(apiGalleryResponse.Pools.Data) == 0 {
+			result, migrateErr := m.migrateAliasedSearch(item)
+			if migrateErr != nil {
+				return nil, migrateErr
+			}
+
+			if result == tagMigrationRewritten {
+				return m.parseBooks(item)
+			}
+
+			if result == tagMigrationSuperseded {
+				return nil, nil
+			}
+		}
+
 		for _, data := range apiGalleryResponse.Pools.Data {
 			itemTime, timeErr := time.Parse(bookCreatedAtLayout, data.CreatedAt)
 			if timeErr != nil {

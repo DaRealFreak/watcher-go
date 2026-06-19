@@ -106,7 +106,7 @@ func (m *sankakuComplex) Parse(item *models.TrackedItem) error {
 	// exposes the tag through the URL path and represents the union of its
 	// tagged posts and books
 	if tagName, ok := extractTagFromOverviewURI(item.URI); ok {
-		return m.parseTagAggregate(tagName)
+		return m.parseTagAggregate(item, tagName)
 	}
 
 	if singleBookPattern.MatchString(item.URI) {
@@ -161,7 +161,25 @@ func extractTagFromOverviewURI(uri string) (tagName string, ok bool) {
 // associated with the passed tag. It backs the /tags/{tag} overview endpoint,
 // which itself does not expose downloadable items but represents the union of
 // its tagged posts and books.
-func (m *sankakuComplex) parseTagAggregate(tagName string) error {
+//
+// The overview never searches, so it cannot observe the zero-results signal the
+// leaves use to detect aliased tags. It therefore resolves its tag up-front and
+// migrates its own URI, so it self-heals and always spawns canonical children.
+func (m *sankakuComplex) parseTagAggregate(item *models.TrackedItem, tagName string) error {
+	if canonical, aliased, resolveErr := m.resolveTagAlias(tagName); resolveErr == nil && aliased {
+		if newURI, uriErr := migrateTagsInURI(item.URI, canonical); uriErr == nil {
+			if m.applyMigratedURI(item, newURI) == tagMigrationSuperseded {
+				// the canonical overview is tracked by another item; it owns the children
+				return nil
+			}
+		}
+
+		// always build children from the canonical tag once the alias is resolved,
+		// even if rewriting the overview's own URI failed above - the children are
+		// what actually download, so they must use the canonical tag regardless.
+		tagName = canonical
+	}
+
 	bookUri := fmt.Sprintf("https://www.sankakucomplex.com/books?tags=%s", url.QueryEscape(tagName))
 	bookItem := m.DbIO.GetFirstOrCreateTrackedItem(bookUri, "", m)
 
