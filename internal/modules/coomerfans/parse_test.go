@@ -83,3 +83,19 @@ func TestExtractPostRefsEmpty(t *testing.T) {
 		t.Fatalf("got %d refs, want 0 for an out-of-range page", len(refs))
 	}
 }
+
+func TestSubFolderForURI(t *testing.T) {
+	cases := []struct {
+		uri  string
+		want string
+	}{
+		{"https://coomerfans.com/u/onlyfans/324235/zayafterhouz", "onlyfans/zayafterhouz"},
+		{"https://coomerfans.com/u/fansly/346538/thedeloreangirl", "fansly/thedeloreangirl"},
+		{"https://coomerfans.com/p/68811621/324235/onlyfans", ""},
+	}
+	for _, c := range cases {
+		if got := subFolderForURI(c.uri); got != c.want {
+			t.Errorf("subFolderForURI(%q) = %q, want %q", c.uri, got, c.want)
+		}
+	}
+}

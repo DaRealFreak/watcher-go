@@ -2,9 +2,11 @@
 package coomerfans
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -65,4 +67,14 @@ func extractPostRefs(doc *goquery.Document) []postRef {
 		})
 	})
 	return refs
+}
+
+// subFolderForURI derives the "{service}/{username}" subfolder from a creator
+// URL. Returns "" for any other URL shape (e.g. a direct post URL).
+func subFolderForURI(uri string) string {
+	service, _, username, ok := parseUserURL(uri)
+	if !ok {
+		return ""
+	}
+	return fp.SanitizePath(fmt.Sprintf("%s/%s", service, username), true)
 }
