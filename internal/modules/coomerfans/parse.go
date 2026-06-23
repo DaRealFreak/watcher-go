@@ -3,9 +3,11 @@ package coomerfans
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
+	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -77,4 +79,70 @@ func subFolderForURI(uri string) string {
 		return ""
 	}
 	return fp.SanitizePath(fmt.Sprintf("%s/%s", service, username), true)
+}
+
+// getSubFolder returns the item's stored subfolder, or derives one from the
+// creator URL when none is set.
+func (m *coomerfans) getSubFolder(item *models.TrackedItem) string {
+	if item.SubFolder != "" {
+		return item.SubFolder
+	}
+	return subFolderForURI(item.URI)
+}
+
+// parseUser pages through a creator's posts (newest-first), collecting every
+// post newer than the last-seen one, then downloads them oldest-first.
+func (m *coomerfans) parseUser(item *models.TrackedItem) error {
+	service, userID, username, ok := parseUserURL(item.URI)
+	if !ok {
+		return fmt.Errorf("could not extract service/user from URL: %s", item.URI)
+	}
+
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
+	}
+
+	var queue []postRef
+	foundCurrent := false
+	for page := 1; ; page++ {
+		pageURL := fmt.Sprintf("%s/u/%s/%s/%s?page=%d", baseURL, service, userID, username, page)
+		resp, err := m.Session.Get(pageURL)
+		if err != nil {
+			return fmt.Errorf("failed to fetch creator page %d: %w", page, err)
+		}
+
+		refs := extractPostRefs(m.Session.GetDocument(resp))
+		if len(refs) == 0 {
+			break
+		}
+
+		for _, ref := range refs {
+			if ref.ID == item.CurrentItem {
+				foundCurrent = true
+				break
+			}
+			queue = append(queue, ref)
+		}
+		if foundCurrent {
+			break
+		}
+	}
+
+	// reverse to oldest-first so an interrupted run resumes cleanly
+	for i, j := 0, len(queue)-1; i < j; i, j = i+1, j-1 {
+		queue[i], queue[j] = queue[j], queue[i]
+	}
+
+	slog.Info(fmt.Sprintf("found user %s (%s/%s) with %d new posts", username, service, userID, len(queue)), "module", m.Key)
+
+	return m.processDownloadQueue(item, queue)
+}
+
+// parsePost downloads a single post added directly as a tracked item.
+func (m *coomerfans) parsePost(item *models.TrackedItem) error {
+	id, userID, service, ok := parsePostURL(item.URI)
+	if !ok {
+		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)
+	}
+	return m.processDownloadQueue(item, []postRef{{ID: id, UserID: userID, Service: service}})
 }

@@ -15,6 +15,7 @@ import (
 	// registered modules imported for registering into the module factory
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/bsky"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/chounyuu"
+	_ "github.com/DaRealFreak/watcher-go/internal/modules/coomerfans"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/deviantart"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/ehentai"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/fantia"
