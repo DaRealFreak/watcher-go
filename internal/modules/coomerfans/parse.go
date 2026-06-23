@@ -1,7 +1,12 @@
 // Package coomerfans contains the implementation of the coomerfans.com module
 package coomerfans
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+)
 
 // postURLPattern matches a post URL: /p/{postId}/{userId}/{service}
 var postURLPattern = regexp.MustCompile(`/p/(\d+)/(\d+)/(\w+)`)
@@ -25,4 +30,39 @@ func parseUserURL(uri string) (service, userID, username string, ok bool) {
 		return "", "", "", false
 	}
 	return m[1], m[2], m[3], true
+}
+
+// postRef identifies a single post discovered while scraping.
+type postRef struct {
+	ID      string
+	UserID  string
+	Service string
+	Title   string
+}
+
+// extractPostRefs returns the posts listed on a creator page, in document
+// order (newest-first). Each post is taken from its `div.post > h3 > a` link;
+// the duplicate "View Post" link and avatar/recommended links are ignored.
+func extractPostRefs(doc *goquery.Document) []postRef {
+	var refs []postRef
+	seen := make(map[string]bool)
+	doc.Find("div.post").Each(func(_ int, sel *goquery.Selection) {
+		a := sel.Find("h3 a[href^='/p/']").First()
+		href, ok := a.Attr("href")
+		if !ok {
+			return
+		}
+		id, userID, service, ok := parsePostURL(href)
+		if !ok || seen[id] {
+			return
+		}
+		seen[id] = true
+		refs = append(refs, postRef{
+			ID:      id,
+			UserID:  userID,
+			Service: service,
+			Title:   strings.TrimSpace(a.Text()),
+		})
+	})
+	return refs
 }

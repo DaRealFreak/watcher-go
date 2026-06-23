@@ -1,6 +1,12 @@
 package coomerfans
 
-import "testing"
+import (
+	"bytes"
+	"os"
+	"testing"
+
+	"github.com/PuerkitoBio/goquery"
+)
 
 func TestParsePostURL(t *testing.T) {
 	cases := []struct {
@@ -39,5 +45,41 @@ func TestParseUserURL(t *testing.T) {
 			t.Errorf("parseUserURL(%q) = (%q,%q,%q,%v), want (%q,%q,%q,%v)",
 				c.uri, svc, user, name, ok, c.wantSvc, c.wantUser, c.wantName, c.wantOK)
 		}
+	}
+}
+
+func docFromFixture(t *testing.T, name string) *goquery.Document {
+	t.Helper()
+	data, err := os.ReadFile("testdata/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %s: %v", name, err)
+	}
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("parse fixture %s: %v", name, err)
+	}
+	return doc
+}
+
+func TestExtractPostRefs(t *testing.T) {
+	refs := extractPostRefs(docFromFixture(t, "creator.html"))
+	if len(refs) != 3 {
+		t.Fatalf("got %d refs, want 3 (avatar links and duplicate View Post links must be excluded)", len(refs))
+	}
+	if refs[0].ID != "68811621" || refs[0].UserID != "324235" || refs[0].Service != "onlyfans" {
+		t.Errorf("ref[0] = %+v, want ID 68811621 / user 324235 / onlyfans", refs[0])
+	}
+	if refs[0].Title != "Full video 6 min" {
+		t.Errorf("ref[0].Title = %q, want %q", refs[0].Title, "Full video 6 min")
+	}
+	if refs[2].ID != "68811655" {
+		t.Errorf("ref[2].ID = %q, want 68811655 (document order preserved)", refs[2].ID)
+	}
+}
+
+func TestExtractPostRefsEmpty(t *testing.T) {
+	refs := extractPostRefs(docFromFixture(t, "creator_empty.html"))
+	if len(refs) != 0 {
+		t.Fatalf("got %d refs, want 0 for an out-of-range page", len(refs))
 	}
 }
