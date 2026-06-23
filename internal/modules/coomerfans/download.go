@@ -81,6 +81,24 @@ func (m *coomerfans) processDownloadQueue(item *models.TrackedItem, queue []post
 	return nil
 }
 
+// postRelPath builds a media file's path relative to the module download root:
+// "{subFolder}/{postId} - {title}/{postId}_{index+1}_{fileName}". subFolder is
+// already sanitized by the caller and keeps its directory separators so the
+// "{service}/{username}" nesting is preserved; only the post folder and file
+// name are flattened (no separators allowed).
+func postRelPath(subFolder, postID, title, fileName string, index int) string {
+	postFolder := fp.SanitizePath(postID, false)
+	if t := fp.SanitizePath(title, false); strings.TrimSpace(t) != "" {
+		postFolder += " - " + t
+	}
+
+	return path.Join(
+		fp.TruncateMaxLength(subFolder),
+		fp.TruncateMaxLength(postFolder),
+		fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", postID, index+1, fileName))),
+	)
+}
+
 // downloadPost fetches a post page, extracts its media, and downloads each file
 // to {downloadDir}/coomerfans.com/{service}/{username}/{postId} - {title}/{file}.
 func (m *coomerfans) downloadPost(item *models.TrackedItem, ref postRef) error {
@@ -103,19 +121,12 @@ func (m *coomerfans) downloadPost(item *models.TrackedItem, ref postRef) error {
 		}
 	}
 
-	postFolder := fp.SanitizePath(ref.ID, false)
-	if title := fp.SanitizePath(ref.Title, false); strings.TrimSpace(title) != "" {
-		postFolder += " - " + title
-	}
-
 	for index, mediaURL := range mediaURLs {
 		fileName := fp.SanitizePath(fp.GetFileName(mediaURL), false)
 		target := path.Join(
 			m.GetDownloadDirectory(),
 			m.Key,
-			fp.TruncateMaxLength(fp.SanitizePath(subFolder, false)),
-			fp.TruncateMaxLength(postFolder),
-			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", ref.ID, index+1, fileName))),
+			postRelPath(subFolder, ref.ID, ref.Title, fileName, index),
 		)
 		if err := m.Session.DownloadFile(target, mediaURL); err != nil {
 			return err

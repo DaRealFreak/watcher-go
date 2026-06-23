@@ -3,11 +3,39 @@ package coomerfans
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+// TestPostRelPathPreservesSubFolderSeparator guards against re-flattening the
+// "{service}/{username}" subfolder. A prior version re-ran fp.SanitizePath with
+// allowSeparator=false on the already-built subfolder, collapsing the "/" to "_"
+// (producing "onlyfans_zayafterhouz" instead of the nested "onlyfans/zayafterhouz"
+// the design specifies).
+func TestPostRelPathPreservesSubFolderSeparator(t *testing.T) {
+	got := filepath.ToSlash(postRelPath("onlyfans/zayafterhouz", "68811621", "Full video 6 min", "2892ac-image.jpg", 0))
+	if !strings.HasPrefix(got, "onlyfans/zayafterhouz/") {
+		t.Errorf("subfolder nesting lost: got %q, want prefix \"onlyfans/zayafterhouz/\"", got)
+	}
+	if strings.Contains(got, "onlyfans_zayafterhouz") {
+		t.Errorf("subfolder separator flattened to underscore: %q", got)
+	}
+	if !strings.Contains(got, "/68811621 - Full video 6 min/68811621_1_2892ac-image.jpg") {
+		t.Errorf("unexpected post-folder/filename layout: %q", got)
+	}
+}
+
+// TestPostRelPathEmptyTitle verifies the post folder is just the ID when the
+// title is empty (the single-post tracked-item path, which carries no title).
+func TestPostRelPathEmptyTitle(t *testing.T) {
+	got := filepath.ToSlash(postRelPath("onlyfans/zayafterhouz", "68811621", "", "clip.mp4", 1))
+	if !strings.HasSuffix(got, "/68811621/68811621_2_clip.mp4") {
+		t.Errorf("empty-title post folder should be just the id: %q", got)
+	}
+}
 
 func postDoc(t *testing.T) *goquery.Document {
 	t.Helper()
