@@ -26,7 +26,10 @@ type fourChan struct {
 	threadPattern *regexp.Regexp
 	settings      fourChanSettings
 	proxies       []*proxySession
-	multiProxy    struct {
+	// evictedProxies holds the loop proxies (keyed host:port) that returned a 403 during
+	// page retrieval; they are skipped by rotation for the remainder of the run.
+	evictedProxies map[string]bool
+	multiProxy     struct {
 		currentIndexes []int
 		waitGroup      sync.WaitGroup
 	}
@@ -59,11 +62,13 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile("4chan.org"),
 			regexp.MustCompile("desuarchive.org"),
 		},
+		ProxyLoopIndex: -1,
 		SettingsSchema: fourChanSettings{},
 	}
 	module.ModuleInterface = &fourChan{
-		Module:        module,
-		threadPattern: regexp.MustCompile(`.*/(?P<BoardId>.*)/thread/(?P<ThreadID>.*)/`),
+		Module:         module,
+		threadPattern:  regexp.MustCompile(`.*/(?P<BoardId>.*)/thread/(?P<ThreadID>.*)/`),
+		evictedProxies: make(map[string]bool),
 	}
 
 	// register module to log formatter
@@ -104,6 +109,7 @@ func (m *fourChan) InitializeModule() {
 // AddModuleCommand adds custom module specific settings and commands to our application
 func (m *fourChan) AddModuleCommand(command *cobra.Command) {
 	m.AddProxyCommands(command)
+	m.AddProxyLoopCommands(command)
 }
 
 // Login logs us in for the current session if possible/account available
@@ -130,20 +136,13 @@ func (m *fourChan) setProxyMethod() error {
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
 		return m.Session.SetProxy(m.GetProxySettings())
 	case m.settings.Loop:
-		// reset proxy loop index if we reach the limit with the next iteration
-		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-			m.ProxyLoopIndex = -1
+		// advance to the next enabled, non-evicted proxy (wrapping around). proxies are
+		// evicted for the rest of the run when they return a 403 during page retrieval.
+		next := m.nextLiveProxyIndex()
+		if next == -1 {
+			return fmt.Errorf("no usable loop proxies remaining (all disabled or evicted after 403)")
 		}
-		m.ProxyLoopIndex++
-
-		for !m.settings.LoopProxies[m.ProxyLoopIndex].Enable {
-			// skip to the next proxy if the current one is disabled
-			m.ProxyLoopIndex++
-			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-				m.ProxyLoopIndex = -1
-				break
-			}
-		}
+		m.ProxyLoopIndex = next
 
 		return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:

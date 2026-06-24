@@ -28,7 +28,7 @@ func (m *fourChan) parseThread(item *models.TrackedItem) error {
 			completeThread = true
 		}
 
-		res, err := m.Session.Get(archiveUrl)
+		res, err := m.getPage(archiveUrl)
 		if err != nil {
 			return err
 		}

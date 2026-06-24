@@ -13,12 +13,9 @@ import (
 
 // parseSearch parses searches
 func (m *fourChan) parseSearch(item *models.TrackedItem) error {
-	// change to next proxy to reset the rate limiter
-	if err := m.setProxyMethod(); err != nil {
-		return err
-	}
-
-	res, err := m.Session.Get(item.URI)
+	// getPage rotates the loop proxy (resetting the rate limiter) and evicts any proxy
+	// that returns a 403, retrying on the next one
+	res, err := m.getPage(item.URI)
 	if err != nil {
 		return err
 	}
@@ -64,13 +61,7 @@ func (m *fourChan) parseSearch(item *models.TrackedItem) error {
 			break
 		}
 
-		// change to next proxy to reset the rate limiter
-		err = m.setProxyMethod()
-		if err != nil {
-			return err
-		}
-
-		res, err = m.Session.Get(nextPageURL)
+		res, err = m.getPage(nextPageURL)
 		if err != nil {
 			return err
 		}
