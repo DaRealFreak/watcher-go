@@ -3,10 +3,16 @@ package pawchive
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path"
 	"strings"
 
+	"log/slog"
+
 	"github.com/DaRealFreak/watcher-go/internal/models"
+	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
+	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -113,4 +119,130 @@ func (m *pawchive) getExternalLinks(post *api.Post, comments []api.Comment) (lin
 		}
 	}
 	return uniqueLinks
+}
+
+func (m *pawchive) processDownloadQueue(item *models.TrackedItem, downloadQueue []api.Post) error {
+	slog.Info(fmt.Sprintf("found %d new items for uri: \"%s\"", len(downloadQueue), item.URI), "module", m.Key)
+
+	for index, data := range downloadQueue {
+		slog.Info(fmt.Sprintf(
+			"downloading updates for uri: \"%s\" (%0.2f%%)",
+			item.URI,
+			float64(index+1)/float64(len(downloadQueue))*100,
+		), "module", m.Key)
+
+		if err := m.downloadPost(item, data); err != nil {
+			return err
+		}
+
+		m.DbIO.UpdateTrackedItem(item, data.ID)
+	}
+
+	return nil
+}
+
+func (m *pawchive) downloadPost(item *models.TrackedItem, post api.Post) error {
+	webUrl := fmt.Sprintf("%s/%s/user/%s/post/%s", m.baseUrl.String(), post.Service, post.User, post.ID)
+
+	postComments, commentErr := m.api.GetPostComments(post.Service, post.User, post.ID)
+	if commentErr != nil {
+		return fmt.Errorf("failed to fetch post comments: %w", commentErr)
+	}
+
+	postFolderPath := fp.SanitizePath(post.ID, false)
+	sanitizedTitle := fp.SanitizePath(post.Title, false)
+	if strings.TrimSpace(sanitizedTitle) != "" {
+		postFolderPath += " - " + sanitizedTitle
+	}
+
+	downloadLinks := m.getDownloadLinks(&post)
+	for index, downloadItem := range downloadLinks {
+		parsedLink, parsedErr := url.Parse(downloadItem.FileURI)
+		if parsedErr != nil {
+			return parsedErr
+		}
+
+		fileName := fp.GetFileName(downloadItem.FileURI)
+		if f := parsedLink.Query().Get("f"); f != "" {
+			fileName = f
+		}
+		if downloadItem.FileName != "" {
+			fileName = downloadItem.FileName
+		}
+		fileName = fp.SanitizePath(fileName, false)
+
+		// ignore mega folder icons
+		if strings.Contains(fileName, "mega.nz_rich-folder") {
+			continue
+		}
+
+		file := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(m.getSubFolder(item)),
+			fp.TruncateMaxLength(postFolderPath),
+			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", post.ID, index+1, fileName))),
+		)
+		if err := m.Session.DownloadFile(file, downloadItem.FileURI); err != nil {
+			return err
+		}
+	}
+
+	externalLinks := m.getExternalLinks(&post, postComments)
+	factory := modules.GetModuleFactory()
+	for _, externalURL := range externalLinks {
+		if m.settings.ExternalURLs.PrintExternalItems {
+			slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"", externalURL, webUrl), "module", m.Key)
+		}
+
+		if m.settings.ExternalURLs.DownloadExternalItems {
+			if factory.CanParse(externalURL) {
+				module := factory.GetModuleFromURI(externalURL)
+				if err := module.Load(); err != nil {
+					return err
+				}
+				newItem := m.DbIO.GetFirstOrCreateTrackedItem(externalURL, "", module)
+				// don't delete previously already added items
+				deleteAfter := newItem.CurrentItem == ""
+				if m.Cfg.Run.Force && newItem.CurrentItem != "" {
+					slog.Info(fmt.Sprintf("resetting progress for item %s (current id: %s)", newItem.URI, newItem.CurrentItem), "module", m.Key)
+					newItem.CurrentItem = ""
+					m.DbIO.ChangeTrackedItemCompleteStatus(newItem, false)
+					m.DbIO.UpdateTrackedItem(newItem, "")
+				}
+
+				if err := module.Parse(newItem); err != nil {
+					slog.Warn(fmt.Sprintf("unable to parse external URL \"%s\" found in post \"%s\" with error \"%s\", skipping",
+						newItem.URI, webUrl, err.Error()), "module", m.Key)
+					if !m.settings.ExternalURLs.SkipErrorsForExternalURLs {
+						if deleteAfter {
+							m.DbIO.DeleteTrackedItem(newItem)
+						}
+						return err
+					}
+				}
+
+				if deleteAfter {
+					m.DbIO.DeleteTrackedItem(newItem)
+				}
+			} else {
+				slog.Warn(fmt.Sprintf("unable to parse URL \"%s\" found in post \"%s\"", externalURL, webUrl), "module", m.Key)
+			}
+		}
+	}
+
+	// create the post folder if we only found external links (no direct downloads)
+	if len(downloadLinks) == 0 && len(externalLinks) > 0 {
+		downloadFolder := path.Join(
+			m.GetDownloadDirectory(),
+			m.Key,
+			fp.TruncateMaxLength(m.getSubFolder(item)),
+			fp.TruncateMaxLength(postFolderPath),
+		)
+		if err := os.MkdirAll(downloadFolder, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

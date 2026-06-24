@@ -93,6 +93,19 @@ func (m *pawchive) Login(_ *models.Account) bool {
 	return true
 }
 
+// Parse parses the tracked item, routing to the post or user handler.
+func (m *pawchive) Parse(item *models.TrackedItem) error {
+	if item.SubFolder == "" {
+		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
+	}
+
+	if regexp.MustCompile(`.*/post/.*`).MatchString(item.URI) {
+		return m.parsePost(item)
+	}
+
+	return m.parseUser(item)
+}
+
 func (m *pawchive) getSubFolder(item *models.TrackedItem) string {
 	if item.SubFolder != "" {
 		return item.SubFolder
