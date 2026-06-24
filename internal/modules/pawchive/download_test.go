@@ -62,6 +62,55 @@ func TestGetDownloadLinks_skipsEmptyPaths(t *testing.T) {
 	}
 }
 
+func TestGetDownloadLinks_skipsMegaIcon(t *testing.T) {
+	m := &pawchive{}
+	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	post := &api.Post{
+		Attachments: []api.Attachment{
+			{Name: "https://mega.nz/rich-file.png", Path: "/xx/yy/icon.png"},
+			{Name: "real.png", Path: "/aa/bb/real.png"},
+		},
+	}
+	links := m.getDownloadLinks(post)
+	if len(links) != 1 {
+		t.Fatalf("expected mega icon skipped, got %d links: %+v", len(links), links)
+	}
+	if links[0].FileURI != "https://file.pawchive.st/data/aa/bb/real.png?f=real.png" {
+		t.Errorf("FileURI = %q", links[0].FileURI)
+	}
+}
+
+func TestGetDownloadLinks_inlineImages(t *testing.T) {
+	m := &pawchive{}
+	m.baseUrl, _ = url.Parse("https://pawchive.st")
+
+	// A relative src is resolved against baseUrl; http:// and https:// absolute
+	// srcs must be left untouched (http:// must NOT be prefixed with baseUrl).
+	post := &api.Post{
+		Content: `<p>` +
+			`<img src="/x/y.png">` +
+			`<img src="https://cdn.example.com/abs.png">` +
+			`<img src="http://cdn.example.com/abs2.png">` +
+			`</p>`,
+	}
+
+	links := m.getDownloadLinks(post)
+	if len(links) != 3 {
+		t.Fatalf("expected 3 inline image links, got %d: %+v", len(links), links)
+	}
+
+	want := []string{
+		"https://pawchive.st/x/y.png",
+		"https://cdn.example.com/abs.png",
+		"http://cdn.example.com/abs2.png",
+	}
+	for i, w := range want {
+		if links[i].FileURI != w {
+			t.Errorf("links[%d].FileURI = %q, want %q", i, links[i].FileURI, w)
+		}
+	}
+}
+
 func TestGetExternalLinks(t *testing.T) {
 	m := &pawchive{}
 	m.settings.ExternalURLs.PrintExternalItems = true

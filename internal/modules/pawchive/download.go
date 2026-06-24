@@ -58,7 +58,7 @@ func (m *pawchive) getDownloadLinks(post *api.Post) (links []*models.DownloadQue
 			return
 		}
 		fileURI := src
-		if !strings.HasPrefix(fileURI, "https") {
+		if !strings.HasPrefix(fileURI, "http://") && !strings.HasPrefix(fileURI, "https://") {
 			fileURI = fmt.Sprintf("%s/%s", m.baseUrl.String(), strings.TrimLeft(src, "/"))
 		}
 		links = append(links, &models.DownloadQueueItem{
