@@ -26,6 +26,7 @@ import (
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/momonga"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/nhentai"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/patreon"
+	_ "github.com/DaRealFreak/watcher-go/internal/modules/pawchive"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/pixiv"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/sankakucomplex"
 	_ "github.com/DaRealFreak/watcher-go/internal/modules/schalenetwork"
