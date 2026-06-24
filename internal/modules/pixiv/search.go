@@ -85,15 +85,26 @@ func (m *pixiv) getSearchModeFromURI(searchURI string) (string, error) {
 	u, _ := url.Parse(searchURI)
 	q, _ := url.ParseQuery(u.RawQuery)
 
-	switch {
-	case len(q["s_mode"]) == 0 || q["s_mode"][0] == "s_tag_full":
+	var searchMode string
+	if len(q["s_mode"]) > 0 {
+		searchMode = q["s_mode"][0]
+	}
+
+	switch searchMode {
+	case "", "s_tag_full", "tag_full":
+		// legacy default and the modern "Tags (perfect match)" mode
 		return mobileapi.SearchModeExactTagMatch, nil
-	case len(q["s_mode"]) > 0 && q["s_mode"][0] == "s_tag":
+	case "s_tag", "tag":
+		// modern "Tags (partial match)" mode
 		return mobileapi.SearchModePartialTagMatch, nil
-	case len(q["s_mode"]) > 0 && q["s_mode"][0] == "s_tc":
+	case "s_tc", "tc":
+		// modern "Title, Caption" mode
 		return mobileapi.SearchModeTitleAndCaption, nil
+	case "tag_tc":
+		// modern "Tags, Titles, Captions" mode has no equivalent search_target in the mobile API
+		return "", fmt.Errorf("search mode %q (tags, titles, captions) is not supported by the mobile API", searchMode)
 	default:
-		return "", fmt.Errorf("unknown search mode used: %s", q["s_mode"][0])
+		return "", fmt.Errorf("unknown search mode used: %s", searchMode)
 	}
 }
 
