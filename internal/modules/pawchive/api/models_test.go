@@ -1,6 +1,9 @@
 package api
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestCustomTimeUnmarshal(t *testing.T) {
 	cases := []struct {
@@ -24,5 +27,33 @@ func TestCustomTimeUnmarshal(t *testing.T) {
 				t.Errorf("unexpected error for %q: %v", tc.input, err)
 			}
 		})
+	}
+}
+
+// TestPostUnmarshalArchiveState locks in that the post detail/list responses
+// expose the "not archived yet" state: un-archived posts carry has_full=false /
+// preview_state="pending" (the website renders a "haven't archived this post
+// yet" CTA), archived posts carry has_full=true.
+func TestPostUnmarshalArchiveState(t *testing.T) {
+	notArchived := `{"id":"45474459","title":"Isaka","has_full":false,"preview_state":"pending",` +
+		`"file":{"name":"Isaka 0.jpg","path":"/b3/9d/abc.jpg"}}`
+	var p Post
+	if err := json.Unmarshal([]byte(notArchived), &p); err != nil {
+		t.Fatalf("unmarshal un-archived post: %v", err)
+	}
+	if p.HasFull {
+		t.Errorf("HasFull = true, want false for un-archived post")
+	}
+	if p.PreviewState != "pending" {
+		t.Errorf("PreviewState = %q, want %q", p.PreviewState, "pending")
+	}
+
+	archived := `{"id":"160866428","has_full":true,"preview_state":"scraped"}`
+	var p2 Post
+	if err := json.Unmarshal([]byte(archived), &p2); err != nil {
+		t.Fatalf("unmarshal archived post: %v", err)
+	}
+	if !p2.HasFull {
+		t.Errorf("HasFull = false, want true for archived post")
 	}
 }

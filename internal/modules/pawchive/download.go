@@ -1,6 +1,7 @@
 package pawchive
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"log/slog"
 
+	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
@@ -25,6 +27,62 @@ func (m *pawchive) buildFileURL(path, name string) string {
 		u = fmt.Sprintf("%s?f=%s", u, url.QueryEscape(name))
 	}
 	return u
+}
+
+// extractDataPath pulls the hashed path out of any ".../data/<path>" URL,
+// dropping any "?f=" query pawchive appends. Returns "" if uri has no /data/.
+func extractDataPath(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	const marker = "/data/"
+	idx := strings.Index(uri, marker)
+	if idx < 0 {
+		return ""
+	}
+	p := uri[idx+len(marker):]
+	if q := strings.IndexByte(p, '?'); q >= 0 {
+		p = p[:q]
+	}
+	return p
+}
+
+// isImageFile is a coarse "can img.pawchive.st render a thumbnail for this" check;
+// the thumbnail host only serves rendered images, not arbitrary content.
+func isImageFile(name string) bool {
+	switch strings.ToLower(path.Ext(name)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp":
+		return true
+	}
+	return false
+}
+
+// buildThumbnailURL returns the img.pawchive.st/thumbnail/data/<path> URL for an
+// image download, or "" if the file isn't an image or its path can't be derived.
+func (m *pawchive) buildThumbnailURL(item *models.DownloadQueueItem, fileName string) string {
+	dataPath := extractDataPath(item.FileURI)
+	if dataPath == "" {
+		return ""
+	}
+	// prefer the served filename, falling back to the hashed path's own extension
+	// (downloadPost doesn't always have a FileName for inline images).
+	if !isImageFile(fileName) && !isImageFile(dataPath) {
+		return ""
+	}
+	return fmt.Sprintf("%s/thumbnail/data/%s", imageHost, strings.TrimLeft(dataPath, "/"))
+}
+
+// unarchived404 reports whether err is a 404 raised while downloading a post
+// whose full files are not archived yet (has_full=false). That state is normal
+// on pawchive (a kemono successor importing on demand) and must not fatal the
+// run; the caller falls back to the thumbnail instead. Any other error - a 404
+// on an archived post, a non-404 status, or a transport error - still propagates.
+func unarchived404(post *api.Post, err error) bool {
+	if post == nil || post.HasFull {
+		return false
+	}
+	var statusErr tls_session.StatusError
+	return errors.As(err, &statusErr) && statusErr.StatusCode == 404
 }
 
 // getDownloadLinks collects the post's own files: post.file (if present), each
@@ -184,7 +242,38 @@ func (m *pawchive) downloadPost(item *models.TrackedItem, post api.Post) error {
 			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", post.ID, index+1, fileName))),
 		)
 		if err := m.Session.DownloadFile(file, downloadItem.FileURI); err != nil {
-			return err
+			// A 404 on an un-archived post (has_full=false) is expected: pawchive
+			// hasn't imported the full file yet and shows a "haven't archived this
+			// post yet" CTA. Don't fatal - fall back to the downscaled thumbnail
+			// like the kemono module does. Any other error still propagates.
+			if !unarchived404(&post, err) {
+				return err
+			}
+
+			thumbURL := m.buildThumbnailURL(downloadItem, fileName)
+			if thumbURL == "" {
+				slog.Warn(fmt.Sprintf(
+					"post \"%s\" is not archived yet (has_full=false) and file \"%s\" returned 404 with no thumbnail available, skipping file",
+					webUrl, downloadItem.FileURI), "module", m.Key)
+				continue
+			}
+
+			slog.Warn(fmt.Sprintf(
+				"post \"%s\" is not archived yet (has_full=false); full file \"%s\" returned 404, saving thumbnail \"%s\" as degraded fallback",
+				webUrl, downloadItem.FileURI, thumbURL), "module", m.Key)
+
+			thumbFile := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				fp.TruncateMaxLength(m.getSubFolder(item)),
+				fp.TruncateMaxLength(postFolderPath),
+				fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_thumbnail_%s", post.ID, index+1, fileName))),
+			)
+			if thumbErr := m.Session.DownloadFile(thumbFile, thumbURL); thumbErr != nil {
+				slog.Warn(fmt.Sprintf(
+					"thumbnail fallback also failed for \"%s\": %s, skipping file",
+					thumbURL, thumbErr.Error()), "module", m.Key)
+			}
 		}
 	}
 

@@ -21,6 +21,9 @@ import (
 const (
 	baseURL  = "https://pawchive.st"
 	fileHost = "https://file.pawchive.st"
+	// imageHost serves downscaled thumbnails rendered from the same content hash.
+	// We use it as a degraded fallback when the full file isn't archived yet.
+	imageHost = "https://img.pawchive.st"
 )
 
 type pawchive struct {

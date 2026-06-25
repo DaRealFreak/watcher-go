@@ -55,6 +55,13 @@ type Post struct {
 	Published   CustomTime   `json:"published"`
 	Added       CustomTime   `json:"added"`
 	Edited      CustomTime   `json:"edited"`
+	// HasFull is false while the post's full-resolution files have not been
+	// archived to the file host yet. pawchive (a kemono successor) then renders a
+	// "haven't archived this post yet" CTA and only serves a downscaled thumbnail;
+	// fetching the full file 404s. PreviewState is "pending" in that state and
+	// "scraped" once imported.
+	HasFull      bool   `json:"has_full"`
+	PreviewState string `json:"preview_state"`
 }
 
 type Embed struct {
