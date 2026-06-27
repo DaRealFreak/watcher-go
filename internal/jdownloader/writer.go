@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -182,4 +183,67 @@ func (w *Writer) Queue(moduleKey, packageName, downloadFolder, sourceURL, link s
 		slog.Info(fmt.Sprintf("queued external URL %q for JDownloader (folder: %s)", link, downloadFolder), "module", moduleKey)
 	}
 	return true
+}
+
+// Merge moves the accumulated local crawljob file into JDownloader's Folder
+// Watch directory under a unique name (watcher-go-<ts>.crawljob) so JDownloader
+// ingests it fresh. Returns ("", nil) when there is nothing to merge. The
+// caller supplies ts (e.g. time.Now().Unix()) so the operation stays
+// deterministic and testable.
+func (w *Writer) Merge(ts int64) (string, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	jobs, err := w.read()
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	if len(jobs) == 0 {
+		return "", nil
+	}
+	if w.cfg.FolderwatchPath == "" {
+		return "", fmt.Errorf("crawljob.folderwatch_path is not configured")
+	}
+	if err := os.MkdirAll(w.cfg.FolderwatchPath, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	dest := filepath.Join(w.cfg.FolderwatchPath, fmt.Sprintf("watcher-go-%d.crawljob", ts))
+	if err := moveFile(w.cfg.File, dest); err != nil {
+		return "", err
+	}
+	return dest, nil
+}
+
+// moveFile renames src to dst, falling back to copy+remove across devices.
+func moveFile(src, dst string) error {
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	}
+
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	out, err := os.Create(dst)
+	if err != nil {
+		_ = in.Close()
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = in.Close()
+		_ = out.Close()
+		return err
+	}
+	if err := out.Close(); err != nil {
+		_ = in.Close()
+		return err
+	}
+	if err := in.Close(); err != nil {
+		return err
+	}
+	return os.Remove(src)
 }

@@ -163,3 +163,53 @@ func TestQueueNotHandledWhenBlacklisted(t *testing.T) {
 		t.Errorf("blacklisted Queue must not create the file")
 	}
 }
+
+func TestMergeMovesFile(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "out.crawljob")
+	watch := filepath.Join(dir, "folderwatch")
+	w := NewWriter(Config{File: file, FolderwatchPath: watch})
+
+	if err := w.Add("pkg", dir, "https://src", []string{"https://mega.nz/a"}); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	movedTo, err := w.Merge(1700000000)
+	if err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	if movedTo != filepath.Join(watch, "watcher-go-1700000000.crawljob") {
+		t.Errorf("movedTo = %q", movedTo)
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Errorf("local file should be gone after merge")
+	}
+	if _, err := os.Stat(movedTo); err != nil {
+		t.Errorf("destination file should exist: %v", err)
+	}
+}
+
+func TestMergeEmptyIsNoop(t *testing.T) {
+	dir := t.TempDir()
+	w := NewWriter(Config{File: filepath.Join(dir, "missing.crawljob"), FolderwatchPath: filepath.Join(dir, "fw")})
+
+	movedTo, err := w.Merge(1)
+	if err != nil {
+		t.Fatalf("Merge on missing file should not error: %v", err)
+	}
+	if movedTo != "" {
+		t.Errorf("movedTo = %q, want empty", movedTo)
+	}
+}
+
+func TestMergeRequiresFolderwatchPath(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "out.crawljob")
+	w := NewWriter(Config{File: file}) // no FolderwatchPath
+
+	_ = w.Add("pkg", dir, "https://src", []string{"https://mega.nz/a"})
+
+	if _, err := w.Merge(1); err == nil {
+		t.Errorf("Merge with no folderwatch_path should error")
+	}
+}
