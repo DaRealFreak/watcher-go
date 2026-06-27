@@ -72,6 +72,12 @@ func TestAddWritesEntry(t *testing.T) {
 	if !filepath.IsAbs(jobs[0].DownloadFolder) {
 		t.Errorf("DownloadFolder must be absolute, got %q", jobs[0].DownloadFolder)
 	}
+	if jobs[0].ForcedStart != "UNSET" {
+		t.Errorf("ForcedStart = %q, want UNSET", jobs[0].ForcedStart)
+	}
+	if jobs[0].ExtractAfterDownload != "UNSET" {
+		t.Errorf("ExtractAfterDownload = %q, want UNSET", jobs[0].ExtractAfterDownload)
+	}
 }
 
 func TestAddResolvesRelativeFolder(t *testing.T) {
@@ -115,7 +121,9 @@ func TestAddAllDuplicatesIsNoop(t *testing.T) {
 	file := filepath.Join(dir, "out.crawljob")
 	w := NewWriter(Config{File: file})
 
-	_ = w.Add("pkg1", dir, "https://src/1", []string{"https://mega.nz/a"})
+	if err := w.Add("pkg1", dir, "https://src/1", []string{"https://mega.nz/a"}); err != nil {
+		t.Fatalf("Add 1: %v", err)
+	}
 	if err := w.Add("pkg2", dir, "https://src/2", []string{"https://mega.nz/a"}); err != nil {
 		t.Fatalf("Add 2: %v", err)
 	}
@@ -211,5 +219,39 @@ func TestMergeRequiresFolderwatchPath(t *testing.T) {
 
 	if _, err := w.Merge(1); err == nil {
 		t.Errorf("Merge with no folderwatch_path should error")
+	}
+}
+
+func TestCopyFileCopiesBytes(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src.txt")
+	dst := filepath.Join(dir, "dst.txt")
+
+	want := []byte("hello crawljob\n")
+	if err := os.WriteFile(src, want, 0o644); err != nil {
+		t.Fatalf("write src: %v", err)
+	}
+	if err := copyFile(src, dst); err != nil {
+		t.Fatalf("copyFile: %v", err)
+	}
+	got, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatalf("read dst: %v", err)
+	}
+	if string(got) != string(want) {
+		t.Errorf("dst content = %q, want %q", got, want)
+	}
+}
+
+func TestCopyFileErrorOnUnwritableDst(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src.txt")
+	if err := os.WriteFile(src, []byte("data"), 0o644); err != nil {
+		t.Fatalf("write src: %v", err)
+	}
+	// dst in a non-existent sub-directory → os.Create fails
+	dst := filepath.Join(dir, "nonexistent", "dst.txt")
+	if err := copyFile(src, dst); err == nil {
+		t.Error("copyFile to unwritable dst should return an error")
 	}
 }

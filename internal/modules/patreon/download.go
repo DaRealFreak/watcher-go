@@ -112,7 +112,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			}
 
 			if m.settings.ExternalURLs.DownloadExternalItems {
-				module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
+				module := factory.GetModuleFromURI(externalURL)
 				if err := module.Load(); err != nil {
 					return err
 				}

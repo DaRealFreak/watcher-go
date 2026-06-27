@@ -155,10 +155,8 @@ func (w *Writer) read() ([]Crawljob, error) {
 // write serializes jobs to the local crawljob file (pretty-printed so the user
 // can edit it before merging).
 func (w *Writer) write(jobs []Crawljob) error {
-	if dir := filepath.Dir(w.cfg.File); dir != "" {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(filepath.Dir(w.cfg.File), os.ModePerm); err != nil {
+		return err
 	}
 	b, err := json.MarshalIndent(jobs, "", "  ")
 	if err != nil {
@@ -219,31 +217,41 @@ func (w *Writer) Merge(ts int64) (string, error) {
 }
 
 // moveFile renames src to dst, falling back to copy+remove across devices.
+// The cross-device fallback writes to a ".part" temp file in the same directory
+// as dst and atomically renames it on success, so JDownloader never sees a
+// partial .crawljob file.
 func moveFile(src, dst string) error {
 	if err := os.Rename(src, dst); err == nil {
 		return nil
 	}
 
+	tmp := dst + ".part"
+	if err := copyFile(src, tmp); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, dst); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return os.Remove(src)
+}
+
+// copyFile copies the contents of src to dst (creating/truncating dst).
+func copyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
+	defer in.Close()
+
 	out, err := os.Create(dst)
 	if err != nil {
-		_ = in.Close()
 		return err
 	}
 	if _, err := io.Copy(out, in); err != nil {
-		_ = in.Close()
 		_ = out.Close()
 		return err
 	}
-	if err := out.Close(); err != nil {
-		_ = in.Close()
-		return err
-	}
-	if err := in.Close(); err != nil {
-		return err
-	}
-	return os.Remove(src)
+	return out.Close()
 }

@@ -66,8 +66,9 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 						slog.Error(fmt.Sprintf("failed to get illustration details for ID %d: %v",
 							item.ID,
 							detailErr), "module", m.Key)
+					} else {
+						checkedIllustration = detail.Illustration
 					}
-					checkedIllustration = detail.Illustration
 				}
 				links := linkfinder.GetLinks(checkedIllustration.Caption)
 				for _, link := range links {

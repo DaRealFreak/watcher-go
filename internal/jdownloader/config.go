@@ -1,6 +1,11 @@
 package jdownloader
 
-import "github.com/spf13/viper"
+import (
+	"fmt"
+	"log/slog"
+
+	"github.com/spf13/viper"
+)
 
 // defaultFile is the local accumulation file used when crawljob.file is unset.
 const defaultFile = "./watcher-go.crawljob"
@@ -25,7 +30,9 @@ func LoadConfig() Config {
 		AutoStart:   true,
 		AutoConfirm: true,
 	}
-	_ = viper.UnmarshalKey("crawljob", &cfg)
+	if err := viper.UnmarshalKey("crawljob", &cfg); err != nil {
+		slog.Warn(fmt.Sprintf("failed to parse crawljob config: %v", err))
+	}
 	if cfg.File == "" {
 		cfg.File = defaultFile
 	}
