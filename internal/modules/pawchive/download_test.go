@@ -6,6 +6,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
+	"github.com/spf13/viper"
 )
 
 func TestGetDownloadLinks(t *testing.T) {
@@ -313,5 +314,21 @@ func TestGetSubFolder(t *testing.T) {
 	item := &models.TrackedItem{URI: "https://pawchive.st/patreon/user/4829343"}
 	if got := m.getSubFolder(item); got != "patreon/4829343" {
 		t.Errorf("getSubFolder = %q, want %q", got, "patreon/4829343")
+	}
+}
+
+func TestGetExternalLinks_enabledByCrawljob(t *testing.T) {
+	viper.Set("crawljob.enabled", true)
+	defer viper.Set("crawljob.enabled", false)
+
+	m := &pawchive{} // print/download both false; only crawljob enables collection
+	post := &api.Post{
+		User:    "u1",
+		Content: "https://mega.nz/folder/abc",
+	}
+
+	links := m.getExternalLinks(post, nil)
+	if len(links) != 1 || links[0] != "https://mega.nz/folder/abc" {
+		t.Errorf("expected crawljob-enabled collection to return the link, got %v", links)
 	}
 }

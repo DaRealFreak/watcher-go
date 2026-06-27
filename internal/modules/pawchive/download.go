@@ -9,6 +9,7 @@ import (
 
 	"log/slog"
 
+	"github.com/DaRealFreak/watcher-go/internal/jdownloader"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
@@ -146,7 +147,9 @@ func (m *pawchive) getDownloadLinks(post *api.Post) (links []*models.DownloadQue
 // getExternalLinks extracts external download URLs (mega/gdrive/etc.) from the post
 // content, its embed, and comments authored by the creator. Gated by settings.
 func (m *pawchive) getExternalLinks(post *api.Post, comments []api.Comment) (links []string) {
-	if !m.settings.ExternalURLs.DownloadExternalItems && !m.settings.ExternalURLs.PrintExternalItems {
+	if !m.settings.ExternalURLs.DownloadExternalItems &&
+		!m.settings.ExternalURLs.PrintExternalItems &&
+		!jdownloader.Enabled() {
 		return links
 	}
 
@@ -285,6 +288,20 @@ func (m *pawchive) downloadPost(item *models.TrackedItem, post api.Post) error {
 	for _, externalURL := range externalLinks {
 		if m.settings.ExternalURLs.PrintExternalItems {
 			slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"", externalURL, webUrl), "module", m.Key)
+		}
+
+		// hand links we can't parse ourselves to JDownloader (independent of DownloadExternalItems)
+		if !factory.CanParse(externalURL) {
+			downloadFolder := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				fp.TruncateMaxLength(m.getSubFolder(item)),
+				fp.TruncateMaxLength(postFolderPath),
+			)
+			pkg := fmt.Sprintf("%s - %s", m.Key, postFolderPath)
+			if jdownloader.Default().Queue(m.Key, pkg, downloadFolder, webUrl, externalURL) {
+				continue
+			}
 		}
 
 		if m.settings.ExternalURLs.DownloadExternalItems {
