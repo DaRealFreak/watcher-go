@@ -1,7 +1,6 @@
 package pawchive
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,7 +9,6 @@ import (
 
 	"log/slog"
 
-	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
@@ -72,17 +70,28 @@ func (m *pawchive) buildThumbnailURL(item *models.DownloadQueueItem, fileName st
 	return fmt.Sprintf("%s/thumbnail/data/%s", imageHost, strings.TrimLeft(dataPath, "/"))
 }
 
-// unarchived404 reports whether err is a 404 raised while downloading a post
-// whose full files are not archived yet (has_full=false). That state is normal
-// on pawchive (a kemono successor importing on demand) and must not fatal the
-// run; the caller falls back to the thumbnail instead. Any other error - a 404
-// on an archived post, a non-404 status, or a transport error - still propagates.
-func unarchived404(post *api.Post, err error) bool {
-	if post == nil || post.HasFull {
-		return false
+// fileDownloadTarget decides how to fetch a single file of a post, returning the
+// URL to download, whether that URL is a downscaled thumbnail, and whether the
+// file should be skipped entirely.
+//
+// When a post's full-res files are not archived yet (has_full=false), the file
+// host doesn't reliably 404 - it often returns 504 (gateway timeout), which would
+// fatal the whole parse. Since the API already tells us the full file is missing,
+// we never request it: images fall back to the img.pawchive.st thumbnail and
+// non-image files (e.g. .rar) are skipped, mirroring the site's "Missing N
+// full-res photos, M files" state. Archived posts, and files not hosted on
+// pawchive's own file host (external inline images, which has_full does not
+// govern), are downloaded directly.
+func (m *pawchive) fileDownloadTarget(post *api.Post, item *models.DownloadQueueItem, fileName string) (downloadURL string, isThumbnail, skip bool) {
+	if post.HasFull || extractDataPath(item.FileURI) == "" {
+		return item.FileURI, false, false
 	}
-	var statusErr tls_session.StatusError
-	return errors.As(err, &statusErr) && statusErr.StatusCode == 404
+
+	thumbURL := m.buildThumbnailURL(item, fileName)
+	if thumbURL == "" {
+		return "", false, true
+	}
+	return thumbURL, true, false
 }
 
 // getDownloadLinks collects the post's own files: post.file (if present), each
@@ -234,46 +243,40 @@ func (m *pawchive) downloadPost(item *models.TrackedItem, post api.Post) error {
 			continue
 		}
 
+		downloadURL, isThumbnail, skip := m.fileDownloadTarget(&post, downloadItem, fileName)
+		if skip {
+			slog.Warn(fmt.Sprintf(
+				"post \"%s\" is not archived yet (has_full=false) and file \"%s\" has no thumbnail fallback, skipping file",
+				webUrl, downloadItem.FileURI), "module", m.Key)
+			continue
+		}
+
+		namePart := fileName
+		if isThumbnail {
+			slog.Warn(fmt.Sprintf(
+				"post \"%s\" is not archived yet (has_full=false); saving thumbnail \"%s\" as degraded fallback for full file \"%s\"",
+				webUrl, downloadURL, downloadItem.FileURI), "module", m.Key)
+			namePart = "thumbnail_" + fileName
+		}
+
 		file := path.Join(
 			m.GetDownloadDirectory(),
 			m.Key,
 			fp.TruncateMaxLength(m.getSubFolder(item)),
 			fp.TruncateMaxLength(postFolderPath),
-			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", post.ID, index+1, fileName))),
+			fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_%s", post.ID, index+1, namePart))),
 		)
-		if err := m.Session.DownloadFile(file, downloadItem.FileURI); err != nil {
-			// A 404 on an un-archived post (has_full=false) is expected: pawchive
-			// hasn't imported the full file yet and shows a "haven't archived this
-			// post yet" CTA. Don't fatal - fall back to the downscaled thumbnail
-			// like the kemono module does. Any other error still propagates.
-			if !unarchived404(&post, err) {
-				return err
-			}
-
-			thumbURL := m.buildThumbnailURL(downloadItem, fileName)
-			if thumbURL == "" {
+		if err := m.Session.DownloadFile(file, downloadURL); err != nil {
+			// A thumbnail is already a degraded fallback; if even that fails, warn
+			// and move on rather than fataling the parse. A failed full-res download
+			// on an archived post is a genuine error and still propagates.
+			if isThumbnail {
 				slog.Warn(fmt.Sprintf(
-					"post \"%s\" is not archived yet (has_full=false) and file \"%s\" returned 404 with no thumbnail available, skipping file",
-					webUrl, downloadItem.FileURI), "module", m.Key)
+					"thumbnail fallback failed for \"%s\": %s, skipping file",
+					downloadURL, err.Error()), "module", m.Key)
 				continue
 			}
-
-			slog.Warn(fmt.Sprintf(
-				"post \"%s\" is not archived yet (has_full=false); full file \"%s\" returned 404, saving thumbnail \"%s\" as degraded fallback",
-				webUrl, downloadItem.FileURI, thumbURL), "module", m.Key)
-
-			thumbFile := path.Join(
-				m.GetDownloadDirectory(),
-				m.Key,
-				fp.TruncateMaxLength(m.getSubFolder(item)),
-				fp.TruncateMaxLength(postFolderPath),
-				fp.TruncateMaxLength(strings.TrimSpace(fmt.Sprintf("%s_%d_thumbnail_%s", post.ID, index+1, fileName))),
-			)
-			if thumbErr := m.Session.DownloadFile(thumbFile, thumbURL); thumbErr != nil {
-				slog.Warn(fmt.Sprintf(
-					"thumbnail fallback also failed for \"%s\": %s, skipping file",
-					thumbURL, thumbErr.Error()), "module", m.Key)
-			}
+			return err
 		}
 	}
 

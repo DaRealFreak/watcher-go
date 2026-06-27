@@ -1,12 +1,9 @@
 package pawchive
 
 import (
-	"errors"
-	"fmt"
 	"net/url"
 	"testing"
 
-	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/pawchive/api"
 )
@@ -240,33 +237,72 @@ func TestBuildThumbnailURL(t *testing.T) {
 	})
 }
 
-// TestUnarchived404 is the regression test for the reported bug: a 404 while
-// downloading the full file of an un-archived post (has_full=false) must be
-// treated as recoverable (fall back to thumbnail, don't fatal the run), while
-// any other situation keeps fataling so genuine errors stay visible.
-func TestUnarchived404(t *testing.T) {
-	notArchived := &api.Post{HasFull: false}
-	archived := &api.Post{HasFull: true}
-	err404 := tls_session.StatusError{StatusCode: 404}
+// TestFileDownloadTarget is the regression test for the reported bug: an
+// un-archived post (has_full=false) must never trigger a full-res request - the
+// file host returns 504 (not 404) for those, which previously fataled the parse.
+// Instead, images resolve straight to the thumbnail and non-image files are
+// skipped, while archived posts and external (non-/data/) URLs download directly.
+func TestFileDownloadTarget(t *testing.T) {
+	m := &pawchive{}
+	m.baseUrl, _ = url.Parse("https://pawchive.st")
+
+	const (
+		imageURI    = "https://file.pawchive.st/data/ed/54/abc.png?f=page.png"
+		imageThumb  = "https://img.pawchive.st/thumbnail/data/ed/54/abc.png"
+		nonImageURI = "https://file.pawchive.st/data/2b/05/bundle.bin?f=ch14.rar"
+		externalURI = "https://cdn.example.com/inline.png"
+	)
 
 	cases := []struct {
-		name string
-		post *api.Post
-		err  error
-		want bool
+		name          string
+		hasFull       bool
+		item          *models.DownloadQueueItem
+		fileName      string
+		wantURL       string
+		wantThumbnail bool
+		wantSkip      bool
 	}{
-		{"un-archived post with 404 is recoverable", notArchived, err404, true},
-		{"un-archived post with wrapped 404 is recoverable", notArchived, fmt.Errorf("download failed: %w", err404), true},
-		{"archived post with 404 still fatals", archived, err404, false},
-		{"un-archived post with non-404 still fatals", notArchived, tls_session.StatusError{StatusCode: 500}, false},
-		{"un-archived post with network error still fatals", notArchived, errors.New("dial tcp: i/o timeout"), false},
-		{"un-archived post with nil error", notArchived, nil, false},
-		{"nil post", nil, err404, false},
+		{
+			name: "archived image downloads full-res directly",
+			hasFull: true, item: &models.DownloadQueueItem{FileURI: imageURI}, fileName: "page.png",
+			wantURL: imageURI,
+		},
+		{
+			name: "un-archived image falls back to thumbnail (no full-res request)",
+			hasFull: false, item: &models.DownloadQueueItem{FileURI: imageURI}, fileName: "page.png",
+			wantURL: imageThumb, wantThumbnail: true,
+		},
+		{
+			name: "un-archived non-image (.rar) is skipped",
+			hasFull: false, item: &models.DownloadQueueItem{FileURI: nonImageURI}, fileName: "ch14.rar",
+			wantSkip: true,
+		},
+		{
+			name: "archived non-image downloads full-res directly",
+			hasFull: true, item: &models.DownloadQueueItem{FileURI: nonImageURI}, fileName: "ch14.rar",
+			wantURL: nonImageURI,
+		},
+		{
+			name: "external inline image downloads directly even when un-archived",
+			hasFull: false, item: &models.DownloadQueueItem{FileURI: externalURI}, fileName: "inline.png",
+			wantURL: externalURI,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := unarchived404(tc.post, tc.err); got != tc.want {
-				t.Errorf("unarchived404() = %v, want %v", got, tc.want)
+			post := &api.Post{HasFull: tc.hasFull}
+			gotURL, gotThumb, gotSkip := m.fileDownloadTarget(post, tc.item, tc.fileName)
+			if gotSkip != tc.wantSkip {
+				t.Fatalf("skip = %v, want %v", gotSkip, tc.wantSkip)
+			}
+			if tc.wantSkip {
+				return
+			}
+			if gotURL != tc.wantURL {
+				t.Errorf("url = %q, want %q", gotURL, tc.wantURL)
+			}
+			if gotThumb != tc.wantThumbnail {
+				t.Errorf("isThumbnail = %v, want %v", gotThumb, tc.wantThumbnail)
 			}
 		})
 	}
