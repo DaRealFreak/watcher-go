@@ -13,6 +13,7 @@ import (
 
 	"context"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
+	"github.com/DaRealFreak/watcher-go/internal/jdownloader"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
@@ -283,6 +284,20 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 				webUrl), "module", m.Key)
 		}
 
+		// hand links we can't parse ourselves to JDownloader (independent of DownloadExternalItems)
+		if !factory.CanParse(externalURL) {
+			downloadFolder := path.Join(
+				m.GetDownloadDirectory(),
+				m.Key,
+				fp.TruncateMaxLength(m.getSubFolder(item)),
+				fp.TruncateMaxLength(postFolderPath),
+			)
+			pkg := fmt.Sprintf("%s - %s", m.Key, postFolderPath)
+			if jdownloader.Default().Queue(m.Key, pkg, downloadFolder, webUrl, externalURL) {
+				continue
+			}
+		}
+
 		if m.settings.ExternalURLs.DownloadExternalItems {
 			if factory.CanParse(externalURL) {
 				module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
@@ -342,7 +357,9 @@ func (m *kemono) downloadPost(item *models.TrackedItem, data api.QuickPost) erro
 }
 
 func (m *kemono) getExternalLinks(post *api.PostRoot, comments []api.Comment) (links []string) {
-	if !m.settings.ExternalURLs.DownloadExternalItems && !m.settings.ExternalURLs.PrintExternalItems {
+	if !m.settings.ExternalURLs.DownloadExternalItems &&
+		!m.settings.ExternalURLs.PrintExternalItems &&
+		!jdownloader.Enabled() {
 		return links
 	}
 

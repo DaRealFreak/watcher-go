@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"context"
+	"github.com/DaRealFreak/watcher-go/internal/jdownloader"
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules"
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
@@ -84,6 +85,7 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 			}
 		}
 
+		factory := modules.GetModuleFactory()
 		for _, externalURL := range data.ExternalURLs {
 			if m.settings.ExternalURLs.PrintExternalItems {
 				slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"%s\"",
@@ -91,8 +93,26 @@ func (m *patreon) processDownloadQueue(downloadQueue []*postDownload, item *mode
 					data.PatreonURL), "module", m.Key)
 			}
 
+			// hand links we can't parse ourselves to JDownloader (independent of DownloadExternalItems)
+			if !factory.CanParse(externalURL) {
+				downloadFolder := path.Join(
+					m.GetDownloadDirectory(),
+					m.Key,
+					strings.TrimSpace(fmt.Sprintf("%d_%s", data.CreatorID, data.CreatorName)),
+				)
+				pkg := fmt.Sprintf("%s - %d", m.Key, data.PostID)
+				if !jdownloader.Default().Queue(m.Key, pkg, downloadFolder, data.PatreonURL, externalURL) {
+					// crawljob off or blacklisted: warn but DON'T fall through to the native
+					// block below, which would fatally call GetModuleFromURI on an unparseable URL.
+					if m.settings.ExternalURLs.DownloadExternalItems {
+						slog.Warn(fmt.Sprintf("unable to parse URL \"%s\" found in post \"%s\"", externalURL, data.PatreonURL), "module", m.Key)
+					}
+				}
+				continue
+			}
+
 			if m.settings.ExternalURLs.DownloadExternalItems {
-				module := modules.GetModuleFactory().GetModuleFromURI(externalURL)
+				module := factory.GetModuleFromURI(externalURL)
 				if err := module.Load(); err != nil {
 					return err
 				}

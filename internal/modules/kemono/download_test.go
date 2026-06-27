@@ -7,6 +7,7 @@ import (
 
 	"github.com/DaRealFreak/watcher-go/internal/models"
 	"github.com/DaRealFreak/watcher-go/internal/modules/kemono/api"
+	"github.com/spf13/viper"
 )
 
 func TestJoinDataURL(t *testing.T) {
@@ -281,6 +282,20 @@ func TestBuildThumbnailURL(t *testing.T) {
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
+}
+
+func TestGetExternalLinks_enabledByCrawljob(t *testing.T) {
+	viper.Set("crawljob.enabled", true)
+	defer viper.Set("crawljob.enabled", false)
+
+	m := &kemono{} // print/download both false (zero-value settings)
+	post := &api.PostRoot{}
+	post.Post.Content = "grab https://mega.nz/folder/abc"
+
+	links := m.getExternalLinks(post, nil)
+	if len(links) != 1 || links[0] != "https://mega.nz/folder/abc" {
+		t.Errorf("expected crawljob-enabled collection, got %v", links)
+	}
 }
 
 func TestGetDownloadLinks_skipsMegaFolderIcons(t *testing.T) {
