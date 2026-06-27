@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"github.com/DaRealFreak/watcher-go/internal/jdownloader"
 	"github.com/DaRealFreak/watcher-go/pkg/linkfinder"
 	"io"
 	"net/url"
@@ -55,7 +56,7 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 				err = m.downloadIllustration(data, item)
 			}
 
-			if m.settings.ExternalUrls.PrintExternalItems {
+			if m.settings.ExternalUrls.PrintExternalItems || jdownloader.Enabled() {
 				checkedIllustration := item
 				// I could not find a pattern when the caption is actually empty
 				// or just removed in the API Search/UserIllustration response, so we check the actual details
@@ -74,9 +75,19 @@ func (m *pixiv) processDownloadQueue(downloadQueue []*downloadQueueItem, tracked
 						continue
 					}
 					link = strings.Replace(link, "http://", "https://", 1)
-					slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
-						link,
-						checkedIllustration.ID), "module", m.Key)
+
+					if m.settings.ExternalUrls.PrintExternalItems {
+						slog.Info(fmt.Sprintf("found external URL: \"%s\" in post \"https://www.pixiv.net/en/artworks/%d\"",
+							link,
+							checkedIllustration.ID), "module", m.Key)
+					}
+
+					// pixiv never downloads caption links natively, so every link is a crawljob
+					// candidate. Queue no-ops when crawljob is disabled or the host is blacklisted.
+					downloadFolder := path.Join(m.GetDownloadDirectory(), m.Key, data.DownloadTag)
+					pkg := fmt.Sprintf("%s - %d", m.Key, checkedIllustration.ID)
+					webUrl := fmt.Sprintf("https://www.pixiv.net/en/artworks/%d", checkedIllustration.ID)
+					jdownloader.Default().Queue(m.Key, pkg, downloadFolder, webUrl, link)
 				}
 			}
 
