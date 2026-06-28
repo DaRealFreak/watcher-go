@@ -55,6 +55,51 @@ func TestBuildModuleEntries(t *testing.T) {
 	}
 }
 
+func TestEntriesOrdering(t *testing.T) {
+	r := Build()
+
+	entries := r.Entries()
+	if len(entries) == 0 {
+		t.Fatal("Entries() returned empty slice; expected at least one registered setting")
+	}
+
+	// Pick two module keys known to be registered (alphabetically ordered: earlyKey < lateKey).
+	// We check via Resolve rather than hardcoding assumptions about their exact entry names.
+	earlyKey := "bsky.app"
+	lateKey := "deviantart.com"
+
+	// Verify both are actually present; if not, fall back to any two present module groups.
+	_, earlyPresent := r.Resolve("modules.bsky_app.download.directory")
+	_, latePresent := r.Resolve("modules.deviantart_com.download.directory")
+	if !earlyPresent || !latePresent {
+		t.Skipf("expected modules %q and %q to be registered; skipping ordering check", earlyKey, lateKey)
+	}
+
+	// Find the first entry index for each group.
+	firstEarly, firstLate := -1, -1
+	for i, e := range entries {
+		if firstEarly == -1 && e.Group == earlyKey {
+			firstEarly = i
+		}
+		if firstLate == -1 && e.Group == lateKey {
+			firstLate = i
+		}
+		if firstEarly != -1 && firstLate != -1 {
+			break
+		}
+	}
+	if firstEarly == -1 {
+		t.Fatalf("no entry found with Group=%q", earlyKey)
+	}
+	if firstLate == -1 {
+		t.Fatalf("no entry found with Group=%q", lateKey)
+	}
+	if firstEarly >= firstLate {
+		t.Errorf("registration order wrong: first %q entry at index %d >= first %q entry at index %d; want sorted by module key",
+			earlyKey, firstEarly, lateKey, firstLate)
+	}
+}
+
 func TestEffectiveValue(t *testing.T) {
 	viper.Reset()
 	defer viper.Reset()

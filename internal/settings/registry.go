@@ -31,7 +31,7 @@ type Entry struct {
 // Registry holds all known settings in a stable order plus a lookup map.
 type Registry struct {
 	entries []Entry
-	byKey   map[string]*Entry
+	byKey   map[string]int
 }
 
 // classify maps a leaf type to its editing Kind.
@@ -54,7 +54,7 @@ func classify(t reflect.Type) Kind {
 
 // Build constructs the registry from the module factory and the global blocks.
 func Build() *Registry {
-	r := &Registry{byKey: make(map[string]*Entry)}
+	r := &Registry{byKey: make(map[string]int)}
 
 	// Globals + crawljob first (defined in globals.go).
 	for _, e := range globalEntries() {
@@ -98,13 +98,16 @@ func (r *Registry) add(e Entry) {
 		return // first registration wins; avoids duplicate download.directory etc.
 	}
 	r.entries = append(r.entries, e)
-	r.byKey[key] = &r.entries[len(r.entries)-1]
+	r.byKey[key] = len(r.entries) - 1
 }
 
 // Resolve returns the entry for a key (case-insensitive), if known.
 func (r *Registry) Resolve(key string) (*Entry, bool) {
-	e, ok := r.byKey[strings.ToLower(key)]
-	return e, ok
+	idx, ok := r.byKey[strings.ToLower(key)]
+	if !ok {
+		return nil, false
+	}
+	return &r.entries[idx], true
 }
 
 // Entries returns all registered settings in registration order.
