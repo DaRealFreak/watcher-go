@@ -35,11 +35,12 @@ Available Commands:
   add                   add an item, account, OAuth2 client or cookie to the database
   backup                generates a backup of the current settings and database file
   completion            Generate the autocompletion script for the specified shell
+  config                manage module and proxy settings centrally
   generate-autocomplete generates auto completion for Bash, Zsh and PowerShell
   help                  Help about any command
   import                import data from files into the database
   list                  lists items or accounts from the database
-  module                lists the module specific commands and settings
+  module                lists the module specific action and proxy commands
   restore               restores the current settings/database from the passed backup archive
   run                   update all tracked items or directly passed items
   update                update the application or an item/account/OAuth2 client/cookie in the database
@@ -336,11 +337,41 @@ The binary backup from the database will be preferred over the .sql files in the
 in case that the archive got manually modified (the backup command can either back up the binary file or .sql files,
 not both). Neither the binary file nor the .sql files are further checked for invalid/corrupted data.
 
-### Module Settings
+### Config — Central Settings Management
 
-Each module can bring custom commands and settings.
-You can list all modules with custom commands/settings using `watcher module --help`.  
-Due to the modular structure with later planned external module support I'd recommend checking the commands/setting
+All module settings and proxy limits are managed through the `config` command:
+
+```
+Available Commands:
+  list          list all settings (optionally filter by key prefix)
+  get           get the value of a setting
+  set           set the value of a setting
+  list-add      append a value to a list setting
+  list-remove   remove a value from a list setting
+  proxy-limits  manage per-module proxy rate limits
+```
+
+Example usage:
+
+```bash
+# List all settings for a module
+watcher config list jinja-modoki
+
+# Get a specific setting
+watcher config get modules.jinja-modoki_com.loop
+
+# Enable proxy looping for a module
+watcher config set modules.jinja-modoki_com.loop true
+
+# Manage proxy rate limits
+watcher config proxy-limits
+```
+
+### Module Commands
+
+Each module can bring custom action and proxy commands.
+You can list all modules with custom commands using `watcher module --help`.  
+Due to the modular structure with later planned external module support I'd recommend checking the commands
 yourself.
 
 ## Development

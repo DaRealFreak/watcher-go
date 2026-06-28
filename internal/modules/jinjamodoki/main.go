@@ -43,6 +43,7 @@ func NewBareModule() *models.Module {
 			regexp.MustCompile("jinja-modoki.com"),
 		},
 		ProxyLoopIndex: -1,
+		SettingsSchema: models.ProxyLoopConfiguration{},
 	}
 	module.ModuleInterface = &jinjaModoki{
 		Module: module,
