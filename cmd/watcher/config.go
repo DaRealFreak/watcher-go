@@ -1,4 +1,4 @@
-﻿package watcher
+package watcher
 
 import (
 	"fmt"
