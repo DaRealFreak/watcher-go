@@ -42,6 +42,7 @@ func walkType(t reflect.Type, prefix string, out *[]fieldInfo) {
 		if tag == "" || tag == "-" {
 			continue
 		}
+		tag, _, _ = strings.Cut(tag, ",") // drop ",omitempty"/",squash"/etc.
 		key := tag
 		if prefix != "" {
 			key = prefix + "." + tag

@@ -1,4 +1,4 @@
-package watcher
+﻿package watcher
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func (cli *CliApplication) addConfigCommand() {
 	root := &cobra.Command{
 		Use:   "config",
 		Short: "view and change all watcher settings from one place",
-		Long: "view and change every persisted setting (module settings, crawljob,\n" +
+		Long: "view and change your watcher settings (module settings, crawljob,\n" +
 			"download directory, proxy limits, ...) from a single command.\n" +
 			"run 'watcher config list' to discover the exact key for any setting.",
 	}
@@ -73,7 +73,7 @@ func configListCommand() *cobra.Command {
 				}
 				for _, e := range groups[g] {
 					if e.ReadOnly {
-						fmt.Printf("  %-55s %-10s (complex — edit via \"module %s\" proxy commands)\n",
+						fmt.Printf("  %-55s %-10s (complex — edit via \"watcher module %s proxies ...\" or the config file)\n",
 							e.Key, settings.FriendlyType(e.Type), e.Group)
 						continue
 					}
@@ -130,7 +130,7 @@ func configSetCommand() *cobra.Command {
 				return
 			}
 			if e.ReadOnly {
-				fmt.Printf("%q is a complex setting; edit it via the \"module %s\" proxy commands or the config file\n", e.Key, e.Group)
+				fmt.Printf("%q is a complex setting; edit it via \"watcher module %s proxies ...\" or the config file\n", e.Key, e.Group)
 				return
 			}
 			parsed, err := settings.ParseValue(value, e.Type)

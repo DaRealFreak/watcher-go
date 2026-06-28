@@ -116,10 +116,14 @@ func (r *Registry) Entries() []Entry {
 }
 
 // EffectiveValue returns the value that will actually be used: the configured
-// value if set, otherwise the entry's default.
+// value if set, the entry's default if one exists, otherwise the zero value
+// of the entry's type (so callers never see <nil> for unset scalars).
 func (r *Registry) EffectiveValue(e Entry) any {
 	if viper.IsSet(e.Key) {
 		return viper.Get(e.Key)
 	}
-	return e.Default
+	if e.Default != nil {
+		return e.Default
+	}
+	return reflect.Zero(e.Type).Interface()
 }

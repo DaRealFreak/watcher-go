@@ -18,6 +18,7 @@ type sampleSchema struct {
 	} `mapstructure:"search"`
 	Proxy       sampleProxy   `mapstructure:"proxy"`        // named struct -> leaf
 	LoopProxies []sampleProxy `mapstructure:"loopproxies"`  // []struct -> leaf
+	Opt         string        `mapstructure:"opt,omitempty"` // tag with option -> key must be "opt"
 	Untagged    string        // no mapstructure tag -> skipped
 }
 
@@ -57,6 +58,13 @@ func TestWalkSchema(t *testing.T) {
 	// []struct is a leaf
 	if f, ok := findField(fields, "loopproxies"); !ok || f.Type.Kind() != reflect.Slice {
 		t.Errorf("loopproxies should be a slice leaf, got %+v ok=%v", f, ok)
+	}
+	// tag option stripped: "opt,omitempty" -> key is "opt", not "opt,omitempty"
+	if _, ok := findField(fields, "opt,omitempty"); ok {
+		t.Errorf("tag option must be stripped; key must not be \"opt,omitempty\"")
+	}
+	if _, ok := findField(fields, "opt"); !ok {
+		t.Errorf("expected leaf \"opt\" (tag option stripped from \"opt,omitempty\")")
 	}
 	// untagged field skipped
 	if _, ok := findField(fields, "Untagged"); ok {

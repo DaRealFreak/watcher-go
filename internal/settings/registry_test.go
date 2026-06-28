@@ -106,8 +106,8 @@ func TestEffectiveValue(t *testing.T) {
 
 	e := Entry{Key: "modules.pawchive_st.external_urls.download_external_items", Type: reflect.TypeOf(true), Kind: KindScalar}
 	r := &Registry{}
-	if v := r.EffectiveValue(e); v != nil {
-		t.Errorf("unset scalar with no default should be nil, got %v", v)
+	if v := r.EffectiveValue(e); v != false {
+		t.Errorf("unset bool scalar with no default should be false (zero value), got %v", v)
 	}
 
 	withDefault := Entry{Key: "crawljob.auto_start", Type: reflect.TypeOf(true), Kind: KindScalar, Default: true}
