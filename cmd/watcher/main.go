@@ -55,7 +55,6 @@ func NewWatcherApplication() *CliApplication {
 	app.addRestoreCommand()
 	app.addModulesCommand()
 	app.addConfigCommand()
-	app.addProxyLimitsCommand()
 	app.addCrawljobCommand()
 	app.addGenerateAutoCompletionCommand()
 

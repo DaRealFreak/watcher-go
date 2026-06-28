@@ -27,6 +27,7 @@ func (cli *CliApplication) addConfigCommand() {
 	root.AddCommand(configSetCommand())
 	root.AddCommand(configListAddCommand())
 	root.AddCommand(configListRemoveCommand())
+	root.AddCommand(proxyLimitsCommand())
 
 	cli.rootCmd.AddCommand(root)
 }
@@ -78,7 +79,7 @@ func configListCommand() *cobra.Command {
 					}
 					fmt.Printf("  %-55s %-10s %v\n", e.Key, settings.FriendlyType(e.Type), reg.EffectiveValue(e))
 				}
-				if g == "global" && (filter == "" || strings.Contains("proxy", filter)) {
+				if g == "global" && (filter == "" || strings.Contains("run.proxy_connection_limits", filter)) {
 					fmt.Printf("  %-55s %-10s (edit via \"config proxy-limits\")\n",
 						"run.proxy_connection_limits", "[]struct")
 				}
