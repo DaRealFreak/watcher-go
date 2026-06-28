@@ -19,7 +19,7 @@ There is **no central place** to see or change settings, and no single source of
 
 1. **Replace, don't add.** `config` becomes the single settings command. The generic `module <key> set/get/settings` subcommands and the top-level `proxy-limits` command are removed; their functionality moves into `config` (with shared, not duplicated, logic). `module <key>` remains for module-specific *actions* (incl. proxy editing). `crawljob merge` remains (it is an action, not a setting).
 2. **Registry-backed.** A new `internal/settings` package builds a runtime registry aggregating every settable key from the module factory and the global blocks. The reflection + typed-parse helpers currently in `internal/models/module_settings.go` move here (generalized); `module_settings.go` is deleted.
-3. **Flat dotted addressing with real module keys.** Keys are a single flat namespace resolved by exact registry lookup: `crawljob.enabled`, `download.directory`, `pawchive.st.external_urls.download_external_items`. The real module key (`pawchive.st`) is used in the address; the registry maps it to the sanitized Viper key (`Modules.pawchive_st.…`). No `_`-sanitization is exposed to the user. `config list` prints the exact addressable key for every setting.
+3. **Addresses are the Viper keys (underscored module keys).** Keys are a single flat namespace whose address *is* the underlying Viper key, resolved by exact registry map lookup: `crawljob.enabled`, `download.directory`, `modules.pawchive_st.external_urls.download_external_items`. Module keys keep their sanitized (`.`→`_`) form — `pawchive.st` → `pawchive_st` — because Viper treats `.` as its key-path delimiter, so a real dotted module key (`pawchive.st`) would be misparsed as nested keys. Using the Viper key verbatim means **no real↔sanitized translation and no prefix-parsing** — `config set <key> <value>` is a registry lookup followed by `viper.Set(<key>, …)`. `config list` prints the exact addressable key for every setting, so the underscored form is always discoverable (never memorized).
 4. **Effective values.** `get`/`list` display the value that will actually be used (registry defaults applied when Viper is unset), so e.g. `crawljob.auto_start` reads `true` even before it is written.
 5. **Scope:** module scalar + `[]string` settings, `crawljob.*`, `download.directory` (global + per-module override), `database.path`, `watcher.sentry`, and `run.proxy_connection_limits` (via a moved subcommand). Transient command flags (backup/restore toggles, `--force`, verbosity, sentry enable/disable *flags*, etc.) are excluded — they are per-invocation, not persisted preferences.
 
@@ -66,11 +66,10 @@ const (
 )
 
 type Entry struct {
-    Key      string        // address/display key, e.g. "pawchive.st.external_urls.download_external_items"
-    ViperKey string        // actual viper key, e.g. "Modules.pawchive_st.external_urls.download_external_items"
+    Key      string        // address == viper key, e.g. "modules.pawchive_st.external_urls.download_external_items"
     Type     reflect.Type  // element type for scalars / []string
     Kind     Kind
-    Group    string        // "global", "crawljob", or the module key
+    Group    string        // "global", "crawljob", or the human module key (e.g. "pawchive.st") — for list grouping only
     ReadOnly bool          // true for KindStructList (and any complex type)
     Default  any           // optional; displayed when viper is unset (crawljob file/auto_start/auto_confirm)
 }
@@ -78,12 +77,14 @@ type Entry struct {
 type Registry struct { /* ordered entries + key->entry map */ }
 
 func Build() *Registry                       // modules (factory) + crawljob + globals
-func (r *Registry) Resolve(key string) (*Entry, bool)
+func (r *Registry) Resolve(key string) (*Entry, bool) // exact map lookup on the viper key
 func (r *Registry) Entries() []Entry         // stable order: global, crawljob, then modules alpha
-func (r *Registry) EffectiveValue(e Entry) any // viper.IsSet(e.ViperKey) ? viper.Get : e.Default
+func (r *Registry) EffectiveValue(e Entry) any // viper.IsSet(e.Key) ? viper.Get(e.Key) : e.Default
 ```
 
-- **Module entries:** for each `module` in `modules.GetModuleFactory().GetAllModules()`, walk `module.SettingsSchema` (recursive over `mapstructure` tags, same algorithm as today's `extractFromType`). Leaf scalar → `KindScalar`; `[]string` → `KindStringList`; `[]struct` (e.g. `loopproxies`) → `KindStructList` (ReadOnly). `Key = module.Key + "." + path`; `ViperKey = "Modules." + module.GetViperModuleKey() + "." + path`. Also register `<module.Key>.download.directory` (string scalar) as a per-module override.
+`Key` is the address *and* the viper key — there is no separate translation field. `Group` exists only to label/sort `config list` output (the human module key is shown as the group header; the addressable keys under it are the underscored viper keys).
+
+- **Module entries:** for each `module` in `modules.GetModuleFactory().GetAllModules()`, walk `module.SettingsSchema` (recursive over `mapstructure` tags, same algorithm as today's `extractFromType`). Leaf scalar → `KindScalar`; `[]string` → `KindStringList`; `[]struct` (e.g. `loopproxies`) → `KindStructList` (ReadOnly). `Key = "modules." + module.GetViperModuleKey() + "." + path` (the verbatim viper key); `Group = module.Key` (human form, for the list header). Also register `modules.<sanitized>.download.directory` (string scalar) as a per-module override.
 - **crawljob entries:** walk `jdownloader.Config` under prefix `crawljob`; set `Default` for `file` (`./watcher-go.crawljob`), `auto_start` (true), `auto_confirm` (true). `blacklist` → `KindStringList`.
 - **Global entries:** explicit list — `download.directory` (string), `database.path` (string), `watcher.sentry` (bool). `run.proxy_connection_limits` is NOT a generic entry; it is surfaced read-only in `list` with a pointer to `config proxy-limits`.
 
@@ -93,7 +94,7 @@ Generalized from `parseTypedValue`: supports `string`, `bool`, `int*`, `uint*`, 
 
 ### `config` command behavior (cmd/watcher/config.go)
 
-Thin cobra glue over the registry, persisting with `viper.Set(entry.ViperKey, …)` + `raven.CheckError(viper.WriteConfig())` (the established pattern):
+Thin cobra glue over the registry, persisting with `viper.Set(entry.Key, …)` + `raven.CheckError(viper.WriteConfig())` (the established pattern):
 
 - `set <key> <value>`: `Resolve`; if not found → unknown-key error listing how to discover (`config list`); if `ReadOnly`/`KindStructList` → error pointing to the structured command; else typed-parse against `entry.Type` and persist. For `KindStringList`, `set` replaces the whole list (comma-split) and the output suggests `list-add`/`list-remove` for incremental edits.
 - `get <key>`: `Resolve` → print `EffectiveValue`. Unknown → error.
@@ -118,7 +119,7 @@ Thin cobra glue over the registry, persisting with `viper.Set(entry.ViperKey, �
 
 `internal/settings/*_test.go` (plain `testing`, no testify):
 
-- **Registry build:** with the real factory (modules are registered via the standard blank-imports) assert representative entries exist with the correct `ViperKey` sanitization (e.g. `pawchive.st.external_urls.download_external_items` → `Modules.pawchive_st.external_urls.download_external_items`), correct `Kind` (a `[]string` like a blacklist → `KindStringList`; `loopproxies` → `KindStructList`/ReadOnly), and that crawljob + the three globals are present.
+- **Registry build:** with the real factory (modules are registered via the standard blank-imports) assert representative entries exist with the correct sanitized key (e.g. an entry keyed `modules.pawchive_st.external_urls.download_external_items` with `Group == "pawchive.st"`), correct `Kind` (a `[]string` like a blacklist → `KindStringList`; `loopproxies` → `KindStructList`/ReadOnly), and that crawljob + the three globals are present.
 - **Resolve:** known key → entry; unknown → `false`.
 - **Typed parse:** bool/string/int/[]string success; bad bool → error; struct/non-string-slice → rejected.
 - **EffectiveValue:** crawljob defaults show through when unset (`auto_start` true, `file` default) and overrides win when `viper.Set` (`viper.Reset` between cases).
@@ -128,10 +129,12 @@ The cobra `config` glue is thin (like `crawljob merge`) → covered by `go build
 
 ## Migration (user-facing change)
 
-- `module <key> set <path> <v>`  →  `config set <key>.<path> <v>`
-- `module <key> get <path>`      →  `config get <key>.<path>`
-- `module <key> settings`        →  `config list <key>` (filter)
-- `proxy-limits set/list/remove` →  `config proxy-limits set/list/remove`
+- `module pawchive.st set external_urls.print_external_items true`  →  `config set modules.pawchive_st.external_urls.print_external_items true`
+- `module pawchive.st get external_urls.print_external_items`       →  `config get modules.pawchive_st.external_urls.print_external_items`
+- `module pawchive.st settings`                                      →  `config list pawchive` (substring filter; matches the group/key)
+- `proxy-limits set/list/remove`                                     →  `config proxy-limits set/list/remove`
+
+(The sanitized module key, e.g. `pawchive_st`, is always visible in `config list`, so you copy it rather than recall it.)
 
 ## Out of scope
 
