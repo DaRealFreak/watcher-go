@@ -13,9 +13,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-// addProxyLimitsCommand registers the `proxy-limits` command group used to
-// manage the per-(account, domain) proxy connection budget from the CLI.
-func (cli *CliApplication) addProxyLimitsCommand() {
+// proxyLimitsCommand returns the `proxy-limits` command group (mounted under
+// `config` by addConfigCommand). The underlying read/write/load helpers are
+// unchanged and still used at startup via loadProxyConnectionLimits.
+func proxyLimitsCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "proxy-limits",
 		Short: "manage per-service proxy connection limits",
@@ -130,7 +131,7 @@ func (cli *CliApplication) addProxyLimitsCommand() {
 		},
 	})
 
-	cli.rootCmd.AddCommand(root)
+	return root
 }
 
 // loadProxyConnectionLimits reads run.proxy_connection_limits from viper and
