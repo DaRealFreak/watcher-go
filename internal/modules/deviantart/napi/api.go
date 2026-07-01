@@ -9,6 +9,7 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 	"io"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,11 @@ import (
 	"github.com/DaRealFreak/watcher-go/pkg/fp"
 	"github.com/jaytaylor/html2text"
 )
+
+// userinfoUsernamePattern extracts the username from the (URL-decoded) userinfo
+// cookie JSON, e.g. ...,"username":"Someone",...
+// nolint: gochecknoglobals
+var userinfoUsernamePattern = regexp.MustCompile(`"username":"([^"]*)"`)
 
 // DateLayout is the date layout for parsing json times from the API
 const DateLayout = "2006-01-02T15:04:05-0700"
@@ -262,7 +268,10 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	}
 
 	if info.LuToken2 == "" {
-		return fmt.Errorf("could not retrieve lu_token2 token from login page")
+		return fmt.Errorf(
+			"deviantart rejected the username step (no lu_token2 returned): the login form is " +
+				"protected by PerimeterX bot detection, which a plain HTTP client cannot pass; " +
+				"a browser-based login is required")
 	}
 
 	// Step 3: Submit password to /_sisu/do/signin
@@ -323,6 +332,76 @@ func (a *DeviantartNAPI) Login(account *models.Account) error {
 	a.Account = account
 
 	return nil
+}
+
+// SetSessionCookies injects the passed cookies into the session cookie jar for
+// deviantart.com, allowing a browser-harvested session to be reused by the TLS
+// HTTP client.
+func (a *DeviantartNAPI) SetSessionCookies(cookies []*http.Cookie) {
+	if len(cookies) == 0 || a.UserSession == nil || a.UserSession.GetClient() == nil {
+		return
+	}
+
+	sessionURL, err := url.Parse("https://www.deviantart.com")
+	if err != nil {
+		return
+	}
+
+	a.UserSession.GetClient().SetCookies(sessionURL, cookies)
+}
+
+// IsLoggedIn reports whether the current session cookies authenticate us. It
+// requests the homepage (which lets the server refresh the userinfo cookie for
+// the current session) and then checks that cookie: DeviantArt only populates
+// its username field for an authenticated session. The site-wide CSRF token is
+// also captured for subsequent requests when present.
+func (a *DeviantartNAPI) IsLoggedIn() bool {
+	res, err := a.get("https://www.deviantart.com/")
+	if err != nil {
+		return false
+	}
+
+	if info, tokenErr := a.GetLoginCSRFToken(res); tokenErr == nil && info.CSRFToken != "" {
+		a.CSRFToken = info.CSRFToken
+	}
+
+	return a.loggedInUsername() != ""
+}
+
+// loggedInUsername returns the username stored in the session's userinfo cookie,
+// or "" when logged out (the field is empty for anonymous sessions).
+func (a *DeviantartNAPI) loggedInUsername() string {
+	if a.UserSession == nil {
+		return ""
+	}
+
+	sessionURL, err := url.Parse("https://www.deviantart.com")
+	if err != nil {
+		return ""
+	}
+
+	for _, cookie := range a.UserSession.GetCookies(sessionURL) {
+		if cookie.Name == "userinfo" {
+			return usernameFromUserinfo(cookie.Value)
+		}
+	}
+
+	return ""
+}
+
+// usernameFromUserinfo extracts the username from the URL-encoded JSON value of
+// the DeviantArt userinfo cookie. Returns "" if absent or empty.
+func usernameFromUserinfo(value string) string {
+	decoded, err := url.QueryUnescape(value)
+	if err != nil {
+		decoded = value
+	}
+
+	matches := userinfoUsernamePattern.FindStringSubmatch(decoded)
+	if len(matches) < 2 {
+		return ""
+	}
+	return matches[1]
 }
 
 // mapAPIResponse maps the API response into the passed APIResponse type.
