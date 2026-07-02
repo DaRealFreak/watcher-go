@@ -133,23 +133,33 @@ func (m *momonga) setProxyMethod() error {
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:
 		return m.Session.SetProxy(m.GetProxySettings())
 	case m.settings.Loop:
-		// reset proxy loop index if we reach the limit with the next iteration
-		if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-			m.ProxyLoopIndex = -1
+		// advance to the next enabled loop proxy (wrapping around). the previous
+		// hand-rolled skip loop reset the index to -1 (or ran it past the slice) when
+		// it reached the end while skipping a disabled proxy, then panicked on the
+		// LoopProxies[ProxyLoopIndex] access ("index out of range [-1]").
+		next := m.nextEnabledProxyIndex()
+		if next == -1 {
+			return fmt.Errorf("no usable loop proxies remaining (all disabled)")
 		}
-		m.ProxyLoopIndex++
-
-		for !m.settings.LoopProxies[m.ProxyLoopIndex].Enable {
-			// skip to the next proxy if the current one is disabled
-			m.ProxyLoopIndex++
-			if m.ProxyLoopIndex+1 == len(m.settings.LoopProxies) {
-				m.ProxyLoopIndex = -1
-				break
-			}
-		}
+		m.ProxyLoopIndex = next
 
 		return m.Session.SetProxy(&m.settings.LoopProxies[m.ProxyLoopIndex])
 	default:
 		return nil
 	}
+}
+
+// nextEnabledProxyIndex returns the index of the next enabled loop proxy after the
+// current ProxyLoopIndex, wrapping around to the start. It returns -1 when no enabled
+// proxy remains.
+func (m *momonga) nextEnabledProxyIndex() int {
+	count := len(m.settings.LoopProxies)
+	for offset := 1; offset <= count; offset++ {
+		idx := (m.ProxyLoopIndex + offset) % count
+		if m.settings.LoopProxies[idx].Enable {
+			return idx
+		}
+	}
+
+	return -1
 }
