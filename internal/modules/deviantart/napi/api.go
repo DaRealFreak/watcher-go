@@ -49,6 +49,12 @@ const FolderIdAllFolder = -1
 // PremiumFolderDataWatcherType is the string value for premium folders requiring you to watch the author
 const PremiumFolderDataWatcherType = "watchers"
 
+// TierAccessLocked is the tierAccess value for deviations gated behind a subscription
+// tier the current account is not subscribed to. DeviantArt still serves preview media
+// for locked image/pdf deviations, but withholds the full literature body markup and
+// the original file download.
+const TierAccessLocked = "locked"
+
 type Author struct {
 	UserId     json.Number `json:"userId"`
 	UseridUuid string      `json:"useridUuid"`
@@ -82,6 +88,18 @@ type Deviation struct {
 	TextContent       *TextContent       `json:"textContent"`
 	Extended          *Extended          `json:"extended"`
 	PremiumFolderData *PremiumFolderData `json:"premiumFolderData"`
+	// TierAccess is "locked" when the deviation is behind a subscription tier the
+	// current account cannot access; empty/absent otherwise. See TierAccessLocked.
+	TierAccess string `json:"tierAccess"`
+	// PrimaryTier describes the subscription tier gating a locked deviation (if any).
+	PrimaryTier *Tier `json:"primaryTier"`
+}
+
+// Tier describes a subscription tier that gates access to a locked deviation.
+type Tier struct {
+	DeviationId json.Number `json:"deviationId"`
+	Title       string      `json:"title"`
+	URL         string      `json:"url"`
 }
 
 type PremiumFolderData struct {
@@ -471,6 +489,23 @@ func clampBlurParam(crop string) string {
 	return crop[:start] + "30" + crop[end:]
 }
 
+// IsTierLocked reports whether the deviation is gated behind a subscription tier the
+// current account cannot access. DeviantArt still serves preview media for locked
+// image/pdf deviations, but withholds the full literature body markup and the original
+// file download.
+func (d *Deviation) IsTierLocked() bool {
+	return d.TierAccess == TierAccessLocked
+}
+
+// TierName returns the title of the subscription tier gating this deviation, or an
+// empty string if it is not tier-locked or the tier is unknown.
+func (d *Deviation) TierName() string {
+	if d.PrimaryTier != nil {
+		return d.PrimaryTier.Title
+	}
+	return ""
+}
+
 func (d *Deviation) GetPrettyName() string {
 	if d.Media.PrettyName != "" {
 		return d.Media.PrettyName
@@ -527,6 +562,16 @@ func (d *Draft) GetText() (text string) {
 }
 
 func (d *TextContent) GetTextContent() (string, error) {
+	// DeviantArt withholds the body markup for subscription/tier-locked deviations
+	// ("tierAccess":"locked"): the html type is still reported (e.g. "tiptap") but the
+	// "markup" field is omitted, so it decodes to an empty string. An empty string is
+	// not valid JSON, so parsing it as draft/tiptap would fail with "unexpected end of
+	// JSON input". Missing markup means "no accessible text", not a parse failure, so
+	// treat it as empty content instead of erroring.
+	if strings.TrimSpace(d.Html.Markup) == "" {
+		return "", nil
+	}
+
 	switch d.Html.Type {
 	case "draft":
 		var draft Draft

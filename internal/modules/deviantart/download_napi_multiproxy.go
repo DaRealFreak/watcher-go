@@ -153,7 +153,7 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 
 			m.multiProxy.currentIndexes = append(m.multiProxy.currentIndexes, index)
 
-			go m.downloadItemSessionNapi(proxy, trackedItem, data, index, completedItems)
+			go m.downloadItemSessionNapi(proxy, trackedItem, downloadQueue, data, index, completedItems)
 
 			// sleep 100 milliseconds to queue the next download after the current one
 			time.Sleep(time.Millisecond * 100)
@@ -164,17 +164,10 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 	// always wait for in-flight goroutines before returning
 	m.multiProxy.waitGroup.Wait()
 
-	// save progress up to the last contiguously completed item
-	lastCompleted := -1
-	for i, done := range completedItems {
-		if done {
-			lastCompleted = i
-		} else {
-			break
-		}
-	}
-
-	if lastCompleted >= 0 {
+	// final safety-net save (progress is also persisted incrementally as each item
+	// completes in downloadItemSessionNapi). all goroutines have finished here, so no
+	// locking is needed for the completedItems read.
+	if lastCompleted := lastContiguousCompleted(completedItems); lastCompleted >= 0 {
 		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[lastCompleted].itemID)
 	}
 
@@ -189,13 +182,13 @@ func (m *deviantArt) processDownloadQueueMultiProxy(downloadQueue []downloadQueu
 }
 
 func (m *deviantArt) downloadItemSessionNapi(
-	downloadSession *proxySession, trackedItem *models.TrackedItem, deviationItem downloadQueueItemNAPI, index int,
-	completedItems []bool,
+	downloadSession *proxySession, trackedItem *models.TrackedItem, downloadQueue []downloadQueueItemNAPI,
+	deviationItem downloadQueueItemNAPI, index int, completedItems []bool,
 ) {
 	downloadSession.occurredError = m.downloadDeviationNapi(trackedItem, deviationItem, downloadSession.session, false)
 
 	if downloadSession.occurredError == nil {
-		completedItems[index] = true
+		m.markCompletedAndPersist(trackedItem, downloadQueue, completedItems, index)
 
 		// remove the current index from the current list since we finished
 		for i, v := range m.multiProxy.currentIndexes {
@@ -215,7 +208,7 @@ func (m *deviantArt) downloadItemSessionNapi(
 				slog.Warn(fmt.Sprintf("skipping invalid image for deviation %s (%s): %s",
 					deviationItem.deviation.URL, deviationItem.itemID, scErr.Body), "module", m.Key)
 				downloadSession.occurredError = nil
-				completedItems[index] = true
+				m.markCompletedAndPersist(trackedItem, downloadQueue, completedItems, index)
 
 				for i, v := range m.multiProxy.currentIndexes {
 					if v == index {
@@ -231,4 +224,38 @@ func (m *deviantArt) downloadItemSessionNapi(
 
 	downloadSession.inUse = false
 	m.multiProxy.waitGroup.Done()
+}
+
+// markCompletedAndPersist marks the item at index as completed and persists the tracked
+// item's current_item up to the last contiguously completed item. Items complete out of
+// order across proxies, so we only advance the watermark across a leading run of
+// completed items - never skipping one that is still in flight. Safe to call
+// concurrently from the proxy download goroutines.
+func (m *deviantArt) markCompletedAndPersist(
+	trackedItem *models.TrackedItem, downloadQueue []downloadQueueItemNAPI, completedItems []bool, index int,
+) {
+	m.multiProxy.progressMutex.Lock()
+	defer m.multiProxy.progressMutex.Unlock()
+
+	completedItems[index] = true
+
+	if lastCompleted := lastContiguousCompleted(completedItems); lastCompleted >= 0 {
+		m.DbIO.UpdateTrackedItem(trackedItem, downloadQueue[lastCompleted].itemID)
+	}
+}
+
+// lastContiguousCompleted returns the index of the last item in the leading run of
+// completed items (starting at 0), or -1 if the very first item is not yet complete.
+// The download queue is ordered oldest-to-newest, so this is the furthest point up to
+// which progress can be saved without skipping an unfinished item.
+func lastContiguousCompleted(completedItems []bool) int {
+	lastCompleted := -1
+	for _, done := range completedItems {
+		if !done {
+			break
+		}
+		lastCompleted++
+	}
+
+	return lastCompleted
 }

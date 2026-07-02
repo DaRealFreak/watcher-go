@@ -428,14 +428,28 @@ func (m *deviantArt) downloadDeviationNapi(
 }
 
 func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI, downloadedFiles *[]string) error {
-	// if we couldn't retrieve the extended response, we can't access the markup anyway
-	if deviationItem.deviation.Extended == nil {
+	// if we couldn't retrieve the extended response (or there is no description at all),
+	// we can't access the markup anyway
+	if deviationItem.deviation.Extended == nil || deviationItem.deviation.Extended.DescriptionText == nil {
 		return nil
 	}
 
 	text, err := deviationItem.deviation.Extended.DescriptionText.GetTextContent()
 	if err != nil {
-		return err
+		// the description is best-effort metadata and DeviantArt sometimes returns
+		// genuinely corrupt markup for it: mangled emoji surrogates that swallow a
+		// string's closing quote, yielding invalid JSON ("invalid character 't' after
+		// object key:value pair"). the data is broken on DA's side and unrecoverable, so
+		// skip only the description instead of aborting the whole deviation - the primary
+		// content (image) still downloads. the literature/journal body path stays strict
+		// (see downloadLiteratureNapi) since that is the primary content, not metadata.
+		slog.Warn(fmt.Sprintf(
+			"skipping unparseable (DeviantArt-corrupted) description for deviation %s by %s: %v",
+			deviationItem.deviation.DeviationId.String(),
+			deviationItem.deviation.Author.Username,
+			err,
+		), "module", m.Key)
+		return nil
 	}
 
 	if len(text) > m.settings.Download.DescriptionMinLength {
@@ -464,9 +478,40 @@ func (m *deviantArt) downloadDescriptionNapi(deviationItem downloadQueueItemNAPI
 }
 
 func (m *deviantArt) downloadLiteratureNapi(deviationItem downloadQueueItemNAPI, downloadedFiles *[]string) error {
+	if deviationItem.deviation.TextContent == nil {
+		return nil
+	}
+
 	text, err := deviationItem.deviation.TextContent.GetTextContent()
 	if err != nil {
 		return err
+	}
+
+	// DeviantArt withholds the body markup for subscription/tier-locked deviations, so
+	// there is no text to write. Skip instead of writing an empty file (and instead of
+	// aborting the whole gallery, which is what happened when GetTextContent errored on
+	// the empty markup).
+	if strings.TrimSpace(text) == "" {
+		dev := deviationItem.deviation
+		if dev.IsTierLocked() {
+			tier := dev.TierName()
+			if tier == "" {
+				tier = "unknown"
+			}
+			slog.Warn(fmt.Sprintf(
+				"literature body for deviation %s by %s is behind subscription tier %q (tierAccess=locked), skipping",
+				dev.DeviationId.String(),
+				dev.Author.Username,
+				tier,
+			), "module", m.Key)
+		} else {
+			slog.Warn(fmt.Sprintf(
+				"empty literature body for deviation %s by %s, nothing to write, skipping",
+				dev.DeviationId.String(),
+				dev.Author.Username,
+			), "module", m.Key)
+		}
+		return nil
 	}
 
 	filePath := path.Join(
