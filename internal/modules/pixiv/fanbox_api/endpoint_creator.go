@@ -20,7 +20,6 @@ type FanboxUser struct {
 type FanboxPost struct {
 	ID    json.Number `json:"id"`
 	Title string      `json:"title"`
-	Type  string      `json:"type"`
 	User  FanboxUser  `json:"user"`
 }
 
@@ -36,20 +35,17 @@ type CreatorInfo struct {
 	Message string `json:"message"`
 }
 
+// PostPagination contains the list of paginated post list URLs of a creator
 type PostPagination struct {
-	URLs []string `json:"body"`
+	Body struct {
+		URLs []string `json:"pageUrls"`
+	} `json:"body"`
 }
 
 // PostInfoSinglePage contains all relevant pixiv fanbox post info
 type PostInfoSinglePage struct {
-	Body []FanboxPost `json:"body"`
-}
-
-// PostInfo contains all relevant pixiv fanbox post info
-type PostInfo struct {
 	Body struct {
-		Items   []FanboxPost `json:"items"`
-		NextURL string       `json:"nextUrl"`
+		Posts []FanboxPost `json:"posts"`
 	} `json:"body"`
 }
 
@@ -96,19 +92,19 @@ func (a *FanboxAPI) GetPostPagination(creatorId string) (*PostPagination, error)
 	return &postPagination, nil
 }
 
-// GetPostList returns the initial post list of the passed user
-func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, maxId int, limit int) (*PostInfoSinglePage, error) {
+// GetPostList returns the post list of the passed user, starting at the passed cursor.
+// The API requires firstPublishedDatetime and firstId to be passed together, so the cursor
+// is only appended if both parts are set, otherwise the newest page is returned.
+func (a *FanboxAPI) GetPostList(creatorId string, firstPublishedTime *time.Time, firstId int, limit int) (*PostInfoSinglePage, error) {
 	values := url.Values{
 		"creatorId": {creatorId},
+		"sort":      {"newest"},
 		"limit":     {strconv.Itoa(limit)},
 	}
 
-	if maxPublishedTime != nil {
-		values.Add("maxPublishedDatetime", maxPublishedTime.Format("2006-01-02 15:04:05"))
-	}
-
-	if maxId > 0 {
-		values.Add("maxId", strconv.Itoa(maxId))
+	if firstPublishedTime != nil && firstId > 0 {
+		values.Add("firstPublishedDatetime", firstPublishedTime.Format("2006-01-02 15:04:05"))
+		values.Add("firstId", strconv.Itoa(firstId))
 	}
 
 	apiURL := fmt.Sprintf("https://api.fanbox.cc/post.listCreator?%s", values.Encode())
@@ -116,7 +112,8 @@ func (a *FanboxAPI) GetPostList(creatorId string, maxPublishedTime *time.Time, m
 	return a.GetPostListByURL(apiURL)
 }
 
-// GetPostListByURL returns the post info solely by the URL since the PostInfo objects contain a NextURL string
+// GetPostListByURL returns the post info solely by the URL, used for the page URLs
+// returned by the post pagination endpoint
 func (a *FanboxAPI) GetPostListByURL(url string) (*PostInfoSinglePage, error) {
 	var postInfoSinglePage PostInfoSinglePage
 

@@ -130,18 +130,28 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		return err
 	}
 
+	postDetail := &postInfo.Body.Post
+
 	pattern := regexp.MustCompile(`(?m)https?://[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`)
-	for _, comment := range postInfo.CommentsFromAuthor() {
-		urlMatches := pattern.FindAllStringSubmatch(comment, -1)
-		if len(urlMatches) > 0 {
-			for _, match := range urlMatches {
-				q, _ := url.Parse(match[0])
-				slog.Warn(fmt.Sprintf("found URL from author in comments: %s (%d)", q.String(), postID), "module", m.Key)
+
+	// comments moved into their own endpoint, they are only scanned for author URLs
+	// so a failure here must not abort the download of the post itself
+	comments, commentsErr := m.fanboxAPI.GetPostComments(int(postID))
+	if commentsErr != nil {
+		slog.Warn(fmt.Sprintf("failed to retrieve comments for post %d: %v", postID, commentsErr), "module", m.Key)
+	} else {
+		for _, comment := range comments.CommentsFromAuthor(postDetail.User.UserId) {
+			urlMatches := pattern.FindAllStringSubmatch(comment, -1)
+			if len(urlMatches) > 0 {
+				for _, match := range urlMatches {
+					q, _ := url.Parse(match[0])
+					slog.Warn(fmt.Sprintf("found URL from author in comments: %s (%d)", q.String(), postID), "module", m.Key)
+				}
 			}
 		}
 	}
 
-	urlMatches := pattern.FindAllStringSubmatch(postInfo.Body.PostBody.Text, -1)
+	urlMatches := pattern.FindAllStringSubmatch(postDetail.PostBody.Text, -1)
 	if len(urlMatches) > 0 {
 		for _, match := range urlMatches {
 			q, _ := url.Parse(match[0])
@@ -149,25 +159,25 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		}
 	}
 
-	if postInfo.Body.ImageForShare != "" {
-		fileName := fmt.Sprintf("0_%s", fp.GetFileName(postInfo.Body.ImageForShare))
+	if postDetail.ImageForShare != "" {
+		fileName := fmt.Sprintf("0_%s", fp.GetFileName(postDetail.ImageForShare))
 
 		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
-				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postDetail.ID.String(), fileName,
 			),
-			postInfo.Body.ImageForShare,
+			postDetail.ImageForShare,
 		); err != nil {
 			return err
 		}
 	}
 
-	for i, image := range postInfo.Body.PostBody.Images {
+	for i, image := range postDetail.PostBody.Images {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(image.OriginalURL))
 
 		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
-				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postDetail.ID.String(), fileName,
 			),
 			image.OriginalURL,
 		); err != nil {
@@ -176,12 +186,12 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		}
 	}
 
-	for i, file := range postInfo.Body.PostBody.Files {
+	for i, file := range postDetail.PostBody.Files {
 		fileName := fmt.Sprintf("%d_%s.%s", i+1, file.Name, file.Extension)
 
 		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
-				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postDetail.ID.String(), fileName,
 			),
 			file.URL,
 		); err != nil {
@@ -191,13 +201,13 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 	}
 
 	var i = 0
-	for _, file := range postInfo.Body.PostBody.FileMap {
+	for _, file := range postDetail.PostBody.FileMap {
 		i += 1
 		fileName := fmt.Sprintf("%d_%s.%s", i, file.Name, file.Extension)
 
 		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
-				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postDetail.ID.String(), fileName,
 			),
 			file.URL,
 		); err != nil {
@@ -206,12 +216,12 @@ func (m *pixiv) downloadFanboxPost(data *downloadQueueItem, post fanboxapi.Fanbo
 		}
 	}
 
-	for i, file := range postInfo.ImagesFromBlocks() {
+	for i, file := range postDetail.ImagesFromBlocks() {
 		fileName := fmt.Sprintf("%d_%s", i+1, fp.GetFileName(file))
 
 		if err = m.fanboxAPI.DownloadFile(
 			path.Join(
-				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postInfo.Body.ID.String(), fileName,
+				m.GetDownloadDirectory(), m.Key, data.DownloadTag, postDetail.ID.String(), fileName,
 			),
 			file,
 		); err != nil {

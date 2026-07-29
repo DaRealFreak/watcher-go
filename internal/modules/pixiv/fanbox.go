@@ -29,7 +29,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 		return err
 	}
 
-	for _, paginationUrl := range pagination.URLs {
+	for _, paginationUrl := range pagination.Body.URLs {
 		if foundCurrentItem {
 			break
 		}
@@ -39,7 +39,7 @@ func (m *pixiv) parseFanbox(item *models.TrackedItem) error {
 			return postListErr
 		}
 
-		for _, fanboxPost := range postList.Body {
+		for _, fanboxPost := range postList.Body.Posts {
 			postID, _ := fanboxPost.ID.Int64()
 
 			if item.CurrentItem == "" || postID != currentItemID {
