@@ -61,6 +61,12 @@ func (s *TlsClientSession) EnsureDownloadDirectory(fileName string) {
 
 // GetDocument converts the http response to a *goquery.Document
 func (s *TlsClientSession) GetDocument(response *http.Response) *goquery.Document {
+	// failed requests return a nil response next to the error, so degrade into an empty
+	// document instead of panicking if a caller passes one on
+	if response == nil || response.Body == nil {
+		return emptyDocument()
+	}
+
 	defer raven.CheckClosure(response.Body)
 
 	document, documentErr := goquery.NewDocumentFromReader(response.Body)

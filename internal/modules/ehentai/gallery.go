@@ -87,7 +87,13 @@ func (m *ehentai) parseGallery(item *models.TrackedItem) error {
 			return err
 		}
 
-		response, _ = m.get(nextPageURL)
+		// a failed request returns a nil response, so the error has to be checked here
+		// instead of handing the nil response to GetDocument
+		response, err = m.get(nextPageURL)
+		if err != nil {
+			return err
+		}
+
 		html, _ = m.Session.GetDocument(response).Html()
 	}
 

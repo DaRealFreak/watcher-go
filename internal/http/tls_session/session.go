@@ -176,6 +176,12 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 					break
 				}
 			}
+		} else {
+			for _, errorHandler := range s.ErrorHandlers {
+				if fatal = errorHandler.IsFatalError(err); fatal {
+					break
+				}
+			}
 		}
 
 		// check request registered error handlers
@@ -183,6 +189,15 @@ func (s *TlsClientSession) Post(uri string, data url.Values, errorHandlers ...wa
 			for _, errorHandler := range errorHandlers {
 				if err, fatal = errorHandler.CheckResponse(response); err != nil {
 					break
+				}
+			}
+		} else {
+			// if fatal is already true, we don't have to check the request error handlers
+			if !fatal {
+				for _, errorHandler := range errorHandlers {
+					if fatal = errorHandler.IsFatalError(err); fatal {
+						break
+					}
 				}
 			}
 		}
@@ -236,6 +251,12 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 					break
 				}
 			}
+		} else {
+			for _, errorHandler := range s.ErrorHandlers {
+				if fatal = errorHandler.IsFatalError(err); fatal {
+					break
+				}
+			}
 		}
 
 		// check request registered error handlers
@@ -243,6 +264,15 @@ func (s *TlsClientSession) Do(req *http.Request, errorHandlers ...watcherHttp.Tl
 			for _, errorHandler := range errorHandlers {
 				if err, fatal = errorHandler.CheckResponse(response); err != nil {
 					break
+				}
+			}
+		} else {
+			// if fatal is already true, we don't have to check the request error handlers
+			if !fatal {
+				for _, errorHandler := range errorHandlers {
+					if fatal = errorHandler.IsFatalError(err); fatal {
+						break
+					}
 				}
 			}
 		}

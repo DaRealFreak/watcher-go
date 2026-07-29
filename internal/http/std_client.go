@@ -60,12 +60,26 @@ func (s *StdClientSession) EnsureDownloadDirectory(fileName string) {
 	}
 }
 
+// emptyDocument returns an empty *goquery.Document, used as a fallback for responses
+// we can't read a document from at all
+func emptyDocument() *goquery.Document {
+	document, _ := goquery.NewDocumentFromReader(strings.NewReader(""))
+
+	return document
+}
+
 // GetDocument converts the http response to a *goquery.Document
 func (s *StdClientSession) GetDocument(response *http.Response) *goquery.Document {
 	var (
 		reader io.ReadCloser
 		err    error
 	)
+
+	// failed requests return a nil response next to the error, so degrade into an empty
+	// document instead of panicking if a caller passes one on
+	if response == nil || response.Body == nil {
+		return emptyDocument()
+	}
 
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":

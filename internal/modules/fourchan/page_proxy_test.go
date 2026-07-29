@@ -7,6 +7,7 @@ import (
 	"github.com/DaRealFreak/watcher-go/internal/http"
 	"github.com/DaRealFreak/watcher-go/internal/http/tls_session"
 	fhttp "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
 )
 
 // getResult scripts one fakeSession.Get outcome.
@@ -16,13 +17,14 @@ type getResult struct {
 }
 
 // fakeSession is a minimal TlsClientSessionInterface used to drive getPage without
-// performing real network requests. Only Get and SetProxy are exercised; any other
-// method panics (via the embedded nil interface) to surface unexpected usage.
+// performing real network requests. Only Get, SetProxy and GetClient are exercised; any
+// other method panics (via the embedded nil interface) to surface unexpected usage.
 type fakeSession struct {
 	http.TlsClientSessionInterface
 	results      []getResult
 	calls        int
 	appliedProxy []string
+	client       *fakeClient
 }
 
 func (f *fakeSession) Get(_ string, _ ...http.TlsClientErrorHandler) (*fhttp.Response, error) {
@@ -30,6 +32,10 @@ func (f *fakeSession) Get(_ string, _ ...http.TlsClientErrorHandler) (*fhttp.Res
 	f.calls++
 
 	return &fhttp.Response{StatusCode: result.statusCode}, result.err
+}
+
+func (f *fakeSession) GetClient() tls_client.HttpClient {
+	return f.client
 }
 
 func (f *fakeSession) SetProxy(proxySettings *http.ProxySettings) error {
