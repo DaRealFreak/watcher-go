@@ -23,16 +23,15 @@ type FanboxPost struct {
 	User  FanboxUser  `json:"user"`
 }
 
-// CreatorInfo contains all relevant information on the creator
+// CreatorInfo contains all relevant information on the creator.
+// The creator is no longer wrapped in an extra "creator" object but placed directly in the body.
+// Error responses are handled by APIError/APIRequestError in mapAPIResponse.
 type CreatorInfo struct {
 	Body struct {
-		Creator struct {
-			User        FanboxUser `json:"user"`
-			Description string     `json:"description"`
-		} `json:"creator"`
+		User        FanboxUser `json:"user"`
+		CreatorID   string     `json:"creatorId"`
+		Description string     `json:"description"`
 	} `json:"body"`
-	Error   bool   `json:"error"`
-	Message string `json:"message"`
 }
 
 // PostPagination contains the list of paginated post list URLs of a creator

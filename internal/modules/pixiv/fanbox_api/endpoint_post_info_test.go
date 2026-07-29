@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestFanboxPostInfo_Unmarshal ensures the post is read from the nested "post" key,
@@ -101,8 +102,21 @@ func TestFanboxPostComments_UnmarshalLastPage(t *testing.T) {
 	assert.New(t).Empty(comments.CommentsFromAuthor("13798302"))
 }
 
+// TestFanboxAPI_GetPostInfo tests the post info of https://mito-nagishiro.fanbox.cc/posts/12068538,
+// the values are asserted since the post is nested in the response and a changed response
+// structure unmarshals into an empty post instead of returning an error
 func TestFanboxAPI_GetPostInfo(t *testing.T) {
-	postInfo, err := getTestFanboxAPI().GetPostInfo(12345)
-	assert.New(t).NoError(err)
-	assert.New(t).NotNil(postInfo)
+	skipWithoutCloudflareClearance(t)
+
+	postInfo, err := getTestFanboxAPI().GetPostInfo(12068538)
+	require.NoError(t, err)
+	require.NotNil(t, postInfo)
+
+	postDetail := postInfo.Body.Post
+	assert.New(t).Equal("12068538", postDetail.ID.String())
+	assert.New(t).NotEmpty(postDetail.Title)
+	assert.New(t).NotEmpty(postDetail.User.UserId)
+	assert.New(t).NotEmpty(postDetail.ImageForShare)
+	// the post is a public article post, so the blocks are readable without supporting the creator
+	assert.New(t).NotEmpty(postDetail.PostBody.Blocks)
 }

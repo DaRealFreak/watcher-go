@@ -7,6 +7,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestCreatorInfo_Unmarshal ensures the creator is read directly from the body, the API used
+// to wrap it in an additional "creator" object
+func TestCreatorInfo_Unmarshal(t *testing.T) {
+	response := `{"body":{"creatorId":"lik","user":{"userId":"13798302","name":"creator name",
+		"iconUrl":"https://pixiv.pximg.net/icon.jpeg"},"description":"creator description",
+		"coverImageUrl":"https://pixiv.pximg.net/cover.jpeg","profileItems":[],"profileLinks":[],
+		"isFollowed":false,"isSupported":true,"isStopped":false,"hasAdultContent":true}}`
+
+	var info CreatorInfo
+	assert.New(t).NoError(json.Unmarshal([]byte(response), &info))
+	assert.New(t).Equal("lik", info.Body.CreatorID)
+	assert.New(t).Equal("13798302", info.Body.User.UserID.String())
+	assert.New(t).Equal("creator name", info.Body.User.Name)
+	assert.New(t).Equal("creator description", info.Body.Description)
+}
+
 // TestPostPagination_Unmarshal ensures the paginated page URLs are read from the nested
 // "pageUrls" key, the API used to return the URLs directly as the "body" array
 func TestPostPagination_Unmarshal(t *testing.T) {
