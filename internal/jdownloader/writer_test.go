@@ -66,8 +66,10 @@ func TestAddWritesEntry(t *testing.T) {
 	if jobs[0].AutoStart != "TRUE" || jobs[0].AutoConfirm != "TRUE" {
 		t.Errorf("auto flags = %q/%q", jobs[0].AutoStart, jobs[0].AutoConfirm)
 	}
-	if jobs[0].Enabled != "true" {
-		t.Errorf("Enabled = %q", jobs[0].Enabled)
+	// JDownloader's CrawlJobStorable.enabled is a BooleanStatus enum mapped
+	// case-sensitively; lowercase "true" makes it reject the whole file.
+	if jobs[0].Enabled != "TRUE" {
+		t.Errorf("Enabled = %q, want TRUE (BooleanStatus enum, case-sensitive)", jobs[0].Enabled)
 	}
 	if !filepath.IsAbs(jobs[0].DownloadFolder) {
 		t.Errorf("DownloadFolder must be absolute, got %q", jobs[0].DownloadFolder)

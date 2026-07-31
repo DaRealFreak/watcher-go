@@ -7,9 +7,10 @@ package jdownloader
 // (a JSON array of these). JDownloader's FolderWatch extension ingests the
 // file and adds each package.
 //
-// The BooleanStatus fields (AutoConfirm/AutoStart/ForcedStart/
-// ExtractAfterDownload) use the string enum "TRUE"/"FALSE"/"UNSET". Enabled
-// is the JSON string "true".
+// The BooleanStatus fields (Enabled/AutoConfirm/AutoStart/ForcedStart/
+// ExtractAfterDownload) use the string enum "TRUE"/"FALSE"/"UNSET".
+// JDownloader maps them via Enum.valueOf, which is case-sensitive; any other
+// value (e.g. lowercase "true") makes JDownloader discard the entire file.
 type Crawljob struct {
 	PackageName          string `json:"packageName"`
 	DownloadFolder       string `json:"downloadFolder"`

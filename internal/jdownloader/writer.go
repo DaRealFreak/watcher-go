@@ -125,7 +125,7 @@ func (w *Writer) Add(packageName, downloadFolder, sourceURL string, links []stri
 		DownloadFolder:       abs,
 		Comment:              sourceURL,
 		Text:                 strings.Join(fresh, "\n"),
-		Enabled:              "true",
+		Enabled:              "TRUE",
 		AutoConfirm:          boolStatus(w.cfg.AutoConfirm),
 		AutoStart:            boolStatus(w.cfg.AutoStart),
 		ForcedStart:          "UNSET",
