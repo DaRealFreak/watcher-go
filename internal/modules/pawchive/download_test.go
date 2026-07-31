@@ -11,7 +11,7 @@ import (
 
 func TestGetDownloadLinks(t *testing.T) {
 	m := &pawchive{}
-	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	m.baseUrl, _ = url.Parse("https://pawchive.pw")
 
 	post := &api.Post{
 		File: api.File{Name: "main.png", Path: "/8a/af/main.png"},
@@ -30,9 +30,9 @@ func TestGetDownloadLinks(t *testing.T) {
 		uri  string
 		name string
 	}{
-		{"https://file.pawchive.st/data/8a/af/main.png?f=main.png", "main.png"},
-		{"https://file.pawchive.st/data/91/c9/alt1.png?f=alt1.png", "alt1.png"},
-		{"https://file.pawchive.st/data/1c/c9/alt2.png?f=alt2.png", "alt2.png"},
+		{"https://file.pawchive.pw/data/8a/af/main.png?f=main.png", "main.png"},
+		{"https://file.pawchive.pw/data/91/c9/alt1.png?f=alt1.png", "alt1.png"},
+		{"https://file.pawchive.pw/data/1c/c9/alt2.png?f=alt2.png", "alt2.png"},
 	}
 	for i, w := range want {
 		if links[i].FileURI != w.uri {
@@ -46,7 +46,7 @@ func TestGetDownloadLinks(t *testing.T) {
 
 func TestGetDownloadLinks_skipsEmptyPaths(t *testing.T) {
 	m := &pawchive{}
-	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	m.baseUrl, _ = url.Parse("https://pawchive.pw")
 
 	// pawchive posts often have an empty "file": {} — it must not produce a link.
 	post := &api.Post{
@@ -58,14 +58,14 @@ func TestGetDownloadLinks_skipsEmptyPaths(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected 1 link (empty file skipped), got %d", len(links))
 	}
-	if links[0].FileURI != "https://file.pawchive.st/data/aa/bb/only.png?f=only.png" {
+	if links[0].FileURI != "https://file.pawchive.pw/data/aa/bb/only.png?f=only.png" {
 		t.Errorf("FileURI = %q", links[0].FileURI)
 	}
 }
 
 func TestGetDownloadLinks_skipsMegaIcon(t *testing.T) {
 	m := &pawchive{}
-	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	m.baseUrl, _ = url.Parse("https://pawchive.pw")
 	post := &api.Post{
 		Attachments: []api.Attachment{
 			{Name: "https://mega.nz/rich-file.png", Path: "/xx/yy/icon.png"},
@@ -76,14 +76,14 @@ func TestGetDownloadLinks_skipsMegaIcon(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected mega icon skipped, got %d links: %+v", len(links), links)
 	}
-	if links[0].FileURI != "https://file.pawchive.st/data/aa/bb/real.png?f=real.png" {
+	if links[0].FileURI != "https://file.pawchive.pw/data/aa/bb/real.png?f=real.png" {
 		t.Errorf("FileURI = %q", links[0].FileURI)
 	}
 }
 
 func TestGetDownloadLinks_inlineImages(t *testing.T) {
 	m := &pawchive{}
-	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	m.baseUrl, _ = url.Parse("https://pawchive.pw")
 
 	// A relative src is resolved against baseUrl; http:// and https:// absolute
 	// srcs must be left untouched (http:// must NOT be prefixed with baseUrl).
@@ -101,7 +101,7 @@ func TestGetDownloadLinks_inlineImages(t *testing.T) {
 	}
 
 	want := []string{
-		"https://pawchive.st/x/y.png",
+		"https://pawchive.pw/x/y.png",
 		"https://cdn.example.com/abs.png",
 		"http://cdn.example.com/abs2.png",
 	}
@@ -165,10 +165,10 @@ func TestExtractDataPath(t *testing.T) {
 		uri  string
 		want string
 	}{
-		{"https://file.pawchive.st/data/b3/9d/abc.jpg", "b3/9d/abc.jpg"},
+		{"https://file.pawchive.pw/data/b3/9d/abc.jpg", "b3/9d/abc.jpg"},
 		// pawchive download URLs append a ?f={name}; the query must be stripped.
-		{"https://file.pawchive.st/data/b3/9d/abc.jpg?f=Isaka+0.jpg", "b3/9d/abc.jpg"},
-		{"https://img.pawchive.st/thumbnail/data/cc/dd/x.jpg", "cc/dd/x.jpg"},
+		{"https://file.pawchive.pw/data/b3/9d/abc.jpg?f=Isaka+0.jpg", "b3/9d/abc.jpg"},
+		{"https://img.pawchive.pw/thumbnail/data/cc/dd/x.jpg", "cc/dd/x.jpg"},
 		{"https://cdn.example.com/abs.png", ""},
 		{"", ""},
 	}
@@ -205,26 +205,26 @@ func TestBuildThumbnailURL(t *testing.T) {
 
 	t.Run("image file maps to img host thumbnail (query stripped)", func(t *testing.T) {
 		item := &models.DownloadQueueItem{
-			FileURI: "https://file.pawchive.st/data/b3/9d/abc.jpg?f=Isaka+0.jpg",
+			FileURI: "https://file.pawchive.pw/data/b3/9d/abc.jpg?f=Isaka+0.jpg",
 		}
 		got := m.buildThumbnailURL(item, "Isaka 0.jpg")
-		want := "https://img.pawchive.st/thumbnail/data/b3/9d/abc.jpg"
+		want := "https://img.pawchive.pw/thumbnail/data/b3/9d/abc.jpg"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
 
 	t.Run("falls back to hashed-path extension when name has none", func(t *testing.T) {
-		item := &models.DownloadQueueItem{FileURI: "https://file.pawchive.st/data/aa/bb/img.png"}
+		item := &models.DownloadQueueItem{FileURI: "https://file.pawchive.pw/data/aa/bb/img.png"}
 		got := m.buildThumbnailURL(item, "")
-		want := "https://img.pawchive.st/thumbnail/data/aa/bb/img.png"
+		want := "https://img.pawchive.pw/thumbnail/data/aa/bb/img.png"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
 
 	t.Run("non-image returns empty", func(t *testing.T) {
-		item := &models.DownloadQueueItem{FileURI: "https://file.pawchive.st/data/aa/bb/clip.mp4"}
+		item := &models.DownloadQueueItem{FileURI: "https://file.pawchive.pw/data/aa/bb/clip.mp4"}
 		if got := m.buildThumbnailURL(item, "clip.mp4"); got != "" {
 			t.Errorf("non-image should return empty, got %q", got)
 		}
@@ -245,12 +245,12 @@ func TestBuildThumbnailURL(t *testing.T) {
 // skipped, while archived posts and external (non-/data/) URLs download directly.
 func TestFileDownloadTarget(t *testing.T) {
 	m := &pawchive{}
-	m.baseUrl, _ = url.Parse("https://pawchive.st")
+	m.baseUrl, _ = url.Parse("https://pawchive.pw")
 
 	const (
-		imageURI    = "https://file.pawchive.st/data/ed/54/abc.png?f=page.png"
-		imageThumb  = "https://img.pawchive.st/thumbnail/data/ed/54/abc.png"
-		nonImageURI = "https://file.pawchive.st/data/2b/05/bundle.bin?f=ch14.rar"
+		imageURI    = "https://file.pawchive.pw/data/ed/54/abc.png?f=page.png"
+		imageThumb  = "https://img.pawchive.pw/thumbnail/data/ed/54/abc.png"
+		nonImageURI = "https://file.pawchive.pw/data/2b/05/bundle.bin?f=ch14.rar"
 		externalURI = "https://cdn.example.com/inline.png"
 	)
 
@@ -311,9 +311,16 @@ func TestFileDownloadTarget(t *testing.T) {
 
 func TestGetSubFolder(t *testing.T) {
 	m := &pawchive{}
-	item := &models.TrackedItem{URI: "https://pawchive.st/patreon/user/4829343"}
-	if got := m.getSubFolder(item); got != "patreon/4829343" {
-		t.Errorf("getSubFolder = %q, want %q", got, "patreon/4829343")
+
+	// both the canonical and the defunct legacy domain must resolve the sub folder
+	for _, uri := range []string{
+		"https://pawchive.pw/patreon/user/4829343",
+		"https://pawchive.st/patreon/user/4829343",
+	} {
+		item := &models.TrackedItem{URI: uri}
+		if got := m.getSubFolder(item); got != "patreon/4829343" {
+			t.Errorf("getSubFolder(%q) = %q, want %q", uri, got, "patreon/4829343")
+		}
 	}
 }
 

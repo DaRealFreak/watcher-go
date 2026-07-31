@@ -46,7 +46,7 @@ func extractDataPath(uri string) string {
 	return p
 }
 
-// isImageFile is a coarse "can img.pawchive.st render a thumbnail for this" check;
+// isImageFile is a coarse "can img.pawchive.pw render a thumbnail for this" check;
 // the thumbnail host only serves rendered images, not arbitrary content.
 func isImageFile(name string) bool {
 	switch strings.ToLower(path.Ext(name)) {
@@ -56,7 +56,7 @@ func isImageFile(name string) bool {
 	return false
 }
 
-// buildThumbnailURL returns the img.pawchive.st/thumbnail/data/<path> URL for an
+// buildThumbnailURL returns the img.pawchive.pw/thumbnail/data/<path> URL for an
 // image download, or "" if the file isn't an image or its path can't be derived.
 func (m *pawchive) buildThumbnailURL(item *models.DownloadQueueItem, fileName string) string {
 	dataPath := extractDataPath(item.FileURI)
@@ -78,7 +78,7 @@ func (m *pawchive) buildThumbnailURL(item *models.DownloadQueueItem, fileName st
 // When a post's full-res files are not archived yet (has_full=false), the file
 // host doesn't reliably 404 - it often returns 504 (gateway timeout), which would
 // fatal the whole parse. Since the API already tells us the full file is missing,
-// we never request it: images fall back to the img.pawchive.st thumbnail and
+// we never request it: images fall back to the img.pawchive.pw thumbnail and
 // non-image files (e.g. .rar) are skipped, mirroring the site's "Missing N
 // full-res photos, M files" state. Archived posts, and files not hosted on
 // pawchive's own file host (external inline images, which has_full does not

@@ -11,7 +11,7 @@ import (
 )
 
 func (m *pawchive) parseUser(item *models.TrackedItem) error {
-	search := regexp.MustCompile(`https://pawchive\.st/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://pawchive\.(?:st|pw)/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
 	service := ""
 	userId := ""
 	if len(search) == 3 {
@@ -70,7 +70,7 @@ func (m *pawchive) parseUser(item *models.TrackedItem) error {
 }
 
 func (m *pawchive) parsePost(item *models.TrackedItem) error {
-	// example: https://pawchive.st/patreon/user/4829343/post/161164023
+	// example: https://pawchive.pw/patreon/user/4829343/post/161164023
 	match := regexp.MustCompile(`.*/([^/?&]+)/user/([^/?&]+)/post/(\w+)`).FindStringSubmatch(item.URI)
 	if len(match) != 4 {
 		return fmt.Errorf("could not extract post ID from URL: %s", item.URI)

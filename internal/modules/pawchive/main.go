@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	baseURL  = "https://pawchive.st"
-	fileHost = "https://file.pawchive.st"
+	baseURL  = "https://" + canonicalDomain
+	fileHost = "https://file." + canonicalDomain
 	// imageHost serves downscaled thumbnails rendered from the same content hash.
 	// We use it as a degraded fallback when the full file isn't archived yet.
-	imageHost = "https://img.pawchive.st"
+	imageHost = "https://img." + canonicalDomain
 )
 
 type pawchive struct {
@@ -49,11 +49,14 @@ func init() {
 // NewBareModule returns a bare module implementation for the CLI options.
 func NewBareModule() *models.Module {
 	module := &models.Module{
+		// the key stays on the original domain even though the site moved to pawchive.pw:
+		// it identifies the module in the database (tracked_items.module) and the viper
+		// settings tree, mirroring how the twitter module kept "twitter.com" after x.com
 		Key:           "pawchive.st",
 		RequiresLogin: false,
 		LoggedIn:      false,
 		URISchemas: []*regexp.Regexp{
-			regexp.MustCompile(`pawchive.st`),
+			regexp.MustCompile(`pawchive\.(st|pw)`),
 		},
 		SettingsSchema: pawchiveSettings{},
 	}
@@ -98,6 +101,11 @@ func (m *pawchive) Login(_ *models.Account) bool {
 
 // Parse parses the tracked item, routing to the post or user handler.
 func (m *pawchive) Parse(item *models.TrackedItem) error {
+	if m.migrateLegacyDomain(item) == domainMigrationSuperseded {
+		// the canonical item is tracked separately and gets parsed on its own
+		return nil
+	}
+
 	if item.SubFolder == "" {
 		m.DbIO.ChangeTrackedItemSubFolder(item, m.getSubFolder(item))
 	}
@@ -114,7 +122,7 @@ func (m *pawchive) getSubFolder(item *models.TrackedItem) string {
 		return item.SubFolder
 	}
 
-	search := regexp.MustCompile(`https://pawchive\.st/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
+	search := regexp.MustCompile(`https://pawchive\.(?:st|pw)/([^/?&]+)/user/([^/?&]+)`).FindStringSubmatch(item.URI)
 	if len(search) == 3 {
 		return fp.SanitizePath(fmt.Sprintf("%s/%s", search[1], search[2]), true)
 	}
