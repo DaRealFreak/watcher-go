@@ -51,6 +51,11 @@ type fourChanSettings struct {
 		// UserAgent has to match the browser the cf_clearance cookie got harvested from,
 		// Cloudflare validates the cookie against it. Empty falls back to defaultUserAgent.
 		UserAgent string `mapstructure:"user_agent"`
+		// PagesWithoutProxy keeps page requests on the direct connection instead of
+		// rotating the loop proxies. Cloudflare binds the cf_clearance cookie to the IP
+		// that solved the challenge, so one stored clearance can only ever satisfy one
+		// exit - see getPage. Downloads keep using the full proxy pool.
+		PagesWithoutProxy bool `mapstructure:"pages_without_proxy"`
 	} `mapstructure:"cloudflare"`
 	Search struct {
 		BlacklistedTags  []string `mapstructure:"blacklisted_tags"`
@@ -184,6 +189,10 @@ func (m *fourChan) Parse(item *models.TrackedItem) error {
 // setProxyMethod determines what proxy method is being used and sets/updates the proxy configuration
 func (m *fourChan) setProxyMethod() error {
 	switch {
+	case m.settings.Cloudflare.PagesWithoutProxy:
+		// page requests have to leave from the IP the cf_clearance cookie got issued for,
+		// which is the direct connection - the loop proxies stay in use for downloads
+		return m.Session.SetProxy(nil)
 	case m.settings.Loop && len(m.settings.LoopProxies) < 2:
 		return fmt.Errorf("you need to at least register 2 proxies to loop")
 	case !m.settings.Loop && m.GetProxySettings() != nil && m.GetProxySettings().Enable:

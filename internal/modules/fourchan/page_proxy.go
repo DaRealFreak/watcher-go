@@ -10,12 +10,15 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 )
 
-// cloudflareHint names what a full sweep of 403s across every loop proxy usually points
-// at. desuarchive sits behind Cloudflare, which validates a clearance cookie against the
-// User-Agent (and depending on the rule the IP) it got issued for - so an exhausted proxy
-// pool is more often a stale cf_clearance than genuinely blocked proxies.
-const cloudflareHint = "cloudflare validates the cf_clearance cookie against the User-Agent it got issued for, " +
-	"check the stored cf_clearance cookie and the cloudflare.user_agent setting"
+// cloudflareHint names what a 403 from desuarchive points at. Cloudflare validates a
+// clearance cookie against both the IP and the User-Agent it got issued for, verified by
+// replaying one clearance from several exits: 200 from the exit that solved the challenge,
+// 403 with "cf-mitigated: challenge" from every other one. A single stored clearance can
+// therefore only ever satisfy one exit, which is what cloudflare.pages_without_proxy
+// pins page requests to.
+const cloudflareHint = "cloudflare validates the cf_clearance cookie against the IP and the User-Agent it got " +
+	"issued for, refresh the stored cf_clearance from a browser on the exit the page requests leave from " +
+	"and check the cloudflare.user_agent setting"
 
 // proxyKey returns a stable identifier for a loop proxy used to track eviction.
 func proxyKey(p *http.ProxySettings) string {
@@ -76,8 +79,23 @@ func (m *fourChan) evictCurrentProxy() {
 // proxy blocked by the archive search may still serve image downloads, so they evict
 // separately.
 func (m *fourChan) getPage(uri string) (*fhttp.Response, error) {
-	if !m.settings.Loop {
-		return m.Session.Get(uri)
+	// Cloudflare binds the clearance cookie to the IP that solved the challenge, so a
+	// single stored cf_clearance only satisfies a single exit. Rotating loop proxies would
+	// present it from exits it was never issued for, which Cloudflare answers with a fresh
+	// challenge - so pages_without_proxy keeps page requests on the direct connection the
+	// clearance belongs to. Downloads are unaffected and keep the full proxy pool, the
+	// image host does not challenge and only rate limits.
+	if !m.settings.Loop || m.settings.Cloudflare.PagesWithoutProxy {
+		res, err := m.Session.Get(uri)
+
+		// no proxy to rotate onto here, so surface what a 403 means instead of retrying
+		var statusErr tls_session.StatusError
+		if errors.As(err, &statusErr) && statusErr.StatusCode == 403 {
+			slog.Warn(fmt.Sprintf("received status code 403 for uri: %s (%s)",
+				uri, cloudflareHint), "module", m.Key)
+		}
+
+		return res, err
 	}
 
 	for {

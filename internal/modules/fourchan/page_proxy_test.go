@@ -173,3 +173,81 @@ func TestGetPageNonLoopFallsBackToPlainGet(t *testing.T) {
 		t.Errorf("expected no SetProxy calls in non-loop mode, got %v", fake.appliedProxy)
 	}
 }
+
+// TestGetPageWithoutProxyKeepsDirectConnection is the regression test for the Cloudflare
+// 403s that survived the User-Agent and cookie fix: rotating the loop proxies presents one
+// stored cf_clearance from exits it was never issued for. Verified against the live site by
+// replaying a single clearance - 200 from the exit that solved the challenge, 403 with
+// "cf-mitigated: challenge" from three different proxy exits. With pages_without_proxy the
+// page requests must stay on the direct connection and must not rotate.
+func TestGetPageWithoutProxyKeepsDirectConnection(t *testing.T) {
+	proxies := []http.ProxySettings{
+		{Host: "proxy-a", Port: 1080, Enable: true},
+		{Host: "proxy-b", Port: 1080, Enable: true},
+	}
+	m, fake := newProxyTestModule(proxies)
+	m.settings.Cloudflare.PagesWithoutProxy = true
+	fake.results = []getResult{{statusCode: 200, err: nil}}
+
+	res, err := m.getPage("https://desuarchive.org/d/search/subject/test/")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.StatusCode != 200 {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	if len(fake.appliedProxy) != 0 {
+		t.Errorf("page request rotated onto %v, want no proxy rotation at all", fake.appliedProxy)
+	}
+}
+
+// TestGetPageWithoutProxyDoesNotEvictOn403 locks in that a 403 propagates instead of
+// burning through the proxy pool. Without a proxy in play a 403 means the stored clearance
+// no longer matches, and no other exit can satisfy it either.
+func TestGetPageWithoutProxyDoesNotEvictOn403(t *testing.T) {
+	proxies := []http.ProxySettings{
+		{Host: "proxy-a", Port: 1080, Enable: true},
+		{Host: "proxy-b", Port: 1080, Enable: true},
+	}
+	m, fake := newProxyTestModule(proxies)
+	m.settings.Cloudflare.PagesWithoutProxy = true
+	fake.results = []getResult{{statusCode: 403, err: status403()}}
+
+	_, err := m.getPage("https://desuarchive.org/d/search/subject/test/")
+	if err == nil {
+		t.Fatal("expected the 403 to propagate")
+	}
+
+	var statusErr tls_session.StatusError
+	if !errors.As(err, &statusErr) || statusErr.StatusCode != 403 {
+		t.Fatalf("expected a 403 StatusError, got: %v", err)
+	}
+	if fake.calls != 1 {
+		t.Errorf("made %d requests, want exactly 1 with no retry across exits", fake.calls)
+	}
+	for _, proxy := range proxies {
+		if m.evictedProxies[proxyKey(&proxy)] {
+			t.Errorf("proxy %q was evicted, the download pool must stay untouched", proxy.Host)
+		}
+	}
+}
+
+// TestSetProxyMethodClearsProxyForDirectPages locks in that the main session drops any
+// proxy when pages_without_proxy is set, so page requests leave from the IP the clearance
+// belongs to even when a single proxy or a loop pool is configured.
+func TestSetProxyMethodClearsProxyForDirectPages(t *testing.T) {
+	proxies := []http.ProxySettings{
+		{Host: "proxy-a", Port: 1080, Enable: true},
+		{Host: "proxy-b", Port: 1080, Enable: true},
+	}
+	m, fake := newProxyTestModule(proxies)
+	m.settings.Cloudflare.PagesWithoutProxy = true
+
+	if err := m.setProxyMethod(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if want := []string{""}; len(fake.appliedProxy) != 1 || fake.appliedProxy[0] != want[0] {
+		t.Errorf("applied proxies %v, want a single cleared proxy %v", fake.appliedProxy, want)
+	}
+}
