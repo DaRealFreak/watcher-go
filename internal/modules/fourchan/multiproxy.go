@@ -32,6 +32,8 @@ func (m *fourChan) initializeProxySessions() {
 	}
 
 	sharedJar := mainSession.Jar
+	// rebuild from scratch so a repeated initialization doesn't stack up duplicate sessions
+	m.proxies = make([]*proxySession, 0)
 
 	for _, proxy := range m.settings.LoopProxies {
 		if !proxy.Enable {
@@ -39,6 +41,9 @@ func (m *fourChan) initializeProxySessions() {
 		}
 
 		singleSession := tls_session.NewTlsClientSessionWithJar(m.Key, sharedJar)
+		// same browser default headers as the main session, on the shared jar so the
+		// Cloudflare clearance cookie is sent by every proxy session as well
+		singleSession.SetClient(m.newHttpClient(sharedJar))
 		singleSession.RateLimiter = rate.NewLimiter(rate.Every(time.Duration(m.rateLimit)*time.Millisecond), 1)
 		raven.CheckError(singleSession.SetProxy(&proxy))
 		m.proxies = append(m.proxies, &proxySession{

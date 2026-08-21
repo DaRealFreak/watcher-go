@@ -10,6 +10,13 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 )
 
+// cloudflareHint names what a full sweep of 403s across every loop proxy usually points
+// at. desuarchive sits behind Cloudflare, which validates a clearance cookie against the
+// User-Agent (and depending on the rule the IP) it got issued for - so an exhausted proxy
+// pool is more often a stale cf_clearance than genuinely blocked proxies.
+const cloudflareHint = "cloudflare validates the cf_clearance cookie against the User-Agent it got issued for, " +
+	"check the stored cf_clearance cookie and the cloudflare.user_agent setting"
+
 // proxyKey returns a stable identifier for a loop proxy used to track eviction.
 func proxyKey(p *http.ProxySettings) string {
 	return fmt.Sprintf("%s:%d", p.Host, p.Port)
@@ -94,8 +101,8 @@ func (m *fourChan) getPage(uri string) (*fhttp.Response, error) {
 
 		if !m.hasLiveLoopProxy() {
 			slog.Warn(fmt.Sprintf(
-				"proxy \"%s\" returned 403 and no usable proxies remain, skipping uri: %s",
-				evictedHost, uri), "module", m.Key)
+				"proxy \"%s\" returned 403 and no usable proxies remain, skipping uri: %s (%s)",
+				evictedHost, uri, cloudflareHint), "module", m.Key)
 
 			return res, err
 		}
