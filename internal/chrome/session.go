@@ -3,15 +3,17 @@ package chrome
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"regexp"
+	"strings"
 	"time"
 
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/gorilla/websocket"
 )
 
-// DefaultUserAgent is a current desktop Chrome UA used for browser sessions.
-const DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+// chromeVersionPattern extracts the Chrome major version from a user agent.
+var chromeVersionPattern = regexp.MustCompile(`Chrome/(\d+)`)
 
 // Session is a real Chrome instance driven over the DevTools Protocol in a way
 // that stays invisible to CDP-based bot detection (PerimeterX, Cloudflare,
@@ -28,10 +30,11 @@ const DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
 // hand the resulting cookies to a lightweight HTTP client for the actual work.
 // See the package README for end-to-end patterns.
 type Session struct {
-	inst    *Instance
-	conn    *websocket.Conn
-	id      int
-	timeout time.Duration
+	inst      *Instance
+	conn      *websocket.Conn
+	id        int
+	timeout   time.Duration
+	userAgent string
 }
 
 // SessionOptions configures a browser session.
@@ -41,7 +44,15 @@ type SessionOptions struct {
 	BrowserPath string
 	// Headless runs Chrome without a window (default true; set false to debug).
 	Headless bool
-	// UserAgent overrides the browser user agent (defaults to DefaultUserAgent).
+	// UserAgent overrides the browser user agent. Leave empty (recommended) to
+	// use Chrome's own user agent.
+	//
+	// Chrome's --user-agent switch only rewrites navigator.userAgent and the
+	// User-Agent header; it does NOT update the Client Hints (navigator.
+	// userAgentData / Sec-CH-UA), which keep reporting the real build. A spoofed
+	// UA whose version disagrees with the browser is therefore trivially
+	// detectable and is treated as automation by bot protection such as
+	// PerimeterX, so only override this when the value tracks the actual browser.
 	UserAgent string
 	// InitialURL is opened on launch (defaults to about:blank).
 	InitialURL string
@@ -55,20 +66,19 @@ func NewSession(opts SessionOptions) (*Session, error) {
 	if opts.Timeout == 0 {
 		opts.Timeout = 90 * time.Second
 	}
-	if opts.UserAgent == "" {
-		opts.UserAgent = DefaultUserAgent
-	}
 
 	execPath, err := Find(opts.BrowserPath)
 	if err != nil {
 		return nil, err
 	}
 
+	// start on a blank page so the user agent can be corrected before the target
+	// site ever sees a request from this browser
 	inst, err := Launch(LaunchOptions{
 		ExecPath:   execPath,
 		Headless:   opts.Headless,
 		UserAgent:  opts.UserAgent,
-		InitialURL: opts.InitialURL,
+		InitialURL: "about:blank",
 	})
 	if err != nil {
 		return nil, err
@@ -82,7 +92,111 @@ func NewSession(opts SessionOptions) (*Session, error) {
 
 	s := &Session{inst: inst, conn: conn, timeout: opts.Timeout}
 	s.WaitReady(opts.Timeout)
+
+	if err = s.applyUserAgent(opts.UserAgent); err != nil {
+		slog.Debug(fmt.Sprintf("chrome: could not normalise the browser user agent: %v", err))
+	}
+
+	if opts.InitialURL != "" && opts.InitialURL != "about:blank" {
+		if err = s.Navigate(opts.InitialURL); err != nil {
+			_ = s.Close()
+			return nil, fmt.Errorf("opening %s: %w", opts.InitialURL, err)
+		}
+	}
+
 	return s, nil
+}
+
+// applyUserAgent makes the browser report a user agent that matches the build it
+// actually runs.
+//
+// Headless Chrome advertises itself as "HeadlessChrome/<version>", which is an
+// explicit automation marker, while a hardcoded override drifts out of sync with
+// the installed browser on every Chrome update. Either way the user agent ends up
+// contradicting the Client Hints (which a --user-agent switch cannot change), and
+// bot protection rejects the session. Deriving the string from the running
+// browser keeps both in agreement across updates.
+func (s *Session) applyUserAgent(configured string) error {
+	var actual string
+	if err := s.Eval("navigator.userAgent", &actual); err != nil {
+		return err
+	}
+	s.userAgent = actual
+
+	wanted := configured
+	if wanted == "" {
+		wanted = strings.Replace(actual, "HeadlessChrome/", "Chrome/", 1)
+	} else {
+		s.warnOnUserAgentMismatch(configured)
+	}
+
+	if wanted == "" || wanted == actual {
+		return nil
+	}
+
+	// Emulation.setUserAgentOverride is a plain command (no domain enable), so it
+	// does not expose the session to CDP-based detection. The Client Hints keep
+	// reporting the real build, which is exactly what the corrected string claims.
+	if _, err := s.call("Emulation.setUserAgentOverride", map[string]any{
+		"userAgent": wanted,
+	}); err != nil {
+		return err
+	}
+	s.userAgent = wanted
+
+	return nil
+}
+
+// UserAgent returns the user agent the browser actually sends. Use it to align
+// an HTTP client that reuses this session's cookies with the browser that
+// minted them.
+func (s *Session) UserAgent() string {
+	return s.userAgent
+}
+
+// warnOnUserAgentMismatch logs when a configured user agent claims a different
+// Chrome major version than the running browser. Client Hints still report the
+// real version, so the contradiction marks the session as automated.
+func (s *Session) warnOnUserAgentMismatch(configured string) {
+	if configured == "" || s.userAgent == "" {
+		return
+	}
+
+	want, got := chromeMajorVersion(configured), browserMajorVersion(s)
+	if want == "" || got == "" || want == got {
+		return
+	}
+
+	slog.Warn(fmt.Sprintf(
+		"chrome: configured user agent reports Chrome/%s but the browser is Chrome/%s; "+
+			"Client Hints still report %s, and bot protection treats that mismatch as automation. "+
+			"Remove the override to use the browser's own user agent.", want, got, got))
+}
+
+// browserMajorVersion reports the Chrome major version the browser advertises
+// through Client Hints (which a --user-agent override cannot change), falling
+// back to the reported user agent.
+func browserMajorVersion(s *Session) string {
+	var version string
+	// navigator.userAgentData is immune to the --user-agent switch
+	if err := s.Eval(`(() => {
+      const d = navigator.userAgentData;
+      if (!d || !d.brands) return '';
+      const b = d.brands.find(b => /Chrome|Chromium/i.test(b.brand) && !/Not/i.test(b.brand));
+      return b ? String(b.version) : '';
+    })()`, &version); err == nil && version != "" {
+		return version
+	}
+	return chromeMajorVersion(s.userAgent)
+}
+
+// chromeMajorVersion extracts the Chrome major version from a user agent,
+// returning "" when the string carries no Chrome version.
+func chromeMajorVersion(userAgent string) string {
+	if m := chromeVersionPattern.FindStringSubmatch(userAgent); m != nil {
+		return m[1]
+	}
+	return ""
 }
 
 // Close terminates the browser and releases its resources.
