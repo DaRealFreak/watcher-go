@@ -72,13 +72,13 @@ func NewSession(opts SessionOptions) (*Session, error) {
 		return nil, err
 	}
 
-	// start on a blank page so the user agent can be corrected before the target
-	// site ever sees a request from this browser
+	// Chrome's local version page is a secure context, so it exposes native
+	// Client Hints without sending a request to the target site. about:blank
+	// does not expose navigator.userAgentData.
 	inst, err := Launch(LaunchOptions{
 		ExecPath:   execPath,
 		Headless:   opts.Headless,
-		UserAgent:  opts.UserAgent,
-		InitialURL: "about:blank",
+		InitialURL: "chrome://version",
 	})
 	if err != nil {
 		return nil, err
@@ -94,14 +94,18 @@ func NewSession(opts SessionOptions) (*Session, error) {
 	s.WaitReady(opts.Timeout)
 
 	if err = s.applyUserAgent(opts.UserAgent); err != nil {
-		slog.Debug(fmt.Sprintf("chrome: could not normalise the browser user agent: %v", err))
+		_ = s.Close()
+		return nil, fmt.Errorf("configuring chrome user agent: %w", err)
 	}
+	slog.Debug(fmt.Sprintf("chrome: using browser user agent: %s", s.userAgent))
 
-	if opts.InitialURL != "" && opts.InitialURL != "about:blank" {
-		if err = s.Navigate(opts.InitialURL); err != nil {
-			_ = s.Close()
-			return nil, fmt.Errorf("opening %s: %w", opts.InitialURL, err)
-		}
+	initialURL := opts.InitialURL
+	if initialURL == "" {
+		initialURL = "about:blank"
+	}
+	if err = s.Navigate(initialURL); err != nil {
+		_ = s.Close()
+		return nil, fmt.Errorf("opening %s: %w", initialURL, err)
 	}
 
 	return s, nil
@@ -113,9 +117,8 @@ func NewSession(opts SessionOptions) (*Session, error) {
 // Headless Chrome advertises itself as "HeadlessChrome/<version>", which is an
 // explicit automation marker, while a hardcoded override drifts out of sync with
 // the installed browser on every Chrome update. Either way the user agent ends up
-// contradicting the Client Hints (which a --user-agent switch cannot change), and
-// bot protection rejects the session. Deriving the string from the running
-// browser keeps both in agreement across updates.
+// contradicting the Client Hints. Deriving both from the running browser keeps
+// them in agreement across updates.
 func (s *Session) applyUserAgent(configured string) error {
 	var actual string
 	if err := s.Eval("navigator.userAgent", &actual); err != nil {
@@ -134,11 +137,24 @@ func (s *Session) applyUserAgent(configured string) error {
 		return nil
 	}
 
-	// Emulation.setUserAgentOverride is a plain command (no domain enable), so it
-	// does not expose the session to CDP-based detection. The Client Hints keep
-	// reporting the real build, which is exactly what the corrected string claims.
+	// CDP suppresses Client Hints when a UA override omits userAgentMetadata.
+	// Preserve all native values, including high-entropy version and OS details,
+	// instead of inventing a second browser identity to maintain across updates.
+	var metadata map[string]any
+	if err := s.Eval(`navigator.userAgentData.getHighEntropyValues([
+      'architecture', 'bitness', 'model', 'platformVersion',
+      'fullVersionList', 'wow64', 'formFactors'
+    ])`, &metadata); err != nil {
+		return fmt.Errorf("reading native Client Hints: %w", err)
+	}
+	if len(metadata) == 0 {
+		return fmt.Errorf("browser returned no native Client Hints")
+	}
+
+	// This is a plain command; no CDP domain needs to be enabled.
 	if _, err := s.call("Emulation.setUserAgentOverride", map[string]any{
-		"userAgent": wanted,
+		"userAgent":         wanted,
+		"userAgentMetadata": metadata,
 	}); err != nil {
 		return err
 	}
